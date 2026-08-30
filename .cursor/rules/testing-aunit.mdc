@@ -1,0 +1,15 @@
+---
+description: Every feature needs AUnit tests; AUnit/ZFP constraints
+alwaysApply: true
+---
+
+# Testing (AUnit)
+
+**Every implemented feature must have tests.** Use **AUnit** ([AdaCore/aunit](https://github.com/AdaCore/aunit)) for all Ada tests. This is an allowed third-party library.
+
+- Add tests in the same change as the feature; do not ship untested compiler/JIT/LIR/CLI/`tooling`/`hypatia`/`alexandria` behavior.
+- Prefer AUnit fixtures/test cases over ad-hoc `Put_Line` drivers. `samples/` are extra, not a substitute for unit tests.
+- Host crates (full RTS): AUnit with file I/O is fine.
+- Freestanding/native Augusta Ada: AUnit is designed for **ZFP**. In that code, do **not** use containers, finalization, or exception propagation even in tests. Honor AUnit `FileIO` vs `nofileio` as needed.
+
+Do not pull other test frameworks (VUnit, Python pytest for Ada units, etc.) unless the user asks.

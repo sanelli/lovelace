@@ -1,0 +1,58 @@
+---
+description: Lovelace language features, comments, diagnostics, projects, CLI
+globs: "{compiler,lovelace,docs,samples,augusta,tooling,hypatia,alexandria}/**/*"
+alwaysApply: false
+---
+
+# Language, Projects, and CLI
+
+Do not invent concrete syntax until the user specifies it. These are **semantic** constraints for later implementation.
+
+## Language (static, strong typing)
+
+- Casts between types are allowed; implicit weak coercions are not.
+- **No exceptions.** Errors use `Result<TSuccess>` (and a failure payload as designed later).
+- Modules enforce segregation (visibility/isolation across module boundaries).
+- Preprocessor and directives (e.g. `#if platform == 'windows'`).
+- **Comments** and **doc-comments** (concrete format TBC). Doc-comments feed Alexandria. Every subroutine **visible outside its Lovelace module** must have a doc-comment.
+
+Required features (semantics only; do not invent syntax until specified):
+
+- Overload, override, operator overload
+- Strings; math types and operators; boolean types and operators
+- Templates and generics
+- Interfaces in the **Rust-trait** sense
+- Records; enums; union types **(Rust-like)**; tagged unions **(C-like)**
+- **Type definitions** (named aliases / new named types)
+- **Range types** (constrained numeric/ordinal ranges)
+- **Subtypes** (constrained views of an existing type, Ada-like)
+- **Arrays**, including named array type definitions
+- **Value types** vs **reference types** (copy vs shared identity; backend must honor this in LIR and Canonical ABI)
+- Pointers; stack allocation, GC, and user-managed memory
+- Source generation
+- Usual control flow: `if`, switch, loops
+- Functions and procedures
+- **async/await** (async functions/procedures and await of them; LIR and codegen must not pretend everything is synchronous)
+- **Deferred execution** (delay a computation until it is forced/used; distinct from async)
+- **`if let` / if-try assignment** (Rust-like `if let`; also bind a `Result<TSuccess>` success payload in the `if` condition; failure path does not enter the then-branch)
+- **Native code invocation** (call out to host/`love:` native functions; flavor rules still apply: native vs WASI vs web)
+
+## Projects, solutions, packages
+
+Formats live in **`tooling/`** (parse, validate, write, glob/exclude rules). Do not reimplement XML handling in `lovelace/` or `hypatia/`.
+
+- **Project** `.pjlove`: XML, similar to `.csproj`. Does **not** list every source file. All `.love` files in the project directory **and subfolders** are in the project. Exclusions only via the `.pjlove`.
+- **Solution** `.slnlove`: XML, similar to `.slnx`. Lists member projects (does not glob them).
+- **Package** `.pkglove`: XML manifest required for a Hypatia package (local folder or git repo).
+
+## `lovelace` CLI (dotnet-like)
+
+At least:
+
+- `lovelace new` — create project and/or solution
+- `lovelace sln add` / `remove` — attach projects to a solution
+- `lovelace build`
+- `lovelace run` — compile if needed, then JIT via `jit/`
+- `lovelace doc` — generate Markdown documentation (SVG diagrams when useful) for a project, solution, or package; implemented via **Alexandria**
+
+Do not implement CLI surface beyond what the current task asks.

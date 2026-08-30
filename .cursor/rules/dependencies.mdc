@@ -1,0 +1,27 @@
+---
+description: Third-party ban; Wasmtime C, AUnit, libgit2 for Hypatia
+alwaysApply: true
+---
+
+# Dependencies and Tooling
+
+## Ban
+
+Do **not** add any third-party crate, crate.io package, Ada library, C library, or tool unless the user explicitly names it.
+
+Do **not** vendor, wrap, or “temporarily” depend on wasm-tools, wit-bindgen, jco, cargo-component, or other Wasm toolchains unless the user says so. Lovelace implements binary/WIT/WAT emission itself.
+
+## Allowed exceptions (only these)
+
+1. **Wasmtime C library** — link **only** from `jit/`. Ada bindings in this repo. No Rust Wasmtime crates.
+2. **AUnit** ([AdaCore/aunit](https://github.com/AdaCore/aunit)) — **required** for all tests.
+3. **Git C library (libgit2)** — link **only** from `hypatia/`. Hand-written Ada `Interfaces.C` bindings in this repo. Used so Hypatia can clone/fetch git dependencies. No other Git wrappers or Ada git crates.
+
+Alire is the host build manager. Prefer declaring AUnit via Alire when test crates are created; treat any other Alire crate as forbidden until the user approves it.
+
+## Who may link what
+
+- `jit` — only crate that links `-lwasmtime` (or equivalent).
+- `hypatia` — only crate that links libgit2.
+- Host tools (`compiler`, `lir`, `common`, `lovelace`, `jit`, `tooling`, `hypatia`, `alexandria`) may use the full GNAT runtime.
+- Augusta **native** backing is freestanding / libc-free (see Augusta rules).

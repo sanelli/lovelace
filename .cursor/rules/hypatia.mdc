@@ -1,0 +1,32 @@
+---
+description: Hypatia package system — local and git dependencies
+globs: "{hypatia,tooling,lovelace}/**/*"
+alwaysApply: false
+---
+
+# Hypatia
+
+**Hypatia** is Lovelace’s package/crate system. Implementation lives in **`hypatia/`** (Alire crate / **static** library).
+
+## Responsibilities
+
+- Resolve and check dependencies declared for a project, solution, or package
+- Obtain packages from:
+  - a **local folder**, or
+  - **git** (clone/fetch via **libgit2** C API; bindings only inside `hypatia/`)
+- Refuse a git or local tree that is not a valid Hypatia package
+
+## Valid package layout
+
+A dependency is usable only if the repo/folder has:
+
+1. The required tree layout (exact layout TBC; do not invent it)
+2. A **`.pkglove`** at the package root describing the package (parsed via `tooling/`)
+
+No `.pkglove` → not a package. Do not treat a raw git repo of `.love` files as a package.
+
+## Layering
+
+- Hypatia uses `tooling` for `.pkglove` (and may read `.pjlove` / `.slnlove` through tooling).
+- Hypatia is the **only** crate that links libgit2.
+- `lovelace` CLI invokes Hypatia; do not fetch git deps from the compiler frontend.

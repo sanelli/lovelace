@@ -1,0 +1,40 @@
+---
+description: Compiler stages: frontend, LIR, analysis, backend
+globs: "{compiler,lir,common}/**/*"
+alwaysApply: false
+---
+
+# Compiler Pipeline
+
+The compiler is **frontend → LIR → analysis/opt → backend**. Do not emit WASM directly from the parser.
+
+```
+.love  →  tokenize/parse  →  LIR  →  analysis + opts  →  WASM component + WIT
+                                              └── optional WAT (flags)
+```
+
+## Frontend (`compiler/`)
+
+- Tokenize and parse Lovelace source (including comments / doc-comments; attach docs to AST nodes).
+- Emit **clear** diagnostics (see diagnostics rule). Never fail with an unlocated or one-word message.
+- Lower the AST into **LIR** (Lovelace IR). No WASM opcodes, Canonical ABI, or WIT at this stage.
+
+## LIR (`lir/`)
+
+- Own all LIR types, builders, printers, and pass infrastructure.
+- Multiple analysis and optimization passes run **only** on LIR.
+- LIR is the single contract between frontend and backend.
+
+## Backend (`compiler/`)
+
+- Consume LIR and produce WebAssembly **components** (not raw core modules as the default artifact).
+- Default emit: `.wasm` component binary **and** companion `.wit`.
+- Flags may also emit WAT (component text). WAT is a debug/text form of the same component, not a different compilation model.
+- Embed public documentation as attributes/custom data in WASM, WAT, and WIT (Alexandria provides the content).
+
+## Layering
+
+- `compiler` may depend on `lir`, `common`, and `alexandria` (for doc attachment / artifact docs).
+- `lir` may depend on `common` only.
+- `jit` must not parse Lovelace or own LIR passes; it loads compiled components and hosts Wasmtime.
+- `tooling`, `hypatia`, and `alexandria` are not the backend; do not emit WASM from them.

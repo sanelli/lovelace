@@ -1,0 +1,26 @@
+---
+description: tooling crate owns pjlove, slnlove, and pkglove
+globs: "{tooling,lovelace,hypatia}/**/*"
+alwaysApply: false
+---
+
+# Tooling (project / solution / package files)
+
+All code that reads, writes, validates, or interprets:
+
+- `.pjlove` — Lovelace project (XML, csproj-like)
+- `.slnlove` — solution (XML, slnx-like; lists projects)
+- `.pkglove` — Hypatia package manifest (XML)
+
+belongs in **`tooling/`** (its own Alire crate / **static** library).
+
+`lovelace/` and `hypatia/` **call** tooling; they must not parse these files themselves.
+
+## Behavior owned here
+
+- Project source set: all `.love` files under the project directory and subfolders, minus `.pjlove` exclusions
+- Solution membership: explicit project list only
+- Package identity, version, and dependency entries declared in `.pkglove`
+- Create/add/remove project-or-solution operations used by `lovelace new` / `lovelace sln`
+
+Do not invent the XML schemas until the user specifies them.

@@ -1,0 +1,68 @@
+---
+description: Strict Ada/GNAT coding policy for host crates
+globs: "**/*.{ads,adb,adc,gpr}"
+alwaysApply: false
+---
+
+# Ada Coding Standards (Host)
+
+Applies to `compiler/`, `jit/`, `common/`, `lir/`, `lovelace/`, `tooling/`, `hypatia/`, `alexandria/`, and host test crates. Native Augusta Ada has extra ZFP constraints (see Augusta rules).
+
+## Toolchain
+
+- Ada via GNAT + Alire. Use Ada 2022 (`-gnat2022`) unless the user specifies otherwise.
+- Every crate has a `.gpr` and `alire.toml`. Compiler switches live in the `.gpr`, not ad-hoc command lines.
+- Host library crates (`compiler`, `lir`, `common`, `jit`, `tooling`, `hypatia`, `alexandria`): `for Library_Kind use "static";`. **`lovelace`** is an executable, not a library. **`augusta`** native backing is the only `Library_Kind use "dynamic"` crate.
+
+## Warnings as errors (mandatory)
+
+Host Ada **must** treat warnings as errors. This is not optional and must not be turned off in `.gpr` files or command lines.
+
+GNAT default switches for Ada **must** include at least:
+
+- `-gnatwae` — enable all warnings **and** treat them as errors (`-gnatwe` is required; `-gnatwa` alone is not enough)
+- `-gnaty` with a full style set (identifiers, keywords, pragmas, layout, no tabs, no trailing blanks, end labels)
+- a max line length style check (do not exceed it)
+- `-gnato` overflow checks
+- `-fstack-check`
+
+Do not add `pragma Warnings (Off)`, `-gnatwn`, or style exemptions unless the user explicitly allows that instance.
+
+```ada
+-- BAD
+pragma Warnings (Off);
+with Ada.Text_IO;  -- unused
+
+-- GOOD
+with Ada.Text_IO;
+procedure Report (Msg : String) is
+begin
+   Ada.Text_IO.Put_Line (Msg);
+end Report;
+```
+
+## Style
+
+- Package/type/subprogram names: `Mixed_Case`; constants `Mixed_Case`; avoid abbreviations unless domain-standard (`LIR`, `WIT`, `WASM`).
+- One public package spec per compilation unit; keep bodies focused.
+- No dead `with`s, unused entities, or implicit falling-through conditionals.
+- Prefer explicit named associations for calls with more than two parameters.
+- Do not use GNAT extensions unless required (ZFP, `System.Machine_Code`, C convention).
+
+## Public Ada documentation
+
+Every subprogram (and type) **visible outside its package** must have a documentation comment on the spec. Bodies do not replace spec docs.
+
+```ada
+-- BAD
+function Tokenize (Source : String) return Token_List;
+
+-- GOOD
+--  Split Source into tokens. Raises Constraint_Error if Source is empty.
+function Tokenize (Source : String) return Token_List;
+```
+
+## C interop
+
+- Wasmtime, libgit2, and OS APIs: `Interfaces.C`, `pragma Import (C | Stdcall, ...)`, `pragma Convention (C, ...)`, `pragma Export` only at true FFI boundaries.
+- Keep FFI types in dedicated binding packages; do not scatter `pragma Import` through compiler logic.

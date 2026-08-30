@@ -1,0 +1,67 @@
+---
+description: WASM component binary, Canonical ABI, WIT, and WAT emission
+globs: "{compiler,lir,jit,augusta,docs}/**/*"
+alwaysApply: false
+---
+
+# WebAssembly Component Model
+
+Normative specs (implement these; do not invent a parallel ABI):
+
+- Binary: [Binary.md](https://github.com/WebAssembly/component-model/blob/main/design/mvp/Binary.md)
+- Canonical ABI: [CanonicalABI.md](https://github.com/WebAssembly/component-model/blob/main/design/mvp/CanonicalABI.md)
+- WIT: [WIT.md](https://github.com/WebAssembly/component-model/blob/main/design/mvp/WIT.md)
+
+## Binary vs core
+
+A `.wasm` file is either a **core module** (layer 0) or a **component** (layer 1). Lovelace’s default output is a **component**.
+
+| | Magic | Version / layer (bytes 4–7) |
+|---|---|---|
+| Core module | `00 61 73 6D` (`\0asm`) | `01 00 00 00` (version 1, layer 0) |
+| Component | `00 61 73 6D` | `0D 00 01 00` (version `0x0d`, layer 1) |
+
+Component sections (do not reuse core section IDs at the component layer): custom `0`, core module `1`, core instance `2`, core type `3`, nested component `4`, instance `5`, alias `6`, type `7`, canon `8`, start `9`, import `10`, export `11`, value `12`.
+
+Version `0x0d` is pre-standard; follow the spec if it bumps.
+
+## WIT / WAT / WASM
+
+- **WIT** — IDL (`package ns:name@version;`, `interface`, `world`). Companion file the compiler always generates.
+- **WAT** — text form of the component: `(component ...)` with `(core module ...)`, `(canon lift ...)`, `(canon lower ...)`.
+- **WASM** — binary the runtime loads.
+
+WIT `string` / `list` / `record` / `variant` are **not** core types. Core only has `i32`/`i64`/`f32`/`f64` and linear memory.
+
+## Canonical ABI (mandatory)
+
+- **`canon lift`**: wrap a core func as a component export (host/component → core: allocate via `cabi_realloc`, write memory, pass ptr/len).
+- **`canon lower`**: wrap a component import so core can call it (core → host: read ptr/len from guest memory).
+
+Typical lowering (implement per Canonical ABI, not this sketch):
+
+- `string` / `list<T>` → stack `(i32 ptr, i32 len)`; memory 8-byte fat pointer
+- small `record` → flattened scalars if ≤ 16 flats; else pointer
+- `variant` / `option` / `result` → discriminant + payload (alignment/padding per spec)
+- `resource` → `i32` handle, not a raw pointer
+
+Always emit the core `memory` and `cabi_realloc` the ABI requires for lifted results.
+
+## Custom metadata
+
+When a component needs host-native functions beyond WASI, the compiler may emit:
+
+- WIT doc annotations such as `@native` / `@native(provider="lib….so")`
+- a component **custom section** named `love:native_imports` listing native libraries/symbols
+
+The JIT reads these **before** instantiate. Do not put native policy only in undocumented side files.
+
+## Embedded documentation
+
+Public Lovelace doc-comments must be representable in the emitted artifacts:
+
+- **WIT** — interface/function documentation (`///` or equivalent attributes)
+- **WAT** — matching annotations so text dumps stay documented
+- **WASM** — custom section and/or component attributes (do not strip docs)
+
+Keep native-import metadata and human docs in distinct custom sections/attributes.

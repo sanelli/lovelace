@@ -1,0 +1,36 @@
+---
+description: Wasmtime C embedder, WASI vs custom love: hosts, dynamic native plugins
+globs: "{jit,lovelace}/**/*"
+alwaysApply: false
+---
+
+# JIT Runtime (Wasmtime)
+
+`jit/` is an Ada **static** library that embeds **Wasmtime via its C API** (`pragma Import`, `Interfaces.C`). The `lovelace` executable statically links it for `lovelace run`.
+
+The stock `wasmtime` CLI is **not** sufficient for `love:` / custom native imports. Only a host embedder can bind those.
+
+## Load sequence (required)
+
+1. Parse the component (`wasmtime_component_new` or equivalent). Do **not** instantiate yet.
+2. Inspect required imports (`wasmtime_component_type` / `wasmtime_componenttype_imports`).
+3. Read custom section `love:native_imports` if present.
+4. Resolve each import:
+   - `wasi:*` → Wasmtime WASI (see Augusta WASI flavor; target **WASI 0.3**).
+   - `love:*` or annotated `@native` → load a host `.so`/`.dll`/`.dylib` and `wasmtime_linker_define_func`.
+   - unknown → fail with a clear unresolved-import error.
+5. Then instantiate and invoke.
+
+Users may ship extra native plugins; the embedder must bind them **at runtime** from WIT names + custom section / convention, not only from a closed compile-time list.
+
+## WASI vs custom host
+
+WASI is a set of WIT contracts, not a closed list of syscalls. Lovelace may define additional WIT worlds (`love:…`) and satisfy them in the Ada host (Win32, POSIX, Cocoa, etc.).
+
+Browsers do **not** execute component binaries. The **web** Augusta flavor must not assume Wasmtime or component-native APIs in the browser; that path is core Wasm + JS glue (tooling only if the user later allows it).
+
+## Bindings
+
+- Hand-written Ada bindings in `jit/`. Map opaque C pointers to distinct Ada types.
+- Host callbacks use `pragma Convention (C, …)` matching Wasmtime’s func callback signature.
+- Host-side dynamic loading of native plugins may use GNAT (`GNAT.Dynamic_Libraries` or equivalent `dlopen`/`LoadLibrary` bindings written in this repo). That is GNAT RTS, not a third-party crate.

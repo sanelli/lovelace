@@ -1,0 +1,37 @@
+---
+description: Augusta stdlib modules, native/wasi/web flavors, libc-free native Ada
+globs: "{augusta,samples}/**/*"
+alwaysApply: false
+---
+
+# Augusta Standard Library
+
+User-facing stdlib name: **`augusta`**, with submodules such as `augusta.io`, `augusta.cli`, `augusta.net`, `augusta.rnd`, `augusta.fs`, `augusta.concurrency`, `augusta.containers`.
+
+There is **one** Augusta codebase. Modules are **tagged** with which flavors they support. Implementation (and generated code) **may differ** per flavor.
+
+## Flavors
+
+| Flavor | What guest code may call |
+|---|---|
+| **native** | Lovelace Augusta plus low-level host syscalls via `love:` WIT + freestanding Ada native DLLs |
+| **wasi** | Only capabilities the Wasmtime host provides through **WASI 0.3** ([inclusion rules](https://github.com/WebAssembly/WASI/blob/main/docs/Proposals.md#inclusion-in-wasi-03): phase 3 + portability + subgroup vote). Phase 3 examples: clocks, random, filesystem, sockets, CLI, HTTP |
+| **web** | No component-native browser APIs. No Wasmtime. No extra OS syscalls |
+
+Native WIT packages for Lovelace-provided host functions use the **`love:`** namespace. WASI stays `wasi:`. Do not mix flavor backends in one compilation without the selected flavor tag.
+
+## Native Ada backing (libc-free)
+
+This is the **only** dynamic/shared library the repo may produce (`Library_Kind use "dynamic"`). Native Augusta pieces that talk to the OS live in a **freestanding** Ada dynamic library (`.so` / `.dll` / `.dylib`; no libc, no full RTS):
+
+- `pragma No_Run_Time` / `--RTS=zfp`, `-ffreestanding`, link `-nostdlib` (Windows: `/NODEFAULTLIB`, no CRT entry).
+- No Ada.Containers, no finalization/controlled types, no exception **propagation** in that library (AUnit ZFP constraints apply here too).
+- **Windows:** import `kernel32` (`GetStdHandle`, `ReadFile`, `WriteFile`, console mode). **Never** raw NT syscalls (numbers change).
+- **Linux:** `syscall` via `System.Machine_Code` (e.g. read=0, write=1, ioctl=16).
+- **macOS:** UNIX syscall class in the number (`class << 24 \| code`); x86_64 `syscall`, ARM64 `svc #0x80`.
+
+Conditional compilation selects the OS (GNAT scenario variables / preprocessor), not copies of whole trees per OS unless required.
+
+## Packages and user libraries
+
+Users write their own `.love` libraries and programs. The ecosystem must be able to consume **external packages** (design when instructed; do not add a package manager dependency now).

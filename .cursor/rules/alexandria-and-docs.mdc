@@ -1,0 +1,39 @@
+---
+description: Alexandria doc-comments, lovelace doc, docs/ folder, WASM/WIT embedding
+globs: "{alexandria,compiler,lovelace,docs,augusta}/**/*"
+alwaysApply: false
+---
+
+# Alexandria and Documentation
+
+## Alexandria (`alexandria/`)
+
+`alexandria/` is a **static** library. It owns:
+
+- Parsing Lovelace **comments** and **doc-comments** (format TBC)
+- Building a documentation model from a project, solution, or package
+- Generating **Markdown** (`.md`) output, with **SVG** diagrams when they clarify structure (modules, deps, types)
+
+`lovelace doc` is a thin CLI over Alexandria. Do not generate docs in `compiler/` or `lovelace/` besides calling this library.
+
+## `lovelace doc`
+
+Produces a Markdown documentation set for the selected project, solution, or Hypatia package. Graphs are SVG files referenced from the Markdown when needed.
+
+## Embed docs in artifacts
+
+Documentation from doc-comments may also be **embedded as attributes** in generated **WASM**, **WAT**, and **WIT** (WIT `///` docs and/or custom sections / annotations). The compiler backend emits this; Alexandria supplies the text/model. Do not drop docs on the floor at codegen time.
+
+## `docs/` (this repository)
+
+When a **new feature is implemented**, document it under `docs/` in the same effort (not a later leftover).
+
+`docs/` must grow to include, as those features exist:
+
+- How to use the **`lovelace` CLI** (every command and flag)
+- The Lovelace **language grammar**
+- **HOW TOs**, e.g. how to create a native/WASI binding for Lovelace, how to author a Hypatia package
+
+## Lovelace source docs
+
+Every subroutine **visible outside its Lovelace module** must have a doc-comment. Undocumented public API is a compile-time defect once doc-comments are implemented (warning, subject to Lovelace Werror).

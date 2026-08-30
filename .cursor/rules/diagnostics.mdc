@@ -1,0 +1,42 @@
+---
+description: Clear Lovelace diagnostics; warnings as errors by default
+globs: "{compiler,lir,lovelace,tooling}/**/*"
+alwaysApply: false
+---
+
+# Lovelace Compiler Diagnostics
+
+The Lovelace compiler (not GNAT) must emit **very clear** errors and warnings. Vague messages are a defect.
+
+Each diagnostic must include at least:
+
+- Severity (`error` or `warning`)
+- Stable diagnostic code (once codes exist)
+- File path, line, and column (and span when known)
+- A precise description of what is wrong
+- The offending source snippet when available
+- A short hint or how-to-fix when it is known
+
+```
+-- BAD
+error: bad type
+
+-- GOOD
+error[L0004]: expected 'Integer', found 'String'
+  --> samples/hello.love:12:18
+   |
+12 |   Let N := "3"
+   |            ^^^ String cannot be assigned to Integer
+  hint: use a conversion if this is intentional
+```
+
+Do not invent the exact code prefix until specified; keep the structure.
+
+## Warnings as errors (Lovelace)
+
+- **Enabled by default** (CLI and `.pjlove` builds).
+- May be **disabled** by an explicit user flag / project setting (name TBC, e.g. treat-warnings-as-errors = false).
+- When enabled, any warning fails the compile like an error (non-zero exit, no successful artifact).
+- Disabling Werror must not hide warnings; they still print.
+
+Host Ada Werror (`-gnatwae`) is separate and is never optional (see Ada standards).
