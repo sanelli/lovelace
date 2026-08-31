@@ -18,6 +18,8 @@ There is **one** Augusta codebase. Modules are **tagged** with which flavors the
 | **wasi** | Only capabilities the Wasmtime host provides through **WASI 0.3** ([inclusion rules](https://github.com/WebAssembly/WASI/blob/main/docs/Proposals.md#inclusion-in-wasi-03): phase 3 + portability + subgroup vote). Phase 3 examples: clocks, random, filesystem, sockets, CLI, HTTP |
 | **web** | No component-native browser APIs. No Wasmtime. No extra OS syscalls |
 
+Native **must**, long term, cover **at least** the WASI 0.3 surface the wasi flavor gets (and may add more). See long-term-goals. Do not implement extra native APIs until asked.
+
 Native WIT packages for Lovelace-provided host functions use the **`love:`** namespace. WASI stays `wasi:`. Do not mix flavor backends in one compilation without the selected flavor tag.
 
 ## Native Ada backing (libc-free)

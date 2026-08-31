@@ -1,6 +1,6 @@
 ---
-description: Clear Lovelace diagnostics; warnings as errors by default
-globs: "{compiler,lir,lovelace,tooling}/**/*"
+description: Clear Lovelace diagnostics, Werror, suppressions, style warnings
+globs: "{compiler,lir,lovelace,tooling,format}/**/*"
 alwaysApply: false
 ---
 
@@ -8,14 +8,7 @@ alwaysApply: false
 
 The Lovelace compiler (not GNAT) must emit **very clear** errors and warnings. Vague messages are a defect.
 
-Each diagnostic must include at least:
-
-- Severity (`error` or `warning`)
-- Stable diagnostic code (once codes exist)
-- File path, line, and column (and span when known)
-- A precise description of what is wrong
-- The offending source snippet when available
-- A short hint or how-to-fix when it is known
+Each diagnostic must include at least: severity, stable code (once assigned), file/line/column (and span), a precise description, the source snippet when available, and a short hint when known.
 
 ```
 -- BAD
@@ -32,11 +25,31 @@ error[L0004]: expected 'Integer', found 'String'
 
 Do not invent the exact code prefix until specified; keep the structure.
 
-## Warnings as errors (Lovelace)
+## Warnings as errors (default)
 
-- **Enabled by default** (CLI and `.pjlove` builds).
-- May be **disabled** by an explicit user flag / project setting (name TBC, e.g. treat-warnings-as-errors = false).
-- When enabled, any warning fails the compile like an error (non-zero exit, no successful artifact).
-- Disabling Werror must not hide warnings; they still print.
+- **Default:** every warning is treated as an **error** (non-zero exit, no successful artifact).
+- **`--no-warn-as-errors`** (compile/CLI): warnings print as warnings again and do not fail the build by themselves. They still print; this flag does not silence them.
+- Host Ada `-gnatwae` is separate and is never optional.
 
-Host Ada Werror (`-gnatwae`) is separate and is never optional (see Ada standards).
+## Silencing warnings
+
+A warning may be silenced **globally** (all codes) or **per diagnostic code**. Surfaces (all must work once implemented):
+
+- CLI flags (names TBC besides `--no-warn-as-errors`)
+- **`.pjlove`** project settings
+- **`.slnlove`** solution settings (apply to contained projects unless a project overrides)
+- Language **`#pragma`** directives (C#-like, e.g. disable/restore a code around a region)
+
+Suppression is metadata, not generated statements (see language directives). Do not invent XML/`#pragma` syntax until specified.
+
+## Style diagnostics
+
+Emit warnings (hence errors under default Werror) when source violates the **current** Lovelace style. Defaults:
+
+- Subroutines start with **Uppercase**
+- Fields start with **lowercase**
+- Types start with **`T`**
+- Lines no longer than **120** characters
+- No mixing spaces and tabs; consistent indentation
+
+These defaults can be **changed** in `.pjlove` and/or `.slnlove`. `lovelace format` rewrites source to match the **effective** style for that project/solution.

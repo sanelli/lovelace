@@ -6,13 +6,13 @@ alwaysApply: false
 
 # Ada Coding Standards (Host)
 
-Applies to `compiler/`, `jit/`, `common/`, `lir/`, `lovelace/`, `tooling/`, `hypatia/`, `alexandria/`, and host test crates. Native Augusta Ada has extra ZFP constraints (see Augusta rules).
+Applies to `compiler/`, `jit/`, `common/`, `lir/`, `lovelace/`, `tooling/`, `hypatia/`, `alexandria/`, `format/`, and host test crates. Native Augusta Ada has extra ZFP constraints (see Augusta rules).
 
 ## Toolchain
 
 - Ada via GNAT + Alire. Use Ada 2022 (`-gnat2022`) unless the user specifies otherwise.
 - Every crate has a `.gpr` and `alire.toml`. Compiler switches live in the `.gpr`, not ad-hoc command lines.
-- Host library crates (`compiler`, `lir`, `common`, `jit`, `tooling`, `hypatia`, `alexandria`): `for Library_Kind use "static";`. **`lovelace`** is an executable, not a library. **`augusta`** native backing is the only `Library_Kind use "dynamic"` crate.
+- Host library crates (`compiler`, `lir`, `common`, `jit`, `tooling`, `hypatia`, `alexandria`, `format`): `for Library_Kind use "static";`. **`lovelace`** is an executable, not a library. **`augusta`** native backing is the only `Library_Kind use "dynamic"` crate.
 
 ## Warnings as errors (mandatory)
 

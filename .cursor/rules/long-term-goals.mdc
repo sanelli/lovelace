@@ -1,0 +1,24 @@
+---
+description: Very long-term bindings and Augusta native WASI 0.3 parity; do not implement yet
+alwaysApply: true
+---
+
+# Long-term goals (do not implement until asked)
+
+These are roadmap constraints. Do **not** add crates, bindings, or Augusta modules for them until the user explicitly starts that work.
+
+## Very long term — native bindings
+
+Lovelace should eventually be able to generate / host bindings for:
+
+- **SQLite**
+- **raylib**
+- **SDL**
+- **GTK+** (maybe)
+- A **native GUI** library (first-party Lovelace/Augusta GUI, not only wrapping GTK)
+
+HOW TOs for writing bindings belong under `docs/` once that feature exists.
+
+## Long term — Augusta native vs WASI 0.3
+
+Augusta **native** must eventually expose **at least** the same capabilities WASI 0.3 provides to the **wasi** flavor (clocks, random, filesystem, sockets, CLI, HTTP, and the I/O those rest on — see [WASI 0.3 inclusion](https://github.com/WebAssembly/WASI/blob/main/docs/Proposals.md#inclusion-in-wasi-03)). Native may grow **beyond** that set. Do not leave native unable to do something the wasi flavor can do.

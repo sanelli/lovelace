@@ -9,17 +9,18 @@ Lovelace is a compiler (written in Ada) for a new Pascal/Ada/Delphi-like languag
 
 ## Products and link kinds
 
-**`lovelace/`** is the only host **executable**. Every other host crate it uses is a **static** library (`Library_Kind use "static"` in the `.gpr`). Do **not** build `compiler`, `lir`, `common`, `jit`, `tooling`, `hypatia`, or `alexandria` as shared/dynamic libraries.
+**`lovelace/`** is the only host **executable**. Every other host crate it uses is a **static** library (`Library_Kind use "static"` in the `.gpr`). Do **not** build `compiler`, `lir`, `common`, `jit`, `tooling`, `hypatia`, `alexandria`, or `format` as shared/dynamic libraries.
 
 The **only dynamic library** in the whole project is Augusta’s native backing (`.so` / `.dll` / `.dylib`) under `augusta/`.
 
 1. **`compiler/`** — static library: compiler (frontend, analysis, codegen).
 2. **`jit/`** — static library: JIT runtime; **only** crate that links Wasmtime C.
-3. **`lovelace/`** — CLI executable (`lovelace build`, `run`, `doc`, project/solution/package commands); statically links the host libraries.
+3. **`lovelace/`** — CLI executable (`lovelace build`, `run`, `doc`, `format`, project/solution/package commands); statically links the host libraries.
 4. **`augusta/`** — standard library: `.love` plus optional native Ada (**dynamic** library). One codebase, flavors `native` / `wasi` / `web`.
 5. **`tooling/`** — static library: `.pjlove`, `.slnlove`, `.pkglove` files and their behavior. No other crate owns these formats.
 6. **`hypatia/`** — static library: **Hypatia** package system (resolve, fetch, local and git dependencies).
 7. **`alexandria/`** — static library: parse Lovelace comments/doc-comments and generate documentation.
+8. **`format/`** — static library: reformat `.love` to the effective style (`lovelace format`).
 
 Shared Ada: **`common/`**, **`lir/`** — both static libraries.
 
@@ -37,6 +38,7 @@ Shared Ada: **`common/`**, **`lir/`** — both static libraries.
 | `tooling/` | Project / solution / package static library |
 | `hypatia/` | Hypatia package manager (static) |
 | `alexandria/` | Doc generation static library |
+| `format/` | Source formatter static library (`lovelace format`) |
 | `augusta/` | Stdlib (`.love` + **the only dynamic** native library) |
 | `samples/` | `.love` samples for testing |
 

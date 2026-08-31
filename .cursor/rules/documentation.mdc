@@ -8,5 +8,5 @@ alwaysApply: true
 - **Ada:** every subprogram (and type) visible outside its package needs a spec documentation comment.
 - **Lovelace:** every subroutine visible outside its module needs a doc-comment (format TBC). Comments and doc-comments are language features.
 - **New features:** document them under `docs/` in the same work. When the feature exists, `docs/` must cover CLI usage, language grammar, and HOW TOs (e.g. writing a Lovelace binding, authoring a Hypatia `.pkglove` package).
-- **Generated docs:** `lovelace doc` (Alexandria) emits Markdown plus SVG when graphs help. The compiler may also embed the same docs as attributes in WASM / WAT / WIT.
+- **Generated docs:** `lovelace doc` (Alexandria) emits Markdown plus SVG when graphs help. The compiler may also embed the same docs as attributes in WASM / WAT / WIT. Document `lovelace format` and `--no-warn-as-errors` / warning pragmas when those commands exist.
 - Do not leave public APIs or user-facing commands undocumented once they are implemented.

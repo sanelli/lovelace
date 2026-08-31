@@ -15,7 +15,8 @@ The compiler is **frontend → LIR → analysis/opt → backend**. Do not emit W
 
 ## Frontend (`compiler/`)
 
-- Tokenize and parse Lovelace source (including comments / doc-comments; attach docs to AST nodes).
+- Tokenize and parse Lovelace source (including comments / doc-comments / language **directives**; attach docs and pragma metadata to AST nodes).
+- Directives do not become LIR statements; they condition compilation or annotate the tree.
 - Emit **clear** diagnostics (see diagnostics rule). Never fail with an unlocated or one-word message.
 - Lower the AST into **LIR** (Lovelace IR). No WASM opcodes, Canonical ABI, or WIT at this stage.
 
@@ -37,4 +38,4 @@ The compiler is **frontend → LIR → analysis/opt → backend**. Do not emit W
 - `compiler` may depend on `lir`, `common`, and `alexandria` (for doc attachment / artifact docs).
 - `lir` may depend on `common` only.
 - `jit` must not parse Lovelace or own LIR passes; it loads compiled components and hosts Wasmtime.
-- `tooling`, `hypatia`, and `alexandria` are not the backend; do not emit WASM from them.
+- `tooling`, `hypatia`, `alexandria`, and `format` are not the backend; do not emit WASM from them.

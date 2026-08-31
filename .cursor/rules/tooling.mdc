@@ -1,6 +1,6 @@
 ---
 description: tooling crate owns pjlove, slnlove, and pkglove
-globs: "{tooling,lovelace,hypatia}/**/*"
+globs: "{tooling,lovelace,hypatia,format,compiler}/**/*"
 alwaysApply: false
 ---
 
@@ -22,5 +22,6 @@ belongs in **`tooling/`** (its own Alire crate / **static** library).
 - Solution membership: explicit project list only
 - Package identity, version, and dependency entries declared in `.pkglove`
 - Create/add/remove project-or-solution operations used by `lovelace new` / `lovelace sln`
+- Warning silence (global or per code) and **style** settings stored in `.pjlove` / `.slnlove` (consumed by the compiler, `format/`, and CLI)
 
 Do not invent the XML schemas until the user specifies them.
