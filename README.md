@@ -48,3 +48,60 @@ Pipeline: **source → frontend → LIR (analysis / opts) → backend → WebAss
 ## Status
 
 Not yet a usable compiler. Design and conventions live in `.cursor/rules/`. Contributions should follow those rules (Alire, strict Ada, AUnit tests, no extra third-party libraries except the allowed Wasmtime C, libgit2, and AUnit bindings).
+
+Build the workspace from the repository root with `alr build`, or build or run the CLI crate alone with `alr -C lovelace build` or `alr -C lovelace run`.
+
+### macOS setup
+
+You need Xcode Command Line Tools (or Xcode) installed so `xcrun` returns a valid SDK.
+
+On some Mac hosts, Alire’s GNAT toolchain needs two environment variables set before `alr build`:
+
+1. **`LIBRARY_PATH`** — the linker cannot find `libSystem` without the SDK `usr/lib` directory on the search path (`ld: library not found for -lSystem`).
+2. **`MACOSX_DEPLOYMENT_TARGET`** — should match the active SDK version so clang does not warn about overriding the deployment target (`overriding deployment version from '16.0' to '26.0'`).
+
+Add these to your shell profile so every new terminal is ready to build.
+
+**zsh** (`~/.zshrc`):
+
+```bash
+export LIBRARY_PATH="$(xcrun --show-sdk-path)/usr/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
+export MACOSX_DEPLOYMENT_TARGET="$(xcrun --show-sdk-version)"
+```
+
+Reload: `source ~/.zshrc`
+
+**PowerShell** (`$PROFILE`, e.g. `~/.config/powershell/Microsoft.PowerShell_profile.ps1`):
+
+```powershell
+$sdkLib = "$(xcrun --show-sdk-path)/usr/lib"
+if ($env:LIBRARY_PATH) {
+    $env:LIBRARY_PATH = "${sdkLib}:$env:LIBRARY_PATH"
+} else {
+    $env:LIBRARY_PATH = $sdkLib
+}
+$env:MACOSX_DEPLOYMENT_TARGET = "$(xcrun --show-sdk-version)"
+```
+
+Reload: `. $PROFILE`
+
+One-off for a single session (bash/zsh):
+
+```bash
+export LIBRARY_PATH="$(xcrun --show-sdk-path)/usr/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
+export MACOSX_DEPLOYMENT_TARGET="$(xcrun --show-sdk-version)"
+alr build
+```
+
+One-off in PowerShell:
+
+```powershell
+$sdkLib = "$(xcrun --show-sdk-path)/usr/lib"
+if ($env:LIBRARY_PATH) {
+    $env:LIBRARY_PATH = "${sdkLib}:$env:LIBRARY_PATH"
+} else {
+    $env:LIBRARY_PATH = $sdkLib
+}
+$env:MACOSX_DEPLOYMENT_TARGET = "$(xcrun --show-sdk-version)"
+alr build
+```

@@ -1,0 +1,26 @@
+name: Build
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: alr build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: alire-project/setup-alire@v4
+        with:
+          version: '2.1.0'
+          toolchain: 'gnat_native=15.2.1 gprbuild'
+          cache: true
+
+      - name: Build workspace
+        run: alr build

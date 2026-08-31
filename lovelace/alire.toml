@@ -1,0 +1,13 @@
+name = "lovelace"
+description = "Lovelace compiler CLI"
+version = "0.1.0-dev"
+
+authors = ["Stefano Anelli"]
+maintainers = ["Stefano Anelli <sanelli@users.noreply.github.com>"]
+licenses = "MIT"
+
+executables = ["lovelace"]
+auto-gpr-with = false
+
+[build-switches]
+"*".style_checks = "No"

@@ -1,0 +1,20 @@
+{
+  "files.exclude": {
+    "**/alire": true,
+    "**/obj": true,
+    "**/bin": true,
+    "**/config": true
+  },
+  "search.exclude": {
+    "**/alire": true,
+    "**/obj": true,
+    "**/bin": true,
+    "**/config": true
+  },
+  "files.watcherExclude": {
+    "**/alire/**": true,
+    "**/obj/**": true,
+    "**/bin/**": true,
+    "**/config/**": true
+  }
+}

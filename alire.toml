@@ -1,0 +1,13 @@
+name = "lovelace_workspace"
+description = "Lovelace monorepo workspace aggregate"
+version = "0.1.0-dev"
+
+authors = ["Stefano Anelli"]
+maintainers = ["Stefano Anelli <sanelli@users.noreply.github.com>"]
+licenses = "MIT"
+
+[[depends-on]]
+lovelace = "*"
+
+[[pins]]
+lovelace = { path = "lovelace" }
