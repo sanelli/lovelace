@@ -1,0 +1,6 @@
+with "config/lovelace_workspace_config.gpr";
+aggregate project Lovelace_Workspace is
+
+   for Project_Files use ("lovelace/lovelace.gpr");
+
+end Lovelace_Workspace;

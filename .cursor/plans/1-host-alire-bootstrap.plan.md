@@ -13,19 +13,19 @@ todos:
     status: completed
   - id: "4"
     content: 4. Add abstract shared/lovelace_host_switches.gpr (Ada 2022, -gnatwae, full -gnaty, -gnatyM79, -gnato, -fstack-check)
-    status: pending
+    status: completed
   - id: "5"
     content: 5. Add lovelace/ alire.toml + lovelace.gpr + src/lovelace.adb (null main); with shared switches; auto-gpr-with = false
-    status: pending
+    status: completed
   - id: "6"
     content: 6. Add root lovelace_workspace alire.toml (depends-on + pin) and aggregate lovelace_workspace.gpr
-    status: pending
+    status: completed
   - id: "7"
     content: 7. Ignore Alire/GNAT build trees; optional README build lines
-    status: pending
+    status: completed
   - id: "8"
     content: 8. Verify alr build at root and in lovelace/
-    status: pending
+    status: completed
   - id: "9"
     content: 9. Run all tests (none expected; record and continue)
     status: pending
@@ -98,7 +98,7 @@ Extend [`.gitignore`](.gitignore) for `**/alire/`, `**/obj/`, `**/bin/`, `**/con
 
 ## 8. Verify the build
 
-`alr build` at repo root produces the `lovelace` executable; `alr -C lovelace build` succeeds. Confirm the compile line includes `-gnat2022 -gnatwae -gnato -fstack-check` and the style set.
+Done. With `LIBRARY_PATH` including the macOS SDK `usr/lib` (needed for linking with the Alire GNAT toolchain on this host), `alr build` at the repo root and `alr -C lovelace build` both succeed; `lovelace/bin/lovelace` runs and exits 0. Compile line includes `-gnat2022`, `-gnatwae`, `-gnato`, `-fstack-check`, `-gnatyy`, `-gnatyABDdIoOSuxz`, `-gnatyM79`.
 
 ## 9. Run all tests
 
