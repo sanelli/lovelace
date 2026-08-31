@@ -28,10 +28,10 @@ todos:
     status: completed
   - id: "9"
     content: 9. Run all tests (none expected; record and continue)
-    status: pending
+    status: completed
   - id: "10"
     content: 10. Push and open a PR with gh pr create
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -102,8 +102,8 @@ Done. With `LIBRARY_PATH` including the macOS SDK `usr/lib` (needed for linking 
 
 ## 9. Run all tests
 
-No AUnit crates exist for this work. Record that there are none and continue.
+Done. No nested AUnit test crates exist in the repository; nothing to run.
 
 ## 10. Push and open a PR
 
-Commit the approved-plan work with `#1` in the message (PowerShell here-string). Push with proxy env unset + `all`. `gh pr create` targeting the default branch.
+Done. Branch pushed; PR [#2](https://github.com/sanelli/lovelace/pull/2) opened (closes #1).
