@@ -17,11 +17,11 @@ Do **not** vendor, wrap, or “temporarily” depend on wasm-tools, wit-bindgen,
 2. **AUnit** ([AdaCore/aunit](https://github.com/AdaCore/aunit)) — **required** for all tests.
 3. **Git C library (libgit2)** — link **only** from `hypatia/`. Hand-written Ada `Interfaces.C` bindings in this repo. Used so Hypatia can clone/fetch git dependencies. No other Git wrappers or Ada git crates.
 
-Alire is the host build manager. Prefer declaring AUnit via Alire when test crates are created; treat any other Alire crate as forbidden until the user approves it.
+Alire is the host build manager (one crate per component; see the Alire crates rule). Prefer declaring AUnit via Alire on **nested test crates** only; treat any other Alire crate as forbidden until the user approves it.
 
 ## Who may link what
 
 - `jit` — only crate that links `-lwasmtime` (or equivalent).
 - `hypatia` — only crate that links libgit2.
-- Host tools (`compiler`, `lir`, `common`, `lovelace`, `jit`, `tooling`, `hypatia`, `alexandria`) may use the full GNAT runtime.
+- Host tools (`compiler`, `lir`, `common`, `lovelace`, `jit`, `tooling`, `hypatia`, `alexandria`, `format`) may use the full GNAT runtime.
 - Augusta **native** backing is freestanding / libc-free (see Augusta rules).

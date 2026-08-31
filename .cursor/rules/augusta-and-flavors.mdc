@@ -24,7 +24,7 @@ Native WIT packages for Lovelace-provided host functions use the **`love:`** nam
 
 ## Native Ada backing (libc-free)
 
-This is the **only** dynamic/shared library the repo may produce (`Library_Kind use "dynamic"`). Native Augusta pieces that talk to the OS live in a **freestanding** Ada dynamic library (`.so` / `.dll` / `.dylib`; no libc, no full RTS):
+This is the **only** dynamic/shared library the repo may produce (`Library_Kind use "dynamic"`). Augusta **`.love` sources are not an Alire crate**. Only this native Ada backing is a crate when it is created; it must not `with` `shared/lovelace_host_switches.gpr` (ZFP, not host RTS). Native Augusta pieces that talk to the OS live in a **freestanding** Ada dynamic library (`.so` / `.dll` / `.dylib`; no libc, no full RTS):
 
 - `pragma No_Run_Time` / `--RTS=zfp`, `-ffreestanding`, link `-nostdlib` (Windows: `/NODEFAULTLIB`, no CRT entry).
 - No Ada.Containers, no finalization/controlled types, no exception **propagation** in that library (AUnit ZFP constraints apply here too).

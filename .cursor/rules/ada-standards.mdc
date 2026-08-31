@@ -11,8 +11,8 @@ Applies to `compiler/`, `jit/`, `common/`, `lir/`, `lovelace/`, `tooling/`, `hyp
 ## Toolchain
 
 - Ada via GNAT + Alire. Use Ada 2022 (`-gnat2022`) unless the user specifies otherwise.
-- Every crate has a `.gpr` and `alire.toml`. Compiler switches live in the `.gpr`, not ad-hoc command lines.
-- Host library crates (`compiler`, `lir`, `common`, `jit`, `tooling`, `hypatia`, `alexandria`, `format`): `for Library_Kind use "static";`. **`lovelace`** is an executable, not a library. **`augusta`** native backing is the only `Library_Kind use "dynamic"` crate.
+- Every crate has one `.gpr` (name matches the crate) and `alire.toml`. Host compiler switches live in `shared/lovelace_host_switches.gpr`; each host crate and host test crate `with`s that file and must not copy the switch list. Do not pass these switches on ad-hoc command lines.
+- Host library crates (`compiler`, `lir`, `common`, `jit`, `tooling`, `hypatia`, `alexandria`, `format`): `for Library_Kind use "static";`. **`lovelace`** is an executable, not a library. **`augusta`** native backing is the only `Library_Kind use "dynamic"` crate (it must not `with` the host switches GPR).
 
 ## Warnings as errors (mandatory)
 

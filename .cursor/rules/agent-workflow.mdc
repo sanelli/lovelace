@@ -9,6 +9,7 @@ alwaysApply: true
 
 - Implement **only** the piece the user just asked for. Do not look ahead and build adjacent subsystems.
 - Do **not** write implementation code when the user asked only for a plan or for rules.
+- Do **not** create Alire crates, `alire.toml`, `.gpr` files, nested test crates, `shared/lovelace_host_switches.gpr`, or `lovelace_workspace` unless the current task needs that crate **or** the user explicitly asks. Never scaffold all component crates at once.
 
 ## GitHub issue + feature branch
 

@@ -41,9 +41,10 @@ Shared Ada: **`common/`**, **`lir/`** — both static libraries.
 | `format/` | Source formatter static library (`lovelace format`) |
 | `augusta/` | Stdlib (`.love` + **the only dynamic** native library) |
 | `samples/` | `.love` samples for testing |
+| `shared/` | Host GPR switch include only (not a crate; create with the first host crate) |
 
-Build system is **Alire**. Each path above that is Ada is its own Alire crate / GNAT project. Do not add further top-level crates.
+Build system is **Alire**: **one crate per Ada component**, plus a thin root crate `lovelace_workspace` that only `depends-on` + pins existing crates. See the Alire crates rule. Do not add further top-level **component** crates. Do not put several component GPRs in one `alire.toml`.
 
 ## Implement only what is asked
 
-Build piece by piece when instructed. Do not scaffold the whole compiler, invent language syntax, or add crates/files beyond the current task.
+Build piece by piece when instructed. Do not scaffold the whole compiler, invent language syntax, or add crates/files beyond the current task. Create Alire crates only when that component is needed or the user asks.
