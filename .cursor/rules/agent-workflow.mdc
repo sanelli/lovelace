@@ -28,8 +28,29 @@ If an issue already exists for the work, reuse it; do not open a duplicate. Put 
 - **Do not push** unless the user explicitly says to push.
 - Never `--force` push, never `--amend` unless the user asks and the amend rules in user git policy are met.
 - Never skip hooks.
+- Never change `git config` (including proxy). Fix sandbox networking via process env vars only (see below).
 
 The **only** commit that is pre-authorized without a further “commit” request is: saving a plan the user asked for onto the new `feature/<n>-*` branch.
+
+Commit messages: PowerShell here-string `@' ... '@` (see the agent shell rule). Do not use bash `$(cat <<'EOF')`.
+
+### Push / `gh` (sandbox proxy)
+
+`required_permissions: ["all"]` is **not** enough by itself. Cursor still injects a local HTTP/SOCKS proxy. `git push` / `gh` then fail with `Failed to connect to 127.0.0.1 port NNNNN` — that is the dead proxy, not a credentials or remote problem. Do not retry the same command unchanged; do not treat it as `git config` or SSH to fix.
+
+Before **every** `git push`, `git fetch`/`pull` to GitHub, or `gh` network call, request `all` **and** clear proxy env vars in that same command:
+
+```powershell
+$env:ALL_PROXY = $null; $env:all_proxy = $null
+$env:HTTP_PROXY = $null; $env:http_proxy = $null
+$env:HTTPS_PROXY = $null; $env:https_proxy = $null
+$env:GIT_HTTP_PROXY = $null; $env:GIT_HTTPS_PROXY = $null
+$env:SOCKS_PROXY = $null; $env:socks_proxy = $null
+$env:SOCKS5_PROXY = $null; $env:socks5_proxy = $null
+git push origin HEAD
+```
+
+Commit can use `git_write` without this. Push/`gh` always need the unset list plus `all`.
 
 ## Naming
 
