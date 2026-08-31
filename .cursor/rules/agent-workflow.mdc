@@ -32,13 +32,23 @@ When **writing** a plan, include this full numbered envelope (use `<n>` until st
 
 ## Git
 
-Executing an **approved plan** includes commits for that work (messages contain `#<n>`), the final push, and the PR. Do **not** commit or push unrelated files, or work that is not an approved plan, unless the user explicitly asks.
+Executing an **approved plan** includes commits for that work, the final push, and the PR. Do **not** commit or push unrelated files, or work that is not an approved plan, unless the user explicitly asks.
+
+**Commit messages** must **start** with the GitHub issue number for the work in progress: `#<n>` (e.g. `#1 Bootstrap host Alire layout`). Do not bury the issue reference at the end of the subject or body only. Use the issue from the current branch (`feature/<n>-*`) or the active plan (`.cursor/plans/<n>-*.plan.md`).
+
+Commit messages: PowerShell here-string `@' ... '@` (see the agent shell rule). Do not use bash `$(cat <<'EOF')`.
+
+Example:
+
+```text
+#1 Bootstrap host Alire layout with do-nothing lovelace CLI
+
+Add shared host switches GPR, lovelace executable crate, and workspace aggregate.
+```
 
 - Never `--force` push, never `--amend` unless the user asks and the amend rules in user git policy are met.
 - Never skip hooks.
 - Never change `git config` (including proxy). Fix sandbox networking via process env vars only (see below).
-
-Commit messages: PowerShell here-string `@' ... '@` (see the agent shell rule). Do not use bash `$(cat <<'EOF')`.
 
 ### Push / `gh` (sandbox proxy)
 
