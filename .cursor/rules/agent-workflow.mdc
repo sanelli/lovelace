@@ -11,26 +11,32 @@ alwaysApply: true
 - Do **not** write implementation code when the user asked only for a plan or for rules.
 - Do **not** create Alire crates, `alire.toml`, `.gpr` files, nested test crates, `shared/lovelace_host_switches.gpr`, or `lovelace_workspace` unless the current task needs that crate **or** the user explicitly asks. Never scaffold all component crates at once.
 
-## GitHub issue + feature branch
+## Plans (mandatory envelope)
 
-Before **any** implementation of a new feature:
+Every plan (CreatePlan body **and** TODOs) uses this numbered list. **TODOs are 1:1 with the steps:** same count, same numbers, same meaning. No extra TODOs. No step without a TODO. Number TODO `id`s `1`, `2`, `3`, … and start each TODO `content` with that number (e.g. `1. Create GitHub issue …`).
 
-1. Create a GitHub issue with `gh issue create` (title + body describing the work). Use `gh` for all GitHub issue/PR operations.
+**Always first (never omit, never “skip the issue”):**
+
+1. Create a GitHub issue with `gh issue create` (title + body). Reuse an existing issue for this work; do not duplicate. Use `gh` for all GitHub issue/PR operations.
 2. Create and check out `feature/<issue-number>-<short-description>` (kebab-case). Example: issue 13 for a lexer → `feature/13-lexer`.
-3. If the user asked for a plan: write it under `docs/plans/` on that branch and **commit that plan**. Reference the issue in the plan (e.g. `#13`).
-4. Then wait for piece-by-piece implementation instructions.
+3. Save the plan as [`.cursor/plans/<issue-number>-<short-description>.plan.md`](.cursor/plans/) (filename **starts with the issue number**). Put `#<n>` in the plan. Do not use `docs/plans/`.
 
-If an issue already exists for the work, reuse it; do not open a duplicate. Put `#<n>` in commit messages when the user asks to commit.
+Then the implementation steps, continuing the same numbering (4, 5, …).
+
+**Always last two steps (N−1 and N):**
+
+- **N−1.** Run all tests that exist (nested AUnit crates, etc.). If there are none, record that and continue.
+- **N.** If tests passed (or none exist), push and open a PR with `gh pr create`.
+
+When **writing** a plan, include this full numbered envelope (use `<n>` until step 1 exists). When **executing** an approved plan, do the steps for real: issue → branch → write `.cursor/plans/<n>-*.plan.md` → implement → tests → PR. Do not wait for a second “please open an issue/PR”.
 
 ## Git
 
-- **Do not commit** implementation, docs (except the requested plan), or anything else unless the user explicitly says to commit.
-- **Do not push** unless the user explicitly says to push.
+Executing an **approved plan** includes commits for that work (messages contain `#<n>`), the final push, and the PR. Do **not** commit or push unrelated files, or work that is not an approved plan, unless the user explicitly asks.
+
 - Never `--force` push, never `--amend` unless the user asks and the amend rules in user git policy are met.
 - Never skip hooks.
 - Never change `git config` (including proxy). Fix sandbox networking via process env vars only (see below).
-
-The **only** commit that is pre-authorized without a further “commit” request is: saving a plan the user asked for onto the new `feature/<n>-*` branch.
 
 Commit messages: PowerShell here-string `@' ... '@` (see the agent shell rule). Do not use bash `$(cat <<'EOF')`.
 
