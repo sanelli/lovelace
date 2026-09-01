@@ -22,4 +22,8 @@ project Lovelace is
       for Artifacts (".") use ("share");
    end Install;
 
+   package Documentation is
+      for Output_Dir use "gnatdoc";
+   end Documentation;
+
 end Lovelace;

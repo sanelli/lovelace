@@ -52,7 +52,7 @@ end Report;
 
 ## Style
 
-- Package/type/subprogram names: `Mixed_Case`; constants `Mixed_Case`; avoid abbreviations unless domain-standard (`LIR`, `WIT`, `WASM`).
+- Package/type/subprogram names: `Mixed_Case`; constants `Mixed_Case`. Never abbreviate identifiers (see no-abbreviations). Domain-standard acronyms only (`LIR`, `WIT`, `WASM`).
 - One public package spec per compilation unit; keep bodies focused.
 - No dead `with`s, unused entities, or implicit falling-through conditionals.
 - Prefer explicit named associations for calls with more than two parameters.
@@ -60,14 +60,16 @@ end Report;
 
 ## Public Ada documentation
 
-Every subprogram (and type) **visible outside its package** must have a documentation comment on the spec. Bodies do not replace spec docs.
+Every package, record, enum, and subprogram on a spec needs a **leading** GNATdoc comment (see gnatdoc). Records use `@field`/`@disc`; enums use `@enum`; subprograms use `@param` and `@return`. No inline comments for those.
 
 ```ada
 -- BAD
 function Tokenize (Source : String) return Token_List;
 
 -- GOOD
---  Split Source into tokens. Empty Source is a Failure Result.
+--  Split Source into tokens. Empty Source is a failure Result.
+--  @param Source UTF-8 Lovelace source.
+--  @return Token list, or a failure Result.
 function Tokenize (Source : String) return Token_Result;
 ```
 

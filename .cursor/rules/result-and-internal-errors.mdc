@@ -11,7 +11,7 @@ Predefined exceptions may still be raised by the Ada RTS (allocation, checks). H
 
 ## `Result`
 
-Use generic `Lovelace.Common.Result` (`Result<TSuccess, TError>`): success payload or error payload.
+Use generic `Lovelace.Common.Result` (`Success_Type`, `Error_Type`): success payload or error payload.
 
 When `Engine` (or another type) is private in the same spec, Ada cannot instantiate that generic there. Use a same-shape public record instead (`Regex_Result` for regex compile and other regex operations that return `Engine` or `Regex_Error`).
 

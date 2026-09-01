@@ -8,20 +8,27 @@ package body Lovelace.Common.Regex is
    subtype Code_Point is Lovelace.Common.Utf_8.Code_Point;
 
    type Parser is record
-      Pos     : Positive := 1;
-      Failed  : Boolean := False;
-      Group   : Regex_Error_Group := Parse_Error;
-      Message : Ada.Strings.Unbounded.Unbounded_String;
+      Position : Positive := 1;
+      Failed   : Boolean := False;
+      Group    : Regex_Error_Group := Parse_Error;
+      Message  : Ada.Strings.Unbounded.Unbounded_String;
    end record;
 
    type Node_Kind is
-     (Lit, Alt, Concat, Star, Plus, Question, Class_Node, Any_Node);
+     (Literal,
+      Alternation,
+      Concat,
+      Star,
+      Plus,
+      Question,
+      Class_Node,
+      Any_Node);
 
    type Node;
    type Node_Access is access Node;
 
    type Node is record
-      Kind    : Node_Kind := Lit;
+      Kind    : Node_Kind := Literal;
       Point   : Code_Point := Wide_Wide_Character'Val (0);
       Ranges  : Range_Vectors.Vector;
       Negated : Boolean := False;
@@ -33,8 +40,8 @@ package body Lovelace.Common.Regex is
      (Node, Node_Access);
 
    type Builder is record
-      Heads : Head_Vectors.Vector;
-      Trans : Transition_Vectors.Vector;
+      Heads        : Head_Vectors.Vector;
+      Transactions : Transition_Vectors.Vector;
    end record;
 
    type Fragment is record
@@ -45,338 +52,347 @@ package body Lovelace.Common.Regex is
    type Bool_Array is array (State_Index range <>) of Boolean;
 
    procedure Add_Any
-     (B      : in out Builder;
-      From   : State_Index;
-      Target : State_Index);
+     (The_Builder : in out Builder;
+      From        : State_Index;
+      Target      : State_Index);
    procedure Add_Class
-     (B       : in out Builder;
-      From    : State_Index;
-      Ranges  : Range_Vectors.Vector;
-      Negated : Boolean;
-      Target  : State_Index);
+     (The_Builder : in out Builder;
+      From        : State_Index;
+      Ranges      : Range_Vectors.Vector;
+      Negated     : Boolean;
+      Target      : State_Index);
    procedure Add_Epsilon
-     (B      : in out Builder;
-      From   : State_Index;
-      Target : State_Index);
+     (The_Builder : in out Builder;
+      From        : State_Index;
+      Target      : State_Index);
    procedure Add_Symbol
-     (B      : in out Builder;
-      From   : State_Index;
-      Point  : Code_Point;
-      Target : State_Index);
+     (The_Builder : in out Builder;
+      From        : State_Index;
+      Point       : Code_Point;
+      Target      : State_Index);
    procedure Add_Transition
-     (B    : in out Builder;
-      From : State_Index;
-      T    : in out Transition);
+     (The_Builder    : in out Builder;
+      From           : State_Index;
+      The_Transition : in out Transition);
    procedure Advance
-     (Pattern : String;
-      P       : in out Parser);
+     (Pattern    : String;
+      The_Parser : in out Parser);
    function As_Ascii (Point : Code_Point) return Character;
    function At_End
-     (Pattern : String;
-      P       : Parser) return Boolean;
+     (Pattern    : String;
+      The_Parser : Parser) return Boolean;
    function Build
-     (N : Node_Access;
-      B : in out Builder) return Fragment;
-   procedure Destroy_Tree (N : in out Node_Access);
+     (The_Node    : Node_Access;
+      The_Builder : in out Builder) return Fragment;
+   procedure Destroy_Tree (The_Node : in out Node_Access);
    procedure Epsilon_Closure
-     (E   : Engine;
-      Set : in out Bool_Array);
+     (The_Engine : Engine;
+      Set        : in out Bool_Array);
    procedure Fail
-     (P       : in out Parser;
-      Message : String;
-      Group   : Regex_Error_Group := Parse_Error);
-   function Hex_Value (C : Character) return Integer;
+     (The_Parser : in out Parser;
+      Message    : String;
+      Group      : Regex_Error_Group := Parse_Error);
+   function Hex_Value (The_Character : Character) return Integer;
    function In_Class
-     (T     : Transition;
-      Point : Code_Point) return Boolean;
+     (The_Transition : Transition;
+      Point          : Code_Point) return Boolean;
    function Is_Ascii (Point : Code_Point) return Boolean;
-   function New_State (B : in out Builder) return State_Index;
+   function New_State
+     (The_Builder : in out Builder) return State_Index;
    function Parse_Alt
-     (Pattern : String;
-      P       : in out Parser) return Node_Access;
+     (Pattern    : String;
+      The_Parser : in out Parser) return Node_Access;
    function Parse_Atom
-     (Pattern : String;
-      P       : in out Parser) return Node_Access;
+     (Pattern    : String;
+      The_Parser : in out Parser) return Node_Access;
    function Parse_Class
-     (Pattern : String;
-      P       : in out Parser;
-      Negated : out Boolean) return Range_Vectors.Vector;
+     (Pattern    : String;
+      The_Parser : in out Parser;
+      Negated    : out Boolean) return Range_Vectors.Vector;
    function Parse_Concat
-     (Pattern : String;
-      P       : in out Parser) return Node_Access;
+     (Pattern    : String;
+      The_Parser : in out Parser) return Node_Access;
    function Parse_Escape
-     (Pattern : String;
-      P       : in out Parser) return Code_Point;
+     (Pattern    : String;
+      The_Parser : in out Parser) return Code_Point;
    function Parse_Pattern
-     (Pattern : String;
-      P       : in out Parser) return Node_Access;
+     (Pattern    : String;
+      The_Parser : in out Parser) return Node_Access;
    function Parse_Piece
-     (Pattern : String;
-      P       : in out Parser) return Node_Access;
+     (Pattern    : String;
+      The_Parser : in out Parser) return Node_Access;
    function Parse_Unicode_Escape
-     (Pattern : String;
-      P       : in out Parser) return Code_Point;
+     (Pattern    : String;
+      The_Parser : in out Parser) return Code_Point;
    function Peek
-     (Pattern : String;
-      P       : in out Parser) return Code_Point;
+     (Pattern    : String;
+      The_Parser : in out Parser) return Code_Point;
    procedure Peek_Decode
-     (Pattern : String;
-      P       : Parser;
-      Point   : out Code_Point;
-      Length  : out Natural;
-      Valid   : out Boolean);
+     (Pattern    : String;
+      The_Parser : Parser;
+      Point      : out Code_Point;
+      Length     : out Natural;
+      Valid      : out Boolean);
 
    procedure Add_Any
-     (B      : in out Builder;
-      From   : State_Index;
-      Target : State_Index)
+     (The_Builder : in out Builder;
+      From        : State_Index;
+      Target      : State_Index)
    is
-      T : Transition;
+      The_Transition : Transition;
    begin
-      T.Kind := Any;
-      T.Target := Target;
+      The_Transition.Kind := Any;
+      The_Transition.Target := Target;
       Add_Transition
-        (B    => B,
-         From => From,
-         T    => T);
+        (The_Builder    => The_Builder,
+         From           => From,
+         The_Transition => The_Transition);
    end Add_Any;
 
    procedure Add_Class
-     (B       : in out Builder;
-      From    : State_Index;
-      Ranges  : Range_Vectors.Vector;
-      Negated : Boolean;
-      Target  : State_Index)
+     (The_Builder : in out Builder;
+      From        : State_Index;
+      Ranges      : Range_Vectors.Vector;
+      Negated     : Boolean;
+      Target      : State_Index)
    is
-      T : Transition;
+      The_Transition : Transition;
    begin
-      T.Kind := Class;
-      T.Ranges := Ranges;
-      T.Negated := Negated;
-      T.Target := Target;
+      The_Transition.Kind := Class;
+      The_Transition.Ranges := Ranges;
+      The_Transition.Negated := Negated;
+      The_Transition.Target := Target;
       Add_Transition
-        (B    => B,
-         From => From,
-         T    => T);
+        (The_Builder    => The_Builder,
+         From           => From,
+         The_Transition => The_Transition);
    end Add_Class;
 
    procedure Add_Epsilon
-     (B      : in out Builder;
-      From   : State_Index;
-      Target : State_Index)
+     (The_Builder : in out Builder;
+      From        : State_Index;
+      Target      : State_Index)
    is
-      T : Transition;
+      The_Transition : Transition;
    begin
-      T.Kind := Epsilon;
-      T.Target := Target;
+      The_Transition.Kind := Epsilon;
+      The_Transition.Target := Target;
       Add_Transition
-        (B    => B,
-         From => From,
-         T    => T);
+        (The_Builder    => The_Builder,
+         From           => From,
+         The_Transition => The_Transition);
    end Add_Epsilon;
 
    procedure Add_Symbol
-     (B      : in out Builder;
-      From   : State_Index;
-      Point  : Code_Point;
-      Target : State_Index)
+     (The_Builder : in out Builder;
+      From        : State_Index;
+      Point       : Code_Point;
+      Target      : State_Index)
    is
-      T : Transition;
+      The_Transition : Transition;
    begin
-      T.Kind := Code;
-      T.Symbol := Point;
-      T.Target := Target;
+      The_Transition.Kind := Exact_Scalar;
+      The_Transition.Symbol := Point;
+      The_Transition.Target := Target;
       Add_Transition
-        (B    => B,
-         From => From,
-         T    => T);
+        (The_Builder    => The_Builder,
+         From           => From,
+         The_Transition => The_Transition);
    end Add_Symbol;
 
    procedure Add_Transition
-     (B    : in out Builder;
-      From : State_Index;
-      T    : in out Transition)
+     (The_Builder    : in out Builder;
+      From           : State_Index;
+      The_Transition : in out Transition)
    is
    begin
-      T.Next := B.Heads (From);
-      B.Trans.Append (T);
-      B.Heads (From) := B.Trans.Last_Index;
+      The_Transition.Next := The_Builder.Heads (From);
+      The_Builder.Transactions.Append (The_Transition);
+      The_Builder.Heads (From) :=
+        The_Builder.Transactions.Last_Index;
    end Add_Transition;
 
    procedure Advance
-     (Pattern : String;
-      P       : in out Parser)
+     (Pattern    : String;
+      The_Parser : in out Parser)
    is
       Point  : Code_Point;
       Length : Natural;
       Valid  : Boolean;
    begin
-      if P.Failed or else At_End (Pattern, P) then
+      if The_Parser.Failed or else At_End (Pattern, The_Parser) then
          return;
       end if;
       Peek_Decode
-        (Pattern => Pattern,
-         P       => P,
-         Point   => Point,
-         Length  => Length,
-         Valid   => Valid);
+        (Pattern    => Pattern,
+         The_Parser => The_Parser,
+         Point      => Point,
+         Length     => Length,
+         Valid      => Valid);
       if not Valid or else Length = 0 then
-         Fail (P, "invalid UTF-8", Invalid_Utf_8);
+         Fail (The_Parser, "invalid UTF-8", Invalid_Utf_8);
          return;
       end if;
-      P.Pos := P.Pos + Length;
+      The_Parser.Position := The_Parser.Position + Length;
    end Advance;
 
    function As_Ascii (Point : Code_Point) return Character is
      (Character'Val (Wide_Wide_Character'Pos (Point)));
 
    function At_End
-     (Pattern : String;
-      P       : Parser) return Boolean
+     (Pattern    : String;
+      The_Parser : Parser) return Boolean
    is
-     (P.Pos > Pattern'Last);
+     (The_Parser.Position > Pattern'Last);
 
    function Build
-     (N : Node_Access;
-      B : in out Builder) return Fragment
+     (The_Node    : Node_Access;
+      The_Builder : in out Builder) return Fragment
    is
-      L, R : Fragment;
-      S, A : State_Index;
+      Left, Right               : Fragment;
+      Start_State, Accept_State : State_Index;
    begin
-      case N.Kind is
-         when Lit =>
-            S := New_State (B);
-            A := New_State (B);
+      case The_Node.Kind is
+         when Literal =>
+            Start_State := New_State (The_Builder);
+            Accept_State := New_State (The_Builder);
             Add_Symbol
-              (B      => B,
-               From   => S,
-               Point  => N.Point,
-               Target => A);
-            return (Start => S, Finish => A);
+              (The_Builder => The_Builder,
+               From        => Start_State,
+               Point       => The_Node.Point,
+               Target      => Accept_State);
+            return
+              (Start => Start_State, Finish => Accept_State);
 
          when Any_Node =>
-            S := New_State (B);
-            A := New_State (B);
+            Start_State := New_State (The_Builder);
+            Accept_State := New_State (The_Builder);
             Add_Any
-              (B      => B,
-               From   => S,
-               Target => A);
-            return (Start => S, Finish => A);
+              (The_Builder => The_Builder,
+               From        => Start_State,
+               Target      => Accept_State);
+            return
+              (Start => Start_State, Finish => Accept_State);
 
          when Class_Node =>
-            S := New_State (B);
-            A := New_State (B);
+            Start_State := New_State (The_Builder);
+            Accept_State := New_State (The_Builder);
             Add_Class
-              (B       => B,
-               From    => S,
-               Ranges  => N.Ranges,
-               Negated => N.Negated,
-               Target  => A);
-            return (Start => S, Finish => A);
+              (The_Builder => The_Builder,
+               From        => Start_State,
+               Ranges      => The_Node.Ranges,
+               Negated     => The_Node.Negated,
+               Target      => Accept_State);
+            return
+              (Start => Start_State, Finish => Accept_State);
 
          when Concat =>
-            L := Build (N.Left, B);
-            R := Build (N.Right, B);
+            Left := Build (The_Node.Left, The_Builder);
+            Right := Build (The_Node.Right, The_Builder);
             Add_Epsilon
-              (B      => B,
-               From   => L.Finish,
-               Target => R.Start);
-            return (Start => L.Start, Finish => R.Finish);
+              (The_Builder => The_Builder,
+               From        => Left.Finish,
+               Target      => Right.Start);
+            return (Start => Left.Start, Finish => Right.Finish);
 
-         when Alt =>
-            S := New_State (B);
-            A := New_State (B);
-            L := Build (N.Left, B);
-            R := Build (N.Right, B);
+         when Alternation =>
+            Start_State := New_State (The_Builder);
+            Accept_State := New_State (The_Builder);
+            Left := Build (The_Node.Left, The_Builder);
+            Right := Build (The_Node.Right, The_Builder);
             Add_Epsilon
-              (B      => B,
-               From   => S,
-               Target => L.Start);
+              (The_Builder => The_Builder,
+               From        => Start_State,
+               Target      => Left.Start);
             Add_Epsilon
-              (B      => B,
-               From   => S,
-               Target => R.Start);
+              (The_Builder => The_Builder,
+               From        => Start_State,
+               Target      => Right.Start);
             Add_Epsilon
-              (B      => B,
-               From   => L.Finish,
-               Target => A);
+              (The_Builder => The_Builder,
+               From        => Left.Finish,
+               Target      => Accept_State);
             Add_Epsilon
-              (B      => B,
-               From   => R.Finish,
-               Target => A);
-            return (Start => S, Finish => A);
+              (The_Builder => The_Builder,
+               From        => Right.Finish,
+               Target      => Accept_State);
+            return
+              (Start => Start_State, Finish => Accept_State);
 
          when Star =>
-            S := New_State (B);
-            A := New_State (B);
-            L := Build (N.Left, B);
+            Start_State := New_State (The_Builder);
+            Accept_State := New_State (The_Builder);
+            Left := Build (The_Node.Left, The_Builder);
             Add_Epsilon
-              (B      => B,
-               From   => S,
-               Target => L.Start);
+              (The_Builder => The_Builder,
+               From        => Start_State,
+               Target      => Left.Start);
             Add_Epsilon
-              (B      => B,
-               From   => S,
-               Target => A);
+              (The_Builder => The_Builder,
+               From        => Start_State,
+               Target      => Accept_State);
             Add_Epsilon
-              (B      => B,
-               From   => L.Finish,
-               Target => L.Start);
+              (The_Builder => The_Builder,
+               From        => Left.Finish,
+               Target      => Left.Start);
             Add_Epsilon
-              (B      => B,
-               From   => L.Finish,
-               Target => A);
-            return (Start => S, Finish => A);
+              (The_Builder => The_Builder,
+               From        => Left.Finish,
+               Target      => Accept_State);
+            return
+              (Start => Start_State, Finish => Accept_State);
 
          when Plus =>
-            S := New_State (B);
-            A := New_State (B);
-            L := Build (N.Left, B);
+            Start_State := New_State (The_Builder);
+            Accept_State := New_State (The_Builder);
+            Left := Build (The_Node.Left, The_Builder);
             Add_Epsilon
-              (B      => B,
-               From   => S,
-               Target => L.Start);
+              (The_Builder => The_Builder,
+               From        => Start_State,
+               Target      => Left.Start);
             Add_Epsilon
-              (B      => B,
-               From   => L.Finish,
-               Target => L.Start);
+              (The_Builder => The_Builder,
+               From        => Left.Finish,
+               Target      => Left.Start);
             Add_Epsilon
-              (B      => B,
-               From   => L.Finish,
-               Target => A);
-            return (Start => S, Finish => A);
+              (The_Builder => The_Builder,
+               From        => Left.Finish,
+               Target      => Accept_State);
+            return
+              (Start => Start_State, Finish => Accept_State);
 
          when Question =>
-            S := New_State (B);
-            A := New_State (B);
-            L := Build (N.Left, B);
+            Start_State := New_State (The_Builder);
+            Accept_State := New_State (The_Builder);
+            Left := Build (The_Node.Left, The_Builder);
             Add_Epsilon
-              (B      => B,
-               From   => S,
-               Target => L.Start);
+              (The_Builder => The_Builder,
+               From        => Start_State,
+               Target      => Left.Start);
             Add_Epsilon
-              (B      => B,
-               From   => S,
-               Target => A);
+              (The_Builder => The_Builder,
+               From        => Start_State,
+               Target      => Accept_State);
             Add_Epsilon
-              (B      => B,
-               From   => L.Finish,
-               Target => A);
-            return (Start => S, Finish => A);
+              (The_Builder => The_Builder,
+               From        => Left.Finish,
+               Target      => Accept_State);
+            return
+              (Start => Start_State, Finish => Accept_State);
       end case;
    end Build;
 
    function Compile (Pattern : String) return Regex_Result
    is
-      P     : Parser;
-      Root  : Node_Access := null;
-      B     : Builder;
-      Frag  : Fragment;
-      Built : Engine;
+      The_Parser   : Parser;
+      Root         : Node_Access := null;
+      The_Builder  : Builder;
+      The_Fragment : Fragment;
+      Built        : Engine;
    begin
-      P.Pos := Pattern'First;
-      Root := Parse_Pattern (Pattern, P);
-      case P.Failed is
+      The_Parser.Position := Pattern'First;
+      Root := Parse_Pattern (Pattern, The_Parser);
+      case The_Parser.Failed is
          when True =>
             Destroy_Tree (Root);
             return
@@ -384,54 +400,55 @@ package body Lovelace.Common.Regex is
                Error =>
                  Regex_Error
                    (Internal_Errors.Make
-                      (Group   => P.Group,
+                      (Group   => The_Parser.Group,
                        Message =>
                          Ada.Strings.Unbounded.To_String
-                           (P.Message))));
+                           (The_Parser.Message))));
          when False =>
-            Frag := Build (Root, B);
+            The_Fragment := Build (Root, The_Builder);
             Destroy_Tree (Root);
-            Built.Start := Frag.Start;
-            Built.Accepting := Frag.Finish;
-            Built.Heads := B.Heads;
-            Built.Trans := B.Trans;
+            Built.Start := The_Fragment.Start;
+            Built.Accepting := The_Fragment.Finish;
+            Built.Heads := The_Builder.Heads;
+            Built.Transactions := The_Builder.Transactions;
             return (Ok => True, Value => Built);
       end case;
    end Compile;
 
-   procedure Destroy_Tree (N : in out Node_Access) is
+   procedure Destroy_Tree (The_Node : in out Node_Access) is
    begin
-      if N = null then
+      if The_Node = null then
          return;
       end if;
-      Destroy_Tree (N.Left);
-      Destroy_Tree (N.Right);
-      Free_Node (N);
+      Destroy_Tree (The_Node.Left);
+      Destroy_Tree (The_Node.Right);
+      Free_Node (The_Node);
    end Destroy_Tree;
 
    procedure Epsilon_Closure
-     (E   : Engine;
-      Set : in out Bool_Array)
+     (The_Engine : Engine;
+      Set        : in out Bool_Array)
    is
       Changed : Boolean := True;
-      Idx     : Natural;
+      Index   : Natural;
    begin
       while Changed loop
          Changed := False;
-         for S in Set'Range loop
-            if Set (S) then
-               Idx := E.Heads (S);
-               while Idx /= 0 loop
+         for State in Set'Range loop
+            if Set (State) then
+               Index := The_Engine.Heads (State);
+               while Index /= 0 loop
                   declare
-                     T : constant Transition := E.Trans (Idx);
+                     The_Transition : constant Transition :=
+                       The_Engine.Transactions (Index);
                   begin
-                     if T.Kind = Epsilon
-                       and then not Set (T.Target)
+                     if The_Transition.Kind = Epsilon
+                       and then not Set (The_Transition.Target)
                      then
-                        Set (T.Target) := True;
+                        Set (The_Transition.Target) := True;
                         Changed := True;
                      end if;
-                     Idx := T.Next;
+                     Index := The_Transition.Next;
                   end;
                end loop;
             end if;
@@ -440,47 +457,52 @@ package body Lovelace.Common.Regex is
    end Epsilon_Closure;
 
    procedure Fail
-     (P       : in out Parser;
-      Message : String;
-      Group   : Regex_Error_Group := Parse_Error)
+     (The_Parser : in out Parser;
+      Message    : String;
+      Group      : Regex_Error_Group := Parse_Error)
    is
    begin
-      if P.Failed then
+      if The_Parser.Failed then
          return;
       end if;
-      P.Failed := True;
-      P.Group := Group;
-      P.Message :=
+      The_Parser.Failed := True;
+      The_Parser.Group := Group;
+      The_Parser.Message :=
         Ada.Strings.Unbounded.To_Unbounded_String (Message);
    end Fail;
 
-   function Hex_Value (C : Character) return Integer is
+   function Hex_Value (The_Character : Character) return Integer is
    begin
-      case C is
+      case The_Character is
          when '0' .. '9' =>
-            return Character'Pos (C) - Character'Pos ('0');
+            return Character'Pos (The_Character)
+              - Character'Pos ('0');
          when 'a' .. 'f' =>
-            return Character'Pos (C) - Character'Pos ('a') + 10;
+            return Character'Pos (The_Character)
+              - Character'Pos ('a') + 10;
          when 'A' .. 'F' =>
-            return Character'Pos (C) - Character'Pos ('A') + 10;
+            return Character'Pos (The_Character)
+              - Character'Pos ('A') + 10;
          when others =>
             return -1;
       end case;
    end Hex_Value;
 
    function In_Class
-     (T     : Transition;
-      Point : Code_Point) return Boolean
+     (The_Transition : Transition;
+      Point          : Code_Point) return Boolean
    is
       Hit : Boolean := False;
    begin
-      for R of T.Ranges loop
-         if Point >= R.Low and then Point <= R.High then
+      for The_Range of The_Transition.Ranges loop
+         if Point >= The_Range.Low
+           and then Point <= The_Range.High
+         then
             Hit := True;
             exit;
          end if;
       end loop;
-      if T.Negated then
+      if The_Transition.Negated then
          return not Hit;
       end if;
       return Hit;
@@ -490,35 +512,39 @@ package body Lovelace.Common.Regex is
      (Wide_Wide_Character'Pos (Point) <= 127);
 
    function Match_Prefix
-     (E     : Engine;
-      Input : String;
-      From  : Positive) return Natural
+     (The_Engine : Engine;
+      Input      : String;
+      From       : Positive) return Natural
    is
    begin
-      if E.Heads.Is_Empty or else From > Input'Last then
+      if The_Engine.Heads.Is_Empty or else From > Input'Last then
          return 0;
       end if;
 
       declare
-         First    : constant State_Index := E.Heads.First_Index;
-         Last     : constant State_Index := E.Heads.Last_Index;
-         Current  : Bool_Array (First .. Last) := [others => False];
-         Next_Set : Bool_Array (First .. Last) := [others => False];
-         Best     : Natural := 0;
-         Pos      : Positive := From;
-         Point    : Code_Point;
-         Length   : Natural;
-         Valid    : Boolean;
-         Moved    : Boolean;
-         Idx      : Natural;
+         First       : constant State_Index :=
+           The_Engine.Heads.First_Index;
+         Last        : constant State_Index :=
+           The_Engine.Heads.Last_Index;
+         Current     : Bool_Array (First .. Last) :=
+           [others => False];
+         Next_Set    : Bool_Array (First .. Last) :=
+           [others => False];
+         Best        : Natural := 0;
+         Position    : Positive := From;
+         Point       : Code_Point;
+         Length      : Natural;
+         Valid       : Boolean;
+         Moved       : Boolean;
+         Index       : Natural;
       begin
-         Current (E.Start) := True;
-         Epsilon_Closure (E, Current);
+         Current (The_Engine.Start) := True;
+         Epsilon_Closure (The_Engine, Current);
 
-         while Pos <= Input'Last loop
+         while Position <= Input'Last loop
             Lovelace.Common.Utf_8.Decode
               (Source => Input,
-               Index  => Pos,
+               Index  => Position,
                Point  => Point,
                Length => Length,
                Valid  => Valid);
@@ -527,32 +553,37 @@ package body Lovelace.Common.Regex is
             Next_Set := [others => False];
             Moved := False;
 
-            for S in Current'Range loop
-               if Current (S) then
-                  Idx := E.Heads (S);
-                  while Idx /= 0 loop
+            for State in Current'Range loop
+               if Current (State) then
+                  Index := The_Engine.Heads (State);
+                  while Index /= 0 loop
                      declare
-                        T : constant Transition :=
-                          E.Trans (Idx);
+                        The_Transition : constant Transition :=
+                          The_Engine.Transactions (Index);
                      begin
-                        case T.Kind is
-                           when Code =>
-                              if Point = T.Symbol then
-                                 Next_Set (T.Target) := True;
+                        case The_Transition.Kind is
+                           when Exact_Scalar =>
+                              if Point = The_Transition.Symbol then
+                                 Next_Set
+                                   (The_Transition.Target) := True;
                                  Moved := True;
                               end if;
                            when Class =>
-                              if In_Class (T, Point) then
-                                 Next_Set (T.Target) := True;
+                              if In_Class
+                                   (The_Transition, Point)
+                              then
+                                 Next_Set
+                                   (The_Transition.Target) := True;
                                  Moved := True;
                               end if;
                            when Any =>
-                              Next_Set (T.Target) := True;
+                              Next_Set
+                                (The_Transition.Target) := True;
                               Moved := True;
                            when Epsilon =>
                               null;
                         end case;
-                        Idx := T.Next;
+                        Index := The_Transition.Next;
                      end;
                   end loop;
                end if;
@@ -560,274 +591,294 @@ package body Lovelace.Common.Regex is
 
             exit when not Moved;
 
-            Epsilon_Closure (E, Next_Set);
+            Epsilon_Closure (The_Engine, Next_Set);
             Current := Next_Set;
-            if Current (E.Accepting) then
-               Best := Pos + Length - From;
+            if Current (The_Engine.Accepting) then
+               Best := Position + Length - From;
             end if;
-            Pos := Pos + Length;
+            Position := Position + Length;
          end loop;
 
          return Best;
       end;
    end Match_Prefix;
 
-   function New_State (B : in out Builder) return State_Index is
+   function New_State
+     (The_Builder : in out Builder) return State_Index
+   is
    begin
-      B.Heads.Append (0);
-      return B.Heads.Last_Index;
+      The_Builder.Heads.Append (0);
+      return The_Builder.Heads.Last_Index;
    end New_State;
 
    function Parse_Alt
-     (Pattern : String;
-      P       : in out Parser) return Node_Access
+     (Pattern    : String;
+      The_Parser : in out Parser) return Node_Access
    is
-      Left : Node_Access := Parse_Concat (Pattern, P);
-      N    : Node_Access;
+      Left     : Node_Access := Parse_Concat (Pattern, The_Parser);
+      The_Node : Node_Access;
    begin
-      while not P.Failed
-        and then not At_End (Pattern, P)
-        and then Is_Ascii (Peek (Pattern, P))
-        and then As_Ascii (Peek (Pattern, P)) = '|'
+      while not The_Parser.Failed
+        and then not At_End (Pattern, The_Parser)
+        and then Is_Ascii (Peek (Pattern, The_Parser))
+        and then As_Ascii (Peek (Pattern, The_Parser)) = '|'
       loop
-         Advance (Pattern, P);
-         N := new Node'
-           (Kind  => Alt,
-            Left  => Left,
-            Right => Parse_Concat (Pattern, P),
-            others => <>);
-         Left := N;
+         Advance (Pattern, The_Parser);
+         The_Node := new Node'
+           (Kind    => Alternation,
+            Left    => Left,
+            Right   => Parse_Concat (Pattern, The_Parser),
+            others  => <>);
+         Left := The_Node;
       end loop;
       return Left;
    end Parse_Alt;
 
    function Parse_Atom
-     (Pattern : String;
-      P       : in out Parser) return Node_Access
+     (Pattern    : String;
+      The_Parser : in out Parser) return Node_Access
    is
-      N     : Node_Access;
-      Point : Code_Point;
-      C     : Character;
+      The_Node           : Node_Access;
+      Point              : Code_Point;
+      Current_Character  : Character;
    begin
-      if P.Failed then
+      if The_Parser.Failed then
          return null;
       end if;
-      if At_End (Pattern, P) then
-         Fail (P, "unexpected end of pattern");
+      if At_End (Pattern, The_Parser) then
+         Fail (The_Parser, "unexpected end of pattern");
          return null;
       end if;
 
-      Point := Peek (Pattern, P);
+      Point := Peek (Pattern, The_Parser);
       if not Is_Ascii (Point) then
-         N := new Node'(Kind => Lit, Point => Point, others => <>);
-         Advance (Pattern, P);
-         return N;
+         The_Node := new Node'
+           (Kind => Literal, Point => Point, others => <>);
+         Advance (Pattern, The_Parser);
+         return The_Node;
       end if;
 
-      C := As_Ascii (Point);
-      case C is
+      Current_Character := As_Ascii (Point);
+      case Current_Character is
          when '(' =>
-            Advance (Pattern, P);
-            N := Parse_Alt (Pattern, P);
-            if At_End (Pattern, P)
-              or else not Is_Ascii (Peek (Pattern, P))
-              or else As_Ascii (Peek (Pattern, P)) /= ')'
+            Advance (Pattern, The_Parser);
+            The_Node := Parse_Alt (Pattern, The_Parser);
+            if At_End (Pattern, The_Parser)
+              or else not Is_Ascii (Peek (Pattern, The_Parser))
+              or else As_Ascii (Peek (Pattern, The_Parser)) /= ')'
             then
-               Fail (P, "unclosed group");
-               return N;
+               Fail (The_Parser, "unclosed group");
+               return The_Node;
             end if;
-            Advance (Pattern, P);
-            return N;
+            Advance (Pattern, The_Parser);
+            return The_Node;
 
          when '[' =>
-            Advance (Pattern, P);
-            N := new Node'(Kind => Class_Node, others => <>);
-            N.Ranges := Parse_Class (Pattern, P, N.Negated);
-            return N;
+            Advance (Pattern, The_Parser);
+            The_Node := new Node'(Kind => Class_Node, others => <>);
+            The_Node.Ranges :=
+              Parse_Class
+                (Pattern, The_Parser, The_Node.Negated);
+            return The_Node;
 
          when '\' =>
-            Advance (Pattern, P);
-            N := new Node'(Kind => Lit, others => <>);
-            N.Point := Parse_Escape (Pattern, P);
-            return N;
+            Advance (Pattern, The_Parser);
+            The_Node := new Node'(Kind => Literal, others => <>);
+            The_Node.Point := Parse_Escape (Pattern, The_Parser);
+            return The_Node;
 
          when '.' =>
-            Advance (Pattern, P);
-            N := new Node'(Kind => Any_Node, others => <>);
-            return N;
+            Advance (Pattern, The_Parser);
+            The_Node := new Node'(Kind => Any_Node, others => <>);
+            return The_Node;
 
          when ')' | '|' | '*' | '+' | '?' | ']' =>
-            Fail (P, "unexpected metacharacter");
+            Fail (The_Parser, "unexpected metacharacter");
             return null;
 
          when others =>
-            N := new Node'(Kind => Lit, Point => Point, others => <>);
-            Advance (Pattern, P);
-            return N;
+            The_Node := new Node'
+              (Kind => Literal, Point => Point, others => <>);
+            Advance (Pattern, The_Parser);
+            return The_Node;
       end case;
    end Parse_Atom;
 
    function Parse_Class
-     (Pattern : String;
-      P       : in out Parser;
-      Negated : out Boolean) return Range_Vectors.Vector
+     (Pattern    : String;
+      The_Parser : in out Parser;
+      Negated    : out Boolean) return Range_Vectors.Vector
    is
-      Result    : Range_Vectors.Vector;
-      First     : Boolean := True;
-      Have_Prev : Boolean := False;
-      Prev      : Code_Point := Wide_Wide_Character'Val (0);
-      Point     : Code_Point;
+      Result         : Range_Vectors.Vector;
+      First          : Boolean := True;
+      Have_Previous  : Boolean := False;
+      Previous_Point : Code_Point := Wide_Wide_Character'Val (0);
+      Point          : Code_Point;
 
       function After_Minus_Is_Close return Boolean;
-      function Next_Char return Code_Point;
+      function Next_Scalar return Code_Point;
 
       function After_Minus_Is_Close return Boolean is
-         Next_P : Parser;
-         NPoint : Code_Point;
-         NLen   : Natural;
-         NValid : Boolean;
+         Next_Parser : Parser;
+         Next_Point  : Code_Point;
+         Next_Length : Natural;
+         Next_Valid  : Boolean;
       begin
-         if At_End (Pattern, P) then
+         if At_End (Pattern, The_Parser) then
             return True;
          end if;
-         Next_P.Pos := P.Pos + 1;
-         if Next_P.Pos > Pattern'Last then
+         Next_Parser.Position := The_Parser.Position + 1;
+         if Next_Parser.Position > Pattern'Last then
             return True;
          end if;
          Peek_Decode
-           (Pattern => Pattern,
-            P       => Next_P,
-            Point   => NPoint,
-            Length  => NLen,
-            Valid   => NValid);
-         return NValid
-           and then Is_Ascii (NPoint)
-           and then As_Ascii (NPoint) = ']';
+           (Pattern    => Pattern,
+            The_Parser => Next_Parser,
+            Point      => Next_Point,
+            Length     => Next_Length,
+            Valid      => Next_Valid);
+         return Next_Valid
+           and then Is_Ascii (Next_Point)
+           and then As_Ascii (Next_Point) = ']';
       end After_Minus_Is_Close;
 
-      function Next_Char return Code_Point is
-         C : Code_Point;
+      function Next_Scalar return Code_Point is
+         Current_Point : Code_Point;
       begin
-         if At_End (Pattern, P) then
-            Fail (P, "unclosed character class");
+         if At_End (Pattern, The_Parser) then
+            Fail (The_Parser, "unclosed character class");
             return Wide_Wide_Character'Val (0);
          end if;
-         C := Peek (Pattern, P);
-         if Is_Ascii (C) and then As_Ascii (C) = '\' then
-            Advance (Pattern, P);
-            return Parse_Escape (Pattern, P);
+         Current_Point := Peek (Pattern, The_Parser);
+         if Is_Ascii (Current_Point)
+           and then As_Ascii (Current_Point) = '\'
+         then
+            Advance (Pattern, The_Parser);
+            return Parse_Escape (Pattern, The_Parser);
          end if;
-         Advance (Pattern, P);
-         return C;
-      end Next_Char;
+         Advance (Pattern, The_Parser);
+         return Current_Point;
+      end Next_Scalar;
 
    begin
       Negated := False;
-      if not At_End (Pattern, P)
-        and then Is_Ascii (Peek (Pattern, P))
-        and then As_Ascii (Peek (Pattern, P)) = '^'
+      if not At_End (Pattern, The_Parser)
+        and then Is_Ascii (Peek (Pattern, The_Parser))
+        and then As_Ascii (Peek (Pattern, The_Parser)) = '^'
       then
          Negated := True;
-         Advance (Pattern, P);
+         Advance (Pattern, The_Parser);
       end if;
 
-      while not P.Failed and then not At_End (Pattern, P) loop
-         Point := Peek (Pattern, P);
+      while not The_Parser.Failed
+        and then not At_End (Pattern, The_Parser)
+      loop
+         Point := Peek (Pattern, The_Parser);
          exit when Is_Ascii (Point) and then As_Ascii (Point) = ']';
 
-         if Have_Prev
+         if Have_Previous
            and then Is_Ascii (Point)
            and then As_Ascii (Point) = '-'
            and then not After_Minus_Is_Close
          then
-            Advance (Pattern, P);
+            Advance (Pattern, The_Parser);
             declare
-               Hi : constant Code_Point := Next_Char;
+               High_Point : constant Code_Point := Next_Scalar;
             begin
-               if Hi < Prev then
-                  Fail (P, "invalid character range");
+               if High_Point < Previous_Point then
+                  Fail (The_Parser, "invalid character range");
                else
                   Result.Append
-                    (Code_Range'(Low => Prev, High => Hi));
+                    (Code_Range'
+                       (Low  => Previous_Point,
+                        High => High_Point));
                end if;
             end;
-            Have_Prev := False;
+            Have_Previous := False;
          else
-            if Have_Prev then
+            if Have_Previous then
                Result.Append
-                 (Code_Range'(Low => Prev, High => Prev));
+                 (Code_Range'
+                    (Low  => Previous_Point,
+                     High => Previous_Point));
             end if;
-            Prev := Next_Char;
-            Have_Prev := True;
+            Previous_Point := Next_Scalar;
+            Have_Previous := True;
          end if;
          First := False;
       end loop;
 
-      if Have_Prev then
-         Result.Append (Code_Range'(Low => Prev, High => Prev));
+      if Have_Previous then
+         Result.Append
+           (Code_Range'
+              (Low  => Previous_Point, High => Previous_Point));
       end if;
 
       if First then
-         Fail (P, "empty character class");
+         Fail (The_Parser, "empty character class");
          return Result;
       end if;
 
-      if At_End (Pattern, P)
-        or else not Is_Ascii (Peek (Pattern, P))
-        or else As_Ascii (Peek (Pattern, P)) /= ']'
+      if At_End (Pattern, The_Parser)
+        or else not Is_Ascii (Peek (Pattern, The_Parser))
+        or else As_Ascii (Peek (Pattern, The_Parser)) /= ']'
       then
-         Fail (P, "unclosed character class");
+         Fail (The_Parser, "unclosed character class");
          return Result;
       end if;
-      Advance (Pattern, P);
+      Advance (Pattern, The_Parser);
       return Result;
    end Parse_Class;
 
    function Parse_Concat
-     (Pattern : String;
-      P       : in out Parser) return Node_Access
+     (Pattern    : String;
+      The_Parser : in out Parser) return Node_Access
    is
-      Left : Node_Access := Parse_Piece (Pattern, P);
-      N    : Node_Access;
-      C    : Character;
+      Left              : Node_Access :=
+        Parse_Piece (Pattern, The_Parser);
+      The_Node          : Node_Access;
+      Current_Character : Character;
    begin
-      while not P.Failed and then not At_End (Pattern, P) loop
-         if Is_Ascii (Peek (Pattern, P)) then
-            C := As_Ascii (Peek (Pattern, P));
-            exit when C = ')' or else C = '|';
+      while not The_Parser.Failed
+        and then not At_End (Pattern, The_Parser)
+      loop
+         if Is_Ascii (Peek (Pattern, The_Parser)) then
+            Current_Character := As_Ascii (Peek (Pattern, The_Parser));
+            exit when Current_Character = ')'
+              or else Current_Character = '|';
          end if;
-         N := new Node'
-           (Kind  => Concat,
-            Left  => Left,
-            Right => Parse_Piece (Pattern, P),
+         The_Node := new Node'
+           (Kind   => Concat,
+            Left   => Left,
+            Right  => Parse_Piece (Pattern, The_Parser),
             others => <>);
-         Left := N;
+         Left := The_Node;
       end loop;
       return Left;
    end Parse_Concat;
 
    function Parse_Escape
-     (Pattern : String;
-      P       : in out Parser) return Code_Point
+     (Pattern    : String;
+      The_Parser : in out Parser) return Code_Point
    is
-      Point : Code_Point;
-      C     : Character;
+      Point             : Code_Point;
+      Current_Character : Character;
    begin
-      if P.Failed then
+      if The_Parser.Failed then
          return Wide_Wide_Character'Val (0);
       end if;
-      if At_End (Pattern, P) then
-         Fail (P, "trailing backslash");
+      if At_End (Pattern, The_Parser) then
+         Fail (The_Parser, "trailing backslash");
          return Wide_Wide_Character'Val (0);
       end if;
-      Point := Peek (Pattern, P);
-      Advance (Pattern, P);
+      Point := Peek (Pattern, The_Parser);
+      Advance (Pattern, The_Parser);
       if not Is_Ascii (Point) then
-         Fail (P, "unsupported escape");
+         Fail (The_Parser, "unsupported escape");
          return Wide_Wide_Character'Val (0);
       end if;
-      C := As_Ascii (Point);
-      case C is
+      Current_Character := As_Ascii (Point);
+      case Current_Character is
          when 'n' =>
             return Wide_Wide_Character'Val
               (Character'Pos (ASCII.LF));
@@ -846,67 +897,68 @@ package body Lovelace.Common.Regex is
          when '\' =>
             return Wide_Wide_Character'Val (Character'Pos ('\'));
          when 'u' =>
-            return Parse_Unicode_Escape (Pattern, P);
+            return Parse_Unicode_Escape (Pattern, The_Parser);
          when '|' | '(' | ')' | '+' | '*' | '?' | '[' | ']' | '.'
             | '-' | '^' | '$' | '%' | '/' | '{' | '}' | '"' | ''' =>
             return Point;
          when others =>
-            Fail (P, "unsupported escape");
+            Fail (The_Parser, "unsupported escape");
             return Wide_Wide_Character'Val (0);
       end case;
    end Parse_Escape;
 
    function Parse_Pattern
-     (Pattern : String;
-      P       : in out Parser) return Node_Access
+     (Pattern    : String;
+      The_Parser : in out Parser) return Node_Access
    is
       Root : Node_Access;
    begin
       if Pattern'Length = 0 then
-         Fail (P, "empty pattern");
+         Fail (The_Parser, "empty pattern");
          return null;
       end if;
-      Root := Parse_Alt (Pattern, P);
-      if P.Failed then
+      Root := Parse_Alt (Pattern, The_Parser);
+      if The_Parser.Failed then
          return Root;
       end if;
-      if not At_End (Pattern, P) then
-         Fail (P, "trailing characters in pattern");
+      if not At_End (Pattern, The_Parser) then
+         Fail (The_Parser, "trailing characters in pattern");
       end if;
       return Root;
    end Parse_Pattern;
 
    function Parse_Piece
-     (Pattern : String;
-      P       : in out Parser) return Node_Access
+     (Pattern    : String;
+      The_Parser : in out Parser) return Node_Access
    is
-      Atom : constant Node_Access := Parse_Atom (Pattern, P);
-      N    : Node_Access;
-      C    : Character;
+      Atom              : constant Node_Access :=
+        Parse_Atom (Pattern, The_Parser);
+      The_Node          : Node_Access;
+      Current_Character : Character;
    begin
-      if P.Failed then
+      if The_Parser.Failed then
          return Atom;
       end if;
-      if not At_End (Pattern, P)
-        and then Is_Ascii (Peek (Pattern, P))
+      if not At_End (Pattern, The_Parser)
+        and then Is_Ascii (Peek (Pattern, The_Parser))
       then
-         C := As_Ascii (Peek (Pattern, P));
-         case C is
+         Current_Character := As_Ascii (Peek (Pattern, The_Parser));
+         case Current_Character is
             when '*' =>
-               Advance (Pattern, P);
-               N := new Node'
+               Advance (Pattern, The_Parser);
+               The_Node := new Node'
                  (Kind => Star, Left => Atom, others => <>);
-               return N;
+               return The_Node;
             when '+' =>
-               Advance (Pattern, P);
-               N := new Node'
+               Advance (Pattern, The_Parser);
+               The_Node := new Node'
                  (Kind => Plus, Left => Atom, others => <>);
-               return N;
+               return The_Node;
             when '?' =>
-               Advance (Pattern, P);
-               N := new Node'
+               Advance (Pattern, The_Parser);
+               The_Node := new Node'
                  (Kind => Question, Left => Atom, others => <>);
-               return N;
+               return The_Node;
             when others =>
                null;
          end case;
@@ -915,105 +967,109 @@ package body Lovelace.Common.Regex is
    end Parse_Piece;
 
    function Parse_Unicode_Escape
-     (Pattern : String;
-      P       : in out Parser) return Code_Point
+     (Pattern    : String;
+      The_Parser : in out Parser) return Code_Point
    is
-      Acc         : Natural := 0;
-      Digit_Count : Natural := 0;
-      Point       : Code_Point;
-      Hex_Digit   : Integer;
-      C           : Character;
+      Accumulator       : Natural := 0;
+      Digit_Count       : Natural := 0;
+      Point             : Code_Point;
+      Hex_Digit         : Integer;
+      Current_Character : Character;
    begin
-      if At_End (Pattern, P) or else not Is_Ascii (Peek (Pattern, P))
-        or else As_Ascii (Peek (Pattern, P)) /= '{'
+      if At_End (Pattern, The_Parser)
+        or else not Is_Ascii (Peek (Pattern, The_Parser))
+        or else As_Ascii (Peek (Pattern, The_Parser)) /= '{'
       then
-         Fail (P, "expected '{'");
+         Fail (The_Parser, "expected '{'");
          return Wide_Wide_Character'Val (0);
       end if;
-      Advance (Pattern, P);
+      Advance (Pattern, The_Parser);
 
-      while not P.Failed and then not At_End (Pattern, P) loop
-         Point := Peek (Pattern, P);
+      while not The_Parser.Failed
+        and then not At_End (Pattern, The_Parser)
+      loop
+         Point := Peek (Pattern, The_Parser);
          if Is_Ascii (Point) and then As_Ascii (Point) = '}' then
             exit;
          end if;
          if not Is_Ascii (Point) then
-            Fail (P, "invalid hex digit");
+            Fail (The_Parser, "invalid hex digit");
             return Wide_Wide_Character'Val (0);
          end if;
-         C := As_Ascii (Point);
-         Hex_Digit := Hex_Value (C);
+         Current_Character := As_Ascii (Point);
+         Hex_Digit := Hex_Value (Current_Character);
          if Hex_Digit < 0 then
-            Fail (P, "invalid hex digit");
+            Fail (The_Parser, "invalid hex digit");
             return Wide_Wide_Character'Val (0);
          end if;
          Digit_Count := Digit_Count + 1;
          if Digit_Count > 6 then
-            Fail (P, "Unicode escape too long");
+            Fail (The_Parser, "Unicode escape too long");
             return Wide_Wide_Character'Val (0);
          end if;
-         Acc := Acc * 16 + Natural (Hex_Digit);
-         if Acc > 16#10FFFF# then
-            Fail (P, "Unicode scalar too large");
+         Accumulator := Accumulator * 16 + Natural (Hex_Digit);
+         if Accumulator > 16#10FFFF# then
+            Fail (The_Parser, "Unicode scalar too large");
             return Wide_Wide_Character'Val (0);
          end if;
-         Advance (Pattern, P);
+         Advance (Pattern, The_Parser);
       end loop;
 
       if Digit_Count = 0 then
-         Fail (P, "empty Unicode escape");
+         Fail (The_Parser, "empty Unicode escape");
          return Wide_Wide_Character'Val (0);
       end if;
-      if At_End (Pattern, P) or else not Is_Ascii (Peek (Pattern, P))
-        or else As_Ascii (Peek (Pattern, P)) /= '}'
+      if At_End (Pattern, The_Parser)
+        or else not Is_Ascii (Peek (Pattern, The_Parser))
+        or else As_Ascii (Peek (Pattern, The_Parser)) /= '}'
       then
-         Fail (P, "unclosed Unicode escape");
+         Fail (The_Parser, "unclosed Unicode escape");
          return Wide_Wide_Character'Val (0);
       end if;
-      Advance (Pattern, P);
+      Advance (Pattern, The_Parser);
 
-      if Acc in 16#D800# .. 16#DFFF# then
-         Fail (P, "surrogate in Unicode escape");
+      if Accumulator in 16#D800# .. 16#DFFF# then
+         Fail (The_Parser, "surrogate in Unicode escape");
          return Wide_Wide_Character'Val (0);
       end if;
-      return Wide_Wide_Character'Val (Acc);
+      return Wide_Wide_Character'Val (Accumulator);
    end Parse_Unicode_Escape;
 
    function Peek
-     (Pattern : String;
-      P       : in out Parser) return Code_Point
+     (Pattern    : String;
+      The_Parser : in out Parser) return Code_Point
    is
       Point  : Code_Point;
       Length : Natural;
       Valid  : Boolean;
    begin
-      if P.Failed or else At_End (Pattern, P) then
+      if The_Parser.Failed or else At_End (Pattern, The_Parser) then
          return Wide_Wide_Character'Val (0);
       end if;
       Peek_Decode
-        (Pattern => Pattern,
-         P       => P,
-         Point   => Point,
-         Length  => Length,
-         Valid   => Valid);
+        (Pattern    => Pattern,
+         The_Parser => The_Parser,
+         Point      => Point,
+         Length     => Length,
+         Valid      => Valid);
       if not Valid then
-         Fail (P, "invalid UTF-8", Invalid_Utf_8);
+         Fail (The_Parser, "invalid UTF-8", Invalid_Utf_8);
          return Wide_Wide_Character'Val (0);
       end if;
       return Point;
    end Peek;
 
    procedure Peek_Decode
-     (Pattern : String;
-      P       : Parser;
-      Point   : out Code_Point;
-      Length  : out Natural;
-      Valid   : out Boolean)
+     (Pattern    : String;
+      The_Parser : Parser;
+      Point      : out Code_Point;
+      Length     : out Natural;
+      Valid      : out Boolean)
    is
    begin
       Lovelace.Common.Utf_8.Decode
         (Source => Pattern,
-         Index  => P.Pos,
+         Index  => The_Parser.Position,
          Point  => Point,
          Length => Length,
          Valid  => Valid);

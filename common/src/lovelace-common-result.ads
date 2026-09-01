@@ -1,22 +1,32 @@
 generic
-   type T_Success is private;
-   type T_Error is private;
+   --  Payload stored when Ok is True.
+   type Success_Type is private;
+   --  Payload stored when Ok is False.
+   type Error_Type is private;
+--  Discriminated union of Success_Type or Error_Type.
 package Lovelace.Common.Result is
 
-   --  Discriminated union of T_Success or T_Error.
+   --  Success payload or error payload, selected by Ok.
+   --  @disc Ok True when Value is present; False when Error is.
+   --  @field Value Payload when Ok is True.
+   --  @field Error Payload when Ok is False.
    type Result (Ok : Boolean := True) is record
       case Ok is
          when True =>
-            Value : T_Success;
+            Value : Success_Type;
          when False =>
-            Error : T_Error;
+            Error : Error_Type;
       end case;
    end record;
 
    --  Result with discriminant Ok True and the given Value.
-   function From_Success (Value : T_Success) return Result;
+   --  @param Value Success payload.
+   --  @return Result with Ok True.
+   function From_Success (Value : Success_Type) return Result;
 
    --  Result with discriminant Ok False and the given Error.
-   function From_Failure (Error : T_Error) return Result;
+   --  @param Error Failure payload.
+   --  @return Result with Ok False.
+   function From_Failure (Error : Error_Type) return Result;
 
 end Lovelace.Common.Result;

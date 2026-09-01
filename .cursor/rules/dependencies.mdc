@@ -16,6 +16,7 @@ Do **not** vendor, wrap, or “temporarily” depend on wasm-tools, wit-bindgen,
 1. **Wasmtime C library** — link **only** from crate `lovelace_jit` (`jit/`). Ada bindings in this repo. No Rust Wasmtime crates.
 2. **AUnit** ([AdaCore/aunit](https://github.com/AdaCore/aunit)) — **required** for all tests.
 3. **Git C library (libgit2)** — link **only** from crate `lovelace_hypatia` (`hypatia/`). Hand-written Ada `Interfaces.C` bindings in this repo. Used so Hypatia can clone/fetch git dependencies. No other Git wrappers or Ada git crates.
+4. **GNATdoc** ([AdaCore/gnatdoc](https://github.com/AdaCore/gnatdoc), [Alire crate](https://alire.ada.dev/crates/gnatdoc)) — documentation generator only. Invoke via `scripts/gnatdoc.ps1`; do **not** `depends-on` it from library or `lovelace` crates.
 
 Alire is the host build manager (one crate per component; see the Alire crates rule). Prefer declaring AUnit via Alire on **nested test crates** only; treat any other Alire crate as forbidden until the user approves it.
 

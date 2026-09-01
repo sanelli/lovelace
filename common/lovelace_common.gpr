@@ -15,4 +15,8 @@ library project Lovelace_Common is
         & Lovelace_Host_Switches.Ada_Compiler_Switches;
    end Compiler;
 
+   package Documentation is
+      for Output_Dir use "gnatdoc";
+   end Documentation;
+
 end Lovelace_Common;
