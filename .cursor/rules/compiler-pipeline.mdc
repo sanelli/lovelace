@@ -35,7 +35,7 @@ The compiler is **frontend → LIR → analysis/opt → backend**. Do not emit W
 
 ## Layering
 
-- `compiler` may depend on `lir`, `common`, and `alexandria` (for doc attachment / artifact docs).
-- `lir` may depend on `common` only.
-- `jit` must not parse Lovelace or own LIR passes; it loads compiled components and hosts Wasmtime.
-- `tooling`, `hypatia`, `alexandria`, and `format` are not the backend; do not emit WASM from them.
+- `lovelace_compiler` may depend on `lovelace_lir`, `lovelace_common`, and `lovelace_alexandria` (for doc attachment / artifact docs).
+- `lovelace_lir` may depend on `lovelace_common` only.
+- `lovelace_jit` must not parse Lovelace or own LIR passes; it loads compiled components and hosts Wasmtime.
+- `lovelace_tooling`, `lovelace_hypatia`, `lovelace_alexandria`, and `lovelace_format` are not the backend; do not emit WASM from them.

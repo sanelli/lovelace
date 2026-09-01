@@ -1,0 +1,41 @@
+---
+description: UTF-8 host strings and sources; crate names lovelace_*; packages Lovelace.*
+alwaysApply: true
+---
+
+# UTF-8 and naming
+
+Folder names stay as they are (`common/`, `compiler/`, …). **Crate** and **Ada package** names do not.
+
+## Crate names
+
+Every Alire crate name starts with `lovelace`, in any folder. The `.gpr` file name matches the crate.
+
+| Folder | Crate |
+|---|---|
+| `common/` | `lovelace_common` |
+| `common/tests` | `lovelace_common_tests` |
+| `lir/` | `lovelace_lir` |
+| `compiler/` | `lovelace_compiler` |
+| `tooling/` | `lovelace_tooling` |
+| `format/` | `lovelace_format` |
+| `alexandria/` | `lovelace_alexandria` |
+| `hypatia/` | `lovelace_hypatia` |
+| `jit/` | `lovelace_jit` |
+| `augusta/` (native Ada, when created) | `lovelace_augusta` |
+| `lovelace/` | `lovelace` (CLI executable) |
+| repo root | `lovelace_workspace` |
+
+Pin paths stay folder-relative (`common`, `../common`). Nested tests: `lovelace_<component>_tests`.
+
+## Package names
+
+Every Ada package starts with `Lovelace` (child units: `Lovelace.Regex`, not `Regex_Automata`). Root `package Lovelace` lives in `lovelace_common`.
+
+`procedure Lovelace` in `lovelace/src/lovelace.adb` **must** become a child (e.g. `Lovelace.Main`) **before** the CLI crate depends on `lovelace_common` (parent/child name clash). Do not rename that procedure until the CLI is wired to `lovelace_common`.
+
+## UTF-8
+
+- Host string manipulation uses UTF-8. Ada `String` / `Unbounded_String` are UTF-8 **byte** sequences, not Latin-1 code units. Do not treat `Character` as a Lovelace character.
+- Lovelace **string** literals are stored as UTF-8. Lovelace **character** literals are one Unicode scalar in 4 bytes (`Wide_Wide_Character` / a `Code_Point` subtype).
+- `.love` and Ada sources are UTF-8 (identifiers and literals may include emoji). GNAT: `-gnatW8` on the shared host switch list.

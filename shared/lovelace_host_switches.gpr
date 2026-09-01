@@ -10,6 +10,7 @@ abstract project Lovelace_Host_Switches is
       "-gnatyABDdIoOSuxz",
       "-gnatyM79",
       "-gnato",
-      "-fstack-check");
+      "-fstack-check",
+      "-gnatW8");
 
 end Lovelace_Host_Switches;

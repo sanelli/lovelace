@@ -8,7 +8,7 @@ alwaysApply: false
 
 ## Alexandria (`alexandria/`)
 
-`alexandria/` is a **static** library. It owns:
+Crate `lovelace_alexandria` in `alexandria/` is a **static** library. It owns:
 
 - Parsing Lovelace **comments** and **doc-comments** (format TBC)
 - Building a documentation model from a project, solution, or package

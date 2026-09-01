@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Alire crates (host build)
 
-The repo is a **monorepo of Alire crates**, not one crate with many GPRs, and not many git remotes. **One Alire crate per Ada component**, each with its own `alire.toml` and a **single** `.gpr` whose name matches the crate (`compiler.gpr` for crate `compiler`). Alire’s unit is the crate: one dependency set, one crate type (library vs application), one runtime.
+The repo is a **monorepo of Alire crates**, not one crate with many GPRs, and not many git remotes. **One Alire crate per Ada component**, each with its own `alire.toml` and a **single** `.gpr` whose name matches the crate (`lovelace_common.gpr` for crate `lovelace_common` in folder `common/`). **Every crate name starts with `lovelace`** (see utf8-and-naming). Alire’s unit is the crate: one dependency set, one crate type (library vs application), one runtime.
 
 Do **not** list component GPRs in one `alire.toml` `project-files` array. Do **not** merge host libraries, the `lovelace` executable, and Augusta native into one crate.
 
@@ -19,7 +19,7 @@ All **host** crates (full GNAT RTS) must `with` one abstract GPR and must **not*
 
 - Path: `shared/lovelace_host_switches.gpr` (a folder, **not** a crate)
 - Create this file in the same change as the **first** host crate
-- Contents: Ada 2022 and the mandatory host switches from the Ada standards rule (`-gnatwae`, `-gnaty…`, line length, `-gnato`, `-fstack-check`)
+- Contents: Ada 2022 and the mandatory host switches from the Ada standards rule (`-gnatwae`, `-gnaty…`, line length, `-gnato`, `-fstack-check`, `-gnatW8`)
 
 Augusta **native** must **not** `with` that file (ZFP / freestanding; see Augusta rules). Nested **host** test crates `with` the same include.
 
@@ -29,35 +29,35 @@ Thin aggregate at the **repository root** so `alr build` there builds everything
 
 ```toml
 [[depends-on]]
-compiler = "*"
+lovelace_common = "*"
 
 [[pins]]
-compiler = { path = "compiler" }
+lovelace_common = { path = "common" }
 ```
 
-Pin paths are relative to that crate: `compiler` from the root, `../compiler` from `lovelace/`.
+Pin paths are relative to that crate: `common` from the root, `../common` from `lovelace/`. Folder names are not crate names.
 
 ## Pins and layering
 
 Local path pins, not separate repositories. Intended `depends-on` (do not add edges until both crates exist):
 
-| Crate | Depends on (Lovelace siblings) |
+| Crate (folder) | Depends on (Lovelace siblings) |
 |---|---|
-| `common` | — |
-| `lir` | `common` |
-| `compiler` | `lir`, `common` |
-| `tooling` | `common` |
-| `format` | `common`, `tooling` |
-| `alexandria` | `common` |
-| `hypatia` | `tooling` (libgit2 only here) |
-| `jit` | `common` (Wasmtime C only here) |
-| `lovelace` | `compiler`, `jit`, `tooling`, `hypatia`, `alexandria`, `format` |
-| Augusta native | **none** of the host graph (JIT loads the `.so`/`.dll`/`.dylib` at run time) |
+| `lovelace_common` (`common/`) | — |
+| `lovelace_lir` (`lir/`) | `lovelace_common` |
+| `lovelace_compiler` (`compiler/`) | `lovelace_lir`, `lovelace_common` |
+| `lovelace_tooling` (`tooling/`) | `lovelace_common` |
+| `lovelace_format` (`format/`) | `lovelace_common`, `lovelace_tooling` |
+| `lovelace_alexandria` (`alexandria/`) | `lovelace_common` |
+| `lovelace_hypatia` (`hypatia/`) | `lovelace_tooling` (libgit2 only here) |
+| `lovelace_jit` (`jit/`) | `lovelace_common` (Wasmtime C only here) |
+| `lovelace` (`lovelace/`) | `lovelace_compiler`, `lovelace_jit`, `lovelace_tooling`, `lovelace_hypatia`, `lovelace_alexandria`, `lovelace_format` |
+| `lovelace_augusta` (native, when created) | **none** of the host graph (JIT loads the `.so`/`.dll`/`.dylib` at run time) |
 
-Do not `depends-on` a sibling just to share switches. Missing `depends-on` is how layering is enforced (`compiler` must not see Hypatia/git; `format` must not see Wasmtime).
+Do not `depends-on` a sibling just to share switches. Missing `depends-on` is how layering is enforced (`lovelace_compiler` must not see Hypatia/git; `lovelace_format` must not see Wasmtime).
 
 ## Tests and Augusta
 
-AUnit is declared only on **nested** test crates (`compiler/tests`, …): own `alire.toml`, pin `{ path = ".." }`, `depends-on` the parent and AUnit. Do not add AUnit to library or `lovelace` crates.
+AUnit is declared only on **nested** test crates (`common/tests` → crate `lovelace_common_tests`, …): own `alire.toml`, pin `{ path = ".." }`, `depends-on` the parent and AUnit. Nested test crate names also start with `lovelace`. Do not add AUnit to library or `lovelace` crates.
 
 Augusta **`.love`** is not an Alire product. Only the native Ada backing is a crate (`Library_Kind use "dynamic"`).

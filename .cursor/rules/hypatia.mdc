@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Hypatia
 
-**Hypatia** is Lovelace’s package/crate system. Implementation lives in **`hypatia/`** (Alire crate / **static** library).
+**Hypatia** is Lovelace’s package/crate system. Implementation lives in **`hypatia/`** (Alire crate `lovelace_hypatia` / **static** library).
 
 ## Responsibilities
 
@@ -28,5 +28,5 @@ No `.pkglove` → not a package. Do not treat a raw git repo of `.love` files as
 ## Layering
 
 - Hypatia uses `tooling` for `.pkglove` (and may read `.pjlove` / `.slnlove` through tooling).
-- Hypatia is the **only** crate that links libgit2.
+- `lovelace_hypatia` is the **only** crate that links libgit2.
 - `lovelace` CLI invokes Hypatia; do not fetch git deps from the compiler frontend.

@@ -6,7 +6,7 @@ alwaysApply: false
 
 # JIT Runtime (Wasmtime)
 
-`jit/` is an Ada **static** library that embeds **Wasmtime via its C API** (`pragma Import`, `Interfaces.C`). The `lovelace` executable statically links it for `lovelace run`.
+Crate `lovelace_jit` in `jit/` is an Ada **static** library that embeds **Wasmtime via its C API** (`pragma Import`, `Interfaces.C`). The `lovelace` executable statically links it for `lovelace run`.
 
 The stock `wasmtime` CLI is **not** sufficient for `love:` / custom native imports. Only a host embedder can bind those.
 

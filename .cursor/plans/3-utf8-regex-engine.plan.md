@@ -13,10 +13,10 @@ todos:
     status: completed
   - id: "4"
     content: "4. Update Cursor rules: UTF-8 strings/sources/4-byte chars; crate names lovelace_*; packages Lovelace.*"
-    status: pending
+    status: completed
   - id: "5"
     content: 5. Add -gnatW8 to shared/lovelace_host_switches.gpr
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Create lovelace_common crate: Lovelace, Lovelace.UTF_8, Lovelace.Regex (Thompson NFA, UTF-8)"
     status: pending
@@ -73,24 +73,11 @@ Done: [`.cursor/plans/3-utf8-regex-engine.plan.md`](.cursor/plans/3-utf8-regex-e
 
 ## 4. Update Cursor rules first
 
-Follow the create-rule format (YAML frontmatter, `.mdc` under [`.cursor/rules/`](.cursor/rules/)). **Rules before Ada.** Keep folder names (`common/`, `compiler/`, …) as they are; change **crate** and **package** names.
-
-**Crate names** (update [`alire.mdc`](.cursor/rules/alire.mdc), [`lovelace-project.mdc`](.cursor/rules/lovelace-project.mdc), and every other rule that still says crate `common` / `compiler` / …):
-
-- Every Alire crate name starts with `lovelace`, in any folder. Examples: folder [`common/`](common/) → crate **`lovelace_common`**, GPR **`lovelace_common.gpr`**. Nested tests → **`lovelace_common_tests`**. CLI stays **`lovelace`**; workspace stays **`lovelace_workspace`**. Future host libraries: `lovelace_lir`, `lovelace_compiler`, `lovelace_tooling`, `lovelace_format`, `lovelace_alexandria`, `lovelace_hypatia`, `lovelace_jit`. Augusta native, when created: `lovelace_augusta`.
-- GPR file name still matches the crate (Alire). Update the layering `depends-on` table to these names (`lovelace_lir` depends on `lovelace_common`, and so on). Pin paths stay folder-relative (`common`, `../common`).
-
-**Package names:** every Ada package starts with `Lovelace` (child units: `Lovelace.Regex`, not `Regex_Automata`). Root namespace `package Lovelace` lives in `lovelace_common`. Note in the rule that `procedure Lovelace` in [`lovelace/src/lovelace.adb`](lovelace/src/lovelace.adb) **must** become a child (e.g. `Lovelace.Main`) **before** the CLI crate depends on `lovelace_common` (parent/child name clash). Do **not** rename the CLI in this work.
-
-**UTF-8** (extend [`ada-standards.mdc`](.cursor/rules/ada-standards.mdc); always-apply summary so it is visible without an Ada file open):
-
-- Host string manipulation uses UTF-8. Ada `String` / `Unbounded_String` are UTF-8 **byte** sequences, not Latin-1 code units. Do not treat `Character` as a Lovelace character.
-- Lovelace **string** literals are stored as UTF-8. Lovelace **character** literals are one Unicode scalar stored in 4 bytes (`Wide_Wide_Character` / a `Code_Point` subtype).
-- `.love` and Ada sources are UTF-8 (identifiers and literals may include emoji). GNAT: `-gnatW8` on the shared host switch list.
+Done: always-apply [`.cursor/rules/utf8-and-naming.mdc`](.cursor/rules/utf8-and-naming.mdc); crate names and UTF-8 on [`alire.mdc`](.cursor/rules/alire.mdc), [`lovelace-project.mdc`](.cursor/rules/lovelace-project.mdc), [`ada-standards.mdc`](.cursor/rules/ada-standards.mdc), and sibling rules.
 
 ## 5. Enable UTF-8 Ada sources in host switches
 
-Add `-gnatW8` to [`shared/lovelace_host_switches.gpr`](shared/lovelace_host_switches.gpr) (do not copy the switch list into crate GPRs).
+Done: `-gnatW8` in [`shared/lovelace_host_switches.gpr`](shared/lovelace_host_switches.gpr).
 
 ## 6. Create crate `lovelace_common` in `common/`
 

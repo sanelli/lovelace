@@ -6,13 +6,14 @@ alwaysApply: false
 
 # Ada Coding Standards (Host)
 
-Applies to `compiler/`, `jit/`, `common/`, `lir/`, `lovelace/`, `tooling/`, `hypatia/`, `alexandria/`, `format/`, and host test crates. Native Augusta Ada has extra ZFP constraints (see Augusta rules).
+Applies to host folders `compiler/`, `jit/`, `common/`, `lir/`, `lovelace/`, `tooling/`, `hypatia/`, `alexandria/`, `format/`, and host test crates (crate names `lovelace_*`; see utf8-and-naming). Native Augusta Ada has extra ZFP constraints (see Augusta rules).
 
 ## Toolchain
 
 - Ada via GNAT + Alire. Use Ada 2022 (`-gnat2022`) unless the user specifies otherwise.
 - Every crate has one `.gpr` (name matches the crate) and `alire.toml`. Host compiler switches live in `shared/lovelace_host_switches.gpr`; each host crate and host test crate `with`s that file and must not copy the switch list. Do not pass these switches on ad-hoc command lines.
-- Host library crates (`compiler`, `lir`, `common`, `jit`, `tooling`, `hypatia`, `alexandria`, `format`): `for Library_Kind use "static";`. **`lovelace`** is an executable, not a library. **`augusta`** native backing is the only `Library_Kind use "dynamic"` crate (it must not `with` the host switches GPR).
+- Host library crates (`lovelace_common`, `lovelace_lir`, `lovelace_compiler`, `lovelace_jit`, `lovelace_tooling`, `lovelace_hypatia`, `lovelace_alexandria`, `lovelace_format`): `for Library_Kind use "static";`. **`lovelace`** is an executable, not a library. **`lovelace_augusta`** (native backing, when created) is the only `Library_Kind use "dynamic"` crate (it must not `with` the host switches GPR).
+- Every Ada package name starts with `Lovelace` (child units of `package Lovelace` in `lovelace_common`).
 
 ## Warnings as errors (mandatory)
 
@@ -25,6 +26,7 @@ GNAT default switches for Ada **must** include at least:
 - a max line length style check (do not exceed it)
 - `-gnato` overflow checks
 - `-fstack-check`
+- `-gnatW8` — UTF-8 Ada source encoding
 
 Do not add `pragma Warnings (Off)`, `-gnatwn`, or style exemptions unless the user explicitly allows that instance.
 
@@ -40,6 +42,12 @@ begin
    Ada.Text_IO.Put_Line (Msg);
 end Report;
 ```
+
+## UTF-8
+
+- Host string manipulation uses UTF-8. Ada `String` / `Unbounded_String` are UTF-8 **byte** sequences, not Latin-1 code units. Do not treat `Character` as a Lovelace character.
+- Lovelace **string** literals are stored as UTF-8. Lovelace **character** literals are one Unicode scalar stored in 4 bytes (`Wide_Wide_Character` / a `Code_Point` subtype).
+- `.love` and Ada sources are UTF-8 (identifiers and literals may include emoji).
 
 ## Style
 
