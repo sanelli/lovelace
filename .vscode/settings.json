@@ -3,18 +3,21 @@
     "**/alire": true,
     "**/obj": true,
     "**/bin": true,
-    "**/config": true
+    "**/config": true,
+    "**/lib": true
   },
   "search.exclude": {
     "**/alire": true,
     "**/obj": true,
     "**/bin": true,
-    "**/config": true
+    "**/config": true,
+    "**/lib": true
   },
   "files.watcherExclude": {
     "**/alire/**": true,
     "**/obj/**": true,
     "**/bin/**": true,
-    "**/config/**": true
+    "**/config/**": true,
+    "**/lib/**": true
   }
 }

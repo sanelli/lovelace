@@ -1,5 +1,5 @@
 ---
-description: UTF-8 host strings and sources; crate names lovelace_*; packages Lovelace.*
+description: UTF-8 host strings and sources; crate names lovelace_*; packages Lovelace.<Crate>.*
 alwaysApply: true
 ---
 
@@ -30,9 +30,26 @@ Pin paths stay folder-relative (`common`, `../common`). Nested tests: `lovelace_
 
 ## Package names
 
-Every Ada package starts with `Lovelace` (child units: `Lovelace.Regex`, not `Regex_Automata`). Root `package Lovelace` lives in `lovelace_common`.
+Every Ada package starts with `Lovelace`.
 
-`procedure Lovelace` in `lovelace/src/lovelace.adb` **must** become a child (e.g. `Lovelace.Main`) **before** the CLI crate depends on `lovelace_common` (parent/child name clash). Do not rename that procedure until the CLI is wired to `lovelace_common`.
+**Library crates** use a second-level child named for that crate (folder / crate suffix, Mixed_Case), then further children under it. Do **not** hang units directly off `Lovelace` except the crate namespace itself.
+
+| Crate | Package prefix | Example |
+|---|---|---|
+| `lovelace_common` | `Lovelace.Common` | `Lovelace.Common.Utf_8`, `Lovelace.Common.Regex` |
+| `lovelace_lir` | `Lovelace.Lir` | `Lovelace.Lir.…` |
+| `lovelace_compiler` | `Lovelace.Compiler` | `Lovelace.Compiler.…` |
+| `lovelace_tooling` | `Lovelace.Tooling` | `Lovelace.Tooling.…` |
+| `lovelace_format` | `Lovelace.Format` | `Lovelace.Format.…` |
+| `lovelace_alexandria` | `Lovelace.Alexandria` | `Lovelace.Alexandria.…` |
+| `lovelace_hypatia` | `Lovelace.Hypatia` | `Lovelace.Hypatia.…` |
+| `lovelace_jit` | `Lovelace.Jit` | `Lovelace.Jit.…` |
+| `lovelace_augusta` | `Lovelace.Augusta` | `Lovelace.Augusta.…` |
+| `lovelace_common_tests` | `Lovelace.Common.Tests` | AUnit drivers under that prefix |
+
+Root `package Lovelace` lives in `lovelace_common` so library children can exist. It is not a place for regex, UTF-8, or other crate logic (`Lovelace.Utf_8` is wrong; use `Lovelace.Common.Utf_8`).
+
+**CLI crate `lovelace`:** only the root `procedure Lovelace` (no `Lovelace.Lovelace` and no extra `Lovelace.*` packages in that crate). `procedure Lovelace` in `lovelace/src/lovelace.adb` **must** become a child (e.g. `Lovelace.Main`) **before** the CLI crate depends on `lovelace_common` (parent/child name clash). Do not rename that procedure until the CLI is wired to `lovelace_common`.
 
 ## UTF-8
 

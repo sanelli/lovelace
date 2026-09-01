@@ -1,0 +1,50 @@
+---
+description: Host Result discriminated unions; never raise; exhaust both Result cases; internal errors vs diagnostics
+alwaysApply: true
+---
+
+# Result and internal errors (host Ada)
+
+Do **not** use Ada exceptions for host compiler/toolchain control flow. Do **not** write `raise`, including language-defined exceptions (`Constraint_Error`, `Program_Error`, and others), unless the user explicitly asks for an exception. Prefer a discriminated union.
+
+Predefined exceptions may still be raised by the Ada RTS (allocation, checks). Host code must not invoke `raise` itself.
+
+## `Result`
+
+Use generic `Lovelace.Common.Result` (`Result<TSuccess, TError>`): success payload or error payload.
+
+When `Engine` (or another type) is private in the same spec, Ada cannot instantiate that generic there. Use a same-shape public record instead (`Regex_Result` for regex compile and other regex operations that return `Engine` or `Regex_Error`).
+
+`Lovelace.Common.Utf_8` instantiates the generic (`Decode_Results`, `Encode_Results`).
+
+## Checking both cases
+
+Every `Result` (and same-shape `Ok` record) **must** be handled for **both** success and failure. Do not read `Value` or `Error` without selecting the matching discriminant. Prefer a complete `case` on `Ok`:
+
+```ada
+-- BAD
+if R.Ok then
+   Use (R.Value);
+end if;
+
+-- GOOD
+case R.Ok is
+   when True =>
+      Use (R.Value);
+   when False =>
+      Handle (R.Error);
+end case;
+```
+
+An `if R.Ok then ... else ... end if` that covers both arms is also acceptable. Never ignore `Error` on failure or `Value` on success.
+
+## `Lovelace_Internal_Error`
+
+Host failures of the **compiler itself** (bugs, impossible states, failed regex compile, invalid UTF-8 in a pattern, and similar) use generic `Lovelace.Common.Internal_Error`, parameterized by an **error-group** enumeration local to that subsystem.
+
+The type has two fields:
+
+- **Group** — that enumeration (for implementers, logs, tests)
+- **Message** — a UTF-8 detail string
+
+These are **not** Lovelace **user diagnostics** (no file/line/code for `.love` source; see the diagnostics rule). When shown to a user, report a **generic internal error** plus the detail string (`Report`). Do not present the error-group enum as a user-facing diagnostic code.

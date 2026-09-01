@@ -11,7 +11,7 @@ Do not invent concrete syntax until the user specifies it. These are **semantic*
 ## Language (static, strong typing)
 
 - Casts between types are allowed; implicit weak coercions are not.
-- **No exceptions.** Errors use `Result<TSuccess>` (and a failure payload as designed later).
+- **No exceptions.** Errors use `Result<TSuccess>` (and a failure payload as designed later). Host Ada must not `raise` (not even language-defined exceptions) unless the user asks; use `Lovelace.Common.Result` and handle both cases (see result-and-internal-errors). Lovelace **user** diagnostics stay separate from compiler **internal** errors.
 - Modules enforce segregation (visibility/isolation across module boundaries).
 - **Directives** (often called “preprocessor directives”) are **part of the Lovelace language**, parsed with the rest of the source. They do **not** expand into or generate statements. They attach extra information to the program: conditionality (`#if platform == 'windows'`), compiler instructions, warning suppressions (`#pragma`, C#-like), and similar metadata. There is no separate macro preprocessor.
 - **Comments** and **doc-comments** (concrete format TBC). Doc-comments feed Alexandria. Every subroutine **visible outside its Lovelace module** must have a doc-comment.

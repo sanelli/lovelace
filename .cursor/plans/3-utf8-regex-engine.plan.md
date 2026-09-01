@@ -18,8 +18,8 @@ todos:
     content: 5. Add -gnatW8 to shared/lovelace_host_switches.gpr
     status: completed
   - id: "6"
-    content: "6. Create lovelace_common crate: Lovelace, Lovelace.UTF_8, Lovelace.Regex (Thompson NFA, UTF-8)"
-    status: pending
+    content: "6. Create lovelace_common crate: Lovelace, Lovelace.Utf_8, Lovelace.Regex (Thompson NFA, UTF-8)"
+    status: completed
   - id: "7"
     content: 7. Add common/tests (lovelace_common_tests, AUnit) for engine + each Lovelace token class
     status: pending
@@ -81,29 +81,7 @@ Done: `-gnatW8` in [`shared/lovelace_host_switches.gpr`](shared/lovelace_host_sw
 
 ## 6. Create crate `lovelace_common` in `common/`
 
-Hand-write (no extra skeleton beyond what Alire needs):
-
-- [`common/alire.toml`](common/alire.toml) — name `lovelace_common`, MIT, author Stefano Anelli, static library, `auto-gpr-with = false`, `"*".style_checks = "No"`, no sibling `depends-on`.
-- [`common/lovelace_common.gpr`](common/lovelace_common.gpr) — `library project`; `Library_Kind use "static"`; `with` [`../shared/lovelace_host_switches.gpr`](shared/lovelace_host_switches.gpr) and Alire config GPR; concatenate switches like [`lovelace/lovelace.gpr`](lovelace/lovelace.gpr).
-
-**Packages** (spec comments on every public entity):
-
-- `Lovelace` — empty root namespace.
-- `Lovelace.UTF_8` — decode/encode between UTF-8 `String` and `Wide_Wide_Character` (`Code_Point`). Iterate code points with a byte index into a UTF-8 string. Invalid UTF-8 in a **pattern** is a compile error; invalid UTF-8 in **input** does not match. No third-party Unicode DB.
-- `Lovelace.Regex` — Thompson NFA, same role as EML [`regex_automata.ads`](/Users/stefano/devel/repos/eml/src/regex_automata.ads): `Compile` + `Match_Prefix`. **Do not** copy that unit as Latin-1 `Character` / `array (Character) of Boolean` (256-wide classes cannot represent emoji).
-
-**Engine API**
-
-- `function Compile (Pattern : String) return Engine` — pattern is UTF-8; raise `Regex_Error` on bad syntax or invalid UTF-8.
-- `function Match_Prefix (E : Engine; Input : String; From : Positive) return Natural` — longest **UTF-8 byte** length of an accepting match starting at `Input (From)`, same empty-match rule as EML (empty-only → `0`). Callers slice `Input (From .. From + N - 1)`.
-
-**Syntax** (EML subset, code-point based): concatenation, `|`, `*`, `+`, `?`, `(…)`, `[…]` / `[^…]` with ranges on **code points**, escapes for metacharacters. Extensions required for Lovelace:
-
-- `.` — any code point including newline (lexer-friendly).
-- Pattern and class escapes: `\n`, `\t`, `\r`, `\f`, `\e`, `\\`, and `\u{hex}` (Unicode scalar, up to U+10FFFF).
-- Character classes stored as code-point **ranges** (plus a negated flag), not a 256-bit map.
-
-No captures, backreferences, lookahead, or `{n,m}` quantifiers (braces stay ordinary literals unless escaped). Reimplement Thompson construction (epsilon / symbol / class transitions) using indices or containers rather than leaking access lists if practical.
+Done: crate `lovelace_common` with [`common/alire.toml`](common/alire.toml), [`common/lovelace_common.gpr`](common/lovelace_common.gpr) (`Library_Kind use "static"`), packages `Lovelace`, `Lovelace.Utf_8` (GNAT `-gnatyD` Mixed_Case; not `UTF_8`), and `Lovelace.Regex` (Thompson NFA, code-point classes, `Compile` / `Match_Prefix`). `alr -C common build` succeeds.
 
 ## 7. Nested AUnit crate `common/tests`
 
