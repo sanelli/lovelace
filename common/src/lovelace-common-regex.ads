@@ -11,8 +11,7 @@ package Lovelace.Common.Regex is
    type Regex_Error_Group is (Invalid_Utf_8, Parse_Error);
 
    --  Internal_Error instantiated with Regex_Error_Group.
-   package Internal_Errors is new Lovelace.Common.Internal_Error
-     (Error_Group => Regex_Error_Group);
+   package Internal_Errors is new Lovelace.Common.Internal_Error (Error_Group => Regex_Error_Group);
 
    --  Internal compile failure: group plus detail string.
    type Regex_Error is new Internal_Errors.Lovelace_Internal_Error;
@@ -28,6 +27,7 @@ package Lovelace.Common.Regex is
       case Ok is
          when True =>
             Value : Engine;
+
          when False =>
             Error : Regex_Error;
       end case;
@@ -47,10 +47,7 @@ package Lovelace.Common.Regex is
    --  @param Input UTF-8 subject string.
    --  @param From First byte of the attempted prefix.
    --  @return Match length in bytes, or 0.
-   function Match_Prefix
-     (The_Engine : Engine;
-      Input      : String;
-      From       : Positive) return Natural;
+   function Match_Prefix (The_Engine : Engine; Input : String; From : Positive) return Natural;
 
 private
 
@@ -73,9 +70,7 @@ private
    end record;
 
    --  Ordered list of Code_Range values for a Class transition.
-   package Range_Vectors is new Ada.Containers.Vectors
-     (Index_Type   => Positive,
-      Element_Type => Code_Range);
+   package Range_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Code_Range);
 
    --  One NFA edge from a state, chained via Next.
    --  @field Kind How this edge matches.
@@ -85,23 +80,19 @@ private
    --  @field Target Destination state.
    --  @field Next Index of the next edge from the same state, or 0.
    type Transition is record
-      Kind     : Transition_Kind := Epsilon;
-      Symbol   : Wide_Wide_Character := Wide_Wide_Character'Val (0);
-      Ranges   : Range_Vectors.Vector;
-      Negated  : Boolean := False;
-      Target   : State_Index := 1;
-      Next     : Natural := 0;
+      Kind    : Transition_Kind := Epsilon;
+      Symbol  : Wide_Wide_Character := Wide_Wide_Character'Val (0);
+      Ranges  : Range_Vectors.Vector;
+      Negated : Boolean := False;
+      Target  : State_Index := 1;
+      Next    : Natural := 0;
    end record;
 
    --  All transitions of a compiled or in-progress NFA.
-   package Transition_Vectors is new Ada.Containers.Vectors
-     (Index_Type   => Positive,
-      Element_Type => Transition);
+   package Transition_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Transition);
 
    --  Per-state head index into Transition_Vectors, or 0 if none.
-   package Head_Vectors is new Ada.Containers.Vectors
-     (Index_Type   => State_Index,
-      Element_Type => Natural);
+   package Head_Vectors is new Ada.Containers.Vectors (Index_Type => State_Index, Element_Type => Natural);
 
    --  Compiled Thompson NFA.
    --  @field Start Initial state.

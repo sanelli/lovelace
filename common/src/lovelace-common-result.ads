@@ -3,7 +3,7 @@ generic
    type Success_Type is private;
    --  Payload stored when Ok is False.
    type Error_Type is private;
---  Discriminated union of Success_Type or Error_Type.
+   --  Discriminated union of Success_Type or Error_Type.
 package Lovelace.Common.Result is
 
    --  Success payload or error payload, selected by Ok.
@@ -14,6 +14,7 @@ package Lovelace.Common.Result is
       case Ok is
          when True =>
             Value : Success_Type;
+
          when False =>
             Error : Error_Type;
       end case;

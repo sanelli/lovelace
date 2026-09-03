@@ -1,11 +1,7 @@
 package body Lovelace.Common.Utf_8 is
 
    procedure Decode
-     (Source : String;
-      Index  : Positive;
-      Point  : out Code_Point;
-      Length : out Natural;
-      Valid  : out Boolean)
+     (Source : String; Index : Positive; Point : out Code_Point; Length : out Natural; Valid : out Boolean)
    is
       Lead_Byte    : Natural;
       Second_Byte  : Natural;
@@ -38,8 +34,7 @@ package body Lovelace.Common.Utf_8 is
          if Second_Byte not in 16#80# .. 16#BF# then
             return;
          end if;
-         Scalar_Value :=
-           (Lead_Byte - 16#C0#) * 64 + (Second_Byte - 16#80#);
+         Scalar_Value := (Lead_Byte - 16#C0#) * 64 + (Second_Byte - 16#80#);
          Length := 2;
          Point := Wide_Wide_Character'Val (Scalar_Value);
          Valid := True;
@@ -52,9 +47,7 @@ package body Lovelace.Common.Utf_8 is
          end if;
          Second_Byte := Character'Pos (Source (Index + 1));
          Third_Byte := Character'Pos (Source (Index + 2));
-         if Second_Byte not in 16#80# .. 16#BF#
-           or else Third_Byte not in 16#80# .. 16#BF#
-         then
+         if Second_Byte not in 16#80# .. 16#BF# or else Third_Byte not in 16#80# .. 16#BF# then
             return;
          end if;
          if Lead_Byte = 16#E0# and then Second_Byte < 16#A0# then
@@ -63,10 +56,7 @@ package body Lovelace.Common.Utf_8 is
          if Lead_Byte = 16#ED# and then Second_Byte > 16#9F# then
             return;
          end if;
-         Scalar_Value :=
-           (Lead_Byte - 16#E0#) * 4096
-           + (Second_Byte - 16#80#) * 64
-           + (Third_Byte - 16#80#);
+         Scalar_Value := (Lead_Byte - 16#E0#) * 4096 + (Second_Byte - 16#80#) * 64 + (Third_Byte - 16#80#);
          Length := 3;
          Point := Wide_Wide_Character'Val (Scalar_Value);
          Valid := True;
@@ -93,7 +83,8 @@ package body Lovelace.Common.Utf_8 is
             return;
          end if;
          Scalar_Value :=
-           (Lead_Byte - 16#F0#) * 262144
+           (Lead_Byte - 16#F0#)
+           * 262144
            + (Second_Byte - 16#80#) * 4096
            + (Third_Byte - 16#80#) * 64
            + (Fourth_Byte - 16#80#);
@@ -107,103 +98,69 @@ package body Lovelace.Common.Utf_8 is
       end if;
    end Decode;
 
-   function Decode
-     (Source : String;
-      Index  : Positive) return Decode_Results.Result
-   is
+   function Decode (Source : String; Index : Positive) return Decode_Results.Result is
       Point  : Code_Point;
       Length : Natural;
       Valid  : Boolean;
    begin
-      Decode
-        (Source => Source,
-         Index  => Index,
-         Point  => Point,
-         Length => Length,
-         Valid  => Valid);
+      Decode (Source => Source, Index => Index, Point => Point, Length => Length, Valid => Valid);
       case Valid is
-         when True =>
+         when True  =>
             return Decode_Results.From_Success (Point);
+
          when False =>
-            return Decode_Results.From_Failure
-              (Utf_8_Error
-                 (Internal_Errors.Make
-                    (Group   => Invalid_Sequence,
-                     Message => "invalid UTF-8")));
+            return
+              Decode_Results.From_Failure
+                (Utf_8_Error (Internal_Errors.Make (Group => Invalid_Sequence, Message => "invalid UTF-8")));
       end case;
    end Decode;
 
-   function Encode
-     (Point : Code_Point) return Encode_Results.Result
-   is
-      Scalar_Value : constant Natural :=
-        Wide_Wide_Character'Pos (Point);
+   function Encode (Point : Code_Point) return Encode_Results.Result is
+      Scalar_Value : constant Natural := Wide_Wide_Character'Pos (Point);
       Bytes        : Ada.Strings.Unbounded.Unbounded_String;
-      Is_Invalid   : constant Boolean :=
-        Scalar_Value in 16#D800# .. 16#DFFF#
-        or else Scalar_Value > 16#10FFFF#;
+      Is_Invalid   : constant Boolean := Scalar_Value in 16#D800# .. 16#DFFF# or else Scalar_Value > 16#10FFFF#;
    begin
       case Is_Invalid is
-         when True =>
-            return Encode_Results.From_Failure
-              (Utf_8_Error
-                 (Internal_Errors.Make
-                    (Group   => Invalid_Code_Point,
-                     Message => "invalid code point")));
+         when True  =>
+            return
+              Encode_Results.From_Failure
+                (Utf_8_Error (Internal_Errors.Make (Group => Invalid_Code_Point, Message => "invalid code point")));
+
          when False =>
             if Scalar_Value <= 16#7F# then
-               Bytes :=
-                 Ada.Strings.Unbounded.To_Unbounded_String
-                   ([Character'Val (Scalar_Value)]);
+               Bytes := Ada.Strings.Unbounded.To_Unbounded_String ([Character'Val (Scalar_Value)]);
             elsif Scalar_Value <= 16#7FF# then
                Bytes :=
                  Ada.Strings.Unbounded.To_Unbounded_String
-                   ([Character'Val (16#C0# + Scalar_Value / 64),
-                     Character'Val
-                       (16#80# + Scalar_Value mod 64)]);
+                   ([Character'Val (16#C0# + Scalar_Value / 64), Character'Val (16#80# + Scalar_Value mod 64)]);
             elsif Scalar_Value <= 16#FFFF# then
                Bytes :=
                  Ada.Strings.Unbounded.To_Unbounded_String
-                   ([Character'Val
-                       (16#E0# + Scalar_Value / 16#1000#),
-                     Character'Val
-                       (16#80# + (Scalar_Value / 64) mod 64),
-                     Character'Val
-                       (16#80# + Scalar_Value mod 64)]);
+                   ([Character'Val (16#E0# + Scalar_Value / 16#1000#),
+                     Character'Val (16#80# + (Scalar_Value / 64) mod 64),
+                     Character'Val (16#80# + Scalar_Value mod 64)]);
             else
                Bytes :=
                  Ada.Strings.Unbounded.To_Unbounded_String
-                   ([Character'Val
-                       (16#F0# + Scalar_Value / 16#40000#),
-                     Character'Val
-                       (16#80#
-                        + (Scalar_Value / 16#1000#) mod 64),
-                     Character'Val
-                       (16#80# + (Scalar_Value / 64) mod 64),
-                     Character'Val
-                       (16#80# + Scalar_Value mod 64)]);
+                   ([Character'Val (16#F0# + Scalar_Value / 16#40000#),
+                     Character'Val (16#80# + (Scalar_Value / 16#1000#) mod 64),
+                     Character'Val (16#80# + (Scalar_Value / 64) mod 64),
+                     Character'Val (16#80# + Scalar_Value mod 64)]);
             end if;
             return Encode_Results.From_Success (Bytes);
       end case;
    end Encode;
 
-   function Sequence_Length
-     (Source : String;
-      Index  : Positive) return Natural
-   is
+   function Sequence_Length (Source : String; Index : Positive) return Natural is
       Point  : Code_Point;
       Length : Natural;
       Valid  : Boolean;
    begin
-      Decode
-        (Source => Source,
-         Index  => Index,
-         Point  => Point,
-         Length => Length,
-         Valid  => Valid);
+      Decode (Source => Source, Index => Index, Point => Point, Length => Length, Valid => Valid);
       case Valid is
-         when True =>
+         when True  =>
             return Length;
+
          when False =>
             return 0;
       end case;
