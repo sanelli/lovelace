@@ -58,6 +58,27 @@ end Report;
 - Prefer explicit named associations for calls with more than two parameters.
 - Do not use GNAT extensions unless required (ZFP, `System.Machine_Code`, C convention).
 
+## Formatting (mandatory after Ada edits)
+
+After **creating or editing** any host Ada source (`.ads`, `.adb`, `.adc`), run **gnatformat** through Alire on every touched file **before** committing or marking the task done:
+
+```powershell
+alr exec -- gnatformat -w 120 -P path/to/crate.gpr path/to/edited-file.adb
+```
+
+- `-w 120` matches `-gnatyM120` in `shared/lovelace_host_switches.gpr`.
+- `-P` is the owning crate’s `.gpr` (e.g. `common/lovelace_common.gpr` for `common/src/*`).
+- Multiple files in one crate may be passed in one invocation.
+- Requires `alr install libadalang_tools` and `~/.alire/bin` on `PATH` (see README).
+
+Do not skip gnatformat on Ada edits unless the user explicitly asks not to format.
+
+Example:
+
+```powershell
+alr exec -- gnatformat -w 120 -P common/lovelace_common.gpr common/src/lovelace-common-utf_8.adb common/src/lovelace-common-utf_8.ads
+```
+
 ## Public Ada documentation
 
 Every package, record, enum, and subprogram on a spec needs a **leading** GNATdoc comment (see gnatdoc). Records use `@field`/`@disc`; enums use `@enum`; subprograms use `@param` and `@return`. No inline comments for those.

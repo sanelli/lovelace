@@ -8,7 +8,7 @@ abstract project Lovelace_Host_Switches is
       "-gnatwae",
       "-gnatyy",
       "-gnatyABDdIoOSuxz",
-      "-gnatyM79",
+      "-gnatyM120",
       "-gnato",
       "-fstack-check",
       "-gnatW8");

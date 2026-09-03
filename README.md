@@ -51,6 +51,34 @@ Not yet a usable compiler. Design and conventions live in `.cursor/rules/`. Cont
 
 Build the workspace from the repository root with `alr build`, or build or run the CLI crate alone with `alr -C lovelace build` or `alr -C lovelace run`. Generate host Ada API HTML with GNATdoc via `pwsh scripts/gnatdoc.ps1` (see [docs/gnatdoc.md](docs/gnatdoc.md)).
 
+### Ada code formatting
+
+To reformat host Ada sources (for example after raising the maximum line length to 120 characters), install the Libadalang formatting tools. The formatter executable is **`gnatformat`** (installed by the `libadalang_tools` crate). Run it through Alire so it uses the same environment as `alr build`:
+
+```bash
+alr install libadalang_tools
+```
+
+Add `~/.alire/bin` to your shell profile so `alr exec` can find `gnatformat`:
+
+**zsh** (`~/.zshrc`):
+
+```bash
+export PATH="$HOME/.alire/bin:$PATH"
+```
+
+**PowerShell** (`$PROFILE`, e.g. `~/.config/powershell/Microsoft.PowerShell_profile.ps1`):
+
+```powershell
+$env:PATH = "$env:HOME/.alire/bin:$env:PATH"
+```
+
+Example (format one file in place, 120-column width):
+
+```powershell
+alr exec -- gnatformat -w 120 -P common/lovelace_common.gpr common/src/lovelace-common-utf_8.adb
+```
+
 ### macOS setup
 
 You need Xcode Command Line Tools (or Xcode) installed so `xcrun` returns a valid SDK.
