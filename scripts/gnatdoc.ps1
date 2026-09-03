@@ -1,39 +1,30 @@
-# Generate host Ada API docs with GNATdoc 4 (leading comments).
-# Requires `gnatdoc` on PATH (alr install gnatdoc) and crate config/
-# GPRs from a prior alr build of each crate.
+# Generate host Ada API HTML with GNATdoc 4 (leading comments).
+# Requires `alr install gnatdoc` and `~/.alire/bin` on PATH.
+# Build each crate once so Alire has written config/ GPRs before running.
+#
+# When adding a new host Alire crate (.gpr), append an entry to $Projects below.
 
 $ErrorActionPreference = 'Stop'
-
-$Gnatdoc = Get-Command gnatdoc -ErrorAction SilentlyContinue
-if (-not $Gnatdoc) {
-    Write-Error @'
-gnatdoc not found on PATH.
-Install GNATdoc 4, then add its bin directory to PATH, for example:
-  alr install --prefix $HOME/.local gnatdoc
-See https://alire.ada.dev/crates/gnatdoc
-'@
-}
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
 
-function Invoke-CrateGnatdoc {
-    param(
-        [string]$CrateDirectory,
-        [string]$ProjectFile
-    )
-    Push-Location (Join-Path $RepoRoot $CrateDirectory)
-    try {
-        & alr exec -- gnatdoc `
-            --style=leading --warnings -O gnatdoc -P $ProjectFile
-        if ($LASTEXITCODE -ne 0) {
-            exit $LASTEXITCODE
-        }
-    }
-    finally {
-        Pop-Location
+$Projects = @(
+    @{ Name = 'common'; ProjectFile = 'common/lovelace_common.gpr' },
+    @{ Name = 'lovelace'; ProjectFile = 'lovelace/lovelace.gpr' }
+)
+
+foreach ($Project in $Projects) {
+    $OutputDirectory = Join-Path $RepoRoot ('docs/.code/' + $Project.Name)
+    Write-Host "GNATdoc: $($Project.ProjectFile) -> docs/.code/$($Project.Name)"
+
+    & alr exec -- gnatdoc `
+        --style=leading `
+        --backend html `
+        --output-dir $OutputDirectory `
+        $Project.ProjectFile
+
+    if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
     }
 }
-
-Invoke-CrateGnatdoc -CrateDirectory 'common' -ProjectFile 'lovelace_common.gpr'
-Invoke-CrateGnatdoc -CrateDirectory 'lovelace' -ProjectFile 'lovelace.gpr'

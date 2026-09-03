@@ -13,6 +13,8 @@ Do **not** list component GPRs in one `alire.toml` `project-files` array. Do **n
 
 Create an `alire.toml` / `.gpr` **only** when that component is required for the current task **or** the user explicitly asks. Do not scaffold the full crate graph, the workspace crate, test crates, or `shared/` ahead of time.
 
+When you add a new **host** Alire crate with its own `.gpr` (not `lovelace_workspace`, not `shared/lovelace_host_switches.gpr`), append a `{ Name, ProjectFile }` entry to the `$Projects` array in [`scripts/gnatdoc.ps1`](scripts/gnatdoc.ps1) so GNATdoc HTML is generated under `docs/.code/<folder>/`.
+
 ## Shared host switches
 
 All **host** crates (full GNAT RTS) must `with` one abstract GPR and must **not** duplicate the switch list:

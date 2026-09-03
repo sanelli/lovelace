@@ -51,27 +51,18 @@ Not yet a usable compiler. Design and conventions live in `.cursor/rules/`. Cont
 
 Build the workspace from the repository root with `alr build`, or build or run the CLI crate alone with `alr -C lovelace build` or `alr -C lovelace run`. Generate host Ada API HTML with GNATdoc via `pwsh scripts/gnatdoc.ps1` (see [docs/gnatdoc.md](docs/gnatdoc.md)).
 
-### Ada code formatting
+### Development tools
 
-To reformat host Ada sources (for example after raising the maximum line length to 120 characters), install the Libadalang formatting tools. The formatter executable is **`gnatformat`** (installed by the `libadalang_tools` crate). Run it through Alire so it uses the same environment as `alr build`:
+Install these Alire crates once (in addition to the GNAT toolchain Alire selects for the workspace):
 
 ```bash
 alr install libadalang_tools
+alr install gnatdoc
 ```
 
-Add `~/.alire/bin` to your shell profile so `alr exec` can find `gnatformat`:
+### Ada code formatting
 
-**zsh** (`~/.zshrc`):
-
-```bash
-export PATH="$HOME/.alire/bin:$PATH"
-```
-
-**PowerShell** (`$PROFILE`, e.g. `~/.config/powershell/Microsoft.PowerShell_profile.ps1`):
-
-```powershell
-$env:PATH = "$env:HOME/.alire/bin:$env:PATH"
-```
+The formatter executable is **`gnatformat`** (from `libadalang_tools`; see **Development tools** above). Run it through Alire so it uses the same environment as `alr build`.
 
 Example (format one file in place, 120-column width):
 

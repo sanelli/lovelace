@@ -6,8 +6,10 @@ This is the Ada toolchain API. Lovelace language docs stay with Alexandria (`lov
 
 ## Generate HTML
 
-1. Put the **GNATdoc 4** `gnatdoc` binary on `PATH` ([Alire crate `gnatdoc`](https://alire.ada.dev/crates/gnatdoc)), for example `alr install --prefix $HOME/.local gnatdoc`.
-2. Build each crate once so Alire has written `config/` GPRs (`alr -C common build`, `alr -C lovelace build`).
+1. Install **`gnatdoc`** and put `~/.alire/bin` on `PATH` (see README **Development tools**): `alr install gnatdoc`.
+2. Build each crate once so Alire has written `config/` GPRs (`alr build` at the repo root, or `alr -C common build`, and so on).
 3. From the repository root, run `pwsh scripts/gnatdoc.ps1`.
 
-The script calls `alr exec -- gnatdoc --style=leading --warnings -O gnatdoc -P <crate.gpr>` in each existing host crate. HTML is written to `<crate>/gnatdoc/` (gitignored).
+The script runs `alr exec -- gnatdoc --style=leading --backend html --output-dir docs/.code/<crate-folder> <crate>.gpr` for every host project listed in `$Projects` (excluding `lovelace_workspace`). HTML is written to `docs/.code/` (gitignored).
+
+When you add a new host Alire crate, append its folder name and `.gpr` path to `$Projects` in `scripts/gnatdoc.ps1`.
