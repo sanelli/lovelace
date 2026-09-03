@@ -16,7 +16,7 @@ library project Lovelace_Common is
    end Compiler;
 
    package Documentation is
-      for Output_Dir use "gnatdoc";
+      for Documentation_Dir use "gnatdoc";
    end Documentation;
 
 end Lovelace_Common;

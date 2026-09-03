@@ -105,3 +105,31 @@ if ($env:LIBRARY_PATH) {
 $env:MACOSX_DEPLOYMENT_TARGET = "$(xcrun --show-sdk-version)"
 alr build
 ```
+
+### JetBrains Rider (macOS)
+
+Rider has no built-in Ada support. Use the [Ada Language Server](https://github.com/AdaCore/ada_language_server) (ALS) via the [LSP4IJ](https://plugins.jetbrains.com/plugin/23257-lsp4ij) plugin, plus a TextMate bundle for syntax coloring.
+
+1. **Download ALS** — get a release from [AdaCore/ada_language_server](https://github.com/AdaCore/ada_language_server/releases), unpack it somewhere permanent (for example `~/opt/ada_language_server/`), and note the full path to the `ada_language_server` executable.
+
+2. **Put `alr` on the PATH for GUI apps** — Rider does not read your shell profile. Register Alire’s `bin` directory system-wide so ALS can invoke `gprbuild` and related tools:
+
+   ```bash
+   echo /path/to/alire/bin | sudo tee /etc/paths.d/alire
+   ```
+
+   Replace `/path/to/alire/bin` with the directory that contains your `alr` binary (often `~/.local/share/alire/bin` or similar). **Log out and back in** (or restart the Mac) so `/etc/paths.d` entries take effect.
+
+3. **Install LSP4IJ** — in Rider, open **Settings → Plugins**, search for **LSP4IJ**, install it, and restart Rider.
+
+4. **Configure ALS** — open any `.adb` or `.ads` file. When Rider prompts to set up the Ada language server, choose the full path to the `ada_language_server` binary from step 1.
+
+5. **Better syntax coloring** — clone the TextMate Ada bundle and register it in Rider:
+
+   ```bash
+   git clone https://github.com/textmate/ada.tmbundle.git ~/opt/ada.tmbundle
+   ```
+
+   Then **Settings → Editor → TextMate Bundles**, click **+**, and select the cloned folder. Keyword and comment colors follow your color scheme under **Editor → Color Scheme → Language Defaults** (and **Language Server** for semantic tokens from ALS).
+
+6. **Hiding build artifacts** — Alire and GNAT output directories (`alire/`, `obj/`, `bin/`, `config/`, `lib/`) clutter the Project view. Rider’s **Settings → Editor → File Types → Ignored Files and Folders** or **Mark Directory as → Excluded** may not fully hide them in every view; this is still an open annoyance. If you find a reliable approach, please document it here.

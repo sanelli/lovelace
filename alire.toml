@@ -8,6 +8,8 @@ licenses = "MIT"
 
 [[depends-on]]
 lovelace = "*"
+lovelace_common = "*"
 
 [[pins]]
 lovelace = { path = "lovelace" }
+lovelace_common = { path = "common" }

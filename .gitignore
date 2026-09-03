@@ -15,3 +15,5 @@
 **/lib/
 **/gnatdoc/
 
+# JetBrains
+.idea
