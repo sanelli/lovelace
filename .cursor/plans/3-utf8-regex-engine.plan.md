@@ -22,7 +22,7 @@ todos:
     status: completed
   - id: "7"
     content: 7. Add common/tests (lovelace_common_tests, AUnit) for engine + each Lovelace token class
-    status: pending
+    status: completed
   - id: "8"
     content: 8. Document regex engine and UTF-8 conventions under docs/
     status: pending
@@ -85,25 +85,7 @@ Done: crate `lovelace_common` with [`common/alire.toml`](common/alire.toml), [`c
 
 ## 7. Nested AUnit crate `common/tests`
 
-Crate name **`lovelace_common_tests`**: own `alire.toml`, pin `{ path = ".." }`, `depends-on` `lovelace_common` and **AUnit only here**. `with` the shared host switches GPR. AUnit fixtures/test cases, not `Put_Line` drivers. Ada test sources are UTF-8 (emoji in string literals).
-
-Cover (1) engine mechanics like EML’s tests (literal, concat, alt, `*`/`+`/`?`, classes, negation, offsets, invalid patterns) including **emoji / multi-byte** literals and `\u{…}`, and (2) **one pattern per Lovelace token class** below — compile, `Match_Prefix` on representative inputs, including **no space** between tokens (e.g. `+` inside `a+b`) and **with** spaces/tabs. This is not a tokenizer: no token stream, no `compiler/` code.
-
-Token classes to prove with regex (non-nested `{`…`}` comments; no language parser):
-
-- Block comments `{` … `}` spanning lines: e.g. `\{[^}]*\}`.
-- Single-line strings `"…"` with escapes `\\`, `\n`, `\"`, `\'`, `\e`, `\r`, `\f`, `\u{hex}` (and reject an unescaped newline in the match for this pattern).
-- Multiline strings `@"…"` : `@"[^"]*"`.
-- Interpolated `$"…"` with `{varName}` holes (varName uses the identifier pattern).
-- Combined `$@"…"` (multiline + interpolation).
-- Character literals `'…'` (one code point or one escape), including emoji and `\u{…}`.
-- Operators `+ - * / %` (escaped where needed).
-- Punctuation `; , .`
-- Keywords as an alternation of at least: `program`, `function`, `procedure`, `begin`, `end`, `const`, `vars`, `declare`, `and`, `or`, `not`, `if`, `then`, `else`, `loop`, `for`.
-- Parentheses `( ) [ ] < >`.
-- Identifiers: one-or-more printable code points that are not whitespace, not the delimiter/operator/paren/quote/`{`/`}` set, and **not starting with `[0-9]`**; must match emoji and other UTF-8 (e.g. `café`, `🚀go`).
-
-Whitespace between tokens is optional: tests for `program` / `+` / identifiers must succeed both glued and separated by space/tab.
+Done: crate `lovelace_common_tests` under [`common/tests/`](common/tests/) with AUnit, pin to `lovelace_common`, shared host switches. Fixtures cover engine mechanics (literal, concat, alt, quantifiers, classes, offsets, invalid patterns, UTF-8/`\u{…}`) and one pattern per token class (comments, strings, chars, ops, punct, keywords, parens, identifiers), including glued vs spaced inputs. `alr -C common/tests run` — 20/20 OK. Non-ASCII test data uses `Wide_Wide_String` + `Utf_8.Encode` (GNAT `-gnatW8` rejects emoji in `String` literals).
 
 ## 8. Document under `docs/`
 
