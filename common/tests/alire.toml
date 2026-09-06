@@ -1,0 +1,20 @@
+name = "lovelace_common_tests"
+description = "AUnit tests for lovelace_common"
+version = "0.1.0-dev"
+
+authors = ["Stefano Anelli"]
+maintainers = ["Stefano Anelli <sanelli@users.noreply.github.com>"]
+licenses = "MIT"
+
+executables = ["lovelace_common_tests"]
+auto-gpr-with = false
+
+[[depends-on]]
+lovelace_common = "*"
+aunit = "^25.0.0"
+
+[[pins]]
+lovelace_common = { path = ".." }
+
+[build-switches]
+"*".style_checks = "No"

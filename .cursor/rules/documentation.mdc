@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Documentation obligations
 
-- **Ada:** every subprogram (and type) visible outside its package needs a spec documentation comment.
+- **Ada:** GNATdoc 4 on every spec (packages, records with `@field`/`@disc`, enums with `@enum`, subprograms with `@param`/`@return`). Leading comments only; no inline field/parameter docs. See [gnatdoc.mdc](gnatdoc.mdc) and [GNATdoc annotations](https://docs.adacore.com/live/wave/gnatdoc4/html/gnatdoc-doc/annotations.html). Generate with `scripts/gnatdoc.ps1`.
 - **Lovelace:** every subroutine visible outside its module needs a doc-comment (format TBC). Comments and doc-comments are language features.
 - **New features:** document them under `docs/` in the same work. When the feature exists, `docs/` must cover CLI usage, language grammar, and HOW TOs (e.g. writing a Lovelace binding, authoring a Hypatia `.pkglove` package).
 - **Generated docs:** `lovelace doc` (Alexandria) emits Markdown plus SVG when graphs help. The compiler may also embed the same docs as attributes in WASM / WAT / WIT. Document `lovelace format` and `--no-warn-as-errors` / warning pragmas when those commands exist.

@@ -1,0 +1,12 @@
+name = "lovelace_common"
+description = "Shared host library for Lovelace"
+version = "0.1.0-dev"
+
+authors = ["Stefano Anelli"]
+maintainers = ["Stefano Anelli <sanelli@users.noreply.github.com>"]
+licenses = "MIT"
+
+auto-gpr-with = false
+
+[build-switches]
+"*".style_checks = "No"

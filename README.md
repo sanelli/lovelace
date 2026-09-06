@@ -49,7 +49,26 @@ Pipeline: **source → frontend → LIR (analysis / opts) → backend → WebAss
 
 Not yet a usable compiler. Design and conventions live in `.cursor/rules/`. Contributions should follow those rules (Alire, strict Ada, AUnit tests, no extra third-party libraries except the allowed Wasmtime C, libgit2, and AUnit bindings).
 
-Build the workspace from the repository root with `alr build`, or build or run the CLI crate alone with `alr -C lovelace build` or `alr -C lovelace run`.
+Build the workspace from the repository root with `alr build`, or build or run the CLI crate alone with `alr -C lovelace build` or `alr -C lovelace run`. Host UTF-8 and the Thompson NFA regex engine are documented in [docs/regex-engine.md](docs/regex-engine.md). Generate host Ada API HTML with GNATdoc via `pwsh scripts/gnatdoc.ps1` (see [docs/gnatdoc.md](docs/gnatdoc.md)).
+
+### Development tools
+
+Install these Alire crates once (in addition to the GNAT toolchain Alire selects for the workspace):
+
+```bash
+alr install libadalang_tools
+alr install gnatdoc
+```
+
+### Ada code formatting
+
+The formatter executable is **`gnatformat`** (from `libadalang_tools`; see **Development tools** above). Run it through Alire so it uses the same environment as `alr build`.
+
+Example (format one file in place, 120-column width):
+
+```powershell
+alr exec -- gnatformat -w 120 -P common/lovelace_common.gpr common/src/lovelace-common-utf_8.adb
+```
 
 ### macOS setup
 
@@ -105,3 +124,32 @@ if ($env:LIBRARY_PATH) {
 $env:MACOSX_DEPLOYMENT_TARGET = "$(xcrun --show-sdk-version)"
 alr build
 ```
+
+
+### JetBrains Rider (macOS)
+
+Rider has no built-in Ada support. Use the [Ada Language Server](https://github.com/AdaCore/ada_language_server) (ALS) via the [LSP4IJ](https://plugins.jetbrains.com/plugin/23257-lsp4ij) plugin, plus a TextMate bundle for syntax coloring.
+
+1. **Download ALS** — get a release from [AdaCore/ada_language_server](https://github.com/AdaCore/ada_language_server/releases), unpack it somewhere permanent (for example `~/opt/ada_language_server/`), and note the full path to the `ada_language_server` executable.
+
+2. **Put `alr` on the PATH for GUI apps** — Rider does not read your shell profile. Register Alire’s `bin` directory system-wide so ALS can invoke `gprbuild` and related tools:
+
+   ```bash
+   echo /path/to/alire/bin | sudo tee /etc/paths.d/alire
+   ```
+
+   Replace `/path/to/alire/bin` with the directory that contains your `alr` binary (often `~/.local/share/alire/bin` or similar). **Log out and back in** (or restart the Mac) so `/etc/paths.d` entries take effect.
+
+3. **Install LSP4IJ** — in Rider, open **Settings → Plugins**, search for **LSP4IJ**, install it, and restart Rider.
+
+4. **Configure ALS** — open any `.adb` or `.ads` file. When Rider prompts to set up the Ada language server, choose the full path to the `ada_language_server` binary from step 1.
+
+5. **Better syntax coloring** — clone the TextMate Ada bundle and register it in Rider:
+
+   ```bash
+   git clone https://github.com/textmate/ada.tmbundle.git ~/opt/ada.tmbundle
+   ```
+
+   Then **Settings → Editor → TextMate Bundles**, click **+**, and select the cloned folder. Keyword and comment colors follow your color scheme under **Editor → Color Scheme → Language Defaults** (and **Language Server** for semantic tokens from ALS).
+
+6. **Hiding build artifacts** — Alire and GNAT output directories (`alire/`, `obj/`, `bin/`, `config/`, `lib/`) clutter the Project view. Rider’s **Settings → Editor → File Types → Ignored Files and Folders** or **Mark Directory as → Excluded** may not fully hide them in every view; this is still an open annoyance. If you find a reliable approach, please document it here.

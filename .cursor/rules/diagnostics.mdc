@@ -42,6 +42,8 @@ A warning may be silenced **globally** (all codes) or **per diagnostic code**. S
 
 Suppression is metadata, not generated statements (see language directives). Do not invent XML/`#pragma` syntax until specified.
 
+Host **internal** failures (`Lovelace_Internal_Error` / `Result`) are not this diagnostic format. Report them as a generic internal error plus the detail string (see result-and-internal-errors).
+
 ## Style diagnostics
 
 Emit warnings (hence errors under default Werror) when source violates the **current** Lovelace style. Defaults:

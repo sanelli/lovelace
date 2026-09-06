@@ -1,0 +1,30 @@
+---
+description: Never abbreviate identifiers in Ada or Lovelace sources
+alwaysApply: true
+---
+
+# No abbreviated identifiers
+
+Do **not** shorten names of types, fields, discriminants, subprograms, parameters, locals, loop names, or package-level constants. Write the full word.
+
+Domain-standard acronyms stay as acronyms in Mixed_Case (`LIR`, `WIT`, `WASM`, `GPR`, `CLI`, `NFA`, `Utf_8`). Do not invent a short form of an ordinary word.
+
+```ada
+-- BAD
+type Engine is record
+   Trans : Transition_Vectors.Vector;
+end record;
+
+procedure Add_Transition (B : in out Builder; T : in out Transition);
+
+-- GOOD
+type Engine is record
+   Transactions : Transition_Vectors.Vector;
+end record;
+
+procedure Add_Transition
+  (The_Builder    : in out Builder;
+   The_Transition : in out Transition);
+```
+
+Typical expansions: `Trans` → `Transactions`, `Pos` → `Position`, `Idx` → `Index`, `Acc` → `Accumulator`, `Frag` → `The_Fragment`, `Lit` → `Literal`, `Alt` → `Alternation`. Do not use single-letter names (`E`, `P`, `T`, `N`, `B`, `S`).

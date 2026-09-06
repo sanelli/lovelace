@@ -12,4 +12,11 @@
 **/obj/
 **/bin/
 **/config/
+**/lib/
+**/gnatdoc/
 
+# Generated host Ada API HTML (scripts/gnatdoc.ps1)
+docs/.code/
+
+# JetBrains
+.idea

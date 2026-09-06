@@ -1,0 +1,45 @@
+---
+description: Host Ada specs use GNATdoc leading comments and @field/@enum/@param/@return tags
+globs: "**/*.{ads,adb}"
+alwaysApply: true
+---
+
+# GNATdoc annotations (host Ada)
+
+Document Ada **specs** with [GNATdoc 4 annotations](https://docs.adacore.com/live/wave/gnatdoc4/html/gnatdoc-doc/annotations.html). Use **leading** comments (block immediately before the entity). Invoke with `--style=leading` (see `scripts/gnatdoc.ps1`).
+
+Always document:
+
+- **Packages** — comment immediately before `package … is`
+- **Records** — type comment plus **`@field`** (and **`@disc`** for discriminants)
+- **Enums** — type comment plus **`@enum`** for every literal
+- **Subprograms** — comment plus **`@param`** for every parameter and **`@return`** for functions
+
+Do **not** document fields, literals, or parameters with inline comments after the declaration. Put `@field`, `@enum`, `@param`, and `@return` in the leading block.
+
+```ada
+-- BAD
+type Point is record
+   X : Integer;  --  Horizontal
+   Y : Integer;
+end record;
+
+function Compile (Pattern : String) return Regex_Result;
+--  Compiles Pattern.
+
+-- GOOD
+--  Integer pixel location.
+--  @field X Horizontal coordinate.
+--  @field Y Vertical coordinate.
+type Point is record
+   X : Integer;
+   Y : Integer;
+end record;
+
+--  Compile Pattern into an NFA.
+--  @param Pattern UTF-8 regular-expression source.
+--  @return Compiled engine, or a Regex_Error.
+function Compile (Pattern : String) return Regex_Result;
+```
+
+Bodies do not replace spec docs. Nested helpers in bodies need no GNATdoc tags.

@@ -8,7 +8,7 @@ alwaysApply: false
 
 ## Alexandria (`alexandria/`)
 
-`alexandria/` is a **static** library. It owns:
+Crate `lovelace_alexandria` in `alexandria/` is a **static** library. It owns:
 
 - Parsing Lovelace **comments** and **doc-comments** (format TBC)
 - Building a documentation model from a project, solution, or package
@@ -23,6 +23,10 @@ Produces a Markdown documentation set for the selected project, solution, or Hyp
 ## Embed docs in artifacts
 
 Documentation from doc-comments may also be **embedded as attributes** in generated **WASM**, **WAT**, and **WIT** (WIT `///` docs and/or custom sections / annotations). The compiler backend emits this; Alexandria supplies the text/model. Do not drop docs on the floor at codegen time.
+
+## Host Ada API docs (GNATdoc)
+
+Host Ada specs are annotated for [GNATdoc 4](https://docs.adacore.com/live/wave/gnatdoc4/html/gnatdoc-doc/annotations.html) (`--style=leading`). This is **not** Alexandria (`lovelace doc`). Run `scripts/gnatdoc.ps1` after `alr` has generated crate `config/` GPRs. See gnatdoc and [docs/gnatdoc.md](docs/gnatdoc.md).
 
 ## `docs/` (this repository)
 
