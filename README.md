@@ -125,6 +125,7 @@ $env:MACOSX_DEPLOYMENT_TARGET = "$(xcrun --show-sdk-version)"
 alr build
 ```
 
+
 ### JetBrains Rider (macOS)
 
 Rider has no built-in Ada support. Use the [Ada Language Server](https://github.com/AdaCore/ada_language_server) (ALS) via the [LSP4IJ](https://plugins.jetbrains.com/plugin/23257-lsp4ij) plugin, plus a TextMate bundle for syntax coloring.
