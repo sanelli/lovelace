@@ -7,38 +7,41 @@ alwaysApply: true
 
 The Cursor **Shell** tool in this workspace runs **PowerShell** (pwsh on macOS), not bash. Write PowerShell. Do not paste bash-only syntax and hope it works.
 
-## Commit messages and multi-line strings
+## Commit messages
 
-Do **not** use bash heredocs. `<<` is a redirection operator → `ParserError: Missing file specification after redirection operator.`
+Use **`git commit -m` only** for commit messages. Do **not** use heredocs, here-strings, or nested quoting wrappers — they have leaked literal `EOF`, `'@`, or `@"` into commit messages.
 
 ```powershell
-# BAD — bash heredoc (fails in PowerShell)
+# BAD — heredoc / here-string (can corrupt the stored message)
 git commit -m "$(cat <<'EOF'
 Message here.
-
 EOF
 )"
-
-# GOOD — single-quoted here-string (no interpolation)
 git commit -m @'
 Message here.
-
 '@
+
+# GOOD — plain -m (one line, or repeat -m for a short body)
+git commit -m '#5 Save compiler tokenizer plan'
+git commit -m '#5 Save compiler tokenizer plan' -m 'Steps 1-3 complete.'
 ```
 
-Use `@' ... '@` for commit messages and any literal multi-line text. Use `@" ... "@` only when you **intend** PowerShell to expand `$variables`.
+Keep the subject on one line when possible. Use a second `-m` for an optional body paragraph; do not use `<<EOF`, `@'`, `@"`, or `$(cat ...)`.
+
+## Other multi-line strings
+
+For non-commit text (rare), prefer a single quoted string or separate commands. Do **not** use bash heredocs in PowerShell (`<<` is a redirection operator).
 
 ## Quoting
 
 `$` inside double-quoted strings is interpolation (`$env:HTTP_PROXY`, `$_`, `$(...)`). Nested `"..."` in a long one-liner often yields `The string is missing the terminator: "` — especially with `$env:VAR` inside `"..."`.
 
 - Prefer single quotes for literals: `'HTTP_PROXY is set'`
-- Prefer here-strings over stacking escaped double quotes
 - Print env vars without wrapping the whole pipeline in one double-quoted string: `$env:HTTP_PROXY` on its own statement
 - Do not mix bash `$(cat ...)` with PowerShell `"..."` in the same command
+- For `git commit`, use `-m` only (see Commit messages above). For `gh pr create --body`, use a single quoted `--body '...'` string or `-F path/to/body.txt`; do not use heredocs or here-strings.
 
 ## Commands
 
 - Unset an env var for the current process: `$env:HTTP_PROXY = $null` (not `unset`)
 - Chain with `;` and check `$LASTEXITCODE` when a later command must not run on failure. Do not rely on bash `&&` / `$(...)` / `export`
-- `gh` and `git` arguments that contain quotes belong in a here-string or single-quoted `-m` / `--body`, not in nested bash `$(cat <<EOF)`

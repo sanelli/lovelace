@@ -37,14 +37,18 @@ Executing an **approved plan** includes commits for that work, the final push, a
 
 **Commit messages** must **start** with the GitHub issue number for the work in progress: `#<n>` (e.g. `#1 Bootstrap host Alire layout`). Do not bury the issue reference at the end of the subject or body only. Use the issue from the current branch (`feature/<n>-*`) or the active plan (`.cursor/plans/<n>-*.plan.md`).
 
-Commit messages: PowerShell here-string `@' ... '@` (see the agent shell rule). Do not use bash `$(cat <<'EOF')`.
+Pass commit messages with **`git commit -m` only** (see agent-shell rule). Do not use `<<EOF`, PowerShell `@' … '@`, or `@" … "@` for commits.
 
-Example:
+Example subject (one `-m`):
 
 ```text
 #1 Bootstrap host Alire layout with do-nothing lovelace CLI
+```
 
-Add shared host switches GPR, lovelace executable crate, and workspace aggregate.
+Optional body as a second `-m`:
+
+```powershell
+git commit -m '#1 Bootstrap host Alire layout with do-nothing lovelace CLI' -m 'Add shared host switches GPR, lovelace executable crate, and workspace aggregate.'
 ```
 
 - Never `--force` push, never `--amend` unless the user asks and the amend rules in user git policy are met.
