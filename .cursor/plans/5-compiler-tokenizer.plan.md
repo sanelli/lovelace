@@ -19,7 +19,7 @@ todos:
     status: completed
   - id: "6"
     content: 6. Implement token types, spans, and shared filename
-    status: pending
+    status: completed
   - id: "7"
     content: 7. Implement tokenizer with cached regex engines and Result errors
     status: pending
@@ -294,7 +294,7 @@ Done: [`compiler/alire.toml`](compiler/alire.toml), [`compiler/lovelace_compiler
 
 ## 6. Implement token types, spans, and shared filename
 
-`Lovelace.Compiler.Tokens`: kinds, discriminant-safe subtypes, spans, immutable shared filename + `Option`, `Lexeme` helper. GNATdoc on the spec. Error codes may live on `Tokenizer` (they are not token kinds).
+Done: [`Lovelace.Compiler.Source`](compiler/src/lovelace-compiler-source.ads) (spans, positions, refcounted shared filename, `Filename_Option`); [`Lovelace.Compiler.Tokens`](compiler/src/lovelace-compiler-tokens.ads) (kinds, discriminant-safe subtypes, indefinite `Token` in `Token_Sequence`, `Lexeme`). GNATdoc on both specs.
 
 ## 7. Implement the tokenizer
 
