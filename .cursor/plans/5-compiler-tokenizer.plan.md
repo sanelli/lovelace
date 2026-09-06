@@ -16,7 +16,7 @@ todos:
     status: completed
   - id: "5"
     content: 5. Create lovelace_compiler crate, workspace pin, gnatdoc.ps1 entry
-    status: pending
+    status: completed
   - id: "6"
     content: 6. Implement token types, spans, and shared filename
     status: pending
@@ -290,7 +290,7 @@ Done: [`Lovelace.Common.Option`](common/src/lovelace-common-option.ads) plus AUn
 
 ## 5. Create crate `lovelace_compiler`
 
-`compiler/alire.toml`, `compiler/lovelace_compiler.gpr` (`Library_Kind use "static"`), `Lovelace.Compiler`, workspace pin, `scripts/gnatdoc.ps1` entry. `depends-on` / pin `lovelace_common` only.
+Done: [`compiler/alire.toml`](compiler/alire.toml), [`compiler/lovelace_compiler.gpr`](compiler/lovelace_compiler.gpr), empty [`Lovelace.Compiler`](compiler/src/lovelace-compiler.ads); workspace and [`scripts/gnatdoc.ps1`](scripts/gnatdoc.ps1) wired; `depends-on` / pin `lovelace_common` only.
 
 ## 6. Implement token types, spans, and shared filename
 

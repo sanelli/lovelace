@@ -1,0 +1,18 @@
+name = "lovelace_compiler"
+description = "Lovelace compiler frontend static library"
+version = "0.1.0-dev"
+
+authors = ["Stefano Anelli"]
+maintainers = ["Stefano Anelli <sanelli@users.noreply.github.com>"]
+licenses = "MIT"
+
+auto-gpr-with = false
+
+[[depends-on]]
+lovelace_common = "*"
+
+[[pins]]
+lovelace_common = { path = "../common" }
+
+[build-switches]
+"*".style_checks = "No"

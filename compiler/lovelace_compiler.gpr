@@ -1,0 +1,23 @@
+with "config/lovelace_compiler_config.gpr";
+with "../shared/lovelace_host_switches.gpr";
+with "../common/lovelace_common.gpr";
+library project Lovelace_Compiler is
+
+   for Library_Name use "lovelace_compiler";
+   for Library_Kind use "static";
+   for Source_Dirs use ("src/", "config/");
+   for Object_Dir use "obj/" & Lovelace_Compiler_Config.Build_Profile;
+   for Library_Dir use "lib/" & Lovelace_Compiler_Config.Build_Profile;
+   for Create_Missing_Dirs use "True";
+
+   package Compiler is
+      for Default_Switches ("Ada") use
+        Lovelace_Compiler_Config.Ada_Compiler_Switches
+        & Lovelace_Host_Switches.Ada_Compiler_Switches;
+   end Compiler;
+
+   package Documentation is
+      for Documentation_Dir use "gnatdoc";
+   end Documentation;
+
+end Lovelace_Compiler;

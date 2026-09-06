@@ -3,6 +3,7 @@ aggregate project Lovelace_Workspace is
 
    for Project_Files use
      ("lovelace/lovelace.gpr",
-      "common/lovelace_common.gpr");
+      "common/lovelace_common.gpr",
+      "compiler/lovelace_compiler.gpr");
 
 end Lovelace_Workspace;
