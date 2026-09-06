@@ -28,10 +28,10 @@ todos:
     status: completed
   - id: "9"
     content: 9. Document tokenizer, grammar snippet, regex-engine link, README
-    status: pending
+    status: completed
   - id: "10"
     content: 10. Run all tests that exist (workspace, common/tests, compiler/tests)
-    status: pending
+    status: completed
   - id: "11"
     content: 11. Push and open a PR with gh pr create
     status: pending
@@ -306,13 +306,15 @@ Done: crate `lovelace_compiler_tests` with 19 AUnit fixtures for the token matri
 
 ## 9. Document under `docs/`
 
-`docs/tokenizer.md`, regex-engine cross-link, grammar snippet, README Status.
+Done: [`docs/tokenizer.md`](docs/tokenizer.md), [`docs/token-grammar.md`](docs/token-grammar.md), regex-engine “Not the Lovelace lexer” points at the tokenizer, README Status links both.
 
 ## 10. Run all tests that exist
 
-- `alr build` at repo root (workspace now includes compiler).
-- `alr -C common/tests run`
-- `alr -C compiler/tests run`
+Done:
+
+- `alr build` at repo root — success
+- `alr -C common/tests run` — 23/23
+- `alr -C compiler/tests run` — 19/19
 
 ## 11. Push and open a PR
 

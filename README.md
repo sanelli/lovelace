@@ -49,7 +49,7 @@ Pipeline: **source → frontend → LIR (analysis / opts) → backend → WebAss
 
 Not yet a usable compiler. Design and conventions live in `.cursor/rules/`. Contributions should follow those rules (Alire, strict Ada, AUnit tests, no extra third-party libraries except the allowed Wasmtime C, libgit2, and AUnit bindings).
 
-Build the workspace from the repository root with `alr build`, or build or run the CLI crate alone with `alr -C lovelace build` or `alr -C lovelace run`. Host UTF-8 and the Thompson NFA regex engine are documented in [docs/regex-engine.md](docs/regex-engine.md). Generate host Ada API HTML with GNATdoc via `pwsh scripts/gnatdoc.ps1` (see [docs/gnatdoc.md](docs/gnatdoc.md)).
+Build the workspace from the repository root with `alr build`, or build or run the CLI crate alone with `alr -C lovelace build` or `alr -C lovelace run`. Host UTF-8 and the Thompson NFA regex engine are documented in [docs/regex-engine.md](docs/regex-engine.md). The compiler tokenizer (keywords `program` / `begin` / `end`, identifiers, `;` and `.`) is documented in [docs/tokenizer.md](docs/tokenizer.md) and [docs/token-grammar.md](docs/token-grammar.md). Generate host Ada API HTML with GNATdoc via `pwsh scripts/gnatdoc.ps1` (see [docs/gnatdoc.md](docs/gnatdoc.md)).
 
 ### Development tools
 
