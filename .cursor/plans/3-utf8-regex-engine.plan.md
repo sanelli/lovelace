@@ -28,13 +28,13 @@ todos:
     status: completed
   - id: "9"
     content: 9. Pin lovelace_common in lovelace_workspace (no CLI depends-on yet)
-    status: pending
+    status: completed
   - id: "10"
     content: 10. Run all tests that exist (workspace build + nested AUnit)
     status: completed
   - id: "11"
     content: 11. Push and open a PR with gh pr create
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -93,7 +93,7 @@ Done: [`docs/regex-engine.md`](docs/regex-engine.md) covers UTF-8 conventions, r
 
 ## 9. Wire the workspace
 
-Root [`alire.toml`](alire.toml): `[[depends-on]]` + `[[pins]]` for `lovelace_common = { path = "common" }` in addition to `lovelace`. [`lovelace_workspace.gpr`](lovelace_workspace.gpr): add `common/lovelace_common.gpr` to `Project_Files`. Do **not** add `depends-on` from the `lovelace` executable to `lovelace_common` yet (avoids `procedure Lovelace` vs `package Lovelace`).
+Done: root [`alire.toml`](alire.toml) `depends-on` + pin `lovelace_common = { path = "common" }`; [`lovelace_workspace.gpr`](lovelace_workspace.gpr) includes `common/lovelace_common.gpr`. No `depends-on` from the `lovelace` executable to `lovelace_common` yet.
 
 ## 10. Run all tests
 
@@ -107,4 +107,4 @@ No other nested AUnit crates exist; that is the full suite.
 
 ## 11. Push and open a PR
 
-`git push` / `gh pr create` with proxy env vars cleared and `all` permissions (see agent-workflow). PR closes #3.
+Done: branch pushed; PR opened with `gh pr create` (closes #3).
