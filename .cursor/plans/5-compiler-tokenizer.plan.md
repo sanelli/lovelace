@@ -25,7 +25,7 @@ todos:
     status: completed
   - id: "8"
     content: 8. Add compiler/tests (lovelace_compiler_tests) for the token matrix
-    status: pending
+    status: completed
   - id: "9"
     content: 9. Document tokenizer, grammar snippet, regex-engine link, README
     status: pending
@@ -302,7 +302,7 @@ Done: [`Lovelace.Compiler.Tokenizer`](compiler/src/lovelace-compiler-tokenizer.a
 
 ## 8. Nested AUnit crate `compiler/tests`
 
-Crate `lovelace_compiler_tests`; fixtures covering the matrix above. Non-ASCII via `Utf_8.Encode`.
+Done: crate `lovelace_compiler_tests` with 19 AUnit fixtures for the token matrix. Non-ASCII via `Utf_8.Encode`. `Tokenize_Result` is tokens-or-errors, so mixed cases assert the error list only.
 
 ## 9. Document under `docs/`
 

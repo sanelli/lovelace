@@ -1,0 +1,26 @@
+with "config/lovelace_compiler_tests_config.gpr";
+with "../../shared/lovelace_host_switches.gpr";
+with "../lovelace_compiler.gpr";
+project Lovelace_Compiler_Tests is
+
+   for Source_Dirs use ("src/", "config/");
+   for Object_Dir use "obj/" & Lovelace_Compiler_Tests_Config.Build_Profile;
+   for Create_Missing_Dirs use "True";
+   for Exec_Dir use "bin";
+   for Main use ("lovelace_compiler_tests.adb");
+
+   package Compiler is
+      for Default_Switches ("Ada") use
+        Lovelace_Compiler_Tests_Config.Ada_Compiler_Switches
+        & Lovelace_Host_Switches.Ada_Compiler_Switches;
+   end Compiler;
+
+   package Binder is
+      for Switches ("Ada") use ("-Es");
+   end Binder;
+
+   package Documentation is
+      for Documentation_Dir use "gnatdoc";
+   end Documentation;
+
+end Lovelace_Compiler_Tests;

@@ -1,5 +1,3 @@
-with Ada.Wide_Wide_Characters.Handling;
-
 with Lovelace.Common.Option;
 with Lovelace.Common.Regex;
 with Lovelace.Common.Utf_8;
@@ -46,6 +44,7 @@ package body Lovelace.Compiler.Tokenizer is
    Whitespace_Ranges : constant Scalar_Range_List :=
      [Scalar_Range'(Low => Wide_Wide_Character'Val (16#0009#), High => Wide_Wide_Character'Val (16#000D#)),
       Scalar_Range'(Low => Wide_Wide_Character'Val (16#0020#), High => Wide_Wide_Character'Val (16#0020#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#0085#), High => Wide_Wide_Character'Val (16#0085#)),
       Scalar_Range'(Low => Wide_Wide_Character'Val (16#00A0#), High => Wide_Wide_Character'Val (16#00A0#)),
       Scalar_Range'(Low => Wide_Wide_Character'Val (16#1680#), High => Wide_Wide_Character'Val (16#1680#)),
       Scalar_Range'(Low => Wide_Wide_Character'Val (16#2000#), High => Wide_Wide_Character'Val (16#200A#)),
@@ -62,6 +61,30 @@ package body Lovelace.Compiler.Tokenizer is
       Scalar_Range'(Low => Wide_Wide_Character'Val (16#FE30#), High => Wide_Wide_Character'Val (16#FE4F#)),
       Scalar_Range'(Low => Wide_Wide_Character'Val (16#FE50#), High => Wide_Wide_Character'Val (16#FE6F#)),
       Scalar_Range'(Low => Wide_Wide_Character'Val (16#FF00#), High => Wide_Wide_Character'Val (16#FFEF#))];
+
+   --  Unicode Other_Format (Cf) excluded from identifiers.
+   Other_Format_Ranges : constant Scalar_Range_List :=
+     [Scalar_Range'(Low => Wide_Wide_Character'Val (16#00AD#), High => Wide_Wide_Character'Val (16#00AD#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#0600#), High => Wide_Wide_Character'Val (16#0605#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#061C#), High => Wide_Wide_Character'Val (16#061C#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#06DD#), High => Wide_Wide_Character'Val (16#06DD#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#070F#), High => Wide_Wide_Character'Val (16#070F#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#0890#), High => Wide_Wide_Character'Val (16#0891#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#08E2#), High => Wide_Wide_Character'Val (16#08E2#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#180E#), High => Wide_Wide_Character'Val (16#180E#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#200B#), High => Wide_Wide_Character'Val (16#200F#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#202A#), High => Wide_Wide_Character'Val (16#202E#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#2060#), High => Wide_Wide_Character'Val (16#2064#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#2066#), High => Wide_Wide_Character'Val (16#206F#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#FEFF#), High => Wide_Wide_Character'Val (16#FEFF#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#FFF9#), High => Wide_Wide_Character'Val (16#FFFB#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#110BD#), High => Wide_Wide_Character'Val (16#110BD#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#110CD#), High => Wide_Wide_Character'Val (16#110CD#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#13430#), High => Wide_Wide_Character'Val (16#1343F#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#1BCA0#), High => Wide_Wide_Character'Val (16#1BCA3#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#1D173#), High => Wide_Wide_Character'Val (16#1D17A#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#E0001#), High => Wide_Wide_Character'Val (16#E0001#)),
+      Scalar_Range'(Low => Wide_Wide_Character'Val (16#E0020#), High => Wide_Wide_Character'Val (16#E007F#))];
 
    --  ASCII graphic punctuation excluded from identifiers (not letters, digits, or underscore).
    Ascii_Punctuation : constant String := "!""#$%&'()*+,-./:;<=>?@[\]^`{|}~";
@@ -92,7 +115,6 @@ package body Lovelace.Compiler.Tokenizer is
    Scan_Classes      : Scan_Class_Vectors.Vector;
 
    function Ascii_Punctuation_Class return String;
-   function Empty_Error_Sequence return Tokenizer_Error_Sequence;
    function Ensure_Patterns (Filename : Source.Filename_Option) return Tokenizer_Error_Sequence;
    function Escape_Regex_Lexeme (Lexeme : String) return String;
    function Failure_Result (Errors : Tokenizer_Error_Sequence) return Tokenize_Result;
@@ -154,10 +176,11 @@ package body Lovelace.Compiler.Tokenizer is
       Filename     : Source.Filename_Option);
    function Compile_Cached (Pattern : String) return Lovelace.Common.Regex.Regex_Result;
    procedure Longest_Scan_Match
-     (Source_Text  : String;
-      Position     : Positive;
-      Match_Length : out Natural;
-      Kind         : out Tokens.Token_Kind);
+     (Source_Text     : String;
+      Position        : Positive;
+      After_Delimiter : Boolean;
+      Match_Length    : out Natural;
+      Kind            : out Tokens.Token_Kind);
    procedure Report_Invalid_Utf_8
      (Errors      : in out Tokenizer_Error_Sequence;
       Source_Text : String;
@@ -193,24 +216,25 @@ package body Lovelace.Compiler.Tokenizer is
            (Source => Source_Text, Index => Position, Point => Point, Length => Length, Valid => Valid);
          exit when not Valid or else Length = 0 or else Length > Remaining;
 
-         Last_Position := (Byte_Index => Position, Line => Line, Column => Column);
-
          if Point = Wide_Wide_Character'Val (16#000D#)
            and then Length = 1
            and then Remaining >= 2
            and then Position + 1 <= Source_Text'Last
            and then Source_Text (Position + 1) = Character'Val (16#0A#)
          then
+            Last_Position := (Byte_Index => Position + 1, Line => Line, Column => Column);
             Position := Position + 2;
             Remaining := Remaining - 2;
             Line := Line + 1;
             Column := 1;
          elsif Point = Wide_Wide_Character'Val (16#000A#) or else Point = Wide_Wide_Character'Val (16#000D#) then
+            Last_Position := (Byte_Index => Position + Length - 1, Line => Line, Column => Column);
             Position := Position + Length;
             Remaining := Remaining - Length;
             Line := Line + 1;
             Column := 1;
          else
+            Last_Position := (Byte_Index => Position + Length - 1, Line => Line, Column => Column);
             Position := Position + Length;
             Remaining := Remaining - Length;
             Column := Column + 1;
@@ -472,17 +496,17 @@ package body Lovelace.Compiler.Tokenizer is
    end Is_Excluded_Punctuation;
 
    function Is_Identifier_Continue (Point : Code_Point) return Boolean is
-      use Ada.Wide_Wide_Characters.Handling;
+      Value : constant Natural := Wide_Wide_Character'Pos (Point);
    begin
-      if not Is_Graphic (Point) then
+      if Value <= 16#1F# or else Value in 16#7F# .. 16#9F# then
          return False;
       end if;
 
-      if Is_Space (Point) or else Is_Control (Point) or else Is_Line_Terminator (Point) then
+      if Is_In_Ranges (Point, Whitespace_Ranges) then
          return False;
       end if;
 
-      if Is_Other_Format (Point) then
+      if Is_In_Ranges (Point, Other_Format_Ranges) then
          return False;
       end if;
 
@@ -524,10 +548,11 @@ package body Lovelace.Compiler.Tokenizer is
    end Length;
 
    procedure Longest_Scan_Match
-     (Source_Text  : String;
-      Position     : Positive;
-      Match_Length : out Natural;
-      Kind         : out Tokens.Token_Kind)
+     (Source_Text     : String;
+      Position        : Positive;
+      After_Delimiter : Boolean;
+      Match_Length    : out Natural;
+      Kind            : out Tokens.Token_Kind)
    is
       Candidate_Length : Natural;
       Candidate        : Scan_Class;
@@ -539,6 +564,13 @@ package body Lovelace.Compiler.Tokenizer is
          Candidate := Scan_Classes.Element (Index);
          Candidate_Length :=
            Lovelace.Common.Regex.Match_Prefix (Candidate.The_Engine, Source_Text, Position);
+         if Candidate.Kind = Tokens.Identifier
+           and then Candidate_Length > 0
+           and then Source_Text (Position) = '@'
+           and then not After_Delimiter
+         then
+            Candidate_Length := 0;
+         end if;
          if Candidate_Length > Match_Length
            or else
            (Candidate_Length = Match_Length
@@ -691,6 +723,9 @@ package body Lovelace.Compiler.Tokenizer is
                Filename => Filename,
                Detail   => "unrecognized symbol '" & Format_Scalar (Decode_Result.Value) & "'");
             Skip_Length := Lovelace.Common.Utf_8.Sequence_Length (Source_Text, Position);
+            if Skip_Length = 0 then
+               Skip_Length := 1;
+            end if;
             Advance_Bytes
               (Source_Text   => Source_Text,
                Byte_Count    => Skip_Length,
@@ -754,12 +789,15 @@ package body Lovelace.Compiler.Tokenizer is
       Match_Length      : Natural;
       Kind              : Tokens.Token_Kind;
       Last_Position     : Source.Source_Position;
+      Start_Position    : Positive;
+      After_Delimiter   : Boolean := True;
    begin
       if Source_Text'Length = 0 then
          return Success_Result (Token_List);
       end if;
 
       while Position <= Source_Text'Last loop
+         Start_Position := Position;
          Whitespace_Length := Lovelace.Common.Regex.Match_Prefix (Whitespace_Engine, Source_Text, Position);
          if Whitespace_Length > 0 then
             Advance_Bytes
@@ -769,10 +807,17 @@ package body Lovelace.Compiler.Tokenizer is
                Line          => Line,
                Column        => Column,
                Last_Position => Last_Position);
+            After_Delimiter := True;
          else
-            Longest_Scan_Match (Source_Text, Position, Match_Length, Kind);
+            Longest_Scan_Match
+              (Source_Text     => Source_Text,
+               Position        => Position,
+               After_Delimiter => After_Delimiter,
+               Match_Length    => Match_Length,
+               Kind            => Kind);
             if Match_Length = 0 then
                Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
+               After_Delimiter := False;
             else
                Append_Matched
                  (Token_List   => Token_List,
@@ -784,7 +829,12 @@ package body Lovelace.Compiler.Tokenizer is
                   Match_Length => Match_Length,
                   Kind         => Kind,
                   Filename     => Filename);
+               After_Delimiter := Kind = Tokens.Punctuation;
             end if;
+         end if;
+
+         if Position = Start_Position then
+            Position := Position + 1;
          end if;
       end loop;
 

@@ -39,6 +39,21 @@ package body Lovelace.Compiler.Source is
       return Result;
    end From_Utf_8;
 
+   function Same_Storage (Left, Right : Filename_Option) return Boolean is
+   begin
+      if Left.Present /= Right.Present then
+         return False;
+      end if;
+
+      case Left.Present is
+         when False =>
+            return True;
+
+         when True =>
+            return Same_Storage (Left.Value, Right.Value);
+      end case;
+   end Same_Storage;
+
    function Same_Storage (Left, Right : Shared_Filename) return Boolean is
    begin
       if Left.Block = null or else Right.Block = null then

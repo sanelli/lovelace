@@ -54,6 +54,10 @@ package Lovelace.Compiler.Tokenizer is
    --  @return Token list, or the collected error list.
    function Tokenize (Source_Text : String; Filename : String) return Tokenize_Result;
 
+   --  Empty error sequence.
+   --  @return Sequence with no elements.
+   function Empty_Error_Sequence return Tokenizer_Error_Sequence;
+
    --  Number of errors in Errors.
    --  @param Errors Error list.
    --  @return Element count.

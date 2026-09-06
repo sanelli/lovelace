@@ -52,6 +52,12 @@ package Lovelace.Compiler.Source is
    --  @return True when both reference one block.
    function Same_Storage (Left, Right : Shared_Filename) return Boolean;
 
+   --  True when Left and Right are both absent, or both present and share storage.
+   --  @param Left First optional filename.
+   --  @param Right Second optional filename.
+   --  @return True when both absent, or both present and Same_Storage on the holders.
+   function Same_Storage (Left, Right : Filename_Option) return Boolean;
+
 private
 
    type Filename_Block is record
