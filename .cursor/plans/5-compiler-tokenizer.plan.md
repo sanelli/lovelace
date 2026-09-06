@@ -34,7 +34,7 @@ todos:
     status: completed
   - id: "11"
     content: 11. Push and open a PR with gh pr create
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -318,4 +318,4 @@ Done:
 
 ## 11. Push and open a PR
 
-Push with proxy env cleared; `gh pr create` referencing `#5`. Commit messages start with `#5`.
+Done: branch pushed; PR opened for `#5`.
