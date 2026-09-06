@@ -13,7 +13,7 @@ todos:
     status: completed
   - id: "4"
     content: 4. Add Lovelace.Common.Option and AUnit tests in common/tests
-    status: pending
+    status: completed
   - id: "5"
     content: 5. Create lovelace_compiler crate, workspace pin, gnatdoc.ps1 entry
     status: pending
@@ -286,7 +286,7 @@ Done: [`.cursor/plans/5-compiler-tokenizer.plan.md`](.cursor/plans/5-compiler-to
 
 ## 4. Add `Lovelace.Common.Option` and AUnit tests
 
-Generic definite `Option` as above; tests in `lovelace_common_tests`. `gnatformat` the new units.
+Done: [`Lovelace.Common.Option`](common/src/lovelace-common-option.ads) plus AUnit fixtures in `common/tests` (23 tests).
 
 ## 5. Create crate `lovelace_compiler`
 
