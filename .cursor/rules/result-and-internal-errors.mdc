@@ -48,3 +48,17 @@ The type has two fields:
 - **Message** — a UTF-8 detail string
 
 These are **not** Lovelace **user diagnostics** (no file/line/code for `.love` source; see the diagnostics rule). When shown to a user, report a **generic internal error** plus the detail string (`Report`). Do not present the error-group enum as a user-facing diagnostic code.
+
+## `Internal_Error` first on mixed error-code enums
+
+When a subsystem error-code enumeration mixes **user-source** problems with a compiler-bug code (same list used on diagnostics / `Result` failure), name that compiler-bug literal `Internal_Error` and put it **first**:
+
+```ada
+-- BAD
+type Tokenizer_Error_Code is (Unrecognized_Symbol, Invalid_Utf_8, Internal_Error);
+
+-- GOOD
+type Tokenizer_Error_Code is (Internal_Error, Unrecognized_Symbol, Invalid_Utf_8);
+```
+
+Later literals may be appended. Do not insert user codes before `Internal_Error`. This applies to every similar enum (parser, later lexer slices, and so on), not only the tokenizer.

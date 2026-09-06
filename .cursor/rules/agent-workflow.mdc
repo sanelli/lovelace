@@ -18,8 +18,8 @@ Every plan (CreatePlan body **and** TODOs) uses this numbered list. **TODOs are 
 
 **Always first (never omit, never “skip the issue”):**
 
-1. Create a GitHub issue with `gh issue create` (title + body). Reuse an existing issue for this work; do not duplicate. Use `gh` for all GitHub issue/PR operations.
-2. Create and check out `feature/<issue-number>-<short-description>` (kebab-case). Example: issue 13 for a lexer → `feature/13-lexer`.
+1. Create a GitHub issue with `gh issue create` (title + body). Reuse an existing issue for this work; do not duplicate. Use `gh` for all GitHub issue/PR operations. Record the issue number `<n>`.
+2. Create, **link**, and check out `feature/<issue-number>-<short-description>` (kebab-case) with `gh issue develop` **from `main`** so the branch appears under the issue’s **Development** section on GitHub. Example: issue 13 for a lexer → `feature/13-lexer`. Do **not** use bare `git checkout -b` for plan step 2 — that creates a local branch only and does not link it to the issue. Do **not** base linked plan branches on another feature branch (e.g. `feature/3-…`); merge prerequisite work to `main` first, then branch from `main`.
 3. Save the plan as [`.cursor/plans/<issue-number>-<short-description>.plan.md`](.cursor/plans/) (filename **starts with the issue number**). Put `#<n>` in the plan. Do not use `docs/plans/`.
 
 Then the implementation steps, continuing the same numbering (4, 5, …).
@@ -29,7 +29,70 @@ Then the implementation steps, continuing the same numbering (4, 5, …).
 - **N−1.** Run all tests that exist (nested AUnit crates, etc.). If there are none, record that and continue.
 - **N.** If tests passed (or none exist), push and open a PR with `gh pr create`.
 
-When **writing** a plan, include this full numbered envelope (use `<n>` until step 1 exists). When **executing** an approved plan, do the steps for real: issue → branch → write `.cursor/plans/<n>-*.plan.md` → implement → tests → PR. Do not wait for a second “please open an issue/PR”.
+When **writing** a plan, include this full numbered envelope (use `<n>` until step 1 exists). When **executing** an approved plan, do the steps for real: issue → linked branch → write `.cursor/plans/<n>-*.plan.md` → implement → tests → PR. Do not wait for a second “please open an issue/PR”.
+
+### Link branch to issue (step 2)
+
+**What linking means:** the branch appears under the issue’s **Development** panel on GitHub. Naming it `feature/<n>-…` is **not** enough — that only helps humans and commit messages.
+
+**Preferred (do this in step 2, before the first commit):** `gh issue develop` **creates** a new remote branch and links it to the issue. There is **no** `gh` flag to attach an already-existing branch. Do **not** use `git checkout -b` / `git switch -c` for plan step 2.
+
+**Always branch from `main`.** Linked development branches must be created from the current remote default branch (`main` in this repo). Do **not** use `--base feature/…` or create a linked branch from another open feature branch — even if the new work depends on unmerged PRs. Merge or land the dependency on `main` first, then run step 2.
+
+Clear proxy env before every `gh` call (see Push / `gh` below). Sync `main`, then create the linked branch:
+
+```powershell
+git fetch origin
+git checkout main
+git pull origin main
+
+gh issue develop <n> --name feature/<n>-<short-description> --checkout --base main
+```
+
+(`--base main` is required in plans for this repo; omitting it only works when `main` is already the remote default and you have not checked out another branch as the implicit base.)
+
+Verify: `gh issue develop --list <n>` must print the branch URL. If the list is empty, the issue is not linked yet.
+
+**Failures we hit (avoid these):**
+
+| Mistake | Symptom |
+| --- | --- |
+| `git checkout -b feature/<n>-…` then push | Branch on GitHub, but **Development** on the issue stays empty |
+| `gh issue develop --name …` when that branch **already exists** on `origin` (unlinked) | `failed to create linked branch: API returned empty branch name` |
+| `--base feature/…` or branching from a local feature branch | Linked branch not rooted on `main`; wrong PR base and review scope |
+| `--base main` without `git fetch origin` / stale local `main` | Branch created from an old `main` tip |
+
+**If step 2 was skipped or the branch was created with plain `git checkout -b`:** do not retry `gh issue develop --name …` while the same branch name still exists on the remote. Either:
+
+1. **No commits yet:** delete the local branch, sync `main`, run `gh issue develop … --base main` as above, or  
+2. **Commits already exist (typical):** rebase onto current `origin/main` if the branch was cut from the wrong base, then recreate the remote branch as linked via GraphQL `createLinkedBranch` at the **rebased** tip:
+
+```powershell
+git fetch origin
+git rebase origin/main
+
+# Proxy cleared; run from the existing local branch
+$sha = git rev-parse HEAD
+$repoId = gh api graphql -f query='query { repository(owner:"OWNER", name:"REPO") { id } }' --jq '.data.repository.id'
+$issueId = gh api graphql -f query='query($n:Int!) { repository(owner:"OWNER", name:"REPO") { issue(number:$n) { id } } }' -F n=<n> --jq '.data.repository.issue.id'
+
+git push origin --delete feature/<n>-<short-description>
+
+gh api graphql -f query='mutation($repositoryId:ID!, $issueId:ID!, $name:String!, $oid:GitObjectID!) { createLinkedBranch(input:{repositoryId:$repositoryId, issueId:$issueId, name:$name, oid:$oid}) { linkedBranch { ref { name } } } }' `
+  -f repositoryId=$repoId -f issueId=$issueId -f name='feature/<n>-<short-description>' -f oid=$sha
+
+git fetch origin feature/<n>-<short-description>
+git branch -u origin/feature/<n>-<short-description>
+gh issue develop --list <n>
+```
+
+Replace `OWNER` / `REPO` with the repo (e.g. `sanelli` / `lovelace`). On zsh/bash, use `$(git rev-parse HEAD)` and single-quoted `-f` args instead of PowerShell `$variables`.
+
+The linked branch tip must be **descended from** current `origin/main` (rebase first if it was branched from another feature branch). Do not link a branch whose merge-base with `main` is not `main` itself.
+
+**Do not** force-push or rewrite history for linking alone. Deleting the **remote** branch name and recreating it linked at the same `oid` preserves all commits already on that tip.
+
+If linking still fails, use the issue **Development → Link a branch** UI on GitHub as a last resort (no CLI for that path today).
 
 ## Git
 
@@ -37,14 +100,18 @@ Executing an **approved plan** includes commits for that work, the final push, a
 
 **Commit messages** must **start** with the GitHub issue number for the work in progress: `#<n>` (e.g. `#1 Bootstrap host Alire layout`). Do not bury the issue reference at the end of the subject or body only. Use the issue from the current branch (`feature/<n>-*`) or the active plan (`.cursor/plans/<n>-*.plan.md`).
 
-Commit messages: PowerShell here-string `@' ... '@` (see the agent shell rule). Do not use bash `$(cat <<'EOF')`.
+Pass commit messages with **`git commit -m` only** (see agent-shell rule). Do not use `<<EOF`, PowerShell `@' … '@`, or `@" … "@` for commits.
 
-Example:
+Example subject (one `-m`):
 
 ```text
 #1 Bootstrap host Alire layout with do-nothing lovelace CLI
+```
 
-Add shared host switches GPR, lovelace executable crate, and workspace aggregate.
+Optional body as a second `-m`:
+
+```powershell
+git commit -m '#1 Bootstrap host Alire layout with do-nothing lovelace CLI' -m 'Add shared host switches GPR, lovelace executable crate, and workspace aggregate.'
 ```
 
 - Never `--force` push, never `--amend` unless the user asks and the amend rules in user git policy are met.
@@ -71,7 +138,7 @@ Commit can use `git_write` without this. Push/`gh` always need the unset list pl
 
 ## Naming
 
-- Branches: `feature/<issue-number>-<description>`
+- Branches: `feature/<issue-number>-<description>` (created and linked via `gh issue develop --base main` in plan step 2)
 - Lovelace sources: `.love`
 - Projects: `.pjlove` (XML, csproj-like)
 - Solutions: `.slnlove` (XML, slnx-like)

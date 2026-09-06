@@ -1,16 +1,25 @@
 with AUnit.Test_Caller;
 
+with Lovelace.Common.Tests.Option;
 with Lovelace.Common.Tests.Regex_Engine;
 with Lovelace.Common.Tests.Token_Classes;
 
 package body Lovelace.Common.Tests.Suite is
 
+   package Option_Caller is new AUnit.Test_Caller (Lovelace.Common.Tests.Option.Fixture);
    package Regex_Caller is new AUnit.Test_Caller (Lovelace.Common.Tests.Regex_Engine.Fixture);
    package Token_Caller is new AUnit.Test_Caller (Lovelace.Common.Tests.Token_Classes.Fixture);
 
    function Suite return AUnit.Test_Suites.Access_Test_Suite is
       Result : constant AUnit.Test_Suites.Access_Test_Suite := new AUnit.Test_Suites.Test_Suite;
    begin
+      Result.Add_Test (Option_Caller.Create ("none", Lovelace.Common.Tests.Option.Test_None'Access));
+      Result.Add_Test
+        (Option_Caller.Create ("from value", Lovelace.Common.Tests.Option.Test_From_Value'Access));
+      Result.Add_Test
+        (Option_Caller.Create
+           ("present discriminant", Lovelace.Common.Tests.Option.Test_Present_Discriminant'Access));
+
       Result.Add_Test (Regex_Caller.Create ("literal", Lovelace.Common.Tests.Regex_Engine.Test_Literal'Access));
       Result.Add_Test
         (Regex_Caller.Create ("concatenation", Lovelace.Common.Tests.Regex_Engine.Test_Concatenation'Access));
