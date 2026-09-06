@@ -22,7 +22,7 @@ todos:
     status: completed
   - id: "7"
     content: 7. Implement tokenizer with cached regex engines and Result errors
-    status: pending
+    status: completed
   - id: "8"
     content: 8. Add compiler/tests (lovelace_compiler_tests) for the token matrix
     status: pending
@@ -298,7 +298,7 @@ Done: [`Lovelace.Compiler.Source`](compiler/src/lovelace-compiler-source.ads) (s
 
 ## 7. Implement the tokenizer
 
-`Lovelace.Compiler.Tokenizer`: cache `Regex.Compile` for whitespace / identifier / punctuation; skip any space between tokens (do not emit it); longest-prefix loop; keyword classification; predefined `Tokenizer_Error_Code` list; append every user error and recover (skip scalar/byte) instead of stopping at the first; `Result` failure only for internal regex compile; one shared filename holder per call on tokens and errors. String literals are not in this slice, so there is no path that preserves internal spaces.
+Done: [`Lovelace.Compiler.Tokenizer`](compiler/src/lovelace-compiler-tokenizer.ads) — cached whitespace/identifier/punctuation regex engines, skip-all-space loop, keyword classification, `Truncate_Identifier_Length` Ada validation, `Tokenizer_Error_Code` including `Internal_Error`. `Tokenize_Result` success is a `Token_Sequence`; failure is a `Tokenizer_Error_Sequence`.
 
 ## 8. Nested AUnit crate `compiler/tests`
 
