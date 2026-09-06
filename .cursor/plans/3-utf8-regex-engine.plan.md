@@ -25,13 +25,13 @@ todos:
     status: completed
   - id: "8"
     content: 8. Document regex engine and UTF-8 conventions under docs/
-    status: pending
+    status: completed
   - id: "9"
     content: 9. Pin lovelace_common in lovelace_workspace (no CLI depends-on yet)
     status: pending
   - id: "10"
     content: 10. Run all tests that exist (workspace build + nested AUnit)
-    status: pending
+    status: completed
   - id: "11"
     content: 11. Push and open a PR with gh pr create
     status: pending
@@ -89,7 +89,7 @@ Done: crate `lovelace_common_tests` under [`common/tests/`](common/tests/) with 
 
 ## 8. Document under `docs/`
 
-Add a short host page (e.g. [`docs/regex-engine.md`](docs/regex-engine.md)): regex syntax, UTF-8 byte lengths, code-point classes, and that this is **not** the Lovelace lexer. Point the README at it in one line if the status/build section is touched. Public Ada APIs stay documented on the specs.
+Done: [`docs/regex-engine.md`](docs/regex-engine.md) covers UTF-8 conventions, regex syntax / `Match_Prefix`, and that this is not the Lovelace lexer. README Status section links to it. Public Ada APIs stay on the specs (GNATdoc).
 
 ## 9. Wire the workspace
 
@@ -97,7 +97,13 @@ Root [`alire.toml`](alire.toml): `[[depends-on]]` + `[[pins]]` for `lovelace_com
 
 ## 10. Run all tests
 
-`alr build` at the repo root (workspace includes `lovelace_common`). Run the nested crate (`alr -C common/tests` build/test as Alire+AUnit require). Record results. If no other test crates exist, that is the full suite.
+Done (2026-09-06):
+
+- `alr build` at repo root — success (`lovelace_workspace`; includes `lovelace` + `lovelace_common`).
+- `alr -C common build` — success.
+- `alr -C common/tests run` — **20/20** Successful Tests, 0 failed assertions, 0 unexpected errors.
+
+No other nested AUnit crates exist; that is the full suite.
 
 ## 11. Push and open a PR
 
