@@ -42,7 +42,7 @@ isProject: false
 
 #5 — [Compiler tokenizer for program, begin, end, identifiers, and punctuation](https://github.com/sanelli/lovelace/issues/5)
 
-Branch: `feature/5-compiler-tokenizer` (based on `feature/3-utf8-regex-engine`; #3 not yet on `main`).
+Branch: `feature/5-compiler-tokenizer` (linked to #5; **policy:** always create linked branches from `main` — this branch predates that rule and was cut from `feature/3-utf8-regex-engine`).
 
 Depends on the `lovelace_common` regex engine from [#3](https://github.com/sanelli/lovelace/issues/3). Do **not** implement a parser, string/number/comment tokens, CLI wiring, or `lovelace` → `lovelace_compiler` `depends-on`.
 
@@ -278,7 +278,7 @@ Done: [#5](https://github.com/sanelli/lovelace/issues/5).
 
 ## 2. Create and check out the feature branch
 
-Done: `feature/5-compiler-tokenizer` (based on `feature/3-utf8-regex-engine`).
+Done: `feature/5-compiler-tokenizer` (based on `feature/3-utf8-regex-engine`), linked to [#5](https://github.com/sanelli/lovelace/issues/5) via GraphQL `createLinkedBranch` (see agent-workflow rule — plain `git checkout -b` does not link; `gh issue develop` cannot attach an existing remote branch).
 
 ## 3. Save the plan
 
