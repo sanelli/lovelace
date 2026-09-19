@@ -13,7 +13,7 @@ todos:
     status: completed
   - id: "4"
     content: "4. Update rules: new lir.mdc; compiler-pipeline, agent-workflow, lovelace-project"
-    status: pending
+    status: completed
   - id: "5"
     content: "5. Create lovelace_lir crate, workspace pin, gnatdoc.ps1 entry"
     status: pending
