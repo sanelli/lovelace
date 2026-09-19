@@ -19,7 +19,7 @@ todos:
     status: completed
   - id: "6"
     content: "6. Implement in-memory Value_Type, Signature, Opcode, Instruction, Subroutine, Module types and builders"
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Implement versioned binary Encode/Decode/Read/Write (.lir)"
     status: pending
