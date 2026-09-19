@@ -143,3 +143,5 @@ Commit can use `git_write` without this. Push/`gh` always need the unset list pl
 - Projects: `.pjlove` (XML, csproj-like)
 - Solutions: `.slnlove` (XML, slnx-like)
 - Packages: `.pkglove` (XML; Hypatia package manifest)
+- LIR binary: `.lir` (versioned; owned by `lovelace_lir`)
+- LIR text: `.tlir` (versioned; owned by `lovelace_lir`)

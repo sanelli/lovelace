@@ -22,8 +22,9 @@ The compiler is **frontend → LIR → analysis/opt → backend**. Do not emit W
 
 ## LIR (`lir/`)
 
-- Own all LIR types, builders, printers, and pass infrastructure.
-- Multiple analysis and optimization passes run **only** on LIR.
+- LIR is a WASM-like **stack** IR with linear memory and Lovelace 16-bit opcodes. It is **not** WASM: no WASM opcode bytes, Canonical ABI, or WIT in LIR (those belong to the backend).
+- Own all LIR types, builders, printers, versioned `.lir` / `.tlir` codecs, and (when asked) pass infrastructure.
+- Multiple analysis and optimization passes run **only** on LIR (none until asked).
 - LIR is the single contract between frontend and backend.
 
 ## Backend (`compiler/`)
