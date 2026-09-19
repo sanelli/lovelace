@@ -10,8 +10,10 @@ licenses = "MIT"
 lovelace = "*"
 lovelace_common = "*"
 lovelace_compiler = "*"
+lovelace_lir = "*"
 
 [[pins]]
 lovelace = { path = "lovelace" }
 lovelace_common = { path = "common" }
 lovelace_compiler = { path = "compiler" }
+lovelace_lir = { path = "lir" }

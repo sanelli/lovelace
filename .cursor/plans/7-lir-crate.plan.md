@@ -16,7 +16,7 @@ todos:
     status: completed
   - id: "5"
     content: "5. Create lovelace_lir crate, workspace pin, gnatdoc.ps1 entry"
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Implement in-memory Value_Type, Signature, Opcode, Instruction, Subroutine, Module types and builders"
     status: pending
