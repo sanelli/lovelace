@@ -25,7 +25,7 @@ todos:
     status: completed
   - id: "8"
     content: "8. Implement To_Text, Write (.tlir), and Print"
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Add lir/tests (lovelace_lir_tests) for types, binary, and text"
     status: pending
