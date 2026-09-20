@@ -28,13 +28,13 @@ todos:
     status: completed
   - id: "9"
     content: "9. Write/update docs (ir-generator.md, common source, LIR origins, parser/tokenizer/README cross-links)."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Run all existing tests (common/tests, compiler/tests, lir/tests, workspace as applicable)."
-    status: pending
+    status: completed
   - id: "11"
     content: "11. Push (proxy env cleared) and open a PR with gh pr create."
-    status: pending
+    status: completed
 isProject: false
 ---
 # Compiler IR Generator (AST → LIR) with shared source origins
@@ -228,6 +228,6 @@ Root workspace already pins common, compiler, and lir.
 6. Wire `lovelace_compiler` → `lovelace_lir` in `alire.toml` + `lovelace_compiler.gpr`; `alr update` / build to confirm. **Done.**
 7. Implement `Lovelace.Compiler.Ir_Generator` (Generate, error types, Unit/flag/module/subroutine mapping, copy origins, Validate). **Done.**
 8. Add AUnit IR Generator tests + suite registration; extend test Support helpers; run `gnatformat` on all touched Ada files. **Done.**
-9. Write/update docs (`ir-generator.md`, common source, LIR origins, parser/tokenizer/README).
-10. Run all existing tests (`common/tests`, `compiler/tests`, `lir/tests`, workspace as applicable).
-11. Push (proxy env cleared) and open a PR with `gh pr create`.
+9. Write/update docs (`ir-generator.md`, common source, LIR origins, parser/tokenizer/README). **Done.**
+10. Run all existing tests (`common/tests`, `compiler/tests`, `lir/tests`, workspace as applicable). **Done.**
+11. Push (proxy env cleared) and open a PR with `gh pr create`. **Done.**

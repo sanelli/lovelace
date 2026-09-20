@@ -53,7 +53,7 @@ A **subroutine** has:
 - an instruction body (may be empty)
 - an optional in-memory **origin** (`Subroutine_Origin`: name span, optional shared filename)
 
-Origins are for diagnostics and frontend lowering. They are **not** part of `.lir` / `.tlir` version **1.0**: Encode ignores them; Decode leaves them absent. `Validate` does not require origins.
+Origins are for diagnostics and frontend lowering. They are **not** part of `.lir` / `.tlir` version **1.0**: Encode ignores them; Decode leaves them absent. `Validate` does not require origins. Shared position types live in [`Lovelace.Common.Source`](source-locations.md); the compiler copies them via the [IR Generator](ir-generator.md).
 
 The only opcode in this slice is `No_Operation` (`noop` in text).
 
