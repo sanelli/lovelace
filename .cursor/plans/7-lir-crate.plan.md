@@ -28,7 +28,7 @@ todos:
     status: completed
   - id: "9"
     content: "9. Add lir/tests (lovelace_lir_tests) for types, binary, and text"
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Document in-memory LIR, .lir, .tlir, and README status"
     status: pending
