@@ -16,10 +16,10 @@ todos:
     status: completed
   - id: "5"
     content: "5. Add optional source origins on LIR Module and Subroutine (in-memory only; codecs leave absent); update LIR tests and docs."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Wire lovelace_compiler → lovelace_lir in alire.toml + lovelace_compiler.gpr; alr update / build to confirm."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Implement Lovelace.Compiler.Ir_Generator (Generate, error types, Unit/flag/module/subroutine mapping, copy origins, Validate)."
     status: pending
@@ -224,8 +224,8 @@ Root workspace already pins common, compiler, and lir.
 2. Sync `main`, then `gh issue develop 11 --name feature/11-compiler-ir-generator --checkout --base main`. Verify with `gh issue develop --list 11`. **Done.**
 3. Save this plan as `.cursor/plans/11-compiler-ir-generator.plan.md` with `#11` in the body. **Done.**
 4. Move `Lovelace.Compiler.Source` → `Lovelace.Common.Source`; migrate compiler/tests/docs; add common AUnit coverage; `gnatformat`. **Done.**
-5. Add optional source origins on LIR Module and Subroutine (in-memory only; codecs leave absent); update LIR tests and docs.
-6. Wire `lovelace_compiler` → `lovelace_lir` in `alire.toml` + `lovelace_compiler.gpr`; `alr update` / build to confirm.
+5. Add optional source origins on LIR Module and Subroutine (in-memory only; codecs leave absent); update LIR tests and docs. **Done.**
+6. Wire `lovelace_compiler` → `lovelace_lir` in `alire.toml` + `lovelace_compiler.gpr`; `alr update` / build to confirm. **Done.**
 7. Implement `Lovelace.Compiler.Ir_Generator` (Generate, error types, Unit/flag/module/subroutine mapping, copy origins, Validate).
 8. Add AUnit IR Generator tests + suite registration; extend test Support helpers; run `gnatformat` on all touched Ada files.
 9. Write/update docs (`ir-generator.md`, common source, LIR origins, parser/tokenizer/README).

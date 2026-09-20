@@ -44,12 +44,16 @@ A **module** has:
 - a `u32` **flags** bitset (not string tags; no named bits in this slice)
 - zero or more **dependencies** (other module names, not file paths)
 - zero or more **subroutines**
+- an optional in-memory **origin** (`Module_Origin`: name span, unit span, optional shared filename from `Lovelace.Common.Source`)
 
 A **subroutine** has:
 
 - a **signature**: UTF-8 name, **mandatory** return type, zero or more unnamed parameter types
 - **flags** (`export` = bit 0, `entrypoint` = bit 1)
 - an instruction body (may be empty)
+- an optional in-memory **origin** (`Subroutine_Origin`: name span, optional shared filename)
+
+Origins are for diagnostics and frontend lowering. They are **not** part of `.lir` / `.tlir` version **1.0**: Encode ignores them; Decode leaves them absent. `Validate` does not require origins.
 
 The only opcode in this slice is `No_Operation` (`noop` in text).
 
@@ -61,8 +65,8 @@ The only opcode in this slice is `No_Operation` (`noop` in text).
 | `Lovelace.Lir.Types` | `Value_Type`, sequences, `To_Code` / `From_Code` |
 | `Lovelace.Lir.Opcodes` | `Opcode`, `To_Word` / `From_Word`, lengths |
 | `Lovelace.Lir.Instructions` | Discriminated `Instruction`, sequences |
-| `Lovelace.Lir.Subroutines` | `Signature`, flags, body builders |
-| `Lovelace.Lir.Modules` | Module builders and `Validate` |
+| `Lovelace.Lir.Subroutines` | `Signature`, flags, body builders, optional origin |
+| `Lovelace.Lir.Modules` | Module builders, optional origin, and `Validate` |
 | `Lovelace.Lir.Errors` | Shared `Error_Code` and validation `Result` |
 | `Lovelace.Lir.Binary` | Encode / Decode / Read / Write `.lir` |
 | `Lovelace.Lir.Text` | `To_Text` / `Write` / `Print` `.tlir` |
@@ -79,4 +83,4 @@ Decode applies the same checks plus format errors (bad magic, truncated input, u
 
 ## Tests
 
-Nested crate `lovelace_lir_tests` (`lir/tests`) covers types, binary round-trips and decode failures, text goldens, and validation. Run with `alr -C lir/tests run`.
+Nested crate `lovelace_lir_tests` (`lir/tests`) covers types, binary round-trips and decode failures, text goldens, validation, and optional origins. Run with `alr -C lir/tests run`.

@@ -1,9 +1,10 @@
 with Ada.Strings.Unbounded;
 
+with Lovelace.Common.Source;
 with Lovelace.Lir.Instructions;
 with Lovelace.Lir.Types;
 
---  LIR subroutines: signature, flags, and instruction body.
+--  LIR subroutines: signature, flags, instruction body, and optional origin.
 
 package Lovelace.Lir.Subroutines is
 
@@ -27,14 +28,40 @@ package Lovelace.Lir.Subroutines is
       Parameter_Types : Types.Value_Type_Sequence;
    end record;
 
+   --  In-memory source origin for a subroutine (not stored in .lir / .tlir).
+   --  @field Name_Span Span of the subroutine name in the original source.
+   --  @field Filename Optional shared filename from the frontend.
+   type Subroutine_Origin is record
+      Name_Span : Lovelace.Common.Source.Source_Span;
+      Filename  : Lovelace.Common.Source.Filename_Option;
+   end record;
+
+   --  Optional Subroutine_Origin (same shape as Lovelace.Common.Option).
+   --  @disc Present True when Value is stored; False when absent.
+   --  @field Value Origin metadata when Present is True.
+   type Origin_Option (Present : Boolean := False) is record
+      case Present is
+         when True =>
+            Value : Subroutine_Origin;
+
+         when False =>
+            null;
+      end case;
+   end record;
+
    --  One subroutine with signature, flags, and body.
    type Subroutine is private;
 
-   --  Build a subroutine with an empty instruction body.
+   --  Build a subroutine with an empty instruction body and no origin.
    --  @param The_Signature Name and types for the subroutine.
    --  @param Flags Flag bits (export, entrypoint, and others).
-   --  @return Subroutine with no instructions.
+   --  @return Subroutine with no instructions and absent origin.
    function Create (The_Signature : Signature; Flags : Subroutine_Flags := 0) return Subroutine;
+
+   --  Attach The_Origin to The_Subroutine (replaces any previous origin).
+   --  @param The_Subroutine Subroutine to update.
+   --  @param The_Origin Source location metadata.
+   procedure Set_Origin (The_Subroutine : in out Subroutine; The_Origin : Subroutine_Origin);
 
    --  Append Item to the instruction body of The_Subroutine.
    --  @param The_Subroutine Subroutine to extend.
@@ -56,6 +83,11 @@ package Lovelace.Lir.Subroutines is
    --  @return Instruction sequence.
    function Get_Instructions (The_Subroutine : Subroutine) return Instructions.Instruction_Sequence;
 
+   --  Optional source origin of The_Subroutine.
+   --  @param The_Subroutine Subroutine to query.
+   --  @return Present origin, or absent when Create left it unset / codecs decode.
+   function Origin (The_Subroutine : Subroutine) return Origin_Option;
+
    --  True when Flags includes Export_Flag.
    --  @param Flags Flag bitset.
    --  @return True iff export bit is set.
@@ -71,6 +103,7 @@ private
    type Subroutine is record
       The_Signature    : Signature;
       Flags            : Subroutine_Flags := 0;
+      Origin_Value     : Origin_Option := (Present => False);
       Instruction_Body : Instructions.Instruction_Sequence;
    end record;
 

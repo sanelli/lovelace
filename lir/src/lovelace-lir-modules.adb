@@ -17,6 +17,7 @@ package body Lovelace.Lir.Modules is
       return
         (Module_Name  => Ada.Strings.Unbounded.To_Unbounded_String (Name),
          Flags_Value  => 0,
+         Origin_Value => (Present => False),
          Dependencies => Dependency_Vectors.Empty_Vector,
          Subroutines  => Subroutine_Vectors.Empty_Vector);
    end Create;
@@ -46,10 +47,20 @@ package body Lovelace.Lir.Modules is
       return Ada.Strings.Unbounded.To_String (The_Module.Module_Name);
    end Name;
 
+   function Origin (The_Module : Module) return Origin_Option is
+   begin
+      return The_Module.Origin_Value;
+   end Origin;
+
    procedure Set_Flags (The_Module : in out Module; Flags : Module_Flags) is
    begin
       The_Module.Flags_Value := Flags;
    end Set_Flags;
+
+   procedure Set_Origin (The_Module : in out Module; The_Origin : Module_Origin) is
+   begin
+      The_Module.Origin_Value := (Present => True, Value => The_Origin);
+   end Set_Origin;
 
    function Subroutine_Count (The_Module : Module) return Natural is
    begin

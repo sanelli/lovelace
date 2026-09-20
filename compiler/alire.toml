@@ -10,9 +10,11 @@ auto-gpr-with = false
 
 [[depends-on]]
 lovelace_common = "*"
+lovelace_lir = "*"
 
 [[pins]]
 lovelace_common = { path = "../common" }
+lovelace_lir = { path = "../lir" }
 
 [build-switches]
 "*".style_checks = "No"

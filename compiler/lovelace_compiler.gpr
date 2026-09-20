@@ -1,6 +1,7 @@
 with "config/lovelace_compiler_config.gpr";
 with "../shared/lovelace_host_switches.gpr";
 with "../common/lovelace_common.gpr";
+with "../lir/lovelace_lir.gpr";
 library project Lovelace_Compiler is
 
    for Library_Name use "lovelace_compiler";
