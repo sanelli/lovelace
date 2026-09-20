@@ -5,16 +5,15 @@ package body Lovelace.Lir.Subroutines is
       Instructions.Append (The_Subroutine.Instruction_Body, Item);
    end Append_Instruction;
 
-   function Create (The_Signature : Signature; Attributes : Subroutine_Attributes := 0) return Subroutine is
+   function Create (The_Signature : Signature; Flags : Subroutine_Flags := 0) return Subroutine is
    begin
-      return
-        (The_Signature => The_Signature, Attributes => Attributes, Instruction_Body => Instructions.Empty_Sequence);
+      return (The_Signature => The_Signature, Flags => Flags, Instruction_Body => Instructions.Empty_Sequence);
    end Create;
 
-   function Get_Attributes (The_Subroutine : Subroutine) return Subroutine_Attributes is
+   function Get_Flags (The_Subroutine : Subroutine) return Subroutine_Flags is
    begin
-      return The_Subroutine.Attributes;
-   end Get_Attributes;
+      return The_Subroutine.Flags;
+   end Get_Flags;
 
    function Get_Instructions (The_Subroutine : Subroutine) return Instructions.Instruction_Sequence is
    begin
@@ -26,14 +25,14 @@ package body Lovelace.Lir.Subroutines is
       return The_Subroutine.The_Signature;
    end Get_Signature;
 
-   function Has_Entrypoint (Attributes : Subroutine_Attributes) return Boolean is
+   function Has_Entrypoint (Flags : Subroutine_Flags) return Boolean is
    begin
-      return (Attributes and Entrypoint_Attribute) /= 0;
+      return (Flags and Entrypoint_Flag) /= 0;
    end Has_Entrypoint;
 
-   function Has_Export (Attributes : Subroutine_Attributes) return Boolean is
+   function Has_Export (Flags : Subroutine_Flags) return Boolean is
    begin
-      return (Attributes and Export_Attribute) /= 0;
+      return (Flags and Export_Flag) /= 0;
    end Has_Export;
 
 end Lovelace.Lir.Subroutines;

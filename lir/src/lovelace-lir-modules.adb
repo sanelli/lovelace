@@ -147,7 +147,7 @@ package body Lovelace.Lir.Modules is
                end;
             end loop;
 
-            if Subroutines.Has_Entrypoint (Subroutines.Get_Attributes (The_Subroutine)) then
+            if Subroutines.Has_Entrypoint (Subroutines.Get_Flags (The_Subroutine)) then
                Entrypoint_Count := Entrypoint_Count + 1;
             end if;
          end;

@@ -7,7 +7,9 @@ with Lovelace.Common.Option;
 
 package Lovelace.Lir.Types is
 
-   --  Scalar value type known to LIR (binary codes 0 .. 12).
+   --  Scalar value type known to LIR (binary codes 0 .. 13).
+   --  @enum Unit No stack value; a subroutine that returns Unit is a
+   --  procedure for the Lovelace backend (never use a void type).
    --  @enum I8 Signed 8-bit integer.
    --  @enum I16 Signed 16-bit integer.
    --  @enum I32 Signed 32-bit integer.
@@ -21,23 +23,20 @@ package Lovelace.Lir.Types is
    --  @enum F16 16-bit floating point.
    --  @enum F32 32-bit floating point.
    --  @enum F64 64-bit floating point.
-   type Value_Type is (I8, I16, I32, I64, I128, U8, U16, U32, U64, U128, F16, F32, F64);
+   type Value_Type is (Unit, I8, I16, I32, I64, I128, U8, U16, U32, U64, U128, F16, F32, F64);
 
-   --  Optional Value_Type (From_Code failure, or absent return type).
+   --  Optional Value_Type (From_Code failure only).
    package Value_Type_Options is new Lovelace.Common.Option (Element_Type => Value_Type);
-
-   --  Optional return type; Present False means no result.
-   package Return_Type_Options renames Value_Type_Options;
 
    --  Ordered list of parameter types in a signature.
    type Value_Type_Sequence is private;
 
-   --  Binary u8 code for The_Type (0 .. 12).
+   --  Binary u8 code for The_Type (0 .. 13).
    --  @param The_Type Value type to encode.
    --  @return Code byte for The_Type.
    function To_Code (The_Type : Value_Type) return Interfaces.Unsigned_8;
 
-   --  Value_Type for Code, or absent when Code is outside 0 .. 12.
+   --  Value_Type for Code, or absent when Code is outside 0 .. 13.
    --  @param Code Binary type code.
    --  @return Present option with the type, or None.
    function From_Code (Code : Interfaces.Unsigned_8) return Value_Type_Options.Option;

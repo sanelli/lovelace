@@ -24,15 +24,22 @@ Crate `lovelace_lir` in `lir/` is a **static** library. It owns:
 
 ## Value types (closed set)
 
-Signed: `i8` `i16` `i32` `i64` `i128`. Unsigned: `u8` `u16` `u32` `u64` `u128`. Floating: `f16` `f32` `f64`.
+- **`unit`** — no stack value
+- Signed: `i8` `i16` `i32` `i64` `i128`
+- Unsigned: `u8` `u16` `u32` `u64` `u128`
+- Floating: `f16` `f32` `f64`
 
-No `void` type, references, or aggregates in the closed set until specified. A subroutine with no result uses an **absent** return type (optional), not a void value type. `I128`, `U128`, and `F16` are first-class in LIR; mapping them to WASM is a backend problem.
+**Do not introduce a `void` type.** LIR has no `void`. Procedures are subroutines whose return type is **`unit`**.
+
+Every subroutine **must** have a return type. Returning `unit` will instruct the Lovelace backend that the subroutine is a **procedure** and pushes nothing on the operand stack. Non-`unit` return types push one value of that type.
+
+No references or aggregates in the closed set until specified. `I128`, `U128`, and `F16` are first-class in LIR; mapping them (and `unit`) to WASM is a backend problem.
 
 ## Modules and subroutines
 
 - A module has a UTF-8 **name**, a `u32` **flags** bitset (not string tags), dependencies on other LIR modules (by name), and a list of subroutines.
 - Call metadata bits **flags**, not tags.
-- Each subroutine has a **signature** (name, optional return type, zero or more unnamed parameter types), **attributes** (`export`, `entrypoint` as flag bits), and an instruction sequence (may be empty).
+- Each subroutine has a **signature** (name, **mandatory** return type, zero or more unnamed parameter types), **flags** (`export`, `entrypoint` as flag bits), and an instruction sequence (may be empty).
 - Only opcode required until more are specified: `No_Operation` / `noop`.
 
 ## Formats
