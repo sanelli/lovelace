@@ -10,7 +10,7 @@ Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md
 
 | Package | Role |
 | --- | --- |
-| `Lovelace.Compiler.Source` | `Source_Position`, `Source_Span`, refcounted `Shared_Filename`, `Filename_Option` |
+| `Lovelace.Common.Source` | `Source_Position`, `Source_Span`, refcounted `Shared_Filename`, `Filename_Option` (shared host package) |
 | `Lovelace.Compiler.Tokens` | `Token`, `Token_Sequence`, `Lexeme` |
 | `Lovelace.Compiler.Tokenizer` | `Tokenize`, `Tokenize_Result`, `Tokenizer_Error` |
 
@@ -91,7 +91,7 @@ Scan Unicode **scalars** via `Lovelace.Common.Utf_8`. Do not treat Ada `Characte
 
 `Tokenize (Source_Text)` leaves `Filename` absent on every token.
 
-`Tokenize (Source_Text, Filename)` stores one refcounted `Shared_Filename` on every token and every error. `Lovelace.Compiler.Source.Same_Storage` is true across that output. The text is immutable; nothing mutates the shared block.
+`Tokenize (Source_Text, Filename)` stores one refcounted `Shared_Filename` on every token and every error. `Lovelace.Common.Source.Same_Storage` is true across that output. The text is immutable; nothing mutates the shared block.
 
 ## Errors
 

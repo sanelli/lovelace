@@ -1,11 +1,13 @@
 with Ada.Strings.Unbounded;
 with AUnit.Assertions;
 
+with Lovelace.Common.Source;
 with Lovelace.Common.Utf_8;
-with Lovelace.Compiler.Source;
 with Lovelace.Compiler.Types;
 
 package body Lovelace.Compiler.Tests.Support is
+
+   package Source renames Lovelace.Common.Source;
 
    use type Tokens.Keyword_Subtype;
    use type Tokens.Punctuation_Subtype;

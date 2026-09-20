@@ -2,23 +2,34 @@ with AUnit.Test_Caller;
 
 with Lovelace.Common.Tests.Option;
 with Lovelace.Common.Tests.Regex_Engine;
+with Lovelace.Common.Tests.Source;
 with Lovelace.Common.Tests.Token_Classes;
 
 package body Lovelace.Common.Tests.Suite is
 
    package Option_Caller is new AUnit.Test_Caller (Lovelace.Common.Tests.Option.Fixture);
    package Regex_Caller is new AUnit.Test_Caller (Lovelace.Common.Tests.Regex_Engine.Fixture);
+   package Source_Caller is new AUnit.Test_Caller (Lovelace.Common.Tests.Source.Fixture);
    package Token_Caller is new AUnit.Test_Caller (Lovelace.Common.Tests.Token_Classes.Fixture);
 
    function Suite return AUnit.Test_Suites.Access_Test_Suite is
       Result : constant AUnit.Test_Suites.Access_Test_Suite := new AUnit.Test_Suites.Test_Suite;
    begin
       Result.Add_Test (Option_Caller.Create ("none", Lovelace.Common.Tests.Option.Test_None'Access));
+      Result.Add_Test (Option_Caller.Create ("from value", Lovelace.Common.Tests.Option.Test_From_Value'Access));
       Result.Add_Test
-        (Option_Caller.Create ("from value", Lovelace.Common.Tests.Option.Test_From_Value'Access));
+        (Option_Caller.Create ("present discriminant", Lovelace.Common.Tests.Option.Test_Present_Discriminant'Access));
+
       Result.Add_Test
-        (Option_Caller.Create
-           ("present discriminant", Lovelace.Common.Tests.Option.Test_Present_Discriminant'Access));
+        (Source_Caller.Create ("source span fields", Lovelace.Common.Tests.Source.Test_Source_Span_Fields'Access));
+      Result.Add_Test
+        (Source_Caller.Create ("absent filename", Lovelace.Common.Tests.Source.Test_Absent_Filename'Access));
+      Result.Add_Test
+        (Source_Caller.Create
+           ("same storage shared filename", Lovelace.Common.Tests.Source.Test_Same_Storage_Shared_Filename'Access));
+      Result.Add_Test
+        (Source_Caller.Create
+           ("same storage filename option", Lovelace.Common.Tests.Source.Test_Same_Storage_Filename_Option'Access));
 
       Result.Add_Test (Regex_Caller.Create ("literal", Lovelace.Common.Tests.Regex_Engine.Test_Literal'Access));
       Result.Add_Test
