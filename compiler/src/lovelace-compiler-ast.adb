@@ -24,20 +24,18 @@ package body Lovelace.Compiler.Ast is
    end Create_Module;
 
    function Create_Subroutine
-     (Name          : String;
-      Name_Span     : Source.Source_Span;
-      Filename      : Source.Filename_Option;
-      Is_Entrypoint : Boolean;
-      Is_Export     : Boolean;
-      Return_Type   : Types.Type_Expression;
-      The_Body      : Statement_Sequence) return Subroutine is
+     (Name        : String;
+      Name_Span   : Source.Source_Span;
+      Filename    : Source.Filename_Option;
+      Flags       : Subroutine_Flags;
+      Return_Type : Types.Type_Expression;
+      The_Body    : Statement_Sequence) return Subroutine is
    begin
       return
         (Subroutine_Name   => Ada.Strings.Unbounded.To_Unbounded_String (Name),
          Name_Span_Value   => Name_Span,
          Filename_Value    => Filename,
-         Entrypoint_Flag   => Is_Entrypoint,
-         Export_Flag       => Is_Export,
+         Flags_Value       => Flags,
          Return_Type_Value => Unit_Type_Expression (Return_Type),
          Body_Value        => The_Body);
    end Create_Subroutine;
@@ -72,20 +70,25 @@ package body Lovelace.Compiler.Ast is
       return The_Subroutine.Body_Value;
    end Get_Body;
 
+   function Get_Flags (The_Subroutine : Subroutine) return Subroutine_Flags is
+   begin
+      return The_Subroutine.Flags_Value;
+   end Get_Flags;
+
    function Get_Subroutine (The_Module : Module; Index : Positive) return Subroutine is
    begin
       return Element (The_Module.Subroutines, Index);
    end Get_Subroutine;
 
-   function Is_Entrypoint (The_Subroutine : Subroutine) return Boolean is
+   function Has_Entrypoint (Flags : Subroutine_Flags) return Boolean is
    begin
-      return The_Subroutine.Entrypoint_Flag;
-   end Is_Entrypoint;
+      return (Flags and Entrypoint_Flag) /= 0;
+   end Has_Entrypoint;
 
-   function Is_Export (The_Subroutine : Subroutine) return Boolean is
+   function Has_Export (Flags : Subroutine_Flags) return Boolean is
    begin
-      return The_Subroutine.Export_Flag;
-   end Is_Export;
+      return (Flags and Export_Flag) /= 0;
+   end Has_Export;
 
    function Length (The_Body : Statement_Sequence) return Natural is
    begin

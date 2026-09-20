@@ -9,6 +9,15 @@ with Lovelace.Compiler.Types;
 
 package Lovelace.Compiler.Ast is
 
+   --  Flag bitset for a frontend subroutine (not string tags; not LIR flags).
+   type Subroutine_Flags is mod 2**32;
+
+   --  Bit 0: subroutine is exported from the module.
+   Export_Flag : constant Subroutine_Flags := 2**0;
+
+   --  Bit 1: subroutine is the module entrypoint.
+   Entrypoint_Flag : constant Subroutine_Flags := 2**1;
+
    --  Ordered list of statements in a subroutine body (empty in this slice).
    type Statement_Sequence is private;
 
@@ -20,6 +29,16 @@ package Lovelace.Compiler.Ast is
 
    --  One compilation-unit module in the AST.
    type Module is private;
+
+   --  True when Flags includes Export_Flag.
+   --  @param Flags Flag bitset.
+   --  @return True iff export bit is set.
+   function Has_Export (Flags : Subroutine_Flags) return Boolean;
+
+   --  True when Flags includes Entrypoint_Flag.
+   --  @param Flags Flag bitset.
+   --  @return True iff entrypoint bit is set.
+   function Has_Entrypoint (Flags : Subroutine_Flags) return Boolean;
 
    --  Empty statement sequence (no statements).
    --  @return Sequence with length 0.
@@ -34,19 +53,17 @@ package Lovelace.Compiler.Ast is
    --  @param Name UTF-8 subroutine name.
    --  @param Name_Span Source span of the name identifier.
    --  @param Filename Optional shared filename from the name token.
-   --  @param Is_Entrypoint True when this subroutine is the module entrypoint.
-   --  @param Is_Export True when this subroutine is exported.
+   --  @param Flags Flag bits (export, entrypoint, and others).
    --  @param Return_Type Frontend return type expression.
    --  @param The_Body Statement list (empty in this slice).
    --  @return Subroutine value.
    function Create_Subroutine
-     (Name          : String;
-      Name_Span     : Source.Source_Span;
-      Filename      : Source.Filename_Option;
-      Is_Entrypoint : Boolean;
-      Is_Export     : Boolean;
-      Return_Type   : Types.Type_Expression;
-      The_Body      : Statement_Sequence) return Subroutine;
+     (Name        : String;
+      Name_Span   : Source.Source_Span;
+      Filename    : Source.Filename_Option;
+      Flags       : Subroutine_Flags;
+      Return_Type : Types.Type_Expression;
+      The_Body    : Statement_Sequence) return Subroutine;
 
    --  UTF-8 name of The_Subroutine.
    --  @param The_Subroutine Subroutine to query.
@@ -63,15 +80,10 @@ package Lovelace.Compiler.Ast is
    --  @return Filename option from construction.
    function Filename (The_Subroutine : Subroutine) return Source.Filename_Option;
 
-   --  True when The_Subroutine is marked as the module entrypoint.
+   --  Flag bits of The_Subroutine.
    --  @param The_Subroutine Subroutine to query.
-   --  @return Entrypoint flag.
-   function Is_Entrypoint (The_Subroutine : Subroutine) return Boolean;
-
-   --  True when The_Subroutine is marked as exported.
-   --  @param The_Subroutine Subroutine to query.
-   --  @return Export flag.
-   function Is_Export (The_Subroutine : Subroutine) return Boolean;
+   --  @return Flag bitset.
+   function Get_Flags (The_Subroutine : Subroutine) return Subroutine_Flags;
 
    --  Return type expression of The_Subroutine.
    --  @param The_Subroutine Subroutine to query.
@@ -163,8 +175,7 @@ private
       Subroutine_Name   : Ada.Strings.Unbounded.Unbounded_String;
       Name_Span_Value   : Source.Source_Span;
       Filename_Value    : Source.Filename_Option;
-      Entrypoint_Flag   : Boolean;
-      Export_Flag       : Boolean;
+      Flags_Value       : Subroutine_Flags := 0;
       Return_Type_Value : Unit_Type_Expression;
       Body_Value        : Statement_Sequence;
    end record;

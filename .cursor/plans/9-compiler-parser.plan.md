@@ -16,21 +16,24 @@ todos:
     status: completed
   - id: "5"
     content: "5. Implement Lovelace.Compiler.Ast (module, subroutine, empty statements, Subroutine_Flags bitset, spans). Revise existing Boolean flags to a mod 2**32 bitset."
-    status: pending
+    status: completed
   - id: "6"
-    content: "6. Implement Lovelace.Compiler.Parser (Parse, error codes, exact six-token grammar ending in .)."
-    status: pending
+    content: "6. Rewrite Lovelace.Compiler.Parser as a recursive-descent parser that consumes one token at a time (LL(k); no fixed six-slot indexing)."
+    status: completed
   - id: "7"
-    content: "7. Add AUnit parser tests and suite registration; run gnatformat on all touched Ada files."
-    status: pending
+    content: "7. Add Cursor rule .cursor/rules/parser-recursive-descent.mdc (Lovelace is LL(k); no left recursion; recursive descent)."
+    status: completed
   - id: "8"
-    content: "8. Write/update docs (parser.md, program grammar, tokenizer cross-links)."
+    content: "8. Add AUnit parser tests and suite registration; run gnatformat on all touched Ada files."
     status: pending
   - id: "9"
-    content: "9. Run all existing tests (lovelace_workspace / nested crates that exist, including compiler/tests and common/tests / lir/tests as applicable)."
+    content: "9. Write/update docs (parser.md, program grammar, tokenizer cross-links)."
     status: pending
   - id: "10"
-    content: "10. Push (proxy env cleared) and open a PR with gh pr create."
+    content: "10. Run all existing tests (lovelace_workspace / nested crates that exist, including compiler/tests and common/tests / lir/tests as applicable)."
+    status: pending
+  - id: "11"
+    content: "11. Push (proxy env cleared) and open a PR with gh pr create."
     status: pending
 isProject: false
 ---
@@ -45,13 +48,14 @@ Depends on the landed tokenizer ([#5](https://github.com/sanelli/lovelace/issues
 
 ## Locked decisions
 
-- **Grammar (only accepted form):** `program IDENTIFIER ; begin end .` — six tokens in that order, nothing else.
+- **Grammar (only accepted form):** `program IDENTIFIER ; begin end .` — nothing else in this slice.
 - **Terminator:** only punctuation **`.`** (`Full_Stop`) after `end`. The earlier `end;` was a typo; **`end;` is a parse error** in this slice.
 - **Semicolon** remains required after the program name (`program IDENTIFIER;`).
 - **Whitespace:** already stripped by the tokenizer; `program IDENTIFIER;begin end.`, multi-line, and arbitrary Unicode spaces are all valid if the token sequence matches.
 - **One compilation unit** = one `.love` file = one parse → one AST module.
 - **AST shape:** root module named `IDENTIFIER`; module contains one subroutine also named `IDENTIFIER`; empty body; return type **unit**; subroutine **flags** include both `Export_Flag` and `Entrypoint_Flag` (bitset, not Booleans).
 - **Types:** new frontend type system with only **Unit** now; designed so scalars, pointers, enums, unions, structs, arrays, tuples, sum types can be added later without rewriting call sites to a closed LIR-style enum.
+- **Parsing strategy:** **recursive descent**. The Lovelace language is **LL(k)**. Grammar productions must **not** use left recursion. The parser consumes **one token at a time** (`Peek` / `Advance` / expect helpers) and matches the grammar; do **not** implement parsing as a fixed-length index table over the whole unit (the current six-slot `Token_List` indexing is rejected and must be rewritten).
 
 ```mermaid
 flowchart LR
@@ -114,11 +118,12 @@ function Has_Entrypoint (Flags : Subroutine_Flags) return Boolean;
 - **`Subroutine`**: name (UTF-8 `Unbounded_String` from identifier lexeme), `Name_Span`, `Filename`, **`Flags : Subroutine_Flags`** (not two Booleans), `Return_Type` (`Types.Type_Expression`), body (`Statement_Sequence`). Accessor `Get_Body` (Ada reserved word `Body` avoided).
 - **`Module`**: name + `Name_Span` + `Filename`, spanning `Span` for the whole unit (first token `First` through last token `Last`), ordered `Subroutine_Sequence` with **exactly one** subroutine in this slice.
 - Store enough location data that diagnostics can point at the bad token: at least name spans and the module-wide span; copy `Filename` from the identifier (or program) token when present.
-- **Revision:** the current Ast on the branch still uses Boolean `Is_Entrypoint` / `Is_Export`; replace those with the bitset API above before implementing the parser.
 
 Accessors for tests and later IR gen: name, `Get_Flags`, `Has_Export` / `Has_Entrypoint`, return type, subroutine count/element, body length, spans.
 
 ### Parser (`Lovelace.Compiler.Parser`)
+
+Public API unchanged in shape:
 
 ```ada
 function Parse
@@ -126,35 +131,47 @@ function Parse
    Token_List  : Tokens.Token_Sequence) return Parse_Result;
 ```
 
-- Caller tokenizes first; parser does **not** call `Tokenize` (keeps layers clear). Tests tokenize then parse.
+- Caller tokenizes first; parser does **not** call `Tokenize`.
 - `Source_Text` is required so `Tokens.Lexeme` can recover the module/subroutine name.
-- **Success only when** `Length (Token_List) = 6` and kinds/subtypes match exactly:
 
-| Index | Expected |
-| --- | --- |
-| 1 | `Keyword` / `Program_Keyword` |
-| 2 | `Identifier` |
-| 3 | `Punctuation` / `Semicolon` |
-| 4 | `Keyword` / `Begin_Keyword` |
-| 5 | `Keyword` / `End_Keyword` |
-| 6 | `Punctuation` / `Full_Stop` |
+**Recursive descent (required rewrite of the current body):**
 
-- On success: build module + one subroutine (same name), `Flags => Export_Flag or Entrypoint_Flag`, `Return_Type` = `Unit_Type`, empty body, spans from tokens.
-- **Errors:** same shape as the tokenizer — `Parse_Result (Ok)` is AST **or** error list (not both). Mirror [`Tokenize_Result`](compiler/src/lovelace-compiler-tokenizer.ads).
+- Keep a small **cursor** over `Token_List` (next index / “current token”).
+- Helpers such as `At_End`, `Peek`, `Advance`, `Expect_Keyword`, `Expect_Punctuation`, `Expect_Identifier` that look at **one** token (or fail with `Unexpected_End_Of_Input` / `Unexpected_Token`).
+- Top-down procedures matching a **right-recursive / non-left-recursive** grammar, e.g.:
+
+```ebnf
+compilation_unit = program_header , block , "." ;
+program_header   = "program" , identifier , ";" ;
+block            = "begin" , "end" ;
+```
+
+- `Parse_Compilation_Unit` calls `Parse_Program_Header`, then `Parse_Block`, then expects `.`, then requires **no remaining tokens** (`Unexpected_Trailing` if `Peek` still has a token).
+- Build the AST only after (or while) successful expects: module + one subroutine (same name), `Flags => Export_Flag or Entrypoint_Flag`, `Return_Type` = `Unit_Type`, empty body; unit `Span` from first consumed token through the final `.`.
+- **Do not** gate the parse on `Length = 6` up front and then `Element (…, 1 .. 6)` as the control flow. Length may still be used only for emptiness / trailing checks after descent.
+
+**Errors** (same shape as the tokenizer — AST **or** errors, not both):
 
 ```ada
 type Parser_Error_Code is
   (Internal_Error,          -- first (result-and-internal-errors rule)
-   Unexpected_End_Of_Input, -- fewer than 6 tokens / ran out mid-expect
+   Unexpected_End_Of_Input, -- Peek/Advance past end when a token was required
    Unexpected_Token,        -- wrong kind or subtype at cursor
-   Unexpected_Trailing);    -- more than 6 tokens
+   Unexpected_Trailing);    -- tokens remain after a complete unit
 ```
 
-Prefer checking length and each slot: empty/short → `Unexpected_End_Of_Input` with span of last token if any, else a synthetic span at `(1,1,1)`; wrong token → `Unexpected_Token` at that token’s span; length > 6 → `Unexpected_Trailing` at token 7’s span.
-
-- **Stop at first error** for this rigid grammar (no multi-error recovery). Detail strings like `expected keyword "program", found …` using lexemes when helpful.
-- Copy `Filename` from the offending token (or first token) onto the error.
+- **Stop at first error**. Detail strings like `expected keyword "program", found …`.
+- Copy `Filename` from the offending token when present; use a synthetic span at `(1,1,1)` only when the token list is empty.
 - No `raise`. Handle every `Ok` discriminant.
+
+### Cursor rule (new)
+
+Add [`.cursor/rules/parser-recursive-descent.mdc`](.cursor/rules/parser-recursive-descent.mdc) (always apply or glob `compiler/**`):
+
+- Lovelace surface syntax is designed to be **LL(k)** (predictive).
+- Host frontend parsers use **recursive descent**.
+- **No left-recursive** productions in Lovelace grammar or in parser procedures that mirror them; rewrite with right recursion or iteration.
+- Consume tokens via a cursor (`Peek` / `Advance` / expect), not by treating a whole compilation unit as a fixed index vector of expected slots.
 
 ## Tests (`compiler/tests`)
 
@@ -170,8 +187,8 @@ Cover at least:
 
 ## Docs
 
-- Add [`docs/parser.md`](docs/parser.md): API, grammar, AST/type separation from LIR, error codes.
-- Add [`docs/program-grammar.md`](docs/program-grammar.md) (or extend token-grammar): EBNF for this compilation-unit slice.
+- Add [`docs/parser.md`](docs/parser.md): API, recursive-descent / LL(k) note, grammar, AST/type separation from LIR, error codes.
+- Add [`docs/program-grammar.md`](docs/program-grammar.md): EBNF for this compilation-unit slice (non-left-recursive).
 - Update [`docs/tokenizer.md`](docs/tokenizer.md) intro: parser now exists; link to parser docs.
 - Touch [`README.md`](README.md) only if it still claims “no parser”.
 
@@ -190,9 +207,10 @@ TODOs are 1:1 with these steps (same numbers, same meaning).
 2. Sync `main`, then `gh issue develop 9 --name feature/9-compiler-parser --checkout --base main`. Verify with `gh issue develop --list 9`. **Done:** branch linked and checked out.
 3. Save this plan as [`.cursor/plans/9-compiler-parser.plan.md`](.cursor/plans/) with `#9` in the body. **Done.**
 4. Implement `Lovelace.Compiler.Types` (Unit-only extensible `Type_Expression`). **Done.**
-5. Implement `Lovelace.Compiler.Ast` (module, subroutine, empty statements, `Subroutine_Flags` bitset, spans). **In progress / revise:** replace Boolean `Is_Entrypoint` / `Is_Export` with `Subroutine_Flags` (`Export_Flag`, `Entrypoint_Flag`, `Has_Export`, `Has_Entrypoint`).
-6. Implement `Lovelace.Compiler.Parser` (`Parse`, error codes, exact six-token grammar ending in `.`).
-7. Add AUnit parser tests and suite registration; run `gnatformat` on all touched Ada files.
-8. Write/update docs (`parser.md`, program grammar, tokenizer cross-links).
-9. Run all existing tests (`lovelace_workspace` / nested crates that exist, including `compiler/tests` and `common/tests` / `lir/tests` as applicable).
-10. Push (proxy env cleared) and open a PR with `gh pr create`.
+5. Implement `Lovelace.Compiler.Ast` (module, subroutine, empty statements, `Subroutine_Flags` bitset, spans). **Done.**
+6. Rewrite `Lovelace.Compiler.Parser` as a **recursive-descent** parser that consumes **one token at a time** (LL(k); no fixed six-slot indexing). Public `Parse` / error codes stay; body replaced. **Done.**
+7. Add Cursor rule [`.cursor/rules/parser-recursive-descent.mdc`](.cursor/rules/parser-recursive-descent.mdc) (Lovelace is LL(k); no left recursion; recursive descent). **Done.**
+8. Add AUnit parser tests and suite registration; run `gnatformat` on all touched Ada files.
+9. Write/update docs (`parser.md`, program grammar, tokenizer cross-links).
+10. Run all existing tests (`lovelace_workspace` / nested crates that exist, including `compiler/tests` and `common/tests` / `lir/tests` as applicable).
+11. Push (proxy env cleared) and open a PR with `gh pr create`.

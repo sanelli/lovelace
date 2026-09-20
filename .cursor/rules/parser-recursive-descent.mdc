@@ -1,0 +1,24 @@
+---
+description: Lovelace frontend parsers are recursive descent (LL(k)); no left recursion
+globs: compiler/**/*
+alwaysApply: false
+---
+
+# Parser: recursive descent and LL(k)
+
+Lovelace surface syntax is designed to be **LL(k)** (predictive). Host frontend parsers in `lovelace_compiler` use **recursive descent**.
+
+## Required
+
+- Consume tokens **one at a time** via a cursor (`Peek` / `Advance` / expect helpers).
+- Structure parse procedures to mirror grammar productions (`Parse_Compilation_Unit`, `Parse_Program_Header`, …).
+- Keep productions **free of left recursion**. Prefer right recursion or iteration when rewriting ambiguous or left-recursive forms.
+
+## Forbidden
+
+- Treating a whole compilation unit as a fixed index vector of expected slots (e.g. gate on `Length = N` then `Element (…, 1 .. N)` as the primary control flow).
+- Left-recursive grammar productions or parser procedures that recurse on the left without consuming a token.
+
+## Errors
+
+Report located failures with predefined parser error codes (`Unexpected_Token`, `Unexpected_End_Of_Input`, `Unexpected_Trailing`, …). Do not use Ada `raise` for ordinary parse failures.
