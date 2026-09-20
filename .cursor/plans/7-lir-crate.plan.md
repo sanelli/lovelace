@@ -34,10 +34,10 @@ todos:
     status: completed
   - id: "11"
     content: "11. Run all tests that exist (workspace, common/tests, compiler/tests, lir/tests)"
-    status: pending
+    status: completed
   - id: "12"
     content: "12. Push and open a PR with gh pr create"
-    status: pending
+    status: completed
 isProject: false
 ---
 
