@@ -1,10 +1,12 @@
 with Ada.Containers.Indefinite_Vectors;
 
-with Lovelace.Compiler.Source;
+with Lovelace.Common.Source;
 
 --  Token kinds and sequences for the Lovelace lexer.
 
 package Lovelace.Compiler.Tokens is
+
+   package Source renames Lovelace.Common.Source;
 
    --  Which token class was recognized.
    --  @enum Keyword Reserved word.

@@ -2,8 +2,9 @@ with Lovelace.Compiler.Ast;
 with Lovelace.Compiler.Parser;
 with Lovelace.Compiler.Tokens;
 with Lovelace.Compiler.Tokenizer;
+with Lovelace.Lir.Modules;
 
---  Shared assertions for Tokenize and Parse tests.
+--  Shared assertions for Tokenize, Parse, and Generate tests.
 
 package Lovelace.Compiler.Tests.Support is
 
@@ -127,10 +128,23 @@ package Lovelace.Compiler.Tests.Support is
    --  @return Parsed module.
    function Must_Parse (Source_Text : String; Message : String) return Ast.Module;
 
+   --  Tokenize with Filename then Parse Source_Text; require success and return the module.
+   --  @param Source_Text UTF-8 Lovelace source.
+   --  @param Filename Shared filename label for tokens and AST.
+   --  @param Message Assertion message on failure.
+   --  @return Parsed module.
+   function Must_Parse (Source_Text : String; Filename : String; Message : String) return Ast.Module;
+
    --  Tokenize then Parse Source_Text; require parse failure and return errors.
    --  @param Source_Text UTF-8 Lovelace source (must tokenize successfully).
    --  @param Message Assertion message on unexpected success.
    --  @return Parser error sequence.
    function Must_Fail_Parse (Source_Text : String; Message : String) return Parser.Parser_Error_Sequence;
+
+   --  Require Generate success and return the LIR module.
+   --  @param The_Module Frontend AST module.
+   --  @param Message Assertion message on failure.
+   --  @return Generated LIR module.
+   function Must_Generate (The_Module : Ast.Module; Message : String) return Lovelace.Lir.Modules.Module;
 
 end Lovelace.Compiler.Tests.Support;

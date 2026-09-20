@@ -1,11 +1,14 @@
 with Ada.Strings.Unbounded;
 with AUnit.Assertions;
 
+with Lovelace.Common.Source;
 with Lovelace.Common.Utf_8;
-with Lovelace.Compiler.Source;
+with Lovelace.Compiler.Ir_Generator;
 with Lovelace.Compiler.Types;
 
 package body Lovelace.Compiler.Tests.Support is
+
+   package Source renames Lovelace.Common.Source;
 
    use type Tokens.Keyword_Subtype;
    use type Tokens.Punctuation_Subtype;
@@ -163,8 +166,53 @@ package body Lovelace.Compiler.Tests.Support is
       end case;
    end Must_Fail_Parse;
 
+   function Must_Generate (The_Module : Ast.Module; Message : String) return Lovelace.Lir.Modules.Module is
+      Result : constant Ir_Generator.Generate_Result := Ir_Generator.Generate (The_Module);
+   begin
+      case Result.Ok is
+         when True  =>
+            return Result.The_Module;
+
+         when False =>
+            AUnit.Assertions.Assert
+              (False,
+               Message & ": unexpected Generate error: " & Ada.Strings.Unbounded.To_String (Result.Error.Detail));
+            return Lovelace.Lir.Modules.Create ("");
+      end case;
+   end Must_Generate;
+
    function Must_Parse (Source_Text : String; Message : String) return Ast.Module is
       Token_List : constant Tokens.Token_Sequence := Must_Succeed (Source_Text, Message & ": tokenize");
+      Result     : constant Parser.Parse_Result := Parser.Parse (Source_Text, Token_List);
+      Origin     : constant Source.Source_Span :=
+        (First => (Byte_Index => 1, Line => 1, Column => 1), Last => (Byte_Index => 1, Line => 1, Column => 1));
+   begin
+      case Result.Ok is
+         when True  =>
+            return Result.The_Module;
+
+         when False =>
+            AUnit.Assertions.Assert
+              (False, Message & ": unexpected parse errors (" & Natural'Image (Parser.Length (Result.Errors)) & ")");
+            return
+              Ast.Create_Module
+                (Name           => "",
+                 Name_Span      => Origin,
+                 Filename       => Source.Absent_Filename,
+                 Span           => Origin,
+                 The_Subroutine =>
+                   Ast.Create_Subroutine
+                     (Name        => "",
+                      Name_Span   => Origin,
+                      Filename    => Source.Absent_Filename,
+                      Flags       => 0,
+                      Return_Type => Types.Unit_Type,
+                      The_Body    => Ast.Empty_Body));
+      end case;
+   end Must_Parse;
+
+   function Must_Parse (Source_Text : String; Filename : String; Message : String) return Ast.Module is
+      Token_List : constant Tokens.Token_Sequence := Must_Succeed (Source_Text, Filename, Message & ": tokenize");
       Result     : constant Parser.Parse_Result := Parser.Parse (Source_Text, Token_List);
       Origin     : constant Source.Source_Span :=
         (First => (Byte_Index => 1, Line => 1, Column => 1), Last => (Byte_Index => 1, Line => 1, Column => 1));

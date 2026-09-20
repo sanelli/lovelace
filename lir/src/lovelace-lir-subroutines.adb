@@ -7,7 +7,11 @@ package body Lovelace.Lir.Subroutines is
 
    function Create (The_Signature : Signature; Flags : Subroutine_Flags := 0) return Subroutine is
    begin
-      return (The_Signature => The_Signature, Flags => Flags, Instruction_Body => Instructions.Empty_Sequence);
+      return
+        (The_Signature    => The_Signature,
+         Flags            => Flags,
+         Origin_Value     => (Present => False),
+         Instruction_Body => Instructions.Empty_Sequence);
    end Create;
 
    function Get_Flags (The_Subroutine : Subroutine) return Subroutine_Flags is
@@ -34,5 +38,15 @@ package body Lovelace.Lir.Subroutines is
    begin
       return (Flags and Export_Flag) /= 0;
    end Has_Export;
+
+   function Origin (The_Subroutine : Subroutine) return Origin_Option is
+   begin
+      return The_Subroutine.Origin_Value;
+   end Origin;
+
+   procedure Set_Origin (The_Subroutine : in out Subroutine; The_Origin : Subroutine_Origin) is
+   begin
+      The_Subroutine.Origin_Value := (Present => True, Value => The_Origin);
+   end Set_Origin;
 
 end Lovelace.Lir.Subroutines;

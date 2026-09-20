@@ -8,17 +8,17 @@ This slice accepts only:
 program IDENTIFIER; begin end.
 ```
 
-There is no AST→LIR lowering, no CLI wiring, and no dependency on `lovelace_lir` from the compiler for this work. Frontend AST and types are distinct from LIR.
+There is no CLI wiring in this slice. Lowering AST to LIR is documented in [ir-generator.md](ir-generator.md). Frontend AST and types remain distinct from LIR packages.
 
-Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). Lexical tokens come from [tokenizer.md](tokenizer.md).
+Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). Lexical tokens come from [tokenizer.md](tokenizer.md). Source spans and filenames: [source-locations.md](source-locations.md).
 
 ## Pipeline
 
 ```text
-UTF-8 .love  →  Tokenize  →  Token_Sequence  →  Parse  →  Ast.Module
+UTF-8 .love  →  Tokenize  →  Token_Sequence  →  Parse  →  Ast.Module  →  Generate  →  LIR
 ```
 
-Callers tokenize first. `Parse` does not call `Tokenize`.
+Callers tokenize first. `Parse` does not call `Tokenize`. Callers that need LIR call `Ir_Generator.Generate` after a successful parse.
 
 ## API
 
@@ -27,6 +27,7 @@ Callers tokenize first. `Parse` does not call `Tokenize`.
 | `Lovelace.Compiler.Types` | Frontend `Type_Expression` (Unit only in this slice) |
 | `Lovelace.Compiler.Ast` | Module, subroutine, `Subroutine_Flags`, empty body |
 | `Lovelace.Compiler.Parser` | `Parse`, `Parse_Result`, `Parser_Error` |
+| `Lovelace.Compiler.Ir_Generator` | AST → LIR (see [ir-generator.md](ir-generator.md)) |
 
 ```ada
 function Parse
@@ -63,7 +64,7 @@ On success the parser builds:
 - Return type **unit** (`Lovelace.Compiler.Types.Unit`)
 - Flags: both `Export_Flag` and `Entrypoint_Flag` (frontend bitset, not LIR’s type)
 
-Spans cover the name and the whole unit (first token through the final `.`).
+Spans cover the name and the whole unit (first token through the final `.`). Optional filenames come from tokenization ([source-locations.md](source-locations.md)).
 
 ## Errors
 

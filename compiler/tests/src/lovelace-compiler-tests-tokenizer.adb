@@ -1,20 +1,18 @@
 with AUnit.Assertions;
 
-with Lovelace.Compiler.Source;
+with Lovelace.Common.Source;
 with Lovelace.Compiler.Tests.Support;
 with Lovelace.Compiler.Tokens;
 with Lovelace.Compiler.Tokenizer;
 
 package body Lovelace.Compiler.Tests.Tokenizer is
 
+   package Source renames Lovelace.Common.Source;
    package Compiler_Tokenizer renames Lovelace.Compiler.Tokenizer;
 
-   procedure Assert_Program_Begin_End
-     (Source_Text : String; Token_List : Tokens.Token_Sequence; Message : String);
+   procedure Assert_Program_Begin_End (Source_Text : String; Token_List : Tokens.Token_Sequence; Message : String);
 
-   procedure Assert_Program_Begin_End
-     (Source_Text : String; Token_List : Tokens.Token_Sequence; Message : String)
-   is
+   procedure Assert_Program_Begin_End (Source_Text : String; Token_List : Tokens.Token_Sequence; Message : String) is
    begin
       Support.Assert_Token_Count (Token_List, 4, Message);
       Support.Assert_Keyword (Source_Text, Token_List, 1, Tokens.Program_Keyword, Message & " program");
@@ -25,7 +23,7 @@ package body Lovelace.Compiler.Tests.Tokenizer is
 
    procedure Test_Ascii_Identifiers (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Names : constant String := "name foo_bar _x foo2";
+      Names      : constant String := "name foo_bar _x foo2";
       Token_List : constant Tokens.Token_Sequence := Support.Must_Succeed (Names, "ascii identifiers");
    begin
       Support.Assert_Token_Count (Token_List, 4, "ascii identifiers");
@@ -37,13 +35,11 @@ package body Lovelace.Compiler.Tests.Tokenizer is
 
    procedure Test_At_Prefix (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      At_Foo     : constant String := "@foo";
-      Foo_At_Bar : constant String := "foo@bar";
+      At_Foo        : constant String := "@foo";
+      Foo_At_Bar    : constant String := "foo@bar";
       At_Foo_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (At_Foo, "@foo");
-      At_Alone      : constant Compiler_Tokenizer.Tokenizer_Error_Sequence :=
-        Support.Must_Fail ("@", "@ alone");
-      Foo_At_Errors : constant Compiler_Tokenizer.Tokenizer_Error_Sequence :=
-        Support.Must_Fail (Foo_At_Bar, "foo@bar");
+      At_Alone      : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("@", "@ alone");
+      Foo_At_Errors : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail (Foo_At_Bar, "foo@bar");
    begin
       Support.Assert_Token_Count (At_Foo_Tokens, 1, "@foo");
       Support.Assert_Identifier (At_Foo, At_Foo_Tokens, 1, "@foo", "@foo lexeme");
@@ -96,8 +92,7 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       First := Compiler_Tokenizer.Element (Errors, 1);
       Second := Compiler_Tokenizer.Element (Errors, 2);
       AUnit.Assertions.Assert (First.Filename.Present, "first error has filename");
-      AUnit.Assertions.Assert
-        (Source.Same_Storage (First.Filename, Second.Filename), "errors share filename storage");
+      AUnit.Assertions.Assert (Source.Same_Storage (First.Filename, Second.Filename), "errors share filename storage");
    end Test_Filename_Shared_On_Errors;
 
    procedure Test_Filename_Shared_On_Tokens (The_Test : in out Fixture) is
@@ -109,14 +104,13 @@ package body Lovelace.Compiler.Tests.Tokenizer is
    begin
       Support.Assert_Token_Count (Token_List, 2, "filename on tokens");
       AUnit.Assertions.Assert (First.Filename.Present, "first token has filename");
-      AUnit.Assertions.Assert
-        (Source.Same_Storage (First.Filename, Second.Filename), "tokens share filename storage");
+      AUnit.Assertions.Assert (Source.Same_Storage (First.Filename, Second.Filename), "tokens share filename storage");
    end Test_Filename_Shared_On_Tokens;
 
    procedure Test_Glued_Punctuation (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Glued  : constant String := "end;";
-      Spaced : constant String := "end ;";
+      Glued         : constant String := "end;";
+      Spaced        : constant String := "end ;";
       Glued_Tokens  : constant Tokens.Token_Sequence := Support.Must_Succeed (Glued, "end;");
       Spaced_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Spaced, "end ;");
    begin
@@ -140,10 +134,9 @@ package body Lovelace.Compiler.Tests.Tokenizer is
 
    procedure Test_Keyword_Case (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Program_Ident : constant String := "Program";
-      Begin_Ident   : constant String := "BEGIN";
-      Program_Tokens : constant Tokens.Token_Sequence :=
-        Support.Must_Succeed (Program_Ident, "Program");
+      Program_Ident  : constant String := "Program";
+      Begin_Ident    : constant String := "BEGIN";
+      Program_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Program_Ident, "Program");
       Begin_Tokens   : constant Tokens.Token_Sequence := Support.Must_Succeed (Begin_Ident, "BEGIN");
    begin
       Support.Assert_Token_Count (Program_Tokens, 1, "Program");
@@ -154,10 +147,9 @@ package body Lovelace.Compiler.Tests.Tokenizer is
 
    procedure Test_Keyword_Reservation (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Programmer : constant String := "programmer";
-      Glued      : constant String := "programbegin";
-      Programmer_Tokens : constant Tokens.Token_Sequence :=
-        Support.Must_Succeed (Programmer, "programmer");
+      Programmer        : constant String := "programmer";
+      Glued             : constant String := "programbegin";
+      Programmer_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Programmer, "programmer");
       Glued_Tokens      : constant Tokens.Token_Sequence := Support.Must_Succeed (Glued, "programbegin");
    begin
       Support.Assert_Token_Count (Programmer_Tokens, 1, "programmer");
@@ -168,8 +160,8 @@ package body Lovelace.Compiler.Tests.Tokenizer is
 
    procedure Test_Leading_Digits (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Two      : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("2", "2");
-      Two_Foo  : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("2foo", "2foo");
+      Two     : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("2", "2");
+      Two_Foo : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("2foo", "2foo");
    begin
       Support.Assert_Error_Count (Two, 1, "2");
       Support.Assert_Error_Code (Two, 1, Compiler_Tokenizer.Unrecognized_Symbol, "2");
@@ -190,8 +182,7 @@ package body Lovelace.Compiler.Tests.Tokenizer is
    procedure Test_Newline_Line_Column (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Source_Text : constant String := "end" & ASCII.LF & "begin";
-      Token_List  : constant Tokens.Token_Sequence :=
-        Support.Must_Succeed (Source_Text, "newline");
+      Token_List  : constant Tokens.Token_Sequence := Support.Must_Succeed (Source_Text, "newline");
    begin
       Support.Assert_Token_Count (Token_List, 2, "newline");
       Support.Assert_Keyword (Source_Text, Token_List, 1, Tokens.End_Keyword, "end");
@@ -203,8 +194,7 @@ package body Lovelace.Compiler.Tests.Tokenizer is
    procedure Test_Program_Begin_End (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Source_Text : constant String := "program begin end.";
-      Token_List  : constant Tokens.Token_Sequence :=
-        Support.Must_Succeed (Source_Text, "program begin end.");
+      Token_List  : constant Tokens.Token_Sequence := Support.Must_Succeed (Source_Text, "program begin end.");
    begin
       Assert_Program_Begin_End (Source_Text, Token_List, "program begin end.");
       Support.Assert_First_Position (Token_List, 1, 1, 1, "program");
@@ -215,16 +205,15 @@ package body Lovelace.Compiler.Tests.Tokenizer is
 
    procedure Test_Unicode_Identifiers (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Cafe   : constant String := "caf" & Support.To_Utf_8 (Wide_Wide_Character'Val (16#00E9#));
-      Rocket : constant String := Support.To_Utf_8 (Wide_Wide_Character'Val (16#1F680#)) & "go";
+      Cafe          : constant String := "caf" & Support.To_Utf_8 (Wide_Wide_Character'Val (16#00E9#));
+      Rocket        : constant String := Support.To_Utf_8 (Wide_Wide_Character'Val (16#1F680#)) & "go";
       Cafe_Tokens   : constant Tokens.Token_Sequence := Support.Must_Succeed (Cafe, "cafe");
       Rocket_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Rocket, "emoji");
       Cafe_Token    : constant Tokens.Token := Tokens.Element (Cafe_Tokens, 1);
    begin
       Support.Assert_Token_Count (Cafe_Tokens, 1, "cafe");
       Support.Assert_Identifier (Cafe, Cafe_Tokens, 1, Cafe, "cafe lexeme");
-      AUnit.Assertions.Assert
-        (Cafe_Token.Span.Last.Byte_Index = Cafe'Length, "cafe byte span covers UTF-8");
+      AUnit.Assertions.Assert (Cafe_Token.Span.Last.Byte_Index = Cafe'Length, "cafe byte span covers UTF-8");
       Support.Assert_Token_Count (Rocket_Tokens, 1, "emoji");
       Support.Assert_Identifier (Rocket, Rocket_Tokens, 1, Rocket, "emoji lexeme");
    end Test_Unicode_Identifiers;
@@ -246,9 +235,9 @@ package body Lovelace.Compiler.Tests.Tokenizer is
 
    procedure Test_Unrecognized_Symbols (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Plus   : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("+", "plus");
-      Comma  : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail (",", "comma");
-      Quote  : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("""", "quote");
+      Plus  : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("+", "plus");
+      Comma : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail (",", "comma");
+      Quote : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("""", "quote");
    begin
       Support.Assert_Error_Count (Plus, 1, "plus");
       Support.Assert_Error_Code (Plus, 1, Compiler_Tokenizer.Unrecognized_Symbol, "plus");
@@ -260,11 +249,11 @@ package body Lovelace.Compiler.Tests.Tokenizer is
 
    procedure Test_Whitespace_Kinds (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Nbsp     : constant String := Support.To_Utf_8 (Wide_Wide_Character'Val (16#00A0#));
-      Spaced   : constant String := "program begin end.";
-      Tabbed   : constant String := "program" & ASCII.HT & "begin" & ASCII.HT & "end.";
-      Newlined : constant String := "program" & ASCII.LF & "begin" & ASCII.CR & "end.";
-      Mixed    : constant String := "program " & Nbsp & "begin   end.";
+      Nbsp            : constant String := Support.To_Utf_8 (Wide_Wide_Character'Val (16#00A0#));
+      Spaced          : constant String := "program begin end.";
+      Tabbed          : constant String := "program" & ASCII.HT & "begin" & ASCII.HT & "end.";
+      Newlined        : constant String := "program" & ASCII.LF & "begin" & ASCII.CR & "end.";
+      Mixed           : constant String := "program " & Nbsp & "begin   end.";
       Spaced_Tokens   : constant Tokens.Token_Sequence := Support.Must_Succeed (Spaced, "spaces");
       Tabbed_Tokens   : constant Tokens.Token_Sequence := Support.Must_Succeed (Tabbed, "tabs");
       Newlined_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Newlined, "newlines");

@@ -1,12 +1,14 @@
 with Ada.Containers.Vectors;
 with Ada.Strings.Unbounded;
 
-with Lovelace.Compiler.Source;
+with Lovelace.Common.Source;
 with Lovelace.Compiler.Tokens;
 
 --  Regex-backed UTF-8 tokenizer for keywords, identifiers, and punctuation.
 
 package Lovelace.Compiler.Tokenizer is
+
+   package Source renames Lovelace.Common.Source;
 
    --  Tokenizer problem (expandable in later work).
    --  @enum Internal_Error Compiler bug such as a hardcoded pattern failing to compile.

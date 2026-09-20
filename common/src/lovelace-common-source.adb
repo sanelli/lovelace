@@ -1,18 +1,20 @@
-package body Lovelace.Compiler.Source is
+package body Lovelace.Common.Source is
 
    function Absent_Filename return Filename_Option is
    begin
       return (Present => False);
    end Absent_Filename;
 
-   overriding procedure Adjust (Object : in out Shared_Filename) is
+   overriding
+   procedure Adjust (Object : in out Shared_Filename) is
    begin
       if Object.Block /= null then
          Object.Block.Reference_Count := Object.Block.Reference_Count + 1;
       end if;
    end Adjust;
 
-   overriding procedure Finalize (Object : in out Shared_Filename) is
+   overriding
+   procedure Finalize (Object : in out Shared_Filename) is
    begin
       if Object.Block = null then
          return;
@@ -33,9 +35,7 @@ package body Lovelace.Compiler.Source is
       Result : Shared_Filename;
    begin
       Result.Block :=
-        new Filename_Block'
-          (Reference_Count => 1,
-           Text            => Ada.Strings.Unbounded.To_Unbounded_String (Filename));
+        new Filename_Block'(Reference_Count => 1, Text => Ada.Strings.Unbounded.To_Unbounded_String (Filename));
       return Result;
    end From_Utf_8;
 
@@ -49,7 +49,7 @@ package body Lovelace.Compiler.Source is
          when False =>
             return True;
 
-         when True =>
+         when True  =>
             return Same_Storage (Left.Value, Right.Value);
       end case;
    end Same_Storage;
@@ -68,4 +68,4 @@ package body Lovelace.Compiler.Source is
       return (Present => True, Value => Holder);
    end Some_Filename;
 
-end Lovelace.Compiler.Source;
+end Lovelace.Common.Source;

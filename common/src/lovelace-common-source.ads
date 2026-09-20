@@ -3,9 +3,9 @@ with Ada.Strings.Unbounded;
 
 private with Ada.Unchecked_Deallocation;
 
---  Source locations and optional shared filenames for compiler diagnostics.
+--  Source locations and optional shared filenames for host diagnostics and IR.
 
-package Lovelace.Compiler.Source is
+package Lovelace.Common.Source is
 
    --  One position in UTF-8 source (1-based byte index and line/column).
    --  @field Byte_Index First byte of this scalar in the source string.
@@ -25,7 +25,7 @@ package Lovelace.Compiler.Source is
       Last  : Source_Position;
    end record;
 
-   --  Refcounted immutable UTF-8 filename shared across compiler values.
+   --  Refcounted immutable UTF-8 filename shared across host values.
    type Shared_Filename is new Ada.Finalization.Controlled with private;
 
    --  Optional Shared_Filename (same shape as Lovelace.Common.Option).
@@ -73,8 +73,10 @@ private
       Block : Filename_Block_Access;
    end record;
 
-   overriding procedure Adjust (Object : in out Shared_Filename);
-   overriding procedure Finalize (Object : in out Shared_Filename);
+   overriding
+   procedure Adjust (Object : in out Shared_Filename);
+   overriding
+   procedure Finalize (Object : in out Shared_Filename);
 
    --  @field Value Shared filename when Present is True.
    type Filename_Option (Present : Boolean := False) is record
@@ -87,4 +89,4 @@ private
       end case;
    end record;
 
-end Lovelace.Compiler.Source;
+end Lovelace.Common.Source;

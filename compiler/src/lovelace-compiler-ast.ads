@@ -1,13 +1,15 @@
 with Ada.Containers.Vectors;
 with Ada.Strings.Unbounded;
 
-with Lovelace.Compiler.Source;
+with Lovelace.Common.Source;
 with Lovelace.Compiler.Types;
 
 --  Frontend abstract syntax tree for one Lovelace compilation unit.
 --  Distinct from Lovelace.Lir modules and subroutines.
 
 package Lovelace.Compiler.Ast is
+
+   package Source renames Lovelace.Common.Source;
 
    --  Flag bitset for a frontend subroutine (not string tags; not LIR flags).
    type Subroutine_Flags is mod 2**32;

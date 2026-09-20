@@ -1,14 +1,16 @@
 with Ada.Containers.Vectors;
 with Ada.Strings.Unbounded;
 
+with Lovelace.Common.Source;
 with Lovelace.Compiler.Ast;
-with Lovelace.Compiler.Source;
 with Lovelace.Compiler.Tokens;
 
 --  Parse a token sequence for one minimal Lovelace compilation unit into an AST.
 --  Recursive-descent (LL(k)); consumes one token at a time.
 
 package Lovelace.Compiler.Parser is
+
+   package Source renames Lovelace.Common.Source;
 
    --  Parser problem (expandable in later work).
    --  @enum Internal_Error Compiler bug in the parser.
