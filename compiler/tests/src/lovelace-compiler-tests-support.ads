@@ -1,7 +1,9 @@
+with Lovelace.Compiler.Ast;
+with Lovelace.Compiler.Parser;
 with Lovelace.Compiler.Tokens;
 with Lovelace.Compiler.Tokenizer;
 
---  Shared assertions for Tokenize tests.
+--  Shared assertions for Tokenize and Parse tests.
 
 package Lovelace.Compiler.Tests.Support is
 
@@ -21,8 +23,7 @@ package Lovelace.Compiler.Tests.Support is
    --  @param Filename Shared filename label.
    --  @param Message Assertion message on failure.
    --  @return Token sequence.
-   function Must_Succeed
-     (Source_Text : String; Filename : String; Message : String) return Tokens.Token_Sequence;
+   function Must_Succeed (Source_Text : String; Filename : String; Message : String) return Tokens.Token_Sequence;
 
    --  Require Tokenize failure and return the error sequence.
    --  @param Source_Text UTF-8 input.
@@ -36,15 +37,13 @@ package Lovelace.Compiler.Tests.Support is
    --  @param Message Assertion message on unexpected success.
    --  @return Error sequence.
    function Must_Fail
-     (Source_Text : String; Filename : String; Message : String)
-      return Tokenizer.Tokenizer_Error_Sequence;
+     (Source_Text : String; Filename : String; Message : String) return Tokenizer.Tokenizer_Error_Sequence;
 
    --  Assert token count.
    --  @param Token_List Token sequence.
    --  @param Expected_Length Expected Length (Token_List).
    --  @param Message Assertion message.
-   procedure Assert_Token_Count
-     (Token_List : Tokens.Token_Sequence; Expected_Length : Natural; Message : String);
+   procedure Assert_Token_Count (Token_List : Tokens.Token_Sequence; Expected_Length : Natural; Message : String);
 
    --  Assert error count.
    --  @param Errors Error sequence.
@@ -85,10 +84,7 @@ package Lovelace.Compiler.Tests.Support is
    --  @param Value Expected punctuation subtype.
    --  @param Message Assertion message.
    procedure Assert_Punctuation
-     (Token_List : Tokens.Token_Sequence;
-      Index      : Positive;
-      Value      : Tokens.Punctuation_Subtype;
-      Message    : String);
+     (Token_List : Tokens.Token_Sequence; Index : Positive; Value : Tokens.Punctuation_Subtype; Message : String);
 
    --  Assert token span line and column (first position).
    --  @param Token_List Token sequence.
@@ -97,13 +93,9 @@ package Lovelace.Compiler.Tests.Support is
    --  @param Column Expected first column.
    --  @param Message Assertion message.
    procedure Assert_First_Position
-     (Token_List : Tokens.Token_Sequence;
-      Index      : Positive;
-      Line       : Positive;
-      Column     : Positive;
-      Message    : String);
+     (Token_List : Tokens.Token_Sequence; Index : Positive; Line : Positive; Column : Positive; Message : String);
 
-   --  Assert error code at Index.
+   --  Assert tokenizer error code at Index.
    --  @param Errors Error sequence.
    --  @param Index 1-based error index.
    --  @param Code Expected error code.
@@ -113,5 +105,32 @@ package Lovelace.Compiler.Tests.Support is
       Index   : Positive;
       Code    : Tokenizer.Tokenizer_Error_Code;
       Message : String);
+
+   --  Assert parser error code at Index.
+   --  @param Errors Parser error list.
+   --  @param Index 1-based error index.
+   --  @param Code Expected error code.
+   --  @param Message Assertion message.
+   procedure Assert_Parser_Error_Code
+     (Errors : Parser.Parser_Error_Sequence; Index : Positive; Code : Parser.Parser_Error_Code; Message : String);
+
+   --  Assert parser error count.
+   --  @param Errors Parser error list.
+   --  @param Expected_Length Expected Length (Errors).
+   --  @param Message Assertion message.
+   procedure Assert_Parser_Error_Count
+     (Errors : Parser.Parser_Error_Sequence; Expected_Length : Natural; Message : String);
+
+   --  Tokenize then Parse Source_Text; require success and return the module.
+   --  @param Source_Text UTF-8 Lovelace source.
+   --  @param Message Assertion message on failure.
+   --  @return Parsed module.
+   function Must_Parse (Source_Text : String; Message : String) return Ast.Module;
+
+   --  Tokenize then Parse Source_Text; require parse failure and return errors.
+   --  @param Source_Text UTF-8 Lovelace source (must tokenize successfully).
+   --  @param Message Assertion message on unexpected success.
+   --  @return Parser error sequence.
+   function Must_Fail_Parse (Source_Text : String; Message : String) return Parser.Parser_Error_Sequence;
 
 end Lovelace.Compiler.Tests.Support;

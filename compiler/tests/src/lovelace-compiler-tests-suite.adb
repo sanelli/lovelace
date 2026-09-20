@@ -1,9 +1,11 @@
 with AUnit.Test_Caller;
 
+with Lovelace.Compiler.Tests.Parser;
 with Lovelace.Compiler.Tests.Tokenizer;
 
 package body Lovelace.Compiler.Tests.Suite is
 
+   package Parser_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Parser.Fixture);
    package Tokenizer_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Tokenizer.Fixture);
 
    function Suite return AUnit.Test_Suites.Access_Test_Suite is
@@ -16,8 +18,7 @@ package body Lovelace.Compiler.Tests.Suite is
         (Tokenizer_Caller.Create
            ("program begin end", Lovelace.Compiler.Tests.Tokenizer.Test_Program_Begin_End'Access));
       Result.Add_Test
-        (Tokenizer_Caller.Create
-           ("whitespace kinds", Lovelace.Compiler.Tests.Tokenizer.Test_Whitespace_Kinds'Access));
+        (Tokenizer_Caller.Create ("whitespace kinds", Lovelace.Compiler.Tests.Tokenizer.Test_Whitespace_Kinds'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
            ("glued punctuation", Lovelace.Compiler.Tests.Tokenizer.Test_Glued_Punctuation'Access));
@@ -30,13 +31,11 @@ package body Lovelace.Compiler.Tests.Suite is
         (Tokenizer_Caller.Create
            ("ascii identifiers", Lovelace.Compiler.Tests.Tokenizer.Test_Ascii_Identifiers'Access));
       Result.Add_Test
-        (Tokenizer_Caller.Create
-           ("leading digits", Lovelace.Compiler.Tests.Tokenizer.Test_Leading_Digits'Access));
+        (Tokenizer_Caller.Create ("leading digits", Lovelace.Compiler.Tests.Tokenizer.Test_Leading_Digits'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
            ("unicode identifiers", Lovelace.Compiler.Tests.Tokenizer.Test_Unicode_Identifiers'Access));
-      Result.Add_Test
-        (Tokenizer_Caller.Create ("at prefix", Lovelace.Compiler.Tests.Tokenizer.Test_At_Prefix'Access));
+      Result.Add_Test (Tokenizer_Caller.Create ("at prefix", Lovelace.Compiler.Tests.Tokenizer.Test_At_Prefix'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
            ("unrecognized identifier characters",
@@ -45,26 +44,37 @@ package body Lovelace.Compiler.Tests.Suite is
         (Tokenizer_Caller.Create
            ("newline line column", Lovelace.Compiler.Tests.Tokenizer.Test_Newline_Line_Column'Access));
       Result.Add_Test
-        (Tokenizer_Caller.Create
-           ("filename omitted", Lovelace.Compiler.Tests.Tokenizer.Test_Filename_Omitted'Access));
+        (Tokenizer_Caller.Create ("filename omitted", Lovelace.Compiler.Tests.Tokenizer.Test_Filename_Omitted'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
-           ("filename shared on tokens",
-            Lovelace.Compiler.Tests.Tokenizer.Test_Filename_Shared_On_Tokens'Access));
+           ("filename shared on tokens", Lovelace.Compiler.Tests.Tokenizer.Test_Filename_Shared_On_Tokens'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
-           ("filename shared on errors",
-            Lovelace.Compiler.Tests.Tokenizer.Test_Filename_Shared_On_Errors'Access));
+           ("filename shared on errors", Lovelace.Compiler.Tests.Tokenizer.Test_Filename_Shared_On_Errors'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
            ("unrecognized symbols", Lovelace.Compiler.Tests.Tokenizer.Test_Unrecognized_Symbols'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create ("multi-error", Lovelace.Compiler.Tests.Tokenizer.Test_Multi_Error'Access));
       Result.Add_Test
-        (Tokenizer_Caller.Create
-           ("invalid utf-8", Lovelace.Compiler.Tests.Tokenizer.Test_Invalid_Utf_8'Access));
+        (Tokenizer_Caller.Create ("invalid utf-8", Lovelace.Compiler.Tests.Tokenizer.Test_Invalid_Utf_8'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create ("clean begin", Lovelace.Compiler.Tests.Tokenizer.Test_Clean_Begin'Access));
+      Result.Add_Test
+        (Parser_Caller.Create ("canonical multiline", Lovelace.Compiler.Tests.Parser.Test_Canonical_Multiline'Access));
+      Result.Add_Test
+        (Parser_Caller.Create ("whitespace variants", Lovelace.Compiler.Tests.Parser.Test_Whitespace_Variants'Access));
+      Result.Add_Test
+        (Parser_Caller.Create ("identifier names", Lovelace.Compiler.Tests.Parser.Test_Identifier_Names'Access));
+      Result.Add_Test
+        (Parser_Caller.Create ("end semicolon", Lovelace.Compiler.Tests.Parser.Test_End_Semicolon'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("wrong order and incomplete", Lovelace.Compiler.Tests.Parser.Test_Wrong_Order_And_Incomplete'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("trailing and keyword case", Lovelace.Compiler.Tests.Parser.Test_Trailing_And_Keyword_Case'Access));
+      Result.Add_Test (Parser_Caller.Create ("empty tokens", Lovelace.Compiler.Tests.Parser.Test_Empty_Tokens'Access));
       return Result;
    end Suite;
 

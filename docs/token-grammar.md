@@ -1,6 +1,6 @@
 # Token grammar (this slice)
 
-Lexical grammar recognized by [`Lovelace.Compiler.Tokenizer`](tokenizer.md). Not a full Lovelace language grammar. No parser.
+Lexical grammar recognized by [`Lovelace.Compiler.Tokenizer`](tokenizer.md). Not a full Lovelace language grammar. The program syntax for this slice is in [program-grammar.md](program-grammar.md).
 
 ```ebnf
 tokens        = { whitespace | token | error } ;

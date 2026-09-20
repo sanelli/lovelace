@@ -2,6 +2,8 @@ with Ada.Strings.Unbounded;
 with AUnit.Assertions;
 
 with Lovelace.Common.Utf_8;
+with Lovelace.Compiler.Source;
+with Lovelace.Compiler.Types;
 
 package body Lovelace.Compiler.Tests.Support is
 
@@ -9,6 +11,7 @@ package body Lovelace.Compiler.Tests.Support is
    use type Tokens.Punctuation_Subtype;
    use type Tokens.Token_Kind;
    use type Tokenizer.Tokenizer_Error_Code;
+   use type Parser.Parser_Error_Code;
 
    procedure Assert_Error_Code
      (Errors  : Tokenizer.Tokenizer_Error_Sequence;
@@ -32,22 +35,16 @@ package body Lovelace.Compiler.Tests.Support is
    end Assert_Error_Count;
 
    procedure Assert_First_Position
-     (Token_List : Tokens.Token_Sequence;
-      Index      : Positive;
-      Line       : Positive;
-      Column     : Positive;
-      Message    : String)
+     (Token_List : Tokens.Token_Sequence; Index : Positive; Line : Positive; Column : Positive; Message : String)
    is
       Item : constant Tokens.Token := Tokens.Element (Token_List, Index);
    begin
       AUnit.Assertions.Assert
         (Item.Span.First.Line = Line,
-         Message & ": line expected" & Positive'Image (Line) & " got"
-         & Positive'Image (Item.Span.First.Line));
+         Message & ": line expected" & Positive'Image (Line) & " got" & Positive'Image (Item.Span.First.Line));
       AUnit.Assertions.Assert
         (Item.Span.First.Column = Column,
-         Message & ": column expected" & Positive'Image (Column) & " got"
-         & Positive'Image (Item.Span.First.Column));
+         Message & ": column expected" & Positive'Image (Column) & " got" & Positive'Image (Item.Span.First.Column));
    end Assert_First_Position;
 
    procedure Assert_Identifier
@@ -60,8 +57,7 @@ package body Lovelace.Compiler.Tests.Support is
       Item : constant Tokens.Token := Tokens.Element (Token_List, Index);
    begin
       AUnit.Assertions.Assert (Item.Kind = Tokens.Identifier, Message & ": kind Identifier");
-      AUnit.Assertions.Assert
-        (Tokens.Lexeme (Source_Text, Item) = Expected_Lexeme, Message & ": lexeme");
+      AUnit.Assertions.Assert (Tokens.Lexeme (Source_Text, Item) = Expected_Lexeme, Message & ": lexeme");
    end Assert_Identifier;
 
    procedure Assert_Keyword
@@ -78,18 +74,32 @@ package body Lovelace.Compiler.Tests.Support is
          when Tokens.Keyword =>
             AUnit.Assertions.Assert (Item.Keyword_Value = Value, Message & ": keyword subtype");
 
-         when others =>
+         when others         =>
             null;
       end case;
-      AUnit.Assertions.Assert
-        (Tokens.Lexeme (Source_Text, Item)'Length > 0, Message & ": non-empty lexeme");
+      AUnit.Assertions.Assert (Tokens.Lexeme (Source_Text, Item)'Length > 0, Message & ": non-empty lexeme");
    end Assert_Keyword;
 
+   procedure Assert_Parser_Error_Code
+     (Errors : Parser.Parser_Error_Sequence; Index : Positive; Code : Parser.Parser_Error_Code; Message : String)
+   is
+      Item : constant Parser.Parser_Error := Parser.Element (Errors, Index);
+   begin
+      AUnit.Assertions.Assert (Item.Code = Code, Message);
+   end Assert_Parser_Error_Code;
+
+   procedure Assert_Parser_Error_Count
+     (Errors : Parser.Parser_Error_Sequence; Expected_Length : Natural; Message : String)
+   is
+      Actual_Length : constant Natural := Parser.Length (Errors);
+   begin
+      AUnit.Assertions.Assert
+        (Actual_Length = Expected_Length,
+         Message & ": expected" & Natural'Image (Expected_Length) & " got" & Natural'Image (Actual_Length));
+   end Assert_Parser_Error_Count;
+
    procedure Assert_Punctuation
-     (Token_List : Tokens.Token_Sequence;
-      Index      : Positive;
-      Value      : Tokens.Punctuation_Subtype;
-      Message    : String)
+     (Token_List : Tokens.Token_Sequence; Index : Positive; Value : Tokens.Punctuation_Subtype; Message : String)
    is
       Item : constant Tokens.Token := Tokens.Element (Token_List, Index);
    begin
@@ -98,14 +108,12 @@ package body Lovelace.Compiler.Tests.Support is
          when Tokens.Punctuation =>
             AUnit.Assertions.Assert (Item.Punctuation_Value = Value, Message & ": punctuation subtype");
 
-         when others =>
+         when others             =>
             null;
       end case;
    end Assert_Punctuation;
 
-   procedure Assert_Token_Count
-     (Token_List : Tokens.Token_Sequence; Expected_Length : Natural; Message : String)
-   is
+   procedure Assert_Token_Count (Token_List : Tokens.Token_Sequence; Expected_Length : Natural; Message : String) is
       Actual_Length : constant Natural := Tokens.Length (Token_List);
    begin
       AUnit.Assertions.Assert
@@ -120,15 +128,14 @@ package body Lovelace.Compiler.Tests.Support is
          when False =>
             return Result.Errors;
 
-         when True =>
+         when True  =>
             AUnit.Assertions.Assert (False, Message & ": expected errors");
             return Tokenizer.Empty_Error_Sequence;
       end case;
    end Must_Fail;
 
    function Must_Fail
-     (Source_Text : String; Filename : String; Message : String)
-      return Tokenizer.Tokenizer_Error_Sequence
+     (Source_Text : String; Filename : String; Message : String) return Tokenizer.Tokenizer_Error_Sequence
    is
       Result : constant Tokenizer.Tokenize_Result := Tokenizer.Tokenize (Source_Text, Filename);
    begin
@@ -136,40 +143,80 @@ package body Lovelace.Compiler.Tests.Support is
          when False =>
             return Result.Errors;
 
-         when True =>
+         when True  =>
             AUnit.Assertions.Assert (False, Message & ": expected errors");
             return Tokenizer.Empty_Error_Sequence;
       end case;
    end Must_Fail;
 
+   function Must_Fail_Parse (Source_Text : String; Message : String) return Parser.Parser_Error_Sequence is
+      Token_List : constant Tokens.Token_Sequence := Must_Succeed (Source_Text, Message & ": tokenize");
+      Result     : constant Parser.Parse_Result := Parser.Parse (Source_Text, Token_List);
+   begin
+      case Result.Ok is
+         when False =>
+            return Result.Errors;
+
+         when True  =>
+            AUnit.Assertions.Assert (False, Message & ": expected parse errors");
+            return Parser.Empty_Error_Sequence;
+      end case;
+   end Must_Fail_Parse;
+
+   function Must_Parse (Source_Text : String; Message : String) return Ast.Module is
+      Token_List : constant Tokens.Token_Sequence := Must_Succeed (Source_Text, Message & ": tokenize");
+      Result     : constant Parser.Parse_Result := Parser.Parse (Source_Text, Token_List);
+      Origin     : constant Source.Source_Span :=
+        (First => (Byte_Index => 1, Line => 1, Column => 1), Last => (Byte_Index => 1, Line => 1, Column => 1));
+   begin
+      case Result.Ok is
+         when True  =>
+            return Result.The_Module;
+
+         when False =>
+            AUnit.Assertions.Assert
+              (False, Message & ": unexpected parse errors (" & Natural'Image (Parser.Length (Result.Errors)) & ")");
+            return
+              Ast.Create_Module
+                (Name           => "",
+                 Name_Span      => Origin,
+                 Filename       => Source.Absent_Filename,
+                 Span           => Origin,
+                 The_Subroutine =>
+                   Ast.Create_Subroutine
+                     (Name        => "",
+                      Name_Span   => Origin,
+                      Filename    => Source.Absent_Filename,
+                      Flags       => 0,
+                      Return_Type => Types.Unit_Type,
+                      The_Body    => Ast.Empty_Body));
+      end case;
+   end Must_Parse;
+
    function Must_Succeed (Source_Text : String; Message : String) return Tokens.Token_Sequence is
       Result : constant Tokenizer.Tokenize_Result := Tokenizer.Tokenize (Source_Text);
    begin
       case Result.Ok is
-         when True =>
+         when True  =>
             return Result.Tokens;
 
          when False =>
             AUnit.Assertions.Assert
-              (False,
-               Message & ": unexpected errors (" & Natural'Image (Tokenizer.Length (Result.Errors)) & ")");
+              (False, Message & ": unexpected errors (" & Natural'Image (Tokenizer.Length (Result.Errors)) & ")");
             return Tokens.Empty_Sequence;
       end case;
    end Must_Succeed;
 
-   function Must_Succeed
-     (Source_Text : String; Filename : String; Message : String) return Tokens.Token_Sequence
-   is
+   function Must_Succeed (Source_Text : String; Filename : String; Message : String) return Tokens.Token_Sequence is
       Result : constant Tokenizer.Tokenize_Result := Tokenizer.Tokenize (Source_Text, Filename);
    begin
       case Result.Ok is
-         when True =>
+         when True  =>
             return Result.Tokens;
 
          when False =>
             AUnit.Assertions.Assert
-              (False,
-               Message & ": unexpected errors (" & Natural'Image (Tokenizer.Length (Result.Errors)) & ")");
+              (False, Message & ": unexpected errors (" & Natural'Image (Tokenizer.Length (Result.Errors)) & ")");
             return Tokens.Empty_Sequence;
       end case;
    end Must_Succeed;
@@ -178,7 +225,7 @@ package body Lovelace.Compiler.Tests.Support is
       Result : constant Lovelace.Common.Utf_8.Encode_Results.Result := Lovelace.Common.Utf_8.Encode (Point);
    begin
       case Result.Ok is
-         when True =>
+         when True  =>
             return Ada.Strings.Unbounded.To_String (Result.Value);
 
          when False =>
