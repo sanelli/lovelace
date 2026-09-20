@@ -47,4 +47,4 @@ No references or aggregates in the closed set until specified. `I128`, `U128`, a
 - **`.lir`** — versioned binary; magic `LIR\0` (`4C 49 52 00`); length-prefixed UTF-8 strings; little-endian fixed-width integers (not LEB128). After module metadata, a **subroutine preamble** lists each subroutine name with an absolute 0-based file offset to its record (for future import scanning). Not present in `.tlir`.
 - **`.tlir`** — versioned WAT-inspired S-expression text; writers/printers as implemented; do not invent a `.tlir` parser until asked.
 
-See `docs/lir.md`, `docs/lir-binary.md`, and `docs/lir-text.md` once those exist for the normative layout.
+See [docs/lir.md](../../docs/lir.md), [docs/lir-binary.md](../../docs/lir-binary.md), and [docs/lir-text.md](../../docs/lir-text.md) for the normative layout.

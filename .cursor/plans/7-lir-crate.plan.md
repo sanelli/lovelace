@@ -31,7 +31,7 @@ todos:
     status: completed
   - id: "10"
     content: "10. Document in-memory LIR, .lir, .tlir, and README status"
-    status: pending
+    status: completed
   - id: "11"
     content: "11. Run all tests that exist (workspace, common/tests, compiler/tests, lir/tests)"
     status: pending
