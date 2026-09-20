@@ -21,8 +21,8 @@ todos:
     content: "6. Implement in-memory Value_Type, Signature, Opcode, Instruction, Subroutine, Module types and builders"
     status: completed
   - id: "7"
-    content: "7. Implement versioned binary Encode/Decode/Read/Write (.lir)"
-    status: pending
+    content: "7. Implement versioned binary Encode/Decode/Read/Write (.lir) with subroutine preamble"
+    status: completed
   - id: "8"
     content: "8. Implement To_Text, Write (.tlir), and Print"
     status: pending
@@ -130,7 +130,7 @@ Construction allows temporary invalid modules (two entrypoints while appending).
 
 Decode applies the same checks plus format errors (`Unknown_Type` for a type code outside 0–13).
 
-Error enum (binary and shared validation; `Internal_Error` first): `Internal_Error`, `Io_Failure`, `Invalid_Magic`, `Unsupported_Version`, `Truncated`, `Trailing_Bytes`, `Invalid_Utf_8`, `Unknown_Opcode`, `Unknown_Type`, `Invalid_Presence`, `Empty_Name`, `Duplicate_Name`, `Duplicate_Entrypoint`, `Self_Dependency`.
+Error enum (binary and shared validation; `Internal_Error` first): `Internal_Error`, `Io_Failure`, `Invalid_Magic`, `Unsupported_Version`, `Truncated`, `Trailing_Bytes`, `Invalid_Utf_8`, `Unknown_Opcode`, `Unknown_Type`, `Invalid_Presence`, `Invalid_Offset`, `Empty_Name`, `Duplicate_Name`, `Duplicate_Entrypoint`, `Self_Dependency`.
 
 (`Invalid_Presence` remains reserved / unused once return types are always a single type code; do not reintroduce optional returns.)
 
@@ -172,14 +172,23 @@ Loader accepts **only** major `1` and minor `0`. Any other version → `Unsuppor
 
 Any other byte → `Unknown_Type`.
 
-**Body after header:**
+**Module metadata (after header):**
 
 - module name: encoded string
 - `flags`: `u32` (v1 writers emit `0`; readers store the value as-is so future bits round-trip if we later allow unknown flags — **v1 readers do not reject nonzero flags**, they preserve them)
 - `dependency_count`: `u32`
 - `dependency_count` encoded strings (depended-on **module names**, not file paths)
+
+**Subroutine preamble (binary only; not in `.tlir`):**
+
+After module metadata, before subroutine records. Used to scan subroutine names and jump to definitions without parsing every record (future import scanning).
+
 - `subroutine_count`: `u32`
-- `subroutine_count` subroutine records
+- `subroutine_count` entries, each:
+  - subroutine name: encoded string (must match the name in the record at `offset`)
+  - `offset`: `u32` absolute **0-based** file offset from the first magic byte to the first byte of that subroutine record
+- Offsets must be strictly increasing for successive entries (when count ≥ 2), each must equal the decoder’s current position when that record is about to be read, and the name at the record must match the preamble name. Mismatch → `Invalid_Offset`.
+- Then `subroutine_count` subroutine records in preamble order (no second count)
 
 **Subroutine record:**
 
@@ -289,9 +298,9 @@ Follow [`compiler/alire.toml`](../../compiler/alire.toml) / [`compiler/lovelace_
 
 Implement the packages in **In-memory types** above (`Lovelace.Lir`, `Types`, `Opcodes`, `Instructions`, `Subroutines`, `Modules`), including builders, accessors, and `Validate`. No file codecs in this step.
 
-### 7. Implement versioned binary Encode/Decode/Read/Write (.lir)
+### 7. Implement versioned binary Encode/Decode/Read/Write (.lir) with subroutine preamble
 
-Implement `Lovelace.Lir.Binary` from **Binary format (`.lir`) — version 1.0** above: in-memory `Encode` / `Decode`, file `Write` / `Read`, `GNAT.OS_Lib` I/O, `Result` with `Internal_Error` first on the error enum.
+Implement `Lovelace.Lir.Binary` from **Binary format (`.lir`) — version 1.0** above: in-memory `Encode` / `Decode`, file `Write` / `Read`, `GNAT.OS_Lib` I/O, hand-written `Encode_Result` / `Decode_Result` / `Write_Result`, and the **subroutine preamble** (name + absolute offset) after module metadata. Preamble is binary-only; `.tlir` does not include it.
 
 ### 8. Implement To_Text, Write (.tlir), and Print
 
