@@ -14,9 +14,9 @@ jobs:
     name: alr build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: alire-project/setup-alire@v4
+      - uses: alire-project/setup-alire@v6
         with:
           version: '2.1.0'
           toolchain: 'gnat_native=15.2.1 gprbuild'
