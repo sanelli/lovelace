@@ -1,10 +1,12 @@
 with AUnit.Test_Caller;
 
+with Lovelace.Compiler.Tests.Ir_Generator;
 with Lovelace.Compiler.Tests.Parser;
 with Lovelace.Compiler.Tests.Tokenizer;
 
 package body Lovelace.Compiler.Tests.Suite is
 
+   package Ir_Generator_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Ir_Generator.Fixture);
    package Parser_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Parser.Fixture);
    package Tokenizer_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Tokenizer.Fixture);
 
@@ -75,6 +77,18 @@ package body Lovelace.Compiler.Tests.Suite is
         (Parser_Caller.Create
            ("trailing and keyword case", Lovelace.Compiler.Tests.Parser.Test_Trailing_And_Keyword_Case'Access));
       Result.Add_Test (Parser_Caller.Create ("empty tokens", Lovelace.Compiler.Tests.Parser.Test_Empty_Tokens'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
+           ("canonical multiline", Lovelace.Compiler.Tests.Ir_Generator.Test_Canonical_Multiline'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
+           ("filename shared", Lovelace.Compiler.Tests.Ir_Generator.Test_Filename_Shared'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
+           ("identifier names", Lovelace.Compiler.Tests.Ir_Generator.Test_Identifier_Names'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
+           ("export only flags", Lovelace.Compiler.Tests.Ir_Generator.Test_Export_Only_Flags'Access));
       return Result;
    end Suite;
 

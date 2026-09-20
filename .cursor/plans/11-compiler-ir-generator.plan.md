@@ -22,10 +22,10 @@ todos:
     status: completed
   - id: "7"
     content: "7. Implement Lovelace.Compiler.Ir_Generator (Generate, error types, Unit/flag/module/subroutine mapping, copy origins, Validate)."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. Add AUnit IR Generator tests + suite registration; extend test Support helpers; run gnatformat on all touched Ada files."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Write/update docs (ir-generator.md, common source, LIR origins, parser/tokenizer/README cross-links)."
     status: pending
@@ -226,8 +226,8 @@ Root workspace already pins common, compiler, and lir.
 4. Move `Lovelace.Compiler.Source` → `Lovelace.Common.Source`; migrate compiler/tests/docs; add common AUnit coverage; `gnatformat`. **Done.**
 5. Add optional source origins on LIR Module and Subroutine (in-memory only; codecs leave absent); update LIR tests and docs. **Done.**
 6. Wire `lovelace_compiler` → `lovelace_lir` in `alire.toml` + `lovelace_compiler.gpr`; `alr update` / build to confirm. **Done.**
-7. Implement `Lovelace.Compiler.Ir_Generator` (Generate, error types, Unit/flag/module/subroutine mapping, copy origins, Validate).
-8. Add AUnit IR Generator tests + suite registration; extend test Support helpers; run `gnatformat` on all touched Ada files.
+7. Implement `Lovelace.Compiler.Ir_Generator` (Generate, error types, Unit/flag/module/subroutine mapping, copy origins, Validate). **Done.**
+8. Add AUnit IR Generator tests + suite registration; extend test Support helpers; run `gnatformat` on all touched Ada files. **Done.**
 9. Write/update docs (`ir-generator.md`, common source, LIR origins, parser/tokenizer/README).
 10. Run all existing tests (`common/tests`, `compiler/tests`, `lir/tests`, workspace as applicable).
 11. Push (proxy env cleared) and open a PR with `gh pr create`.
