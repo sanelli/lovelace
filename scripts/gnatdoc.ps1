@@ -12,6 +12,7 @@ Set-Location $RepoRoot
 $Projects = @(
     @{ Name = 'common'; ProjectFile = 'common/lovelace_common.gpr' },
     @{ Name = 'compiler'; ProjectFile = 'compiler/lovelace_compiler.gpr' },
+    @{ Name = 'lir'; ProjectFile = 'lir/lovelace_lir.gpr' },
     @{ Name = 'lovelace'; ProjectFile = 'lovelace/lovelace.gpr' }
 )
 

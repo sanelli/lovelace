@@ -22,7 +22,7 @@ The **only dynamic library** in the whole project is Augusta’s native backing 
 7. **`alexandria/`** — crate `lovelace_alexandria`; static library: parse Lovelace comments/doc-comments and generate documentation.
 8. **`format/`** — crate `lovelace_format`; static library: reformat `.love` to the effective style (`lovelace format`).
 
-Shared Ada: **`common/`** (`lovelace_common`), **`lir/`** (`lovelace_lir`) — both static libraries.
+Shared Ada: **`common/`** (`lovelace_common`), **`lir/`** (`lovelace_lir`) — both static libraries. Crate `lovelace_lir` owns LIR in-memory types and the versioned `.lir` / `.tlir` formats (not only analysis).
 
 ## Repository layout
 
@@ -33,7 +33,7 @@ Shared Ada: **`common/`** (`lovelace_common`), **`lir/`** (`lovelace_lir`) — b
 | `compiler/` | Compiler static library |
 | `jit/` | JIT static library (Wasmtime) |
 | `common/` | Shared host static library |
-| `lir/` | LIR static library |
+| `lir/` | LIR static library (types, `.lir` / `.tlir`) |
 | `lovelace/` | CLI executable |
 | `tooling/` | Project / solution / package static library |
 | `hypatia/` | Hypatia package manager (static) |

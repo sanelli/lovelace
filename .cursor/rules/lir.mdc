@@ -1,0 +1,50 @@
+---
+description: Lovelace Intermediate Representation types, .lir / .tlir, stack machine
+globs: "{lir,docs/lir*}/**/*"
+alwaysApply: false
+---
+
+# Lovelace Intermediate Representation (LIR)
+
+Crate `lovelace_lir` in `lir/` is a **static** library. It owns:
+
+- In-memory LIR types (modules, subroutines, signatures, instructions, value types)
+- Builders and validators for those types
+- Versioned binary (`.lir`) and textual (`.tlir`) codecs (encode/decode/print as implemented)
+- Analysis and optimization passes **when asked** (none until then)
+
+`lovelace_lir` may depend on `lovelace_common` only. Do not emit WASM, WIT, or WAT from this crate.
+
+## Machine model
+
+- Stack machine with sequential (linear) byte memory, in the spirit of WASM core.
+- The operand stack is implicit at run time; it is not stored in the module.
+- Opcodes are **Lovelace** 16-bit codes (little-endian `u16` in the stream), **not** WASM opcode bytes. The compiler backend lowers LIR to WASM later.
+- Instructions may have immediates after the 2-byte opcode; length varies by opcode. Document `Encoded_Length` for the stream size.
+
+## Value types (closed set)
+
+- **`unit`** — no stack value
+- Signed: `i8` `i16` `i32` `i64` `i128`
+- Unsigned: `u8` `u16` `u32` `u64` `u128`
+- Floating: `f16` `f32` `f64`
+
+**Do not introduce a `void` type.** LIR has no `void`. Procedures are subroutines whose return type is **`unit`**.
+
+Every subroutine **must** have a return type. Returning `unit` will instruct the Lovelace backend that the subroutine is a **procedure** and pushes nothing on the operand stack. Non-`unit` return types push one value of that type.
+
+No references or aggregates in the closed set until specified. `I128`, `U128`, and `F16` are first-class in LIR; mapping them (and `unit`) to WASM is a backend problem.
+
+## Modules and subroutines
+
+- A module has a UTF-8 **name**, a `u32` **flags** bitset (not string tags), dependencies on other LIR modules (by name), and a list of subroutines.
+- Call metadata bits **flags**, not tags.
+- Each subroutine has a **signature** (name, **mandatory** return type, zero or more unnamed parameter types), **flags** (`export`, `entrypoint` as flag bits), and an instruction sequence (may be empty).
+- Only opcode required until more are specified: `No_Operation` / `noop`.
+
+## Formats
+
+- **`.lir`** — versioned binary; magic `LIR\0` (`4C 49 52 00`); length-prefixed UTF-8 strings; little-endian fixed-width integers (not LEB128). After module metadata, a **subroutine preamble** lists each subroutine name with an absolute 0-based file offset to its record (for future import scanning). Not present in `.tlir`.
+- **`.tlir`** — versioned WAT-inspired S-expression text; writers/printers as implemented; do not invent a `.tlir` parser until asked.
+
+See [docs/lir.md](../../docs/lir.md), [docs/lir-binary.md](../../docs/lir-binary.md), and [docs/lir-text.md](../../docs/lir-text.md) for the normative layout.

@@ -31,7 +31,7 @@ The toolchain is one Ada **executable** (`lovelace`) plus **static** libraries i
 | Component | Role |
 | --- | --- |
 | **`compiler/`** | Static library: frontend, LIR lowering, WASM / WAT / WIT backend |
-| **`lir/`** | Static library: Lovelace IR analysis and optimization |
+| **`lir/`** | Static library: Lovelace IR types, validation, and versioned `.lir` / `.tlir` codecs |
 | **`common/`** | Static library: shared host code |
 | **`jit/`** | Static library: JIT runtime; binds and links the Wasmtime C library |
 | **`lovelace/`** | Executable CLI (`lovelace build`, `run`, `doc`, project and solution commands) |
@@ -49,7 +49,7 @@ Pipeline: **source → frontend → LIR (analysis / opts) → backend → WebAss
 
 Not yet a usable compiler. Design and conventions live in `.cursor/rules/`. Contributions should follow those rules (Alire, strict Ada, AUnit tests, no extra third-party libraries except the allowed Wasmtime C, libgit2, and AUnit bindings).
 
-Build the workspace from the repository root with `alr build`, or build or run the CLI crate alone with `alr -C lovelace build` or `alr -C lovelace run`. Host UTF-8 and the Thompson NFA regex engine are documented in [docs/regex-engine.md](docs/regex-engine.md). The compiler tokenizer (keywords `program` / `begin` / `end`, identifiers, `;` and `.`) is documented in [docs/tokenizer.md](docs/tokenizer.md) and [docs/token-grammar.md](docs/token-grammar.md). Generate host Ada API HTML with GNATdoc via `pwsh scripts/gnatdoc.ps1` (see [docs/gnatdoc.md](docs/gnatdoc.md)).
+Build the workspace from the repository root with `alr build`, or build or run the CLI crate alone with `alr -C lovelace build` or `alr -C lovelace run`. Host UTF-8 and the Thompson NFA regex engine are documented in [docs/regex-engine.md](docs/regex-engine.md). The compiler tokenizer (keywords `program` / `begin` / `end`, identifiers, `;` and `.`) is documented in [docs/tokenizer.md](docs/tokenizer.md) and [docs/token-grammar.md](docs/token-grammar.md). Lovelace Intermediate Representation (in-memory types, binary `.lir`, textual `.tlir`) is documented in [docs/lir.md](docs/lir.md), [docs/lir-binary.md](docs/lir-binary.md), and [docs/lir-text.md](docs/lir-text.md). Generate host Ada API HTML with GNATdoc via `pwsh scripts/gnatdoc.ps1` (see [docs/gnatdoc.md](docs/gnatdoc.md)).
 
 ### Development tools
 
