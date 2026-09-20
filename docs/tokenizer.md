@@ -2,7 +2,7 @@
 
 `Lovelace.Compiler.Tokenizer` turns UTF-8 source into a token sequence, or a list of located errors. It lives in crate `lovelace_compiler` and uses the host [regex engine](regex-engine.md) (`Compile` / `Match_Prefix`) for whitespace, identifiers, and punctuation.
 
-This slice is keywords, identifiers, and two punctuation marks. There is no parser, no CLI wiring, and no `lovelace` executable dependency on `lovelace_compiler` yet.
+This slice is keywords, identifiers, and two punctuation marks. A recursive-descent parser for the minimal program form is documented in [parser.md](parser.md) and [program-grammar.md](program-grammar.md). There is no CLI wiring and no `lovelace` executable dependency on `lovelace_compiler` yet.
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). The token grammar for this slice is in [token-grammar.md](token-grammar.md).
 

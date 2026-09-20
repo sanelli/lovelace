@@ -25,16 +25,16 @@ todos:
     status: completed
   - id: "8"
     content: "8. Add AUnit parser tests and suite registration; run gnatformat on all touched Ada files."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Write/update docs (parser.md, program grammar, tokenizer cross-links)."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Run all existing tests (lovelace_workspace / nested crates that exist, including compiler/tests and common/tests / lir/tests as applicable)."
-    status: pending
+    status: completed
   - id: "11"
     content: "11. Push (proxy env cleared) and open a PR with gh pr create."
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -210,7 +210,7 @@ TODOs are 1:1 with these steps (same numbers, same meaning).
 5. Implement `Lovelace.Compiler.Ast` (module, subroutine, empty statements, `Subroutine_Flags` bitset, spans). **Done.**
 6. Rewrite `Lovelace.Compiler.Parser` as a **recursive-descent** parser that consumes **one token at a time** (LL(k); no fixed six-slot indexing). Public `Parse` / error codes stay; body replaced. **Done.**
 7. Add Cursor rule [`.cursor/rules/parser-recursive-descent.mdc`](.cursor/rules/parser-recursive-descent.mdc) (Lovelace is LL(k); no left recursion; recursive descent). **Done.**
-8. Add AUnit parser tests and suite registration; run `gnatformat` on all touched Ada files.
-9. Write/update docs (`parser.md`, program grammar, tokenizer cross-links).
-10. Run all existing tests (`lovelace_workspace` / nested crates that exist, including `compiler/tests` and `common/tests` / `lir/tests` as applicable).
-11. Push (proxy env cleared) and open a PR with `gh pr create`.
+8. Add AUnit parser tests and suite registration; run `gnatformat` on all touched Ada files. **Done.**
+9. Write/update docs (`parser.md`, program grammar, tokenizer cross-links). **Done.**
+10. Run all existing tests (`lovelace_workspace` / nested crates that exist, including `compiler/tests` and `common/tests` / `lir/tests` as applicable). **Done:** common 23/23, lir 14/14, compiler 26/26.
+11. Push (proxy env cleared) and open a PR with `gh pr create`. **Done.**
