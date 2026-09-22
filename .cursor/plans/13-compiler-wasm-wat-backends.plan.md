@@ -16,7 +16,7 @@ todos:
     status: completed
   - id: "5"
     content: "5. Implement Backend.Model + Backend.Lowering (Validate, Unit-only, _start, exports)."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Implement Backend.Wit companion printer; AUnit golden fragments."
     status: pending
