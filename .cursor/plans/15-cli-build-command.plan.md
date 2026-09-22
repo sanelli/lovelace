@@ -18,16 +18,16 @@ todos:
     status: completed
   - id: "6"
     content: "6. Add Lovelace.Compiler.Error_Codes (LV#####) and Diagnostics printer; AUnit format tests."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Map tokenizer/parser/IR/backend failures to LV codes; add program-identifier vs .love basename check (LV00009)."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. Rename procedure Lovelace to Lovelace.Main; depend on lovelace_compiler; implement globals, logo, help, version."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Implement lovelace build (flags, .output/obj|bin, incremental mtimes, info lines, emit wasm/wat/wit)."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Write docs/cli.md and docs/diagnostics.md; update README/codegen/LIR docs for CLI wiring and origin persistence (still labeled 1.0)."
     status: pending

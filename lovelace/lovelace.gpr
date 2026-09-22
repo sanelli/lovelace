@@ -1,12 +1,17 @@
 with "config/lovelace_config.gpr";
 with "../shared/lovelace_host_switches.gpr";
+with "../compiler/lovelace_compiler.gpr";
 project Lovelace is
 
    for Source_Dirs use ("src/", "config/");
    for Object_Dir use "obj/" & Lovelace_Config.Build_Profile;
    for Create_Missing_Dirs use "True";
    for Exec_Dir use "bin";
-   for Main use ("lovelace.adb");
+   for Main use ("lovelace_driver.adb");
+
+   package Builder is
+      for Executable ("lovelace_driver.adb") use "lovelace";
+   end Builder;
 
    package Compiler is
       for Default_Switches ("Ada") use
