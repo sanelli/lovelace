@@ -81,7 +81,6 @@ package body Lovelace.Compiler.Backend.Wat is
       Result_Valtype_Index  : Integer := -1;
       Result_Functype_Index : Integer := -1;
       Next_Type_Index       : Natural := 0;
-      Lifted_Func_Index     : Natural := 0;
    begin
       Ada.Strings.Unbounded.Append (Buffer, "(component" & ASCII.LF);
       Ada.Strings.Unbounded.Append (Buffer, "  (core module" & ASCII.LF);
@@ -246,24 +245,61 @@ package body Lovelace.Compiler.Backend.Wat is
          end;
       end loop;
 
-      for Export_Index in 1 .. Model.Export_Count (The_Model) loop
-         declare
-            The_Export  : constant Model.Lifted_Export :=
-              Model.Get_Export (The_Model, Export_Index);
-            Export_Name : constant String :=
-              Ada.Strings.Unbounded.To_String (The_Export.Export_Name);
-         begin
-            Ada.Strings.Unbounded.Append
-              (Buffer,
-               "  (export """
-               & Export_Name
-               & """ (func "
-               & Image_Without_Leading_Space (Integer (Lifted_Func_Index))
-               & "))"
-               & ASCII.LF);
-            Lifted_Func_Index := Lifted_Func_Index + 1;
-         end;
-      end loop;
+      declare
+         Lifted_Func_Cursor : Natural := 0;
+         Instance_Cursor    : Natural := 0;
+      begin
+         for Export_Index in 1 .. Model.Export_Count (The_Model) loop
+            declare
+               The_Export : constant Model.Lifted_Export :=
+                 Model.Get_Export (The_Model, Export_Index);
+            begin
+               if The_Export.Returns_Result then
+                  Ada.Strings.Unbounded.Append
+                    (Buffer,
+                     "  (instance (export ""run"" (func "
+                     & Image_Without_Leading_Space
+                         (Integer (Lifted_Func_Cursor))
+                     & ")))"
+                     & ASCII.LF);
+               end if;
+               Lifted_Func_Cursor := Lifted_Func_Cursor + 1;
+            end;
+         end loop;
+
+         Lifted_Func_Cursor := 0;
+         for Export_Index in 1 .. Model.Export_Count (The_Model) loop
+            declare
+               The_Export  : constant Model.Lifted_Export :=
+                 Model.Get_Export (The_Model, Export_Index);
+               Export_Name : constant String :=
+                 Ada.Strings.Unbounded.To_String (The_Export.Export_Name);
+            begin
+               if The_Export.Returns_Result then
+                  Ada.Strings.Unbounded.Append
+                    (Buffer,
+                     "  (export """
+                     & Export_Name
+                     & """ (instance "
+                     & Image_Without_Leading_Space (Integer (Instance_Cursor))
+                     & "))"
+                     & ASCII.LF);
+                  Instance_Cursor := Instance_Cursor + 1;
+               else
+                  Ada.Strings.Unbounded.Append
+                    (Buffer,
+                     "  (export """
+                     & Export_Name
+                     & """ (func "
+                     & Image_Without_Leading_Space
+                         (Integer (Lifted_Func_Cursor))
+                     & "))"
+                     & ASCII.LF);
+               end if;
+               Lifted_Func_Cursor := Lifted_Func_Cursor + 1;
+            end;
+         end loop;
+      end;
 
       Ada.Strings.Unbounded.Append (Buffer, ")" & ASCII.LF);
       return Ada.Strings.Unbounded.To_String (Buffer);

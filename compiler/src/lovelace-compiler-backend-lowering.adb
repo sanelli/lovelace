@@ -190,7 +190,8 @@ package body Lovelace.Compiler.Backend.Lowering is
                Model.Append_Export
                  (The_Model,
                   (Export_Name         =>
-                     Ada.Strings.Unbounded.To_Unbounded_String ("run"),
+                     Ada.Strings.Unbounded.To_Unbounded_String
+                       (Model.Wasi_Cli_Run_Export_Name),
                    Core_Function_Index => Start_Index,
                    Returns_Result      => True));
             end;

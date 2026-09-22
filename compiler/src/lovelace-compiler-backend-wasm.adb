@@ -105,7 +105,6 @@ package body Lovelace.Compiler.Backend.Wasm is
       Result_Valtype_Index  : Integer := -1;
       Result_Functype_Index : Integer := -1;
       Next_Type_Index       : Natural := 0;
-      Lifted_Func_Index     : Natural := 0;
    begin
       Append (Component_Bytes, 16#00#);
       Append (Component_Bytes, 16#61#);
@@ -239,28 +238,85 @@ package body Lovelace.Compiler.Backend.Wasm is
 
          Append_Section (Component_Bytes, 8, Canon_Contents);
 
-         Leb128.Append_Unsigned
-           (Export_Contents,
-            Interfaces.Unsigned_32 (Model.Export_Count (The_Model)));
+         declare
+            Component_Instance_Contents : Byte_Sequence := Empty_Bytes;
+            Instance_Count              : Natural := 0;
+            Lifted_Func_Cursor          : Natural := 0;
+            Instance_Cursor             : Natural := 0;
+         begin
+            for Export_Index in 1 .. Model.Export_Count (The_Model) loop
+               if Model.Get_Export (The_Model, Export_Index).Returns_Result
+               then
+                  Instance_Count := Instance_Count + 1;
+               end if;
+            end loop;
 
-         for Export_Index in 1 .. Model.Export_Count (The_Model) loop
-            declare
-               The_Export  : constant Model.Lifted_Export :=
-                 Model.Get_Export (The_Model, Export_Index);
-               Export_Name : constant String :=
-                 Ada.Strings.Unbounded.To_String (The_Export.Export_Name);
-            begin
-               Append (Export_Contents, 16#00#); -- nameattributes plain
-               Append_Name (Export_Contents, Export_Name);
-               Append (Export_Contents, 16#01#); -- sort: func
+            if Instance_Count > 0 then
                Leb128.Append_Unsigned
-                 (Export_Contents, Interfaces.Unsigned_32 (Lifted_Func_Index));
-               Append (Export_Contents, 16#00#); -- no externtype
-               Lifted_Func_Index := Lifted_Func_Index + 1;
-            end;
-         end loop;
+                 (Component_Instance_Contents,
+                  Interfaces.Unsigned_32 (Instance_Count));
 
-         Append_Section (Component_Bytes, 11, Export_Contents);
+               for Export_Index in 1 .. Model.Export_Count (The_Model) loop
+                  declare
+                     The_Export : constant Model.Lifted_Export :=
+                       Model.Get_Export (The_Model, Export_Index);
+                  begin
+                     if The_Export.Returns_Result then
+                        Append
+                          (Component_Instance_Contents,
+                           16#01#); -- export bundle
+                        Leb128.Append_Unsigned
+                          (Component_Instance_Contents, 1);
+                        Append
+                          (Component_Instance_Contents, 16#00#); -- plain name
+                        Append_Name (Component_Instance_Contents, "run");
+                        Append
+                          (Component_Instance_Contents, 16#01#); -- sort: func
+                        Leb128.Append_Unsigned
+                          (Component_Instance_Contents,
+                           Interfaces.Unsigned_32 (Lifted_Func_Cursor));
+                     end if;
+                     Lifted_Func_Cursor := Lifted_Func_Cursor + 1;
+                  end;
+               end loop;
+
+               Append_Section
+                 (Component_Bytes, 5, Component_Instance_Contents);
+            end if;
+
+            Leb128.Append_Unsigned
+              (Export_Contents,
+               Interfaces.Unsigned_32 (Model.Export_Count (The_Model)));
+
+            Lifted_Func_Cursor := 0;
+            for Export_Index in 1 .. Model.Export_Count (The_Model) loop
+               declare
+                  The_Export  : constant Model.Lifted_Export :=
+                    Model.Get_Export (The_Model, Export_Index);
+                  Export_Name : constant String :=
+                    Ada.Strings.Unbounded.To_String (The_Export.Export_Name);
+               begin
+                  Append (Export_Contents, 16#00#); -- nameattributes plain
+                  Append_Name (Export_Contents, Export_Name);
+                  if The_Export.Returns_Result then
+                     Append (Export_Contents, 16#05#); -- sort: instance
+                     Leb128.Append_Unsigned
+                       (Export_Contents,
+                        Interfaces.Unsigned_32 (Instance_Cursor));
+                     Instance_Cursor := Instance_Cursor + 1;
+                  else
+                     Append (Export_Contents, 16#01#); -- sort: func
+                     Leb128.Append_Unsigned
+                       (Export_Contents,
+                        Interfaces.Unsigned_32 (Lifted_Func_Cursor));
+                  end if;
+                  Append (Export_Contents, 16#00#); -- no externtype
+                  Lifted_Func_Cursor := Lifted_Func_Cursor + 1;
+               end;
+            end loop;
+
+            Append_Section (Component_Bytes, 11, Export_Contents);
+         end;
       end if;
 
       return Component_Bytes;

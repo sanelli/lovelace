@@ -38,19 +38,27 @@ package body Lovelace.Compiler.Backend.Wit is
       Buffer : Ada.Strings.Unbounded.Unbounded_String;
    begin
       Ada.Strings.Unbounded.Append
-        (Buffer, "package love:" & Sanitize_Package_Name (Model.Module_Name (The_Model)) & "@0.1.0;" & ASCII.LF);
+        (Buffer,
+         "package love:"
+         & Sanitize_Package_Name (Model.Module_Name (The_Model))
+         & "@0.1.0;"
+         & ASCII.LF);
       Ada.Strings.Unbounded.Append (Buffer, ASCII.LF);
       Ada.Strings.Unbounded.Append (Buffer, "world module {" & ASCII.LF);
 
       for Index in 1 .. Model.Export_Count (The_Model) loop
          declare
-            The_Export  : constant Model.Lifted_Export := Model.Get_Export (The_Model, Index);
-            Export_Name : constant String := Ada.Strings.Unbounded.To_String (The_Export.Export_Name);
+            The_Export  : constant Model.Lifted_Export :=
+              Model.Get_Export (The_Model, Index);
+            Export_Name : constant String :=
+              Ada.Strings.Unbounded.To_String (The_Export.Export_Name);
          begin
             if The_Export.Returns_Result then
-               Ada.Strings.Unbounded.Append (Buffer, "  export " & Export_Name & ": func() -> result;" & ASCII.LF);
+               Ada.Strings.Unbounded.Append
+                 (Buffer, "  export " & Export_Name & ";" & ASCII.LF);
             else
-               Ada.Strings.Unbounded.Append (Buffer, "  export " & Export_Name & ": func();" & ASCII.LF);
+               Ada.Strings.Unbounded.Append
+                 (Buffer, "  export " & Export_Name & ": func();" & ASCII.LF);
             end if;
          end;
       end loop;

@@ -7,6 +7,10 @@ with Interfaces;
 
 package Lovelace.Compiler.Backend.Model is
 
+   --  Component export name for the WASI CLI run interface instance that
+   --  wasmtime run looks up (must match the host's WASI 0.2 package version).
+   Wasi_Cli_Run_Export_Name : constant String := "wasi:cli/run@0.2.12";
+
    --  One core WASM instruction in a lowered function body.
    --  @disc Kind Selects the instruction variant.
    --  @field Target_Index 1-based core function index for Call_Function.
@@ -63,9 +67,11 @@ package Lovelace.Compiler.Backend.Model is
    end record;
 
    --  One canon-lifted component export.
-   --  @field Export_Name Component export name ("run" or kebab-case LIR name).
+   --  @field Export_Name Component export name (kebab-case LIR name, or
+   --    Wasi_Cli_Run_Export_Name when Returns_Result).
    --  @field Core_Function_Index 1-based index into the core function list.
-   --  @field Returns_Result True for run (func() -> result); False for Unit func().
+   --  @field Returns_Result True for the entrypoint: lift to func() -> result and
+   --    export as a wasi:cli/run instance; False for a Unit func() export.
    type Lifted_Export is record
       Export_Name         : Ada.Strings.Unbounded.Unbounded_String;
       Core_Function_Index : Positive;
