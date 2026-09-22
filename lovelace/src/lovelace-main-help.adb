@@ -21,6 +21,9 @@ package body Lovelace.Main.Help is
       Put_Line (File, "Options:");
       Put_Line
         (File,
+         "  --force                  Rebuild from source; ignore incremental skips");
+      Put_Line
+        (File,
          "  --no-wit                 Do not write a companion .wit file");
       Put_Line
         (File,
@@ -37,9 +40,12 @@ package body Lovelace.Main.Help is
       Put_Line
         (File,
          "Incremental builds skip stages whose outputs are newer than inputs.");
+      Put_Line
+        (File, "Pass --force to rebuild every stage from the .love file.");
       Put_Line (File, "");
       Put_Line (File, "Examples:");
       Put_Line (File, "  lovelace build foo.love");
+      Put_Line (File, "  lovelace build foo.love --force");
       Put_Line (File, "  lovelace build foo.love --no-wit");
       Put_Line
         (File, "  lovelace build foo.love --output-format wat --no-wit");

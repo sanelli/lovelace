@@ -48,6 +48,7 @@ package body Lovelace.Main.Build is
       Output_Root   : Ada.Strings.Unbounded.Unbounded_String :=
         Ada.Strings.Unbounded.To_Unbounded_String (".output");
       No_Wit        : Boolean := False;
+      Force         : Boolean := False;
       Output_Format : Output_Format_Set;
    end record;
 
@@ -111,6 +112,7 @@ package body Lovelace.Main.Build is
          Output_Root   =>
            Ada.Strings.Unbounded.To_Unbounded_String (".output"),
          No_Wit        => False,
+         Force         => False,
          Output_Format => (Want_Wasm => True, Want_Wat => False));
 
       while Index <= Argument_Count loop
@@ -119,6 +121,9 @@ package body Lovelace.Main.Build is
          begin
             if Token = "--no-wit" then
                Options.No_Wit := True;
+               Index := Index + 1;
+            elsif Token = "--force" then
+               Options.Force := True;
                Index := Index + 1;
             elsif Token = "--output-format" then
                if Index >= Argument_Count then
@@ -335,9 +340,10 @@ package body Lovelace.Main.Build is
               Ada.Strings.Unbounded.To_String (Program_Name) & ".wit"));
 
       Need_Frontend :=
-        Is_Stale
-          (Ada.Strings.Unbounded.To_String (Lir_Path),
-           Ada.Strings.Unbounded.To_String (Source_Path));
+        Options.Force
+        or else Is_Stale
+                  (Ada.Strings.Unbounded.To_String (Lir_Path),
+                   Ada.Strings.Unbounded.To_String (Source_Path));
 
       if Need_Frontend then
          Terminal.Put_Info
@@ -596,19 +602,22 @@ package body Lovelace.Main.Build is
 
       Need_Wasm :=
         Options.Output_Format.Want_Wasm
-        and then Is_Stale
-                   (Ada.Strings.Unbounded.To_String (Wasm_Path),
-                    Ada.Strings.Unbounded.To_String (Lir_Path));
+        and then (Options.Force
+                  or else Is_Stale
+                            (Ada.Strings.Unbounded.To_String (Wasm_Path),
+                             Ada.Strings.Unbounded.To_String (Lir_Path)));
       Need_Wat :=
         Options.Output_Format.Want_Wat
-        and then Is_Stale
-                   (Ada.Strings.Unbounded.To_String (Wat_Path),
-                    Ada.Strings.Unbounded.To_String (Lir_Path));
+        and then (Options.Force
+                  or else Is_Stale
+                            (Ada.Strings.Unbounded.To_String (Wat_Path),
+                             Ada.Strings.Unbounded.To_String (Lir_Path)));
       Need_Wit :=
         not Options.No_Wit
-        and then Is_Stale
-                   (Ada.Strings.Unbounded.To_String (Wit_Path),
-                    Ada.Strings.Unbounded.To_String (Lir_Path));
+        and then (Options.Force
+                  or else Is_Stale
+                            (Ada.Strings.Unbounded.To_String (Wit_Path),
+                             Ada.Strings.Unbounded.To_String (Lir_Path)));
 
       if not Need_Wasm and then not Need_Wat and then not Need_Wit then
          Terminal.Put_Info ("Artifacts up to date, skipping backend");

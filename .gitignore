@@ -23,3 +23,4 @@ docs/.code/
 
 # Generated at alr build (scripts/embed-git-hash.ps1)
 lovelace/src/lovelace-main-git_hash.ads
+.output/

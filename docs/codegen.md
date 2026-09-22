@@ -61,7 +61,9 @@ If there is no entrypoint, no `_start` and no `run` export are produced.
 
 ## Exports
 
-Every LIR subroutine with `Export_Flag` is canon-lifted and component-exported under its LIR name. A subroutine may be both entrypoint and export: then both `run` and the named export appear.
+Every LIR subroutine with `Export_Flag` is canon-lifted and component-exported under a **kebab-case** form of its LIR name (ASCII letters/digits lowercased; other bytes become `-`). A subroutine may be both entrypoint and export: then both `run` and the named export appear. Core module export names keep the original LIR spelling.
+
+Component Model `externname`s must be kebab-case; PascalCase LIR identifiers such as `Hello` become `hello`.
 
 ## Types (this slice)
 
@@ -72,6 +74,8 @@ Every LIR subroutine with `Export_Flag` is canon-lifted and component-exported u
 | Any other `Value_Type` or parameters | No → `Unsupported_Type` |
 
 `I128`, `U128`, `F16`, and other scalars remain deferred backend work.
+
+In the component type section, bare `(result)` is a separate `defvaltype`; the `run` functype references it by type index (inline `0x6a` is not a valid `valtype`).
 
 ## Instructions (this slice)
 
@@ -88,8 +92,8 @@ Shared printer (`Backend.Wit.To_Wit`). Example for module `Hello` with entrypoin
 package love:hello@0.1.0;
 
 world module {
+  export helper: func();
   export run: func() -> result;
-  export Helper: func();
 }
 ```
 
@@ -97,9 +101,19 @@ Rules:
 
 - Package name: `love:<sanitized-module-name>@0.1.0` (ASCII letters/digits lowercased; every other byte → `-`; empty → `module`).
 - `export run: func() -> result;` only when an entrypoint exists.
-- One `export <Name>: func();` per `Export_Flag` subroutine.
+- One `export <kebab-name>: func();` per `Export_Flag` subroutine.
 - No `import` lines (Option 1).
 - `Emit_Wasm` and `Emit_Wat` produce the same WIT string for the same LIR module.
+
+## Running with Wasmtime
+
+Artifacts are components (not bare core modules). Plain `wasmtime run` looks for `wasi:cli/run` (full WASI command world), which this slice does not emit. Invoke the export explicitly:
+
+```text
+wasmtime run -Sp3 -W component-model=y --invoke 'run()' Hello.wasm
+wasmtime run -Sp3 -W component-model=y --invoke 'run()' Hello.wat
+wasmtime run -Sp3 -W component-model=y --invoke 'hello()' Hello.wasm
+```
 
 ## Errors
 
