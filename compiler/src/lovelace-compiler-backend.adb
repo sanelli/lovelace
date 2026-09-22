@@ -5,6 +5,13 @@ package body Lovelace.Compiler.Backend is
       Sequence.Items.Append (One_Byte);
    end Append;
 
+   procedure Append_Bytes (Destination : in out Byte_Sequence; Source : Byte_Sequence) is
+   begin
+      for Index in 1 .. Length (Source) loop
+         Append (Destination, Element (Source, Index));
+      end loop;
+   end Append_Bytes;
+
    function Element (Sequence : Byte_Sequence; Index : Positive) return Interfaces.Unsigned_8 is
    begin
       return Sequence.Items.Element (Index);

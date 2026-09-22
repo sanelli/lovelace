@@ -102,6 +102,11 @@ package body Lovelace.Compiler.Tests.Suite is
         (Backend_Caller.Create ("unsupported type", Lovelace.Compiler.Tests.Backend.Test_Unsupported_Type'Access));
       Result.Add_Test
         (Backend_Caller.Create ("invalid module", Lovelace.Compiler.Tests.Backend.Test_Invalid_Module'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("wasm component preamble", Lovelace.Compiler.Tests.Backend.Test_Wasm_Component_Preamble'Access));
+      Result.Add_Test
+        (Backend_Caller.Create ("wasm wit equality", Lovelace.Compiler.Tests.Backend.Test_Wasm_Wit_Equality'Access));
       return Result;
    end Suite;
 

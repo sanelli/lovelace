@@ -43,6 +43,11 @@ package Lovelace.Compiler.Backend is
    --  @return Byte at Index.
    function Element (Sequence : Byte_Sequence; Index : Positive) return Interfaces.Unsigned_8;
 
+   --  Append Source onto the end of Destination.
+   --  @param Destination Sequence to extend.
+   --  @param Source Bytes to append.
+   procedure Append_Bytes (Destination : in out Byte_Sequence; Source : Byte_Sequence);
+
    --  Build a Backend_Error with Code and Detail.
    --  @param Code Predefined error code.
    --  @param Detail UTF-8 detail message.

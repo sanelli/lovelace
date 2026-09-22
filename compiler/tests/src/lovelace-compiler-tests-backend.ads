@@ -35,4 +35,12 @@ package Lovelace.Compiler.Tests.Backend is
    --  @param The_Test Unused fixture.
    procedure Test_Invalid_Module (The_Test : in out Fixture);
 
+   --  Emit_Wasm and Emit_Wat produce identical companion WIT for the same module.
+   --  @param The_Test Unused fixture.
+   procedure Test_Wasm_Wit_Equality (The_Test : in out Fixture);
+
+   --  Emit_Wasm component preamble is magic asm, version 0x0d, layer 1.
+   --  @param The_Test Unused fixture.
+   procedure Test_Wasm_Component_Preamble (The_Test : in out Fixture);
+
 end Lovelace.Compiler.Tests.Backend;

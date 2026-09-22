@@ -25,7 +25,7 @@ todos:
     status: completed
   - id: "8"
     content: "8. Implement Backend.Leb128 + Backend.Wasm binary emitter + tests."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Cross-backend WIT equality tests; suite registration; gnatformat all touched Ada."
     status: pending
