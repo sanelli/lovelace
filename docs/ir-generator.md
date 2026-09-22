@@ -10,9 +10,11 @@ Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md
 
 ```text
 UTF-8 .love  →  Tokenize  →  Parse  →  Ast.Module  →  Generate  →  Lir.Modules.Module
+                                                                        ↓
+                                                              Backend (WASM / WAT / WIT)
 ```
 
-Callers parse first. `Generate` does not call `Tokenize` or `Parse`.
+Callers parse first. `Generate` does not call `Tokenize` or `Parse`. Codegen from LIR: [codegen.md](codegen.md).
 
 ## API
 
@@ -65,4 +67,6 @@ Future unhandled frontend type kinds would also use `Internal_Error`. This slice
 - Statement / expression lowering and instruction source maps
 - Emitting `No_Operation` for empty bodies
 - CLI / `lovelace build`
-- Analysis, optimization, WASM / WIT / WAT
+- Analysis and optimization
+
+WASM / WAT / WIT emission from LIR is implemented separately; see [codegen.md](codegen.md).
