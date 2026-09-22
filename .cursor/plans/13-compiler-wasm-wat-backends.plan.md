@@ -19,10 +19,10 @@ todos:
     status: completed
   - id: "6"
     content: "6. Implement Backend.Wit companion printer; AUnit golden fragments."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Implement Backend.Wat text emitter + tests."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. Implement Backend.Leb128 + Backend.Wasm binary emitter + tests."
     status: pending
