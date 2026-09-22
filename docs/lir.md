@@ -1,6 +1,6 @@
 # Lovelace Intermediate Representation (LIR)
 
-Crate `lovelace_lir` (`lir/`) owns the in-memory LIR types, builders, validation, and the versioned **binary** (`.lir`) and **textual** (`.tlir`) formats. It is a **static** library and depends only on `lovelace_common`. It does not emit WASM, WIT, or WAT.
+Crate `lovelace_lir` (`lir/`) owns the in-memory LIR types, builders, validation, and the versioned **binary** (`.lir`) and **textual** (`.tlir`) formats. It is a **static** library and depends only on `lovelace_common`. It does not emit WASM, WIT, or WAT — those live in the compiler backends ([codegen.md](codegen.md)).
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). Format layouts:
 
@@ -16,7 +16,7 @@ This slice has **no `.tlir` parser**. Text support is write and print only (`To_
 LIR is a **stack machine** with sequential (linear) byte memory, in the spirit of WASM core.
 
 - The operand stack is **implicit** at run time; it is not stored in the module.
-- Opcodes are **Lovelace** 16-bit codes (little-endian `u16` in the stream), **not** WASM opcode bytes. The compiler backend lowers LIR to WASM later.
+- Opcodes are **Lovelace** 16-bit codes (little-endian `u16` in the stream), **not** WASM opcode bytes. The compiler backend lowers LIR to WASM / WAT / WIT ([codegen.md](codegen.md)).
 - An instruction is an opcode word plus zero or more immediate bytes. Use `Immediate_Length` / `Encoded_Length` for the stream size of each opcode.
 
 ## Value types (closed set)

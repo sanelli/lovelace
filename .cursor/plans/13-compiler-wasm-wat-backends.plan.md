@@ -28,16 +28,16 @@ todos:
     status: completed
   - id: "9"
     content: "9. Cross-backend WIT equality tests; suite registration; gnatformat all touched Ada."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Write/update docs (codegen.md, cross-links, README status)."
-    status: pending
+    status: completed
   - id: "11"
     content: "11. Run all existing tests (common/tests, lir/tests, compiler/tests, workspace build)."
-    status: pending
+    status: completed
   - id: "12"
     content: "12. Push (proxy cleared) and open PR with gh pr create."
-    status: pending
+    status: completed
 isProject: false
 ---
 # Compiler backends: LIR → WASM / WAT / WIT
