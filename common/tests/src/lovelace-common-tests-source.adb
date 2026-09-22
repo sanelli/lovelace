@@ -65,4 +65,18 @@ package body Lovelace.Common.Tests.Source is
       AUnit.Assertions.Assert (Condition => Span.Last.Column = 5, Message => "Last.Column");
    end Test_Source_Span_Fields;
 
+   procedure Test_To_Utf_8 (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Holder : constant Lovelace.Common.Source.Shared_Filename := Lovelace.Common.Source.From_Utf_8 ("path.love");
+      Option : constant Lovelace.Common.Source.Filename_Option := Lovelace.Common.Source.Some_Filename (Holder);
+      Absent : constant Lovelace.Common.Source.Filename_Option := Lovelace.Common.Source.Absent_Filename;
+   begin
+      AUnit.Assertions.Assert
+        (Condition => Lovelace.Common.Source.To_Utf_8 (Holder) = "path.love", Message => "holder To_Utf_8");
+      AUnit.Assertions.Assert
+        (Condition => Lovelace.Common.Source.To_Utf_8 (Option) = "path.love", Message => "present option To_Utf_8");
+      AUnit.Assertions.Assert
+        (Condition => Lovelace.Common.Source.To_Utf_8 (Absent) = "", Message => "absent option To_Utf_8");
+   end Test_To_Utf_8;
+
 end Lovelace.Common.Tests.Source;

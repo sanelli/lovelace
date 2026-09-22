@@ -12,33 +12,36 @@ todos:
     status: completed
   - id: "4"
     content: "4. Add samples/ barebone empty-body .love for build; document samples-per-feature policy in docs."
-    status: pending
+    status: completed
   - id: "5"
-    content: "5. Add Lovelace.Compiler.Error_Codes (LV#####) and Diagnostics printer; AUnit format tests."
-    status: pending
+    content: "5. Update LIR binary and text layouts to persist origins (filename + row/column spans) without bumping Format_Major/Minor from 1.0; tests + docs."
+    status: completed
   - id: "6"
-    content: "6. Map tokenizer/parser/IR/backend failures to LV codes; add program-identifier vs .love basename check (LV00009)."
+    content: "6. Add Lovelace.Compiler.Error_Codes (LV#####) and Diagnostics printer; AUnit format tests."
     status: pending
   - id: "7"
-    content: "7. Rename procedure Lovelace to Lovelace.Main; depend on lovelace_compiler; implement globals, logo, help, version."
+    content: "7. Map tokenizer/parser/IR/backend failures to LV codes; add program-identifier vs .love basename check (LV00009)."
     status: pending
   - id: "8"
-    content: "8. Implement lovelace build (flags, .output/obj|bin, incremental mtimes, info lines, emit wasm/wat/wit)."
+    content: "8. Rename procedure Lovelace to Lovelace.Main; depend on lovelace_compiler; implement globals, logo, help, version."
     status: pending
   - id: "9"
-    content: "9. Write docs/cli.md and docs/diagnostics.md; update README/codegen for CLI wiring (no LIR format version changes)."
+    content: "9. Implement lovelace build (flags, .output/obj|bin, incremental mtimes, info lines, emit wasm/wat/wit)."
     status: pending
   - id: "10"
-    content: "10. Add lovelace/tests (lovelace_tests) for arguments/helpers used by the CLI."
+    content: "10. Write docs/cli.md and docs/diagnostics.md; update README/codegen/LIR docs for CLI wiring and origin persistence (still labeled 1.0)."
     status: pending
   - id: "11"
-    content: "11. Add lovelace/integration_tests (lovelace_integration_tests): inconclusive without wasmtime; else build sample + run wasm and wat."
+    content: "11. Add lovelace/tests (lovelace_tests) for arguments/helpers used by the CLI."
     status: pending
   - id: "12"
-    content: "12. gnatformat touched Ada; alr build; run common/lir/compiler/lovelace unit tests (integration optional/recorded)."
+    content: "12. Add lovelace/integration_tests (lovelace_integration_tests): inconclusive without wasmtime; else build sample + run wasm and wat."
     status: pending
   - id: "13"
-    content: "13. Push (proxy cleared) and open PR with gh pr create."
+    content: "13. gnatformat touched Ada; alr build; run common/lir/compiler/lovelace unit tests (integration optional/recorded)."
+    status: pending
+  - id: "14"
+    content: "14. Push (proxy cleared) and open PR with gh pr create."
     status: pending
 isProject: false
 ---
@@ -54,15 +57,15 @@ Plan file: [`.cursor/plans/15-cli-build-command.plan.md`](15-cli-build-command.p
 
 ### Version discipline (mandatory)
 
-Do **not** change any version unless the user explicitly asks in the request for that change. That includes:
+Do **not** change any **version number** unless the user explicitly asks. That includes:
 
-- LIR binary / text format `Format_Major` / `Format_Minor` (stay on **1.0**)
+- LIR binary / text `Format_Major` / `Format_Minor` — **stay on 1.0** (no 1.1 bump)
 - Alire crate `version` fields in `alire.toml`
-- Other artifact or schema version numbers
+- Other schema / product version fields the user did not request to change
 
-In particular: **do not bump LIR to 1.1** and do **not** change the `.lir` / `.tlir` layout to persist origins. In-memory origins stay as they are today; codecs continue to drop them on encode/decode (existing behavior). Diagnostics that need filepath/row/column use the live `.love` source and frontend spans during the frontend path.
+**Allowed without a version bump (step 5):** update the **on-disk binary and text layouts** of LIR 1.0 so module/subroutine origins (filepath + row/column spans) round-trip. Header still writes/reads major `1` / minor `0`. Treat this as an in-place layout revision of the still-labeled 1.0 format (repo has no released `.lir` corpus that must stay byte-compatible).
 
-The `version` **command** still prints the product string `0.0.1-alpha.1 @ {hash}` as specified for this feature; that is CLI output text, not a format/crate version bump.
+The `version` **command** still prints `0.0.1-alpha.1 @ {hash}` as specified for this feature; that is CLI output text, not a format/crate version bump.
 
 ### Samples policy (every new feature)
 
@@ -83,7 +86,7 @@ Integration tests must build that sample (path under `samples/`), not an ad-hoc-
 
 - CLI is a no-op [`lovelace/src/lovelace.adb`](lovelace/src/lovelace.adb) with **no** `depends-on` on `lovelace_compiler` ([`lovelace/alire.toml`](lovelace/alire.toml)).
 - Pipeline APIs already exist: `Tokenizer.Tokenize`, `Parser.Parse`, `Ir_Generator.Generate`, `Backend.Wasm.Emit_Wasm`, `Backend.Wat.Emit_Wat`, `Lir.Binary.Read` / `Write`.
-- LIR origins exist **in memory** only; [`.lir` / `.tlir` v1.0 drop them](docs/lir.md) — **unchanged** in this plan.
+- LIR origins exist **in memory**; [`.lir` / `.tlir` v1.0 currently drop them](docs/lir.md) — **step 5** updates the layouts (still version 1.0) so they persist.
 - Frontend errors use local enums (`Tokenizer_Error_Code`, …), not `LV#####` user codes.
 - Naming rule: rename root `procedure Lovelace` → **`Lovelace.Main`** before the CLI depends on `lovelace_common` (via `lovelace_compiler`). Further CLI units are **children of `Lovelace.Main`** only (no other top-level `Lovelace.*` packages in the CLI crate).
 - `samples/` may be empty today; this work creates the first barebone sample.
@@ -120,7 +123,7 @@ flowchart TD
 | Version string | `0.0.1-alpha.1 @ {short_git_hash}` (build-time hash; `nogit` if unavailable) |
 | Colours | ANSI green for `[info]`, red for `[err]` and the `[LVxxxxx]` line; disabled by `--no-colour` |
 | Errors | stderr only; info on stdout |
-| LIR format | **No change** — remain v1.0; origins not persisted |
+| LIR format | Layout updated to store origins; **`Format_Major`/`Format_Minor` stay 1.0** (step 5) |
 | Sample for this feature | `samples/Hello.love` (or equivalent name) — barebone empty body |
 | Integration tests | Separate crate `lovelace/integration_tests` (`lovelace_integration_tests`); **not** part of the usual `alr -C */tests run` checklist |
 | Wasmtime | `wasmtime run -W component-model=y` plus `--invoke` if required for export `run`; inconclusive if `wasmtime` not on `PATH` |
@@ -141,18 +144,13 @@ Done: [`.cursor/plans/15-cli-build-command.plan.md`](15-cli-build-command.plan.m
 
 ## 4. Samples: barebone program + policy note
 
-- Create [`samples/Hello.love`](samples/Hello.love) (name must match `program` identifier):
+Done: [`samples/Hello.love`](../../samples/Hello.love), [`docs/samples.md`](../../docs/samples.md).
 
-```text
-program Hello; begin end.
-```
+## 5. LIR layouts: persist filename / row / column (still version 1.0)
 
-No statements inside `begin`/`end`.
+Done: binary and text codecs persist origins; `Format_Major`/`Format_Minor` remain `1`/`0`; docs and AUnit updated.
 
-- Document under `docs/` (e.g. short section in `docs/cli.md` or `docs/samples.md`): every new feature adds a `.love` under `samples/`; subfolders allowed for project/solution grouping later.
-- Integration tests (step 11) compile this file via `lovelace build`.
-
-## 5. Compiler: unified `LV#####` codes + diagnostic printer
+## 6. Compiler: unified `LV#####` codes + diagnostic printer
 
 Add in `lovelace_compiler`:
 
@@ -197,7 +195,7 @@ Keep existing internal enums; map them to `LV#####` at report time (do not break
 
 Add AUnit coverage in `compiler/tests` for formatting (known source snippet → exact stderr-shaped string).
 
-## 6. Semantic check: program identifier vs filename
+## 7. Semantic check: program identifier vs filename
 
 After successful `Parse` (or on AST):
 
@@ -206,7 +204,7 @@ After successful `Parse` (or on AST):
 - If `Base /= Name`, emit `LV00009` at `Ast.Name_Span`, description naming both strings.
 - Applies even when later stages would succeed.
 
-## 7. CLI skeleton: Main, globals, help, version, logo
+## 8. CLI skeleton: Main, globals, help, version, logo
 
 ### Alire / naming
 
@@ -245,7 +243,7 @@ lovelace [global-options...] <command> [command-parameters...]
 - `lovelace help build`: document `.love` operand, `--no-wit`, `--output-format`, `--output-folder`, incremental behavior, output layout, examples from the request.
 - `lovelace help help` / `help version` briefly.
 
-## 8. Implement `lovelace build`
+## 9. Implement `lovelace build`
 
 ### Command parameters
 
@@ -276,7 +274,7 @@ Skip lines for stages not run due to incremental hits; still allowed to log the 
 Using `Ada.Directories.Modification_Time` (or equivalent):
 
 1. Ensure output root, `obj/`, `bin/` exist (`Create_Path`).
-2. **LIR:** If `obj/{Name}.lir` exists and `mtime(lir) >= mtime(love)`, do **not** re-tokenize/parse/generate; `Binary.Read` when backend needs it. Else run frontend → `Binary.Write` (**v1.0** codec, origins not stored on disk).
+2. **LIR:** If `obj/{Name}.lir` exists and `mtime(lir) >= mtime(love)`, do **not** re-tokenize/parse/generate; `Binary.Read` when backend needs it. Else run frontend → `Binary.Write` (1.0 header; origins persisted per step 5).
 3. **Note:** program-name check runs only on frontend path; when skipping frontend, trust prior successful build (name already matched when lir was written). Optionally verify `Modules.Name = stem` after read (cheap consistency check).
 4. **Each requested artifact** independently: if file missing **or** `mtime(artifact) < mtime(lir)`, regenerate from LIR; else skip.
 5. WIT is one file: regenerate if requested and (missing or older than lir). When both wasm and wat refresh, write WIT once.
@@ -288,7 +286,7 @@ Using `Ada.Directories.Modification_Time` (or equivalent):
 3. `Parse` → same.
 4. Program/filename check → `LV00009`.
 5. `Ir_Generator.Generate` → map failure to `LV00001`.
-6. `Lir.Binary.Write` to `obj/{Name}.lir` (existing **1.0** format).
+6. `Lir.Binary.Write` to `obj/{Name}.lir` (version still 1.0; origins included).
 
 ### Backend path
 
@@ -296,13 +294,13 @@ Using `Ada.Directories.Modification_Time` (or equivalent):
 - `wasm` in format set → `Emit_Wasm`; write `.wasm` bytes; keep `Wit_Text` if wit requested.
 - `wat` in format set → `Emit_Wat`; write `.wat`; same WIT string expected.
 - Wit only / wit with emit: write `.wit` unless `--no-wit`.
-- Backend errors → map to `LV00007` / `LV00008` / `LV00001`; if no source span, print `[err]` with file `Name.love` or lir path and column 1, or a reduced form still using the required shape where possible.
+- Backend errors → map to `LV00007` / `LV00008` / `LV00001`; if no source span, print `[err]` with file `Name.love` or lir path and column 1, or a reduced form still using the required shape where possible. Prefer origins from the loaded LIR module when present.
 
 ### Exit codes
 
 - `0` on success; non-zero on any error (after printing).
 
-## 9. Documentation
+## 10. Documentation
 
 New [`docs/cli.md`](docs/cli.md): invocation grammar, globals, `build` / `help` / `version`, colours, logo, output layout, incremental rules, examples, pointer to `samples/Hello.love`.
 
@@ -312,11 +310,11 @@ Samples policy: short note in `docs/cli.md` or dedicated [`docs/samples.md`](doc
 
 Update [`README.md`](README.md) “not yet a usable compiler” → point at `lovelace build`, samples, and docs.
 
-Update codegen/IR docs for CLI wiring only. **Do not** rewrite LIR format docs as if origins were persisted.
+Update codegen/IR docs for CLI wiring. LIR docs for origin persistence are primarily updated in **step 5**; step 10 only cross-links as needed.
 
 Register nothing new in gnatdoc Projects unless a new host **library** crate appears (CLI is an application; skip unless script already lists it).
 
-## 10. Nested unit tests for CLI helpers
+## 11. Nested unit tests for CLI helpers
 
 Add [`lovelace/tests`](lovelace/tests) crate `lovelace_tests` (AUnit, pin `..`, depends on `lovelace` or test against packages — prefer testing `Lovelace.Main.Arguments` / format helpers without spawning if possible).
 
@@ -324,7 +322,7 @@ Cover: global vs command flag placement; `--output-format` parsing; help text co
 
 Keep these in the **normal** test checklist.
 
-## 11. Integration tests (opt-in)
+## 12. Integration tests (opt-in)
 
 New crate [`lovelace/integration_tests`](lovelace/integration_tests) / `lovelace_integration_tests`:
 
@@ -343,16 +341,16 @@ New crate [`lovelace/integration_tests`](lovelace/integration_tests) / `lovelace
 
 Do **not** add Wasmtime as an Alire dependency (CLI subprocess only).
 
-## 12. Format, build, run normal tests
+## 13. Format, build, run normal tests
 
 - `alr exec -- gnatformat -w 120 -P …` on every touched Ada file.
 - `alr build` at repo root.
 - Run: `alr -C common/tests run`, `alr -C lir/tests run`, `alr -C compiler/tests run`, `alr -C lovelace/tests run`.
 - Record that integration tests are separate; optionally run them if wasmtime is present and note result in the PR body.
 
-## 13. Push and open PR
+## 14. Push and open PR
 
-Proxy-cleared `git push -u origin HEAD`, then `gh pr create` summarizing CLI surface, diagnostics, samples, and test plan (unit + optional integration). State clearly that LIR format remains 1.0.
+Proxy-cleared `git push -u origin HEAD`, then `gh pr create` summarizing CLI surface, diagnostics, samples, LIR origin persistence (still labeled 1.0), and test plan (unit + optional integration).
 
 Commits: subject starts with `#15` (plain `git commit -m`, no heredocs per agent-shell).
 
@@ -363,8 +361,8 @@ Commits: subject starts with `#15` (plain `git commit -m`, no heredocs per agent
 | Area | Files |
 | --- | --- |
 | Samples | [`samples/Hello.love`](samples/Hello.love); optional `docs/samples.md` |
+| LIR origins on disk | [`lir/src/lovelace-lir-binary.adb`](lir/src/lovelace-lir-binary.adb), text codec, origins tests, `docs/lir*.md` (**no** major/minor bump) |
 | Diagnostics | new `compiler/src/lovelace-compiler-error_codes.ads`, `…-diagnostics.ads/.adb`, compiler tests |
 | CLI | `lovelace-main.adb`, `Lovelace.Main.*` children, `alire.toml` depends-on (no version field bump), gpr Main |
 | Integration | `lovelace/integration_tests/**` |
 | Docs | `docs/cli.md`, `docs/diagnostics.md`, README, codegen/IR CLI notes |
-| LIR | **no format/version changes** |

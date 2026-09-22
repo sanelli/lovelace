@@ -68,4 +68,23 @@ package body Lovelace.Common.Source is
       return (Present => True, Value => Holder);
    end Some_Filename;
 
+   function To_Utf_8 (Holder : Shared_Filename) return String is
+   begin
+      if Holder.Block = null then
+         return "";
+      end if;
+      return Ada.Strings.Unbounded.To_String (Holder.Block.Text);
+   end To_Utf_8;
+
+   function To_Utf_8 (Option : Filename_Option) return String is
+   begin
+      case Option.Present is
+         when False =>
+            return "";
+
+         when True  =>
+            return To_Utf_8 (Option.Value);
+      end case;
+   end To_Utf_8;
+
 end Lovelace.Common.Source;

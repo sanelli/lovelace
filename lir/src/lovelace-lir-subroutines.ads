@@ -28,7 +28,7 @@ package Lovelace.Lir.Subroutines is
       Parameter_Types : Types.Value_Type_Sequence;
    end record;
 
-   --  In-memory source origin for a subroutine (not stored in .lir / .tlir).
+   --  In-memory source origin for a subroutine (also stored in .lir / .tlir v1.0 layouts).
    --  @field Name_Span Span of the subroutine name in the original source.
    --  @field Filename Optional shared filename from the frontend.
    type Subroutine_Origin is record

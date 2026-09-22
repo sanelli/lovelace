@@ -27,16 +27,33 @@ Inside the module, in order:
 1. `(version 1 0)`
 2. `(name "…")` once
 3. `(flags <decimal-u32>)` always present (v1 examples use `0`)
-4. Zero or more `(depend "Name")` in insertion order
-5. Zero or more `(subroutine …)` in insertion order
+4. Optional `(origin …)` when a module origin is present (see below)
+5. Zero or more `(depend "Name")` in insertion order
+6. Zero or more `(subroutine …)` in insertion order
 
 Inside a subroutine, in order:
 
 1. `(name "…")`
-2. Optional `(param t1 t2 …)` — omit the whole form when there are zero parameters
-3. **Required** `(result t)` — always present; use `unit` for procedures
-4. Optional bare identifiers `export` and/or `entrypoint` (flag bits, not strings)
-5. `(body …)` — may be empty
+2. Optional `(origin …)` when a subroutine origin is present
+3. Optional `(param t1 t2 …)` — omit the whole form when there are zero parameters
+4. **Required** `(result t)` — always present; use `unit` for procedures
+5. Optional bare identifiers `export` and/or `entrypoint` (flag bits, not strings)
+6. `(body …)` — may be empty
+
+### Origin forms
+
+Module origin (after `(flags …)`):
+
+```text
+(origin
+  (filename "path.love")
+  (name-span (position <byte> <line> <column>) (position <byte> <line> <column>))
+  (span (position <byte> <line> <column>) (position <byte> <line> <column>)))
+```
+
+Subroutine origin (after `(name …)`): same shape but **without** `(span …)` (name-span only). Empty `(filename "")` means no filename was attached. Omit the whole `(origin …)` when the in-memory origin is absent.
+
+`(version 1 0)` is unchanged; origin fields are part of the still-labeled 1.0 text layout.
 
 Type tokens (canonical lowercase):
 

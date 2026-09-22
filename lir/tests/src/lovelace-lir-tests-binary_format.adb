@@ -95,10 +95,10 @@ package body Lovelace.Lir.Tests.Binary_Format is
             Typed_Bytes : constant Ada.Streams.Stream_Element_Array :=
               Support.Must_Encode (Typed, "typed");
          begin
-            --  Return type is 12 bytes before end: param_count+flags+instr_count.
+            --  Return type is 13 bytes before end: param_count+flags+origin+instr_count.
             Support.Assert_Decode_Error
               (Support.Replace_Byte
-                 (Typed_Bytes, Typed_Bytes'Last - 12, 16#FF#),
+                 (Typed_Bytes, Typed_Bytes'Last - 13, 16#FF#),
                Errors.Unknown_Type,
                "unknown type");
          end;

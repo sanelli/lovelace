@@ -56,6 +56,25 @@ Any other byte → `Unknown_Type`. There is no `void` code.
 2. `flags` — `u32` (v1 writers emit `0`; readers store the value as-is so future bits can round-trip; v1 does **not** reject nonzero flags)
 3. `dependency_count` — `u32`
 4. `dependency_count` encoded strings (depended-on **module names**, not paths)
+5. **Module origin** (see below)
+
+### Module origin
+
+Immediately after dependencies, before the subroutine preamble:
+
+1. `origin_present` — `u8` (`0` = absent, `1` = present; any other value → `Invalid_Presence`)
+2. When present:
+   - filename (encoded string; length `0` means no filename / absent option)
+   - `name_span` — encoded `Source_Span` (module name)
+   - `span` — encoded `Source_Span` (whole compilation unit)
+
+#### Encoded `Source_Position`
+
+Three `u32` fields: `Byte_Index`, `Line`, `Column` (each must be ≥ 1).
+
+#### Encoded `Source_Span`
+
+`First` position, then `Last` position.
 
 ### Subroutine preamble (binary only)
 
@@ -77,8 +96,11 @@ Then follow exactly `subroutine_count` subroutine records in preamble order (no 
 3. `parameter_count` — `u32`
 4. `parameter_count` type codes (parameter **types** only; no parameter names in v1)
 5. `flags` — `u32` (bit 0 = export, bit 1 = entrypoint; other bits preserved like module flags)
-6. `instruction_count` — `u32` (number of instructions, not bytes)
-7. Instruction stream — concatenation of encoded instructions (no per-instruction length prefix)
+6. **Subroutine origin:**
+   - `origin_present` — `u8` (`0` / `1`; other → `Invalid_Presence`)
+   - when present: filename (encoded string; empty = absent), then `name_span` only (no unit span)
+7. `instruction_count` — `u32` (number of instructions, not bytes)
+8. Instruction stream — concatenation of encoded instructions (no per-instruction length prefix)
 
 ### Instruction stream
 
