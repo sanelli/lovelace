@@ -23,7 +23,7 @@ Ast.Module  →  Ir_Generator.Generate  →  Lir.Modules.Module
                               Backend.Wit      Backend.Wit
 ```
 
-LIR ownership and codecs: [lir.md](lir.md). Frontend lowering into LIR: [ir-generator.md](ir-generator.md).
+LIR ownership and codecs: [lir.md](lir.md). Frontend lowering into LIR: [ir-generator.md](ir-generator.md). End-to-end builds: [cli.md](cli.md). Diagnostics: [diagnostics.md](diagnostics.md).
 
 ## Ada packages
 
@@ -137,11 +137,10 @@ Each failure carries a UTF-8 `Detail` string.
 
 ## Out of scope
 
-- Full WASI `command` world imports
+- Full WASI `command` world imports (beyond exporting `wasi:cli/run@0.3.0`)
 - Browser / core-module-only default format
 - `cabi_realloc` / linear memory (not required for empty Unit ABI)
 - Alexandria doc embedding in artifacts
-- CLI `lovelace build`
 - Linking LIR `Dependencies`
 - Statement-rich instruction sets beyond `No_Operation`
 

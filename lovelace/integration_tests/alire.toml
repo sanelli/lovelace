@@ -1,0 +1,20 @@
+name = "lovelace_integration_tests"
+description = "Optional end-to-end CLI + wasmtime tests for lovelace"
+version = "0.1.0-dev"
+
+authors = ["Stefano Anelli"]
+maintainers = ["Stefano Anelli <sanelli@users.noreply.github.com>"]
+licenses = "MIT"
+
+executables = ["lovelace_integration_tests"]
+auto-gpr-with = false
+
+[[depends-on]]
+lovelace = "*"
+aunit = "^25.0.0"
+
+[[pins]]
+lovelace = { path = ".." }
+
+[build-switches]
+"*".style_checks = "No"

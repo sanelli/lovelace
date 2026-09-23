@@ -38,11 +38,6 @@ package body Lovelace.Main.Build is
    package Lir_Binary renames Lovelace.Lir.Binary;
    package Modules renames Lovelace.Lir.Modules;
 
-   type Output_Format_Set is record
-      Want_Wasm : Boolean := True;
-      Want_Wat  : Boolean := False;
-   end record;
-
    type Build_Options is record
       Source_Path   : Ada.Strings.Unbounded.Unbounded_String;
       Output_Root   : Ada.Strings.Unbounded.Unbounded_String :=
@@ -59,8 +54,6 @@ package body Lovelace.Main.Build is
    function Parse_Options
      (Command_Arguments : Arguments.String_Vectors.Vector;
       Options           : out Build_Options) return Boolean;
-   function Parse_Output_Format
-     (Text : String; Format_Set : out Output_Format_Set) return Boolean;
    function Read_Entire_File
      (Path : String; Contents : out Ada.Strings.Unbounded.Unbounded_String)
       return Boolean;
@@ -135,7 +128,7 @@ package body Lovelace.Main.Build is
                     Command_Arguments.Element (Index + 1);
                   Format_Set  : Output_Format_Set;
                begin
-                  if not Parse_Output_Format (Format_Text, Format_Set) then
+                  if not Try_Parse_Output_Format (Format_Text, Format_Set) then
                      Report_Cli_Error
                        ("invalid --output-format '" & Format_Text & "'");
                      return False;
@@ -178,23 +171,6 @@ package body Lovelace.Main.Build is
       end if;
       return True;
    end Parse_Options;
-
-   function Parse_Output_Format
-     (Text : String; Format_Set : out Output_Format_Set) return Boolean is
-   begin
-      if Text = "wasm" then
-         Format_Set := (Want_Wasm => True, Want_Wat => False);
-         return True;
-      elsif Text = "wat" then
-         Format_Set := (Want_Wasm => False, Want_Wat => True);
-         return True;
-      elsif Text = "wasm,wat" or else Text = "wat,wasm" then
-         Format_Set := (Want_Wasm => True, Want_Wat => True);
-         return True;
-      else
-         return False;
-      end if;
-   end Parse_Output_Format;
 
    function Read_Entire_File
      (Path : String; Contents : out Ada.Strings.Unbounded.Unbounded_String)
@@ -752,6 +728,23 @@ package body Lovelace.Main.Build is
       Terminal.Put_Info ("Build succeeded");
       return True;
    end Run;
+
+   function Try_Parse_Output_Format
+     (Text : String; Format_Set : out Output_Format_Set) return Boolean is
+   begin
+      if Text = "wasm" then
+         Format_Set := (Want_Wasm => True, Want_Wat => False);
+         return True;
+      elsif Text = "wat" then
+         Format_Set := (Want_Wasm => False, Want_Wat => True);
+         return True;
+      elsif Text = "wasm,wat" or else Text = "wat,wasm" then
+         Format_Set := (Want_Wasm => True, Want_Wat => True);
+         return True;
+      else
+         return False;
+      end if;
+   end Try_Parse_Output_Format;
 
    function Write_Bytes
      (Path : String; Bytes : Backend.Byte_Sequence) return Boolean

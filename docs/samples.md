@@ -1,6 +1,6 @@
 # Samples
 
-The [`samples/`](../samples/) tree holds small `.love` programs used to exercise features end-to-end (CLI builds, integration tests, and manual checks).
+The [`samples/`](../samples/) tree holds small `.love` programs used to exercise features end-to-end (CLI builds, integration tests, and manual checks). Build them with [`lovelace build`](cli.md).
 
 ## Policy
 

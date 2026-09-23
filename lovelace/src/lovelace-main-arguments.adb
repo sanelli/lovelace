@@ -2,15 +2,15 @@ with Ada.Command_Line;
 
 package body Lovelace.Main.Arguments is
 
-   function Parse return Parsed_Arguments is
+   function Parse (Tokens : String_Vectors.Vector) return Parsed_Arguments is
       Show_Logo      : Boolean := True;
       Colour_Enabled : Boolean := True;
       Index          : Positive := 1;
-      Argument_Count : constant Natural := Ada.Command_Line.Argument_Count;
+      Argument_Count : constant Natural := Natural (Tokens.Length);
    begin
       while Index <= Argument_Count loop
          declare
-            Token : constant String := Ada.Command_Line.Argument (Index);
+            Token : constant String := Tokens.Element (Index);
          begin
             if Token = "--no-logo" then
                Show_Logo := False;
@@ -18,12 +18,16 @@ package body Lovelace.Main.Arguments is
             elsif Token = "--no-colour" then
                Colour_Enabled := False;
                Index := Index + 1;
-            elsif Token'Length >= 2 and then Token (Token'First .. Token'First + 1) = "--" then
+            elsif Token'Length >= 2
+              and then Token (Token'First .. Token'First + 1) = "--"
+            then
                return
                  (Ok            => False,
                   Error_Message =>
                     Ada.Strings.Unbounded.To_Unbounded_String
-                      ("unknown global option '" & Token & "' (globals must appear before the command)"));
+                      ("unknown global option '"
+                       & Token
+                       & "' (globals must appear before the command)"));
             else
                exit;
             end if;
@@ -40,7 +44,7 @@ package body Lovelace.Main.Arguments is
       end if;
 
       declare
-         Command_Token : constant String := Ada.Command_Line.Argument (Index);
+         Command_Token : constant String := Tokens.Element (Index);
          Command       : Command_Kind;
          Rest          : String_Vectors.Vector;
       begin
@@ -50,24 +54,31 @@ package body Lovelace.Main.Arguments is
             Command := Help;
          elsif Command_Token = "version" then
             Command := Version;
-         elsif Command_Token'Length >= 2 and then Command_Token (Command_Token'First .. Command_Token'First + 1) = "--"
+         elsif Command_Token'Length >= 2
+           and then Command_Token
+                      (Command_Token'First .. Command_Token'First + 1)
+                    = "--"
          then
             return
               (Ok            => False,
                Error_Message =>
                  Ada.Strings.Unbounded.To_Unbounded_String
-                   ("expected a command after global options, found '" & Command_Token & "'"));
+                   ("expected a command after global options, found '"
+                    & Command_Token
+                    & "'"));
          else
             return
               (Ok            => False,
                Error_Message =>
                  Ada.Strings.Unbounded.To_Unbounded_String
-                   ("unknown command '" & Command_Token & "'; try 'lovelace help'"));
+                   ("unknown command '"
+                    & Command_Token
+                    & "'; try 'lovelace help'"));
          end if;
 
          Index := Index + 1;
          while Index <= Argument_Count loop
-            Rest.Append (Ada.Command_Line.Argument (Index));
+            Rest.Append (Tokens.Element (Index));
             Index := Index + 1;
          end loop;
 
@@ -78,6 +89,15 @@ package body Lovelace.Main.Arguments is
             Command           => Command,
             Command_Arguments => Rest);
       end;
+   end Parse;
+
+   function Parse return Parsed_Arguments is
+      Tokens : String_Vectors.Vector;
+   begin
+      for Index in 1 .. Ada.Command_Line.Argument_Count loop
+         Tokens.Append (Ada.Command_Line.Argument (Index));
+      end loop;
+      return Parse (Tokens);
    end Parse;
 
 end Lovelace.Main.Arguments;

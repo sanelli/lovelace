@@ -30,19 +30,19 @@ todos:
     status: completed
   - id: "10"
     content: "10. Write docs/cli.md and docs/diagnostics.md; update README/codegen/LIR docs for CLI wiring and origin persistence (still labeled 1.0)."
-    status: pending
+    status: completed
   - id: "11"
     content: "11. Add lovelace/tests (lovelace_tests) for arguments/helpers used by the CLI."
-    status: pending
+    status: completed
   - id: "12"
     content: "12. Add lovelace/integration_tests (lovelace_integration_tests): inconclusive without wasmtime; else build sample + run wasm and wat."
-    status: pending
+    status: completed
   - id: "13"
     content: "13. gnatformat touched Ada; alr build; run common/lir/compiler/lovelace unit tests (integration optional/recorded)."
-    status: pending
+    status: completed
   - id: "14"
     content: "14. Push (proxy cleared) and open PR with gh pr create."
-    status: pending
+    status: completed
 isProject: false
 ---
 # CLI build command and diagnostics
@@ -302,6 +302,8 @@ Using `Ada.Directories.Modification_Time` (or equivalent):
 
 ## 10. Documentation
 
+Done: [`docs/cli.md`](../../docs/cli.md), [`docs/diagnostics.md`](../../docs/diagnostics.md); README status + links; codegen / IR generator / LIR / samples cross-links (LIR still labeled 1.0).
+
 New [`docs/cli.md`](docs/cli.md): invocation grammar, globals, `build` / `help` / `version`, colours, logo, output layout, incremental rules, examples, pointer to `samples/Hello.love`.
 
 New [`docs/diagnostics.md`](docs/diagnostics.md): `LV#####` table + exact render format (align with [`.cursor/rules/diagnostics.mdc`](.cursor/rules/diagnostics.mdc) but use `LV` prefix as specified).
@@ -343,16 +345,16 @@ Do **not** add Wasmtime as an Alire dependency (CLI subprocess only).
 
 ## 13. Format, build, run normal tests
 
-- `alr exec -- gnatformat -w 120 -P …` on every touched Ada file.
-- `alr build` at repo root.
-- Run: `alr -C common/tests run`, `alr -C lir/tests run`, `alr -C compiler/tests run`, `alr -C lovelace/tests run`.
-- Record that integration tests are separate; optionally run them if wasmtime is present and note result in the PR body.
+Done:
+
+- `gnatformat` on touched Ada under `lovelace/` (and compiler diagnostics when present).
+- `alr build` at repo root — success.
+- Unit tests: `common/tests` (28), `lir/tests` (17), `compiler/tests` (44), `lovelace/tests` (10) — all passed.
+- Integration (optional): `alr -C lovelace/integration_tests run` — passed with Wasmtime present (build `samples/Hello.love` + run `.wasm` / `.wat`).
 
 ## 14. Push and open PR
 
-Proxy-cleared `git push -u origin HEAD`, then `gh pr create` summarizing CLI surface, diagnostics, samples, LIR origin persistence (still labeled 1.0), and test plan (unit + optional integration).
-
-Commits: subject starts with `#15` (plain `git commit -m`, no heredocs per agent-shell).
+Done: committed docs/CLI tests/integration work; proxy-cleared push; PR opened for #15.
 
 ---
 

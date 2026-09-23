@@ -12,22 +12,27 @@ package Lovelace.Compiler.Reporting is
    --  Map a tokenizer error code to an LV Error_Code.
    --  @param Code Tokenizer stage code.
    --  @return Corresponding LV kind.
-   function To_Error_Code (Code : Tokenizer.Tokenizer_Error_Code) return Error_Codes.Error_Code;
+   function To_Error_Code
+     (Code : Tokenizer.Tokenizer_Error_Code) return Error_Codes.Error_Code;
 
    --  Map a parser error code to an LV Error_Code.
    --  @param Code Parser stage code.
    --  @return Corresponding LV kind.
-   function To_Error_Code (Code : Parser.Parser_Error_Code) return Error_Codes.Error_Code;
+   function To_Error_Code
+     (Code : Parser.Parser_Error_Code) return Error_Codes.Error_Code;
 
    --  Map an IR Generator error code to an LV Error_Code.
    --  @param Code IR Generator stage code.
    --  @return Corresponding LV kind.
-   function To_Error_Code (Code : Ir_Generator.Ir_Generator_Error_Code) return Error_Codes.Error_Code;
+   function To_Error_Code
+     (Code : Ir_Generator.Ir_Generator_Error_Code)
+      return Error_Codes.Error_Code;
 
    --  Map a backend error code to an LV Error_Code.
    --  @param Code Backend stage code.
    --  @return Corresponding LV kind.
-   function To_Error_Code (Code : Backend.Backend_Error_Code) return Error_Codes.Error_Code;
+   function To_Error_Code
+     (Code : Backend.Backend_Error_Code) return Error_Codes.Error_Code;
 
    --  Basename of Path without directories; strips a final .love suffix when present.
    --  @param Path UTF-8 filesystem path or file name.
@@ -38,6 +43,7 @@ package Lovelace.Compiler.Reporting is
    --  @param The_Module Parsed compilation unit.
    --  @param Source_Path Path of the .love file being compiled.
    --  @return True when the program identifier matches the file stem.
-   function Program_Name_Matches_File (The_Module : Ast.Module; Source_Path : String) return Boolean;
+   function Program_Name_Matches_File
+     (The_Module : Ast.Module; Source_Path : String) return Boolean;
 
 end Lovelace.Compiler.Reporting;

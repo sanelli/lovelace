@@ -3,7 +3,10 @@ with Lovelace.Common.Utf_8;
 package body Lovelace.Compiler.Diagnostics is
 
    function Line_Bounds
-     (Source_Text : String; Line_Number : Positive; First : out Positive; Last : out Natural) return Boolean;
+     (Source_Text : String;
+      Line_Number : Positive;
+      First       : out Positive;
+      Last        : out Natural) return Boolean;
    --  Set First..Last to the UTF-8 byte range of Line_Number (1-based), excluding the
    --  line ending. Return False when Line_Number is past the end of Source_Text.
 
@@ -36,20 +39,33 @@ package body Lovelace.Compiler.Diagnostics is
    is
       Line_First : Positive;
       Line_Last  : Natural;
-      Have_Line  : constant Boolean := Line_Bounds (Source_Text, Span.First.Line, Line_First, Line_Last);
+      Have_Line  : constant Boolean :=
+        Line_Bounds (Source_Text, Span.First.Line, Line_First, Line_Last);
    begin
       declare
          Header      : constant String :=
            "[err] "
            & Filename
            & ":"
-           & Positive'Image (Span.First.Line) (2 .. Positive'Image (Span.First.Line)'Last)
+           & Positive'Image (Span.First.Line)
+               (2 .. Positive'Image (Span.First.Line)'Last)
            & ","
-           & Positive'Image (Span.First.Column) (2 .. Positive'Image (Span.First.Column)'Last);
-         Source_Line : constant String := (if Have_Line then Source_Text (Line_First .. Line_Last) else "");
-         Footer      : constant String := "[" & Error_Codes.Label (Code) & "] " & Description;
+           & Positive'Image (Span.First.Column)
+               (2 .. Positive'Image (Span.First.Column)'Last);
+         Source_Line : constant String :=
+           (if Have_Line then Source_Text (Line_First .. Line_Last) else "");
+         Footer      : constant String :=
+           "[" & Error_Codes.Label (Code) & "] " & Description;
       begin
-         return Header & ASCII.LF & Source_Line & ASCII.LF & Caret_Line (Span) & ASCII.LF & Footer & ASCII.LF;
+         return
+           Header
+           & ASCII.LF
+           & Source_Line
+           & ASCII.LF
+           & Caret_Line (Span)
+           & ASCII.LF
+           & Footer
+           & ASCII.LF;
       end;
    end Format;
 
@@ -60,11 +76,16 @@ package body Lovelace.Compiler.Diagnostics is
       Code        : Error_Codes.Error_Code;
       Description : String) return Ada.Strings.Unbounded.Unbounded_String is
    begin
-      return Ada.Strings.Unbounded.To_Unbounded_String (Format (Filename, Span, Source_Text, Code, Description));
+      return
+        Ada.Strings.Unbounded.To_Unbounded_String
+          (Format (Filename, Span, Source_Text, Code, Description));
    end Format_Unbounded;
 
    function Line_Bounds
-     (Source_Text : String; Line_Number : Positive; First : out Positive; Last : out Natural) return Boolean
+     (Source_Text : String;
+      Line_Number : Positive;
+      First       : out Positive;
+      Last        : out Natural) return Boolean
    is
       Current_Line : Positive := 1;
       Index        : Positive := Source_Text'First;
@@ -91,7 +112,9 @@ package body Lovelace.Compiler.Diagnostics is
 
          if Source_Text (Index) = ASCII.CR then
             Index := Index + 1;
-            if Index <= Source_Text'Last and then Source_Text (Index) = ASCII.LF then
+            if Index <= Source_Text'Last
+              and then Source_Text (Index) = ASCII.LF
+            then
                Index := Index + 1;
             end if;
             Current_Line := Current_Line + 1;
@@ -104,7 +127,8 @@ package body Lovelace.Compiler.Diagnostics is
                Length : Natural;
                Valid  : Boolean;
             begin
-               Lovelace.Common.Utf_8.Decode (Source_Text, Index, Point, Length, Valid);
+               Lovelace.Common.Utf_8.Decode
+                 (Source_Text, Index, Point, Length, Valid);
                if Valid and then Length > 0 then
                   Index := Index + Length;
                else

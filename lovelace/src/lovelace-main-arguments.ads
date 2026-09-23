@@ -6,7 +6,9 @@ with Ada.Strings.Unbounded;
 package Lovelace.Main.Arguments is
 
    package String_Vectors is new
-     Ada.Containers.Indefinite_Vectors (Index_Type => Positive, Element_Type => String);
+     Ada.Containers.Indefinite_Vectors
+       (Index_Type   => Positive,
+        Element_Type => String);
 
    --  Recognized top-level commands.
    --  @enum Build Compile a .love file.
@@ -34,6 +36,11 @@ package Lovelace.Main.Arguments is
             Error_Message : Ada.Strings.Unbounded.Unbounded_String;
       end case;
    end record;
+
+   --  Parse Tokens as if they were the process argv (no program name).
+   --  @param Tokens Global options, command, and command arguments.
+   --  @return Parsed arguments, or a failure with Error_Message.
+   function Parse (Tokens : String_Vectors.Vector) return Parsed_Arguments;
 
    --  Parse Ada.Command_Line into globals, command, and command arguments.
    --  @return Parsed arguments, or a failure with Error_Message.
