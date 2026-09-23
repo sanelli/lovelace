@@ -13,6 +13,9 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
    function Locate_Lovelace return String;
    --  Path to lovelace under ../bin or on PATH.
 
+   function Locate_Output_Root return String;
+   --  Repo .tests/integration-tests output folder.
+
    function Locate_Sample return String;
    --  Path to samples/Hello.love relative to this crate.
 
@@ -47,6 +50,20 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
       end;
    end Locate_Lovelace;
 
+   function Locate_Output_Root return String is
+      Repository_Root : constant String :=
+        Ada.Directories.Full_Name
+          (Ada.Directories.Compose
+             (Ada.Directories.Compose
+                (Ada.Directories.Current_Directory, ".."),
+              ".."));
+   begin
+      return
+        Ada.Directories.Compose
+          (Ada.Directories.Compose (Repository_Root, ".tests"),
+           "integration-tests");
+   end Locate_Output_Root;
+
    function Locate_Sample return String is
       Relative : constant String :=
         Ada.Directories.Compose
@@ -63,9 +80,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
       Sample_Path   : constant String := Locate_Sample;
       Wasmtime_Path : GNAT.OS_Lib.String_Access :=
         GNAT.OS_Lib.Locate_Exec_On_Path ("wasmtime");
-      Output_Root   : constant String :=
-        Ada.Directories.Compose
-          (Ada.Directories.Current_Directory, "integration-output");
+      Output_Root   : constant String := Locate_Output_Root;
       Success       : Boolean;
       Return_Code   : Integer;
       Build_Args    : GNAT.OS_Lib.Argument_List_Access;

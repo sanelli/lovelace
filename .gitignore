@@ -25,5 +25,5 @@ docs/.code/
 lovelace/src/lovelace-main-git_hash.ads
 .output/
 
-# CLI integration test scratch output
-**/integration-output/
+# Test scratch output (integration artifacts, etc.)
+.tests/

@@ -1,4 +1,4 @@
-name: Build
+name: Build Lovelace
 
 on:
   pull_request:
@@ -11,16 +11,30 @@ permissions:
 
 jobs:
   build:
-    name: alr build
+    name: Build and test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: pwsh
     steps:
-      - uses: actions/checkout@v6
+      - name: Check out repository
+        uses: actions/checkout@v6
 
-      - uses: alire-project/setup-alire@v6
+      - name: Set up Alire and GNAT toolchain
+        uses: alire-project/setup-alire@v6
         with:
           version: '2.1.0'
           toolchain: 'gnat_native=15.2.1 gprbuild'
           cache: true
 
-      - name: Build workspace
+      - name: Install Wasmtime
+        uses: bytecodealliance/actions/wasmtime/setup@v1
+
+      - name: Build Lovelace workspace
         run: alr build
+
+      - name: Run unit tests
+        run: ./scripts/run-tests.ps1 -SkipIntegration
+
+      - name: Run integration tests
+        run: ./scripts/run-tests.ps1 -SkipUnit

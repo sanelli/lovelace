@@ -114,12 +114,25 @@ See [codegen.md](codegen.md) for export naming and kebab-case rules.
 
 ## Tests
 
+From the repository root, build and run the nested AUnit crates with:
+
+```powershell
+pwsh -NoProfile -File scripts/run-tests.ps1
+pwsh -NoProfile -File scripts/run-tests.ps1 -SkipIntegration
+pwsh -NoProfile -File scripts/run-tests.ps1 -SkipUnit
+```
+
+By default the script runs workspace `alr build`, all unit crates below, then the integration crate. `-SkipUnit` skips the unit crates; `-SkipIntegration` skips `lovelace/integration_tests`. Both may be combined.
+
 | Crate | Command | Role |
 | --- | --- | --- |
+| `common/tests` | `alr -C common/tests run` | Shared host library unit tests |
+| `lir/tests` | `alr -C lir/tests run` | LIR types / codecs unit tests |
+| `compiler/tests` | `alr -C compiler/tests run` | Compiler frontend / backend unit tests |
 | `lovelace/tests` (`lovelace_tests`) | `alr -C lovelace/tests run` | Unit tests for argument parsing, output-format, help, version, basename |
-| `lovelace/integration_tests` (`lovelace_integration_tests`) | `alr -C lovelace/integration_tests run` | Optional: build `samples/Hello.love` and run Wasmtime on `.wasm` / `.wat` (prints `INCONCLUSIVE: wasmtime not found` and passes if Wasmtime is missing) |
+| `lovelace/integration_tests` (`lovelace_integration_tests`) | `alr -C lovelace/integration_tests run` | Optional: build `samples/Hello.love` into `.tests/integration-tests/` and run Wasmtime on `.wasm` / `.wat` (prints `INCONCLUSIVE: wasmtime not found` and passes if Wasmtime is missing) |
 
-Integration tests are **not** part of the default unit-test checklist.
+Integration tests are **not** part of the default unit-test checklist; use `-SkipIntegration` when you only want units, or `-SkipUnit` when you only want integration.
 
 ## Logo
 
