@@ -1,6 +1,7 @@
 with AUnit.Test_Caller;
 
 with Lovelace.Compiler.Tests.Backend;
+with Lovelace.Compiler.Tests.Diagnostics;
 with Lovelace.Compiler.Tests.Ir_Generator;
 with Lovelace.Compiler.Tests.Parser;
 with Lovelace.Compiler.Tests.Tokenizer;
@@ -8,6 +9,7 @@ with Lovelace.Compiler.Tests.Tokenizer;
 package body Lovelace.Compiler.Tests.Suite is
 
    package Backend_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Backend.Fixture);
+   package Diagnostics_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Diagnostics.Fixture);
    package Ir_Generator_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Ir_Generator.Fixture);
    package Parser_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Parser.Fixture);
    package Tokenizer_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Tokenizer.Fixture);
@@ -107,6 +109,18 @@ package body Lovelace.Compiler.Tests.Suite is
            ("wasm component preamble", Lovelace.Compiler.Tests.Backend.Test_Wasm_Component_Preamble'Access));
       Result.Add_Test
         (Backend_Caller.Create ("wasm wit equality", Lovelace.Compiler.Tests.Backend.Test_Wasm_Wit_Equality'Access));
+      Result.Add_Test
+        (Diagnostics_Caller.Create
+           ("error code labels", Lovelace.Compiler.Tests.Diagnostics.Test_Error_Code_Labels'Access));
+      Result.Add_Test
+        (Diagnostics_Caller.Create ("format shape", Lovelace.Compiler.Tests.Diagnostics.Test_Format_Shape'Access));
+      Result.Add_Test
+        (Diagnostics_Caller.Create ("love basename", Lovelace.Compiler.Tests.Diagnostics.Test_Love_Basename'Access));
+      Result.Add_Test
+        (Diagnostics_Caller.Create
+           ("program name matches file", Lovelace.Compiler.Tests.Diagnostics.Test_Program_Name_Matches_File'Access));
+      Result.Add_Test
+        (Diagnostics_Caller.Create ("stage mappings", Lovelace.Compiler.Tests.Diagnostics.Test_Stage_Mappings'Access));
       return Result;
    end Suite;
 

@@ -13,7 +13,7 @@ package Lovelace.Lir.Modules is
    --  Module metadata flags (u32 bitset; no bits assigned in this slice).
    type Module_Flags is mod 2**32;
 
-   --  In-memory source origin for a module (not stored in .lir / .tlir).
+   --  In-memory source origin for a module (also stored in .lir / .tlir v1.0 layouts).
    --  @field Name_Span Span of the module name in the original source.
    --  @field Span Span covering the whole compilation unit.
    --  @field Filename Optional shared filename from the frontend.

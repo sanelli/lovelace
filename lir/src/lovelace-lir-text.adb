@@ -3,6 +3,7 @@ with Ada.Text_IO;
 with GNAT.OS_Lib;
 with Interfaces;
 
+with Lovelace.Common.Source;
 with Lovelace.Common.Utf_8;
 with Lovelace.Lir.Instructions;
 with Lovelace.Lir.Opcodes;
@@ -13,26 +14,66 @@ package body Lovelace.Lir.Text is
 
    use type GNAT.OS_Lib.File_Descriptor;
 
-   procedure Append_Line
-     (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; Text : String);
-   procedure Append_Quoted
-     (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; Text : String);
+   package Source renames Lovelace.Common.Source;
+
+   procedure Append_Line (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; Text : String);
+   procedure Append_Module_Origin (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; The_Module : Modules.Module);
+   procedure Append_Position
+     (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; Position : Source.Source_Position);
+   procedure Append_Quoted (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; Text : String);
+   procedure Append_Span
+     (Buffer      : in out Ada.Strings.Unbounded.Unbounded_String;
+      Form_Name   : String;
+      Span        : Source.Source_Span;
+      Indentation : Natural);
+   procedure Append_Subroutine_Origin
+     (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; The_Subroutine : Subroutines.Subroutine);
    function Hex_Digits (Scalar : Natural) return String;
    function Indent (Level : Natural) return String;
    function Instruction_Token (Item : Instructions.Instruction) return String;
    function Type_Token (The_Type : Types.Value_Type) return String;
    function Unsigned_Image (Value : Interfaces.Unsigned_32) return String;
 
-   procedure Append_Line
-     (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; Text : String) is
+   procedure Append_Line (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; Text : String) is
    begin
       Ada.Strings.Unbounded.Append (Buffer, Text);
       Ada.Strings.Unbounded.Append (Buffer, ASCII.LF);
    end Append_Line;
 
-   procedure Append_Quoted
-     (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; Text : String)
+   procedure Append_Module_Origin (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; The_Module : Modules.Module)
    is
+      Origin_Value : constant Modules.Origin_Option := Modules.Origin (The_Module);
+   begin
+      case Origin_Value.Present is
+         when False =>
+            null;
+
+         when True  =>
+            Append_Line (Buffer, Indent (1) & "(origin");
+            Ada.Strings.Unbounded.Append (Buffer, Indent (2) & "(filename ");
+            Append_Quoted (Buffer, Source.To_Utf_8 (Origin_Value.Value.Filename));
+            Append_Line (Buffer, ")");
+            Append_Span (Buffer, "name-span", Origin_Value.Value.Name_Span, Indentation => 2);
+            Append_Span (Buffer, "span", Origin_Value.Value.Span, Indentation => 2);
+            Append_Line (Buffer, Indent (1) & ")");
+      end case;
+   end Append_Module_Origin;
+
+   procedure Append_Position (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; Position : Source.Source_Position)
+   is
+   begin
+      Ada.Strings.Unbounded.Append
+        (Buffer,
+         "(position "
+         & Unsigned_Image (Interfaces.Unsigned_32 (Position.Byte_Index))
+         & " "
+         & Unsigned_Image (Interfaces.Unsigned_32 (Position.Line))
+         & " "
+         & Unsigned_Image (Interfaces.Unsigned_32 (Position.Column))
+         & ")");
+   end Append_Position;
+
+   procedure Append_Quoted (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; Text : String) is
       Index : Positive := Text'First;
    begin
       Ada.Strings.Unbounded.Append (Buffer, '"');
@@ -54,8 +95,7 @@ package body Lovelace.Lir.Text is
                begin
                   if Point = Wide_Wide_Character'Val (Character'Pos ('"')) then
                      Ada.Strings.Unbounded.Append (Buffer, "\""");
-                  elsif Point = Wide_Wide_Character'Val (Character'Pos ('\'))
-                  then
+                  elsif Point = Wide_Wide_Character'Val (Character'Pos ('\')) then
                      Ada.Strings.Unbounded.Append (Buffer, "\\");
                   elsif Point = Wide_Wide_Character'Val (10) then
                      Ada.Strings.Unbounded.Append (Buffer, "\n");
@@ -65,12 +105,10 @@ package body Lovelace.Lir.Text is
                      Ada.Strings.Unbounded.Append (Buffer, "\t");
                   elsif Scalar < 32 then
                      Ada.Strings.Unbounded.Append (Buffer, "\u{");
-                     Ada.Strings.Unbounded.Append
-                       (Buffer, Hex_Digits (Scalar));
+                     Ada.Strings.Unbounded.Append (Buffer, Hex_Digits (Scalar));
                      Ada.Strings.Unbounded.Append (Buffer, "}");
                   else
-                     Ada.Strings.Unbounded.Append
-                       (Buffer, Text (Index .. Index + Length - 1));
+                     Ada.Strings.Unbounded.Append (Buffer, Text (Index .. Index + Length - 1));
                   end if;
                end;
                Index := Index + Length;
@@ -79,6 +117,38 @@ package body Lovelace.Lir.Text is
       end loop;
       Ada.Strings.Unbounded.Append (Buffer, '"');
    end Append_Quoted;
+
+   procedure Append_Span
+     (Buffer      : in out Ada.Strings.Unbounded.Unbounded_String;
+      Form_Name   : String;
+      Span        : Source.Source_Span;
+      Indentation : Natural) is
+   begin
+      Ada.Strings.Unbounded.Append (Buffer, Indent (Indentation) & "(" & Form_Name & " ");
+      Append_Position (Buffer, Span.First);
+      Ada.Strings.Unbounded.Append (Buffer, " ");
+      Append_Position (Buffer, Span.Last);
+      Append_Line (Buffer, ")");
+   end Append_Span;
+
+   procedure Append_Subroutine_Origin
+     (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; The_Subroutine : Subroutines.Subroutine)
+   is
+      Origin_Value : constant Subroutines.Origin_Option := Subroutines.Origin (The_Subroutine);
+   begin
+      case Origin_Value.Present is
+         when False =>
+            null;
+
+         when True  =>
+            Append_Line (Buffer, Indent (2) & "(origin");
+            Ada.Strings.Unbounded.Append (Buffer, Indent (3) & "(filename ");
+            Append_Quoted (Buffer, Source.To_Utf_8 (Origin_Value.Value.Filename));
+            Append_Line (Buffer, ")");
+            Append_Span (Buffer, "name-span", Origin_Value.Value.Name_Span, Indentation => 3);
+            Append_Line (Buffer, Indent (2) & ")");
+      end case;
+   end Append_Subroutine_Origin;
 
    function Hex_Digits (Scalar : Natural) return String is
       Hex           : constant String := "0123456789ABCDEF";
@@ -110,8 +180,7 @@ package body Lovelace.Lir.Text is
       return Spaces;
    end Indent;
 
-   function Instruction_Token (Item : Instructions.Instruction) return String
-   is
+   function Instruction_Token (Item : Instructions.Instruction) return String is
    begin
       case Item.Operation is
          when Opcodes.No_Operation =>
@@ -133,8 +202,7 @@ package body Lovelace.Lir.Text is
    end Print;
 
    function To_Text (The_Module : Modules.Module) return To_Text_Result is
-      Validation : constant Errors.Validation_Results.Result :=
-        Modules.Validate (The_Module);
+      Validation : constant Errors.Validation_Results.Result := Modules.Validate (The_Module);
    begin
       case Validation.Ok is
          when False =>
@@ -154,61 +222,43 @@ package body Lovelace.Lir.Text is
          Append_Line (Buffer, ")");
          Append_Line
            (Buffer,
-            Indent (1)
-            & "(flags "
-            & Unsigned_Image
-                (Interfaces.Unsigned_32 (Modules.Flags (The_Module)))
-            & ")");
+            Indent (1) & "(flags " & Unsigned_Image (Interfaces.Unsigned_32 (Modules.Flags (The_Module))) & ")");
 
-         for Dependency_Index in 1 .. Modules.Dependency_Count (The_Module)
-         loop
+         Append_Module_Origin (Buffer, The_Module);
+
+         for Dependency_Index in 1 .. Modules.Dependency_Count (The_Module) loop
             Ada.Strings.Unbounded.Append (Buffer, Indent (1) & "(depend ");
-            Append_Quoted
-              (Buffer, Modules.Dependency_Name (The_Module, Dependency_Index));
+            Append_Quoted (Buffer, Modules.Dependency_Name (The_Module, Dependency_Index));
             Append_Line (Buffer, ")");
          end loop;
 
-         for Subroutine_Index in 1 .. Modules.Subroutine_Count (The_Module)
-         loop
+         for Subroutine_Index in 1 .. Modules.Subroutine_Count (The_Module) loop
             declare
                The_Subroutine  : constant Subroutines.Subroutine :=
                  Modules.Get_Subroutine (The_Module, Subroutine_Index);
-               The_Signature   : constant Subroutines.Signature :=
-                 Subroutines.Get_Signature (The_Subroutine);
-               Flags_Value     : constant Subroutines.Subroutine_Flags :=
-                 Subroutines.Get_Flags (The_Subroutine);
+               The_Signature   : constant Subroutines.Signature := Subroutines.Get_Signature (The_Subroutine);
+               Flags_Value     : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (The_Subroutine);
                Body_Instrs     : constant Instructions.Instruction_Sequence :=
                  Subroutines.Get_Instructions (The_Subroutine);
-               Parameter_Count : constant Natural :=
-                 Types.Length (The_Signature.Parameter_Types);
+               Parameter_Count : constant Natural := Types.Length (The_Signature.Parameter_Types);
             begin
                Append_Line (Buffer, Indent (1) & "(subroutine");
                Ada.Strings.Unbounded.Append (Buffer, Indent (2) & "(name ");
-               Append_Quoted
-                 (Buffer,
-                  Ada.Strings.Unbounded.To_String (The_Signature.Name));
+               Append_Quoted (Buffer, Ada.Strings.Unbounded.To_String (The_Signature.Name));
                Append_Line (Buffer, ")");
+
+               Append_Subroutine_Origin (Buffer, The_Subroutine);
 
                if Parameter_Count > 0 then
                   Ada.Strings.Unbounded.Append (Buffer, Indent (2) & "(param");
                   for Parameter_Index in 1 .. Parameter_Count loop
                      Ada.Strings.Unbounded.Append
-                       (Buffer,
-                        " "
-                        & Type_Token
-                            (Types.Element
-                               (The_Signature.Parameter_Types,
-                                Parameter_Index)));
+                       (Buffer, " " & Type_Token (Types.Element (The_Signature.Parameter_Types, Parameter_Index)));
                   end loop;
                   Append_Line (Buffer, ")");
                end if;
 
-               Append_Line
-                 (Buffer,
-                  Indent (2)
-                  & "(result "
-                  & Type_Token (The_Signature.Return_Type)
-                  & ")");
+               Append_Line (Buffer, Indent (2) & "(result " & Type_Token (The_Signature.Return_Type) & ")");
 
                if Subroutines.Has_Export (Flags_Value) then
                   Append_Line (Buffer, Indent (2) & "export");
@@ -221,18 +271,12 @@ package body Lovelace.Lir.Text is
                   Append_Line (Buffer, Indent (2) & "(body))");
                else
                   Append_Line (Buffer, Indent (2) & "(body");
-                  for Instruction_Index in
-                    1 .. Instructions.Length (Body_Instrs)
-                  loop
+                  for Instruction_Index in 1 .. Instructions.Length (Body_Instrs) loop
                      declare
                         Token : constant String :=
-                          Instruction_Token
-                            (Instructions.Element
-                               (Body_Instrs, Instruction_Index));
+                          Instruction_Token (Instructions.Element (Body_Instrs, Instruction_Index));
                      begin
-                        if Instruction_Index
-                          < Instructions.Length (Body_Instrs)
-                        then
+                        if Instruction_Index < Instructions.Length (Body_Instrs) then
                            Append_Line (Buffer, Indent (3) & Token);
                         else
                            Append_Line (Buffer, Indent (3) & Token & "))");
@@ -304,9 +348,7 @@ package body Lovelace.Lir.Text is
       return Image;
    end Unsigned_Image;
 
-   function Write
-     (The_Module : Modules.Module; Path : String) return Write_Result
-   is
+   function Write (The_Module : Modules.Module; Path : String) return Write_Result is
       Rendered : constant To_Text_Result := To_Text (The_Module);
    begin
       case Rendered.Ok is
@@ -315,10 +357,8 @@ package body Lovelace.Lir.Text is
 
          when True  =>
             declare
-               Descriptor : constant GNAT.OS_Lib.File_Descriptor :=
-                 GNAT.OS_Lib.Create_File (Path, GNAT.OS_Lib.Binary);
-               Text       : constant String :=
-                 Ada.Strings.Unbounded.To_String (Rendered.Value);
+               Descriptor : constant GNAT.OS_Lib.File_Descriptor := GNAT.OS_Lib.Create_File (Path, GNAT.OS_Lib.Binary);
+               Text       : constant String := Ada.Strings.Unbounded.To_String (Rendered.Value);
             begin
                if Descriptor = GNAT.OS_Lib.Invalid_FD then
                   return (Ok => False, Error => Errors.Io_Failure);
@@ -326,22 +366,14 @@ package body Lovelace.Lir.Text is
 
                if Text'Length > 0 then
                   declare
-                     Buffer  :
-                       Ada.Streams.Stream_Element_Array
-                         (1
-                          .. Ada.Streams.Stream_Element_Offset (Text'Length));
+                     Buffer  : Ada.Streams.Stream_Element_Array (1 .. Ada.Streams.Stream_Element_Offset (Text'Length));
                      Written : Integer;
                   begin
                      for Index in Text'Range loop
-                        Buffer
-                          (Ada.Streams.Stream_Element_Offset
-                             (Index - Text'First + 1)) :=
-                          Ada.Streams.Stream_Element
-                            (Character'Pos (Text (Index)));
+                        Buffer (Ada.Streams.Stream_Element_Offset (Index - Text'First + 1)) :=
+                          Ada.Streams.Stream_Element (Character'Pos (Text (Index)));
                      end loop;
-                     Written :=
-                       GNAT.OS_Lib.Write
-                         (Descriptor, Buffer'Address, Buffer'Length);
+                     Written := GNAT.OS_Lib.Write (Descriptor, Buffer'Address, Buffer'Length);
                      if Written /= Integer (Buffer'Length) then
                         GNAT.OS_Lib.Close (Descriptor);
                         return (Ok => False, Error => Errors.Io_Failure);

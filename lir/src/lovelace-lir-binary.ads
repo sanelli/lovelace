@@ -6,8 +6,9 @@ with Lovelace.Lir.Errors;
 with Lovelace.Lir.Modules;
 
 --  Versioned binary .lir encode, decode, and file I/O.
---  Layout: magic and version, module metadata, subroutine preamble
---  (name + absolute offset per subroutine), then subroutine records.
+--  Layout: magic and version, module metadata, optional module origin,
+--  subroutine preamble (name + absolute offset per subroutine), then
+--  subroutine records (each with an optional origin after flags).
 
 package Lovelace.Lir.Binary is
 
@@ -64,8 +65,7 @@ package Lovelace.Lir.Binary is
    --  @param Sequence Byte sequence.
    --  @param Index 1-based index.
    --  @return Byte at Index.
-   function Element
-     (Sequence : Byte_Sequence; Index : Positive) return Interfaces.Unsigned_8;
+   function Element (Sequence : Byte_Sequence; Index : Positive) return Interfaces.Unsigned_8;
 
    --  Encode The_Module as a versioned .lir image after Validate.
    --  @param The_Module Module to encode.
@@ -80,15 +80,13 @@ package Lovelace.Lir.Binary is
    --  Decode a Stream_Element_Array as a .lir module.
    --  @param Bytes Encoded image.
    --  @return Module, or a format/validation Error_Code.
-   function Decode
-     (Bytes : Ada.Streams.Stream_Element_Array) return Decode_Result;
+   function Decode (Bytes : Ada.Streams.Stream_Element_Array) return Decode_Result;
 
    --  Encode The_Module and write Path (conventionally .lir).
    --  @param The_Module Module to write.
    --  @param Path Destination filesystem path.
    --  @return Success, or Error_Code.
-   function Write
-     (The_Module : Modules.Module; Path : String) return Write_Result;
+   function Write (The_Module : Modules.Module; Path : String) return Write_Result;
 
    --  Read Path and Decode.
    --  @param Path Source filesystem path.
@@ -99,10 +97,7 @@ private
 
    use type Interfaces.Unsigned_8;
 
-   package Byte_Vectors is new
-     Ada.Containers.Vectors
-       (Index_Type   => Positive,
-        Element_Type => Interfaces.Unsigned_8);
+   package Byte_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Interfaces.Unsigned_8);
 
    type Byte_Sequence is record
       Items : Byte_Vectors.Vector;

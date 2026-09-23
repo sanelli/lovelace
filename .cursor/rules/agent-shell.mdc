@@ -7,6 +7,10 @@ alwaysApply: true
 
 The Cursor **Shell** tool in this workspace runs **PowerShell** (pwsh on macOS), not bash. Write PowerShell. Do not paste bash-only syntax and hope it works.
 
+## Repository scripts
+
+All **new** scripts under [`scripts/`](scripts/) must be **PowerShell** (`.ps1`), invoked with `pwsh -NoProfile -File …` (including Alire `[[actions]]`). Do not add new `.sh` / bash scripts. Existing `.ps1` files (e.g. `gnatdoc.ps1`, `embed-git-hash.ps1`) are the pattern to follow.
+
 ## Commit messages
 
 Use **`git commit -m` only** for commit messages. Do **not** use heredocs, here-strings, or nested quoting wrappers — they have leaked literal `EOF`, `'@`, or `@"` into commit messages.

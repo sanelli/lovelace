@@ -9,5 +9,15 @@ licenses = "MIT"
 executables = ["lovelace"]
 auto-gpr-with = false
 
+[[depends-on]]
+lovelace_compiler = "*"
+
+[[pins]]
+lovelace_compiler = { path = "../compiler" }
+
 [build-switches]
 "*".style_checks = "No"
+
+[[actions]]
+type = "pre-build"
+command = ["pwsh", "-NoProfile", "-File", "../scripts/embed-git-hash.ps1"]

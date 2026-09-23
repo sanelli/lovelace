@@ -23,4 +23,8 @@ package Lovelace.Common.Tests.Source is
    --  @param The_Test Unused fixture.
    procedure Test_Same_Storage_Filename_Option (The_Test : in out Fixture);
 
+   --  To_Utf_8 returns the stored path; absent options yield the empty string.
+   --  @param The_Test Unused fixture.
+   procedure Test_To_Utf_8 (The_Test : in out Fixture);
+
 end Lovelace.Common.Tests.Source;

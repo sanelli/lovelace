@@ -23,7 +23,7 @@ Ast.Module  →  Ir_Generator.Generate  →  Lir.Modules.Module
                               Backend.Wit      Backend.Wit
 ```
 
-LIR ownership and codecs: [lir.md](lir.md). Frontend lowering into LIR: [ir-generator.md](ir-generator.md).
+LIR ownership and codecs: [lir.md](lir.md). Frontend lowering into LIR: [ir-generator.md](ir-generator.md). End-to-end builds: [cli.md](cli.md). Diagnostics: [diagnostics.md](diagnostics.md).
 
 ## Ada packages
 
@@ -48,30 +48,35 @@ Default output is a **component** ([Binary.md](https://github.com/WebAssembly/co
 
 One LIR module maps to one component. Each LIR subroutine maps to one core function (same UTF-8 name).
 
-## Entrypoint: `_start` and `run` (Option 1)
+## Entrypoint: `_start` and `wasi:cli/run` (Option 1)
 
 If any subroutine has `Entrypoint_Flag`:
 
 1. Emit a synthetic core function named **`_start`** that `call`s the entrypoint, then `i32.const 0` (Canonical ABI success for empty `result`).
-2. Canon-lift `_start` and component-export it as **`run`** with type `func() -> result` (same shape as [`wasi:cli/run`](https://github.com/WebAssembly/WASI/blob/main/wasip2/cli/run.wit)).
+2. Canon-lift `_start` to a component function with type `func() -> result`.
+3. Wrap that function in a component **instance** that exports it as `"run"`, and export the instance as **`wasi:cli/run@0.3.0`** (the name `wasmtime run` looks up).
 
-This slice does **not** emit the full `wasi:cli/command` import graph. Hosts that need WASI imports must supply them later; the artifact only exports `run` (and Lovelace exports).
+This slice does **not** emit the full `wasi:cli/command` import graph. The artifact only exports the WASI CLI run instance (and Lovelace kebab-case exports). The package version `0.3.0` matches WASI 0.3 CLI run.
 
-If there is no entrypoint, no `_start` and no `run` export are produced.
+If there is no entrypoint, no `_start` and no `wasi:cli/run` export are produced.
 
 ## Exports
 
-Every LIR subroutine with `Export_Flag` is canon-lifted and component-exported under its LIR name. A subroutine may be both entrypoint and export: then both `run` and the named export appear.
+Every LIR subroutine with `Export_Flag` is canon-lifted and component-exported under a **kebab-case** form of its LIR name (ASCII letters/digits lowercased; other bytes become `-`). A subroutine may be both entrypoint and export: then both `wasi:cli/run@0.3.0` and the named export appear. Core module export names keep the original LIR spelling.
+
+Component Model `externname`s must be kebab-case; PascalCase LIR identifiers such as `Hello` become `hello`.
 
 ## Types (this slice)
 
 | LIR signature | Supported |
 | --- | --- |
 | `Unit` return, no parameters | Yes → core `[] -> []`, WIT/component `func()` |
-| Entrypoint wrapper `_start` | Yes → core `[] -> [i32]`, component `func() -> result` |
+| Entrypoint wrapper `_start` | Yes → core `[] -> [i32]`, component `func() -> result` inside `wasi:cli/run` |
 | Any other `Value_Type` or parameters | No → `Unsupported_Type` |
 
 `I128`, `U128`, `F16`, and other scalars remain deferred backend work.
+
+In the component type section, bare `(result)` is a separate `defvaltype`; the `run` functype references it by type index (inline `0x6a` is not a valid `valtype`).
 
 ## Instructions (this slice)
 
@@ -88,18 +93,33 @@ Shared printer (`Backend.Wit.To_Wit`). Example for module `Hello` with entrypoin
 package love:hello@0.1.0;
 
 world module {
-  export run: func() -> result;
-  export Helper: func();
+  export helper: func();
+  export wasi:cli/run@0.3.0;
 }
 ```
 
 Rules:
 
 - Package name: `love:<sanitized-module-name>@0.1.0` (ASCII letters/digits lowercased; every other byte → `-`; empty → `module`).
-- `export run: func() -> result;` only when an entrypoint exists.
-- One `export <Name>: func();` per `Export_Flag` subroutine.
+- `export wasi:cli/run@0.3.0;` only when an entrypoint exists.
+- One `export <kebab-name>: func();` per `Export_Flag` subroutine.
 - No `import` lines (Option 1).
 - `Emit_Wasm` and `Emit_Wat` produce the same WIT string for the same LIR module.
+
+## Running with Wasmtime
+
+Artifacts are components. With an entrypoint, plain `wasmtime run` finds `wasi:cli/run@0.3.0`:
+
+```text
+wasmtime run -Sp3 -W component-model-async=y Hello.wasm
+wasmtime run -Sp3 -W component-model-async=y Hello.wat
+```
+
+Named Lovelace exports can still be invoked explicitly:
+
+```text
+wasmtime run -Sp3 -W component-model=y --invoke 'hello()' Hello.wasm
+```
 
 ## Errors
 
@@ -117,11 +137,10 @@ Each failure carries a UTF-8 `Detail` string.
 
 ## Out of scope
 
-- Full WASI `command` world imports
+- Full WASI `command` world imports (beyond exporting `wasi:cli/run@0.3.0`)
 - Browser / core-module-only default format
 - `cabi_realloc` / linear memory (not required for empty Unit ABI)
 - Alexandria doc embedding in artifacts
-- CLI `lovelace build`
 - Linking LIR `Dependencies`
 - Statement-rich instruction sets beyond `No_Operation`
 

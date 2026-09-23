@@ -30,6 +30,8 @@ package body Lovelace.Common.Tests.Suite is
       Result.Add_Test
         (Source_Caller.Create
            ("same storage filename option", Lovelace.Common.Tests.Source.Test_Same_Storage_Filename_Option'Access));
+      Result.Add_Test
+        (Source_Caller.Create ("to utf-8", Lovelace.Common.Tests.Source.Test_To_Utf_8'Access));
 
       Result.Add_Test (Regex_Caller.Create ("literal", Lovelace.Common.Tests.Regex_Engine.Test_Literal'Access));
       Result.Add_Test

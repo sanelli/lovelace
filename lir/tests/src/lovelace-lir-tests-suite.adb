@@ -52,7 +52,8 @@ package body Lovelace.Lir.Tests.Suite is
       Result.Add_Test (Origins_Caller.Create ("create absent", Lovelace.Lir.Tests.Origins.Test_Create_Absent'Access));
       Result.Add_Test (Origins_Caller.Create ("set origin", Lovelace.Lir.Tests.Origins.Test_Set_Origin'Access));
       Result.Add_Test
-        (Origins_Caller.Create ("codecs drop origins", Lovelace.Lir.Tests.Origins.Test_Codecs_Drop_Origins'Access));
+        (Origins_Caller.Create
+           ("codecs preserve origins", Lovelace.Lir.Tests.Origins.Test_Codecs_Preserve_Origins'Access));
 
       return Result;
    end Suite;

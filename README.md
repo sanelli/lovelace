@@ -47,7 +47,15 @@ Pipeline: **source → frontend → LIR (analysis / opts) → backend → WebAss
 
 ## Status
 
-Not yet a usable compiler. Design and conventions live in `.cursor/rules/`. Contributions should follow those rules (Alire, strict Ada, AUnit tests, no extra third-party libraries except the allowed Wasmtime C, libgit2, and AUnit bindings).
+Early but usable for a minimal path: empty-body `.love` programs can be built to a WebAssembly **component** (and optional WAT / WIT) with the CLI.
+
+```text
+alr -C lovelace build
+lovelace/bin/lovelace --no-logo build samples/Hello.love --output-format wasm,wat
+wasmtime run -Sp3 -W component-model-async=y .output/bin/Hello.wasm
+```
+
+CLI reference: [docs/cli.md](docs/cli.md). Diagnostics (`LV#####`): [docs/diagnostics.md](docs/diagnostics.md). Samples: [docs/samples.md](docs/samples.md). Design and conventions live in `.cursor/rules/`. Contributions should follow those rules (Alire, strict Ada, AUnit tests, no extra third-party libraries except the allowed Wasmtime C, libgit2, and AUnit bindings).
 
 Build the workspace from the repository root with `alr build`, or build or run the CLI crate alone with `alr -C lovelace build` or `alr -C lovelace run`. Host UTF-8 and the Thompson NFA regex engine are documented in [docs/regex-engine.md](docs/regex-engine.md). Shared source positions and filenames are in [docs/source-locations.md](docs/source-locations.md). The compiler tokenizer (keywords `program` / `begin` / `end`, identifiers, `;` and `.`) is documented in [docs/tokenizer.md](docs/tokenizer.md) and [docs/token-grammar.md](docs/token-grammar.md). The minimal program parser (recursive descent) is documented in [docs/parser.md](docs/parser.md) and [docs/program-grammar.md](docs/program-grammar.md). AST→LIR lowering for that program form is documented in [docs/ir-generator.md](docs/ir-generator.md). Lovelace Intermediate Representation (in-memory types, optional origins, binary `.lir`, textual `.tlir`) is documented in [docs/lir.md](docs/lir.md), [docs/lir-binary.md](docs/lir-binary.md), and [docs/lir-text.md](docs/lir-text.md). LIR→WebAssembly component backends (`.wasm` / `.wat` plus companion `.wit`) are documented in [docs/codegen.md](docs/codegen.md). Generate host Ada API HTML with GNATdoc via `pwsh scripts/gnatdoc.ps1` (see [docs/gnatdoc.md](docs/gnatdoc.md)).
 

@@ -46,6 +46,16 @@ package Lovelace.Common.Source is
    --  @return Present filename option.
    function Some_Filename (Holder : Shared_Filename) return Filename_Option;
 
+   --  UTF-8 bytes stored in Holder.
+   --  @param Holder Shared filename storage.
+   --  @return Filename text.
+   function To_Utf_8 (Holder : Shared_Filename) return String;
+
+   --  UTF-8 bytes when Present, otherwise the empty string.
+   --  @param Option Optional shared filename.
+   --  @return Filename text, or "".
+   function To_Utf_8 (Option : Filename_Option) return String;
+
    --  True when Left and Right reference the same shared storage.
    --  @param Left First holder.
    --  @param Right Second holder.

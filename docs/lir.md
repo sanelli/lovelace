@@ -44,16 +44,16 @@ A **module** has:
 - a `u32` **flags** bitset (not string tags; no named bits in this slice)
 - zero or more **dependencies** (other module names, not file paths)
 - zero or more **subroutines**
-- an optional in-memory **origin** (`Module_Origin`: name span, unit span, optional shared filename from `Lovelace.Common.Source`)
+- an optional **origin** (`Module_Origin`: name span, unit span, optional shared filename from `Lovelace.Common.Source`), persisted in `.lir` / `.tlir` (version numbers stay **1.0**)
 
 A **subroutine** has:
 
 - a **signature**: UTF-8 name, **mandatory** return type, zero or more unnamed parameter types
 - **flags** (`export` = bit 0, `entrypoint` = bit 1)
 - an instruction body (may be empty)
-- an optional in-memory **origin** (`Subroutine_Origin`: name span, optional shared filename)
+- an optional **origin** (`Subroutine_Origin`: name span, optional shared filename), persisted in `.lir` / `.tlir` (version numbers stay **1.0**)
 
-Origins are for diagnostics and frontend lowering. They are **not** part of `.lir` / `.tlir` version **1.0**: Encode ignores them; Decode leaves them absent. `Validate` does not require origins. Shared position types live in [`Lovelace.Common.Source`](source-locations.md); the compiler copies them via the [IR Generator](ir-generator.md).
+Origins support diagnostics and frontend lowering. Codecs round-trip them when present (`origin_present = 0` / omit text form when absent). `Validate` does not require origins. Shared position types live in [`Lovelace.Common.Source`](source-locations.md); the compiler copies them via the [IR Generator](ir-generator.md). The format **version fields remain 1.0**; only the layout gained origin fields. The CLI writes `.lir` under the build output `obj/` folder ([cli.md](cli.md)); user diagnostics use `LV#####` codes ([diagnostics.md](diagnostics.md)).
 
 The only opcode in this slice is `No_Operation` (`noop` in text).
 

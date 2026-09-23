@@ -2,7 +2,7 @@
 
 `Lovelace.Compiler.Ir_Generator` lowers a frontend AST module into a LIR module. It lives in crate `lovelace_compiler`, which depends on `lovelace_lir`. Frontend AST and types stay separate from LIR; only this package (and tests) reference `Lovelace.Lir.*`.
 
-There is no CLI wiring and no statement lowering in this slice. Empty AST bodies become empty LIR instruction sequences (no `noop`).
+The CLI (`lovelace build`) calls Tokenize → Parse → `Generate` → `Lir.Binary.Write`, then the backends; see [cli.md](cli.md). This package itself has no statement lowering beyond empty bodies (no `noop`).
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). AST input comes from [parser.md](parser.md). LIR shapes and codecs: [lir.md](lir.md). Source locations: [source-locations.md](source-locations.md).
 
@@ -52,7 +52,7 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | `Export_Flag` / `Entrypoint_Flag` | same-named LIR flag bits (via `Has_Export` / `Has_Entrypoint`) |
 | Empty statement body | empty instruction sequence |
 
-Origins use [`Lovelace.Common.Source`](source-locations.md). They are in-memory only on LIR; `.lir` / `.tlir` v1.0 do not persist them (see [lir.md](lir.md)).
+Origins use [`Lovelace.Common.Source`](source-locations.md). They are copied onto LIR modules and subroutines and **persisted** in `.lir` / `.tlir` (format version numbers remain **1.0**; see [lir.md](lir.md)).
 
 ## Errors
 

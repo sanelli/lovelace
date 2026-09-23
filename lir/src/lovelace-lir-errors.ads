@@ -14,7 +14,7 @@ package Lovelace.Lir.Errors is
    --  @enum Invalid_Utf_8 A name is not valid UTF-8.
    --  @enum Unknown_Opcode Opcode word is not in the closed set.
    --  @enum Unknown_Type Value_Type code is outside 0 .. 13.
-   --  @enum Invalid_Presence Reserved; unused (returns are always a type code).
+   --  @enum Invalid_Presence Origin presence byte is not 0 or 1.
    --  @enum Invalid_Offset Subroutine preamble offset is out of range or inconsistent.
    --  @enum Empty_Name Module, dependency, or subroutine name is empty.
    --  @enum Duplicate_Name Duplicate dependency or subroutine name.
@@ -41,9 +41,6 @@ package Lovelace.Lir.Errors is
    type Empty_Success is null record;
 
    --  Validation outcome: Empty_Success or Error_Code.
-   package Validation_Results is new
-     Lovelace.Common.Result
-       (Success_Type => Empty_Success,
-        Error_Type   => Error_Code);
+   package Validation_Results is new Lovelace.Common.Result (Success_Type => Empty_Success, Error_Type => Error_Code);
 
 end Lovelace.Lir.Errors;

@@ -15,8 +15,8 @@ package Lovelace.Lir.Tests.Origins is
    --  @param The_Test Unused fixture.
    procedure Test_Set_Origin (The_Test : in out Fixture);
 
-   --  Encode/Decode round-trip drops origins (v1.0 codecs do not persist them).
+   --  Encode/Decode round-trip preserves origins (v1.0 layouts store them).
    --  @param The_Test Unused fixture.
-   procedure Test_Codecs_Drop_Origins (The_Test : in out Fixture);
+   procedure Test_Codecs_Preserve_Origins (The_Test : in out Fixture);
 
 end Lovelace.Lir.Tests.Origins;
