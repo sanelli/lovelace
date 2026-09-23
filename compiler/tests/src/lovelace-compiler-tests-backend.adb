@@ -215,7 +215,7 @@ package body Lovelace.Compiler.Tests.Backend is
 
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text),
-         "export wasi:cli/run@0.2.12;",
+         "export wasi:cli/run@0.3.0;",
          "entrypoint wit run");
       Assert_Not_Contains
         (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text),
@@ -231,7 +231,7 @@ package body Lovelace.Compiler.Tests.Backend is
          "entrypoint wat success");
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
-         "(export ""wasi:cli/run@0.2.12""",
+         "(export ""wasi:cli/run@0.3.0""",
          "entrypoint wat run");
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
@@ -244,7 +244,7 @@ package body Lovelace.Compiler.Tests.Backend is
       Assert_Component_Preamble (Wasm_Emitted.Wasm_Bytes, "entrypoint wasm");
       Assert_Bytes_Contain
         (Wasm_Emitted.Wasm_Bytes,
-         "wasi:cli/run@0.2.12",
+         "wasi:cli/run@0.3.0",
          "entrypoint wasm run");
       Assert_Bytes_Contain
         (Wasm_Emitted.Wasm_Bytes, "_start", "entrypoint wasm start");
@@ -267,7 +267,7 @@ package body Lovelace.Compiler.Tests.Backend is
          "both flags wit Hello");
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text),
-         "export wasi:cli/run@0.2.12;",
+         "export wasi:cli/run@0.3.0;",
          "both flags wit run");
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
@@ -275,7 +275,7 @@ package body Lovelace.Compiler.Tests.Backend is
          "both flags wat Hello");
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
-         "(export ""wasi:cli/run@0.2.12""",
+         "(export ""wasi:cli/run@0.3.0""",
          "both flags wat run");
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),

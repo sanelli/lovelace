@@ -8,8 +8,8 @@ with Interfaces;
 package Lovelace.Compiler.Backend.Model is
 
    --  Component export name for the WASI CLI run interface instance that
-   --  wasmtime run looks up (must match the host's WASI 0.2 package version).
-   Wasi_Cli_Run_Export_Name : constant String := "wasi:cli/run@0.2.12";
+   --  wasmtime run looks up (must match the host's WASI 0.3 package version).
+   Wasi_Cli_Run_Export_Name : constant String := "wasi:cli/run@0.3.0";
 
    --  One core WASM instruction in a lowered function body.
    --  @disc Kind Selects the instruction variant.

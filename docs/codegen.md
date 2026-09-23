@@ -54,15 +54,15 @@ If any subroutine has `Entrypoint_Flag`:
 
 1. Emit a synthetic core function named **`_start`** that `call`s the entrypoint, then `i32.const 0` (Canonical ABI success for empty `result`).
 2. Canon-lift `_start` to a component function with type `func() -> result`.
-3. Wrap that function in a component **instance** that exports it as `"run"`, and export the instance as **`wasi:cli/run@0.2.12`** (the name `wasmtime run` looks up).
+3. Wrap that function in a component **instance** that exports it as `"run"`, and export the instance as **`wasi:cli/run@0.3.0`** (the name `wasmtime run` looks up).
 
-This slice does **not** emit the full `wasi:cli/command` import graph. The artifact only exports the WASI CLI run instance (and Lovelace kebab-case exports). The package version `0.2.12` matches current Wasmtime WASI 0.2 bindings.
+This slice does **not** emit the full `wasi:cli/command` import graph. The artifact only exports the WASI CLI run instance (and Lovelace kebab-case exports). The package version `0.3.0` matches WASI 0.3 CLI run.
 
 If there is no entrypoint, no `_start` and no `wasi:cli/run` export are produced.
 
 ## Exports
 
-Every LIR subroutine with `Export_Flag` is canon-lifted and component-exported under a **kebab-case** form of its LIR name (ASCII letters/digits lowercased; other bytes become `-`). A subroutine may be both entrypoint and export: then both `wasi:cli/run@0.2.12` and the named export appear. Core module export names keep the original LIR spelling.
+Every LIR subroutine with `Export_Flag` is canon-lifted and component-exported under a **kebab-case** form of its LIR name (ASCII letters/digits lowercased; other bytes become `-`). A subroutine may be both entrypoint and export: then both `wasi:cli/run@0.3.0` and the named export appear. Core module export names keep the original LIR spelling.
 
 Component Model `externname`s must be kebab-case; PascalCase LIR identifiers such as `Hello` become `hello`.
 
@@ -94,21 +94,21 @@ package love:hello@0.1.0;
 
 world module {
   export helper: func();
-  export wasi:cli/run@0.2.12;
+  export wasi:cli/run@0.3.0;
 }
 ```
 
 Rules:
 
 - Package name: `love:<sanitized-module-name>@0.1.0` (ASCII letters/digits lowercased; every other byte → `-`; empty → `module`).
-- `export wasi:cli/run@0.2.12;` only when an entrypoint exists.
+- `export wasi:cli/run@0.3.0;` only when an entrypoint exists.
 - One `export <kebab-name>: func();` per `Export_Flag` subroutine.
 - No `import` lines (Option 1).
 - `Emit_Wasm` and `Emit_Wat` produce the same WIT string for the same LIR module.
 
 ## Running with Wasmtime
 
-Artifacts are components. With an entrypoint, plain `wasmtime run` finds `wasi:cli/run@0.2.12`:
+Artifacts are components. With an entrypoint, plain `wasmtime run` finds `wasi:cli/run@0.3.0`:
 
 ```text
 wasmtime run -Sp3 -W component-model-async=y Hello.wasm

@@ -1,1 +1,3 @@
-program Hello; begin end.
+program Hello;
+begin
+end.
