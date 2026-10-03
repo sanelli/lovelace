@@ -13,11 +13,11 @@ package Lovelace.Lir.Errors is
    --  @enum Trailing_Bytes Extra bytes after the last instruction.
    --  @enum Invalid_Utf_8 A name is not valid UTF-8.
    --  @enum Unknown_Opcode Opcode word is not in the closed set.
-   --  @enum Unknown_Type Value_Type code is outside 0 .. 13.
+   --  @enum Unknown_Type Value_Type code is outside 0 .. 10.
    --  @enum Invalid_Presence Origin presence byte is not 0 or 1.
    --  @enum Invalid_Offset Subroutine preamble offset is out of range or inconsistent.
-   --  @enum Empty_Name Module, dependency, or subroutine name is empty.
-   --  @enum Duplicate_Name Duplicate dependency or subroutine name.
+   --  @enum Empty_Name Module, dependency, subroutine, or parameter name is empty.
+   --  @enum Duplicate_Name Duplicate dependency, subroutine, or parameter name.
    --  @enum Duplicate_Entrypoint More than one Entrypoint flag.
    --  @enum Self_Dependency A dependency name equals the module name.
    type Error_Code is

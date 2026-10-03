@@ -74,7 +74,7 @@ Component Model `externname`s must be kebab-case; PascalCase LIR identifiers suc
 | Entrypoint wrapper `_start` | Yes → core `[] -> [i32]`, component `func() -> result` inside `wasi:cli/run` |
 | Any other `Value_Type` or parameters | No → `Unsupported_Type` |
 
-`I128`, `U128`, `F16`, and other scalars remain deferred backend work.
+Non-`Unit` returns and parameters remain deferred backend work in this slice (`I128` / `U128` / `F16` are not in the LIR closed set yet).
 
 In the component type section, bare `(result)` is a separate `defvaltype`; the `run` functype references it by type index (inline `0x6a` is not a valid `valtype`).
 

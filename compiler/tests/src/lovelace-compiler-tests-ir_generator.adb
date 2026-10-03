@@ -40,7 +40,7 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       AUnit.Assertions.Assert
         (Ada.Strings.Unbounded.To_String (The_Signature.Name) = Expected_Name, Message & ": subroutine name");
       AUnit.Assertions.Assert (The_Signature.Return_Type = Lovelace.Lir.Types.Unit, Message & ": return Unit");
-      AUnit.Assertions.Assert (Lovelace.Lir.Types.Length (The_Signature.Parameter_Types) = 0, Message & ": no params");
+      AUnit.Assertions.Assert (Lovelace.Lir.Types.Length (The_Signature.Parameters) = 0, Message & ": no params");
       AUnit.Assertions.Assert (Subroutines.Has_Export (Flags), Message & ": export");
       AUnit.Assertions.Assert (Subroutines.Has_Entrypoint (Flags), Message & ": entrypoint");
       AUnit.Assertions.Assert (Lovelace.Lir.Instructions.Length (Instructions) = 0, Message & ": empty instructions");

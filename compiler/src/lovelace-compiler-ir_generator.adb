@@ -36,9 +36,9 @@ package body Lovelace.Compiler.Ir_Generator is
          declare
             Ast_Subroutine : constant Ast.Subroutine := Ast.Get_Subroutine (The_Module, Index);
             The_Signature  : constant Lovelace.Lir.Subroutines.Signature :=
-              (Name            => Ada.Strings.Unbounded.To_Unbounded_String (Ast.Name (Ast_Subroutine)),
-               Return_Type     => Map_Return_Type (Ast.Return_Type (Ast_Subroutine)),
-               Parameter_Types => Lovelace.Lir.Types.Empty_Sequence);
+              (Name        => Ada.Strings.Unbounded.To_Unbounded_String (Ast.Name (Ast_Subroutine)),
+               Return_Type => Map_Return_Type (Ast.Return_Type (Ast_Subroutine)),
+               Parameters  => Lovelace.Lir.Types.Empty_Sequence);
             Lir_Subroutine : Lovelace.Lir.Subroutines.Subroutine :=
               Lovelace.Lir.Subroutines.Create
                 (The_Signature => The_Signature, Flags => Map_Flags (Ast.Get_Flags (Ast_Subroutine)));

@@ -18,8 +18,7 @@ package body Lovelace.Compiler.Backend.Lowering is
 
    use type Types.Value_Type;
 
-   function Failure
-     (Code : Backend_Error_Code; Detail : String) return Lower_Result;
+   function Failure (Code : Backend_Error_Code; Detail : String) return Lower_Result;
    --  Build a Lower_Result failure.
 
    function Kebab_Export_Name (Name : String) return String;
@@ -31,12 +30,10 @@ package body Lovelace.Compiler.Backend.Lowering is
       Outcome          : out Lower_Result);
    --  Fill Body_Out from The_Instructions; Outcome.Ok False on failure.
 
-   function Signature_Is_Supported
-     (The_Signature : Subroutines.Signature) return Boolean;
+   function Signature_Is_Supported (The_Signature : Subroutines.Signature) return Boolean;
    --  True when return is Unit and there are no parameters.
 
-   function Failure
-     (Code : Backend_Error_Code; Detail : String) return Lower_Result is
+   function Failure (Code : Backend_Error_Code; Detail : String) return Lower_Result is
    begin
       return (Ok => False, Error => Make_Error (Code, Detail));
    end Failure;
@@ -69,43 +66,31 @@ package body Lovelace.Compiler.Backend.Lowering is
       return Buffer (1 .. Last);
    end Kebab_Export_Name;
 
-   function Lower
-     (The_Module : Lovelace.Lir.Modules.Module) return Lower_Result
-   is
-      Validation : constant Errors.Validation_Results.Result :=
-        Modules.Validate (The_Module);
+   function Lower (The_Module : Lovelace.Lir.Modules.Module) return Lower_Result is
+      Validation : constant Errors.Validation_Results.Result := Modules.Validate (The_Module);
    begin
       case Validation.Ok is
          when False =>
-            return
-              Failure
-                (Invalid_Module,
-                 "LIR Validate failed: "
-                 & Errors.Error_Code'Image (Validation.Error));
+            return Failure (Invalid_Module, "LIR Validate failed: " & Errors.Error_Code'Image (Validation.Error));
 
          when True  =>
             null;
       end case;
 
       declare
-         The_Model        : Model.Component_Model :=
-           Model.Create (Modules.Name (The_Module));
+         The_Model        : Model.Component_Model := Model.Create (Modules.Name (The_Module));
          Entrypoint_Index : Natural := 0;
          Entrypoint_Found : Boolean := False;
       begin
-         for Subroutine_Index in 1 .. Modules.Subroutine_Count (The_Module)
-         loop
+         for Subroutine_Index in 1 .. Modules.Subroutine_Count (The_Module) loop
             declare
                The_Subroutine : constant Subroutines.Subroutine :=
                  Modules.Get_Subroutine (The_Module, Subroutine_Index);
-               The_Signature  : constant Subroutines.Signature :=
-                 Subroutines.Get_Signature (The_Subroutine);
-               The_Flags      : constant Subroutines.Subroutine_Flags :=
-                 Subroutines.Get_Flags (The_Subroutine);
+               The_Signature  : constant Subroutines.Signature := Subroutines.Get_Signature (The_Subroutine);
+               The_Flags      : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (The_Subroutine);
                Body_Out       : Model.Instruction_Sequence;
                Body_Outcome   : Lower_Result;
-               Core_Exported  : constant Boolean :=
-                 Subroutines.Has_Export (The_Flags);
+               Core_Exported  : constant Boolean := Subroutines.Has_Export (The_Flags);
             begin
                if not Signature_Is_Supported (The_Signature) then
                   return
@@ -116,8 +101,7 @@ package body Lovelace.Compiler.Backend.Lowering is
                end if;
 
                Lower_Instruction_Body
-                 (The_Instructions =>
-                    Subroutines.Get_Instructions (The_Subroutine),
+                 (The_Instructions => Subroutines.Get_Instructions (The_Subroutine),
                   Body_Out         => Body_Out,
                   Outcome          => Body_Outcome);
 
@@ -138,14 +122,12 @@ package body Lovelace.Compiler.Backend.Lowering is
 
                if Subroutines.Has_Export (The_Flags) then
                   declare
-                     Source_Name : constant String :=
-                       Ada.Strings.Unbounded.To_String (The_Signature.Name);
+                     Source_Name : constant String := Ada.Strings.Unbounded.To_String (The_Signature.Name);
                   begin
                      Model.Append_Export
                        (The_Model,
                         (Export_Name         =>
-                           Ada.Strings.Unbounded.To_Unbounded_String
-                             (Kebab_Export_Name (Source_Name)),
+                           Ada.Strings.Unbounded.To_Unbounded_String (Kebab_Export_Name (Source_Name)),
                          Core_Function_Index => Subroutine_Index,
                          Returns_Result      => False));
                   end;
@@ -153,10 +135,7 @@ package body Lovelace.Compiler.Backend.Lowering is
 
                if Subroutines.Has_Entrypoint (The_Flags) then
                   if Entrypoint_Found then
-                     return
-                       Failure
-                         (Internal_Error,
-                          "duplicate entrypoint after Validate");
+                     return Failure (Internal_Error, "duplicate entrypoint after Validate");
                   end if;
 
                   Entrypoint_Found := True;
@@ -167,31 +146,22 @@ package body Lovelace.Compiler.Backend.Lowering is
 
          if Entrypoint_Found then
             declare
-               Start_Body  : Model.Instruction_Sequence :=
-                 Model.Empty_Instructions;
-               Start_Index : constant Positive :=
-                 Model.Function_Count (The_Model) + 1;
+               Start_Body  : Model.Instruction_Sequence := Model.Empty_Instructions;
+               Start_Index : constant Positive := Model.Function_Count (The_Model) + 1;
             begin
-               Model.Append
-                 (Start_Body,
-                  (Kind         => Model.Call_Function,
-                   Target_Index => Positive (Entrypoint_Index)));
-               Model.Append
-                 (Start_Body, (Kind => Model.I32_Constant, Value => 0));
+               Model.Append (Start_Body, (Kind => Model.Call_Function, Target_Index => Positive (Entrypoint_Index)));
+               Model.Append (Start_Body, (Kind => Model.I32_Constant, Value => 0));
 
                Model.Append_Function
                  (The_Model,
-                  (Name          =>
-                     Ada.Strings.Unbounded.To_Unbounded_String ("_start"),
+                  (Name          => Ada.Strings.Unbounded.To_Unbounded_String ("_start"),
                    Result_Is_I32 => True,
                    Instructions  => Start_Body,
                    Core_Exported => True));
 
                Model.Append_Export
                  (The_Model,
-                  (Export_Name         =>
-                     Ada.Strings.Unbounded.To_Unbounded_String
-                       (Model.Wasi_Cli_Run_Export_Name),
+                  (Export_Name         => Ada.Strings.Unbounded.To_Unbounded_String (Model.Wasi_Cli_Run_Export_Name),
                    Core_Function_Index => Start_Index,
                    Returns_Result      => True));
             end;
@@ -211,8 +181,7 @@ package body Lovelace.Compiler.Backend.Lowering is
 
       for Index in 1 .. Instructions.Length (The_Instructions) loop
          declare
-            Item : constant Instructions.Instruction :=
-              Instructions.Element (The_Instructions, Index);
+            Item : constant Instructions.Instruction := Instructions.Element (The_Instructions, Index);
          begin
             case Item.Operation is
                when Opcodes.No_Operation =>
@@ -222,12 +191,9 @@ package body Lovelace.Compiler.Backend.Lowering is
       end loop;
    end Lower_Instruction_Body;
 
-   function Signature_Is_Supported
-     (The_Signature : Subroutines.Signature) return Boolean is
+   function Signature_Is_Supported (The_Signature : Subroutines.Signature) return Boolean is
    begin
-      return
-        The_Signature.Return_Type = Types.Unit
-        and then Types.Length (The_Signature.Parameter_Types) = 0;
+      return The_Signature.Return_Type = Types.Unit and then Types.Length (The_Signature.Parameters) = 0;
    end Signature_Is_Supported;
 
 end Lovelace.Compiler.Backend.Lowering;

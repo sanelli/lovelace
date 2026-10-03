@@ -36,17 +36,14 @@ One `u8` code:
 | 2 | `I16` | `i16` |
 | 3 | `I32` | `i32` |
 | 4 | `I64` | `i64` |
-| 5 | `I128` | `i128` |
-| 6 | `U8` | `u8` |
-| 7 | `U16` | `u16` |
-| 8 | `U32` | `u32` |
-| 9 | `U64` | `u64` |
-| 10 | `U128` | `u128` |
-| 11 | `F16` | `f16` |
-| 12 | `F32` | `f32` |
-| 13 | `F64` | `f64` |
+| 5 | `U8` | `u8` |
+| 6 | `U16` | `u16` |
+| 7 | `U32` | `u32` |
+| 8 | `U64` | `u64` |
+| 9 | `F32` | `f32` |
+| 10 | `F64` | `f64` |
 
-Any other byte → `Unknown_Type`. There is no `void` code.
+Any other byte → `Unknown_Type`. There is no `void` code. `I128`, `U128`, and `F16` are not in this closed set yet.
 
 ## Layout after the header
 
@@ -94,7 +91,9 @@ Then follow exactly `subroutine_count` subroutine records in preamble order (no 
 1. Signature name (encoded string)
 2. Return type — encoded `Value_Type` (`Unit` / `0` for procedures)
 3. `parameter_count` — `u32`
-4. `parameter_count` type codes (parameter **types** only; no parameter names in v1)
+4. `parameter_count` parameters, each:
+   - name (encoded string)
+   - type — encoded `Value_Type`
 5. `flags` — `u32` (bit 0 = export, bit 1 = entrypoint; other bits preserved like module flags)
 6. **Subroutine origin:**
    - `origin_present` — `u8` (`0` / `1`; other → `Invalid_Presence`)

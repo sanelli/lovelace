@@ -13,7 +13,7 @@ todos:
     status: completed
   - id: "4"
     content: "4. LIR: remove I128/U128/F16; add named parameters to signatures and .lir/.tlir (version stays 1.0); update LIR docs/tests/rules."
-    status: pending
+    status: completed
   - id: "5"
     content: "5. Tokenizer: procedure/integer/float/signed/unsigned keywords, type/list punctuation, integer and float literal tokens + AUnit tests."
     status: pending
