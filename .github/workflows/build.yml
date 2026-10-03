@@ -30,6 +30,9 @@ jobs:
       - name: Install Wasmtime
         uses: bytecodealliance/actions/wasmtime/setup@v1
 
+      - name: Install wasm-tools
+        uses: bytecodealliance/actions/wasm-tools/setup@v1
+
       - name: Build Lovelace workspace
         run: alr build
 

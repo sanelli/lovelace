@@ -9,7 +9,7 @@ alwaysApply: true
 
 Do **not** add any third-party crate, crate.io package, Ada library, C library, or tool unless the user explicitly names it.
 
-Do **not** vendor, wrap, or “temporarily” depend on wasm-tools, wit-bindgen, jco, cargo-component, or other Wasm toolchains unless the user says so. Lovelace implements binary/WIT/WAT emission itself.
+Do **not** vendor, wrap, or “temporarily” `depends-on` wasm-tools, wit-bindgen, jco, cargo-component, or other Wasm toolchains unless the user says so. Lovelace implements binary/WIT/WAT emission itself. **Optional** use of a host-installed `wasm-tools` / `wasmtime` **CLI on PATH** from integration tests is allowed (see [integration-tests.mdc](integration-tests.mdc)); that is not a crate dependency.
 
 ## Allowed exceptions (only these)
 

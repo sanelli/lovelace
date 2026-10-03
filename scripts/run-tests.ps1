@@ -1,4 +1,4 @@
-# Build the workspace and run nested AUnit crates.
+# Quietly build, then run nested AUnit crates (status lines only).
 #
 # Unit crates (default on):
 #   common/tests, lir/tests, compiler/tests, lovelace/tests
@@ -28,7 +28,7 @@ $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
 
-function Invoke-Alire {
+function Invoke-QuietAlireBuild {
     param(
         [Parameter(Mandatory)]
         [string] $Label,
@@ -37,45 +37,76 @@ function Invoke-Alire {
         [string[]] $Arguments
     )
 
-    Write-Host ""
-    Write-Host "=== $Label ==="
-    Write-Host ("alr " + ($Arguments -join ' '))
+    $LogPath = [System.IO.Path]::GetTempFileName()
+    try {
+        & alr @Arguments *> $LogPath
+        if ($LASTEXITCODE -ne 0) {
+            Get-Content -LiteralPath $LogPath | Write-Host
+            Write-Error "Build failed: $Label (exit $LASTEXITCODE)"
+            exit $LASTEXITCODE
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $LogPath -ErrorAction SilentlyContinue
+    }
+}
 
-    & alr @Arguments
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed: $Label (exit $LASTEXITCODE)"
-        exit $LASTEXITCODE
+function Invoke-TestExecutable {
+    param(
+        [Parameter(Mandatory)]
+        [string] $CratePath,
+
+        [Parameter(Mandatory)]
+        [string] $ExecutableName
+    )
+
+    Invoke-QuietAlireBuild -Label "$CratePath build" -Arguments @('-C', $CratePath, 'build')
+
+    $Executable = Join-Path $RepoRoot $CratePath 'bin' $ExecutableName
+    if (-not (Test-Path -LiteralPath $Executable)) {
+        $Executable = "$Executable.exe"
+    }
+    if (-not (Test-Path -LiteralPath $Executable)) {
+        Write-Error "Test executable not found: $ExecutableName under $CratePath/bin"
+        exit 1
+    }
+
+    Push-Location (Join-Path $RepoRoot $CratePath)
+    try {
+        & $Executable
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Failed: $CratePath (exit $LASTEXITCODE)"
+            exit $LASTEXITCODE
+        }
+    }
+    finally {
+        Pop-Location
     }
 }
 
 $UnitTestCrates = @(
-    'common/tests',
-    'lir/tests',
-    'compiler/tests',
-    'lovelace/tests'
+    @{ Path = 'common/tests'; Executable = 'lovelace_common_tests' },
+    @{ Path = 'lir/tests'; Executable = 'lovelace_lir_tests' },
+    @{ Path = 'compiler/tests'; Executable = 'lovelace_compiler_tests' },
+    @{ Path = 'lovelace/tests'; Executable = 'lovelace_tests' }
 )
 
-Invoke-Alire -Label 'workspace build' -Arguments @('build')
+Invoke-QuietAlireBuild -Label 'workspace build' -Arguments @('build')
 
 if ($SkipUnit) {
-    Write-Host ''
     Write-Host 'Skipping unit tests (-SkipUnit).'
 }
 else {
-    foreach ($CratePath in $UnitTestCrates) {
-        Invoke-Alire -Label "$CratePath (unit)" -Arguments @('-C', $CratePath, 'run')
+    foreach ($Crate in $UnitTestCrates) {
+        Invoke-TestExecutable -CratePath $Crate.Path -ExecutableName $Crate.Executable
     }
 }
 
 if ($SkipIntegration) {
-    Write-Host ''
     Write-Host 'Skipping integration tests (-SkipIntegration).'
 }
 else {
-    Invoke-Alire `
-        -Label 'lovelace/integration_tests' `
-        -Arguments @('-C', 'lovelace/integration_tests', 'run')
+    Invoke-TestExecutable `
+        -CratePath 'lovelace/integration_tests' `
+        -ExecutableName 'lovelace_integration_tests'
 }
-
-Write-Host ''
-Write-Host 'All requested tests passed.'

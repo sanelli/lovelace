@@ -171,3 +171,5 @@ Each failure carries a UTF-8 `Detail` string.
 ## Tests
 
 Nested crate `lovelace_compiler_tests` covers export-only, entrypoint, both flags, two exports, noop bodies, typed core parameters, unsupported types, invalid modules, component preamble bytes, and Wasm/Wat WIT equality. Run with `alr -C compiler/tests run`.
+
+End-to-end CLI checks live in `lovelace/integration_tests`: build samples, optionally `wasm-tools validate` every `.wasm`/`.wat`, and run entrypoint programs with `wasmtime` when present.

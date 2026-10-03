@@ -2,6 +2,8 @@
 
 The [`samples/`](../samples/) tree holds small `.love` programs and modules used to exercise features end-to-end (CLI builds, integration tests, and manual checks). Build them with [`lovelace build`](cli.md).
 
+Integration tests (`lovelace/integration_tests`) require `wasm-tools` and `wasmtime` on `PATH`, build these samples (suppressing `[info]` stdout), validate every `.wasm`/`.wat`, and **run** only program/entrypoint artifacts. See the integration-tests Cursor rule.
+
 ## Policy
 
 For **every** new user-facing feature, add at least one `.love` file under `samples/<feature>/` that exercises that feature.
