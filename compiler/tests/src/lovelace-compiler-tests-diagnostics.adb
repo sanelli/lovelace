@@ -71,6 +71,7 @@ package body Lovelace.Compiler.Tests.Diagnostics is
         (Reporting.To_Error_Code (Tokenizer.Unrecognized_Symbol) = Error_Codes.Unrecognized_Symbol, "tokenizer map");
       AUnit.Assertions.Assert
         (Reporting.To_Error_Code (Parser.Unexpected_Trailing) = Error_Codes.Unexpected_Trailing, "parser map");
+      AUnit.Assertions.Assert (Reporting.To_Error_Code (Parser.Name_Clash) = Error_Codes.Name_Clash, "name clash map");
    end Test_Stage_Mappings;
 
    procedure Test_Unit_Kind_Label (The_Test : in out Fixture) is

@@ -1,4 +1,7 @@
 with Ada.Directories;
+with Ada.Strings.Fixed;
+with Ada.Strings.Unbounded;
+with Ada.Text_IO;
 with AUnit.Assertions;
 with GNAT.OS_Lib;
 
@@ -8,6 +11,9 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
 
    procedure Assert_Build_Artifacts (Output_Root : String; Unit_Name : String; Message : String);
    --  Assert obj/Unit_Name.lir and bin Unit_Name .wasm/.wat/.wit exist.
+
+   procedure Assert_Wat_Contains (Output_Root : String; Unit_Name : String; Fragment : String; Message : String);
+   --  Assert bin/Unit_Name.wat contains Fragment.
 
    procedure Build_Sample (Lovelace_Path : String; Sample_Path : String; Output_Root : String; Message : String);
    --  Run lovelace build --force for Sample_Path into Output_Root.
@@ -24,6 +30,9 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
    function Locate_Sample (File_Name : String) return String;
    --  Path to samples/module/File_Name relative to this crate.
 
+   function Read_Text_File (Path : String) return String;
+   --  Read entire UTF-8 text file.
+
    procedure Assert_Build_Artifacts (Output_Root : String; Unit_Name : String; Message : String) is
       Obj_Dir : constant String := Compose_Under (Output_Root, "obj");
       Bin_Dir : constant String := Compose_Under (Output_Root, "bin");
@@ -37,6 +46,14 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
       AUnit.Assertions.Assert
         (Ada.Directories.Exists (Compose_Under (Bin_Dir, Unit_Name & ".wit")), Message & ": " & Unit_Name & ".wit");
    end Assert_Build_Artifacts;
+
+   procedure Assert_Wat_Contains (Output_Root : String; Unit_Name : String; Fragment : String; Message : String) is
+      Wat_Path : constant String := Compose_Under (Compose_Under (Output_Root, "bin"), Unit_Name & ".wat");
+      Contents : constant String := Read_Text_File (Wat_Path);
+   begin
+      AUnit.Assertions.Assert
+        (Ada.Strings.Fixed.Index (Contents, Fragment) > 0, Message & ": missing `" & Fragment & "`");
+   end Assert_Wat_Contains;
 
    procedure Build_Sample (Lovelace_Path : String; Sample_Path : String; Output_Root : String; Message : String) is
       Build_Args  : GNAT.OS_Lib.Argument_List_Access;
@@ -104,18 +121,30 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
       return
         Ada.Directories.Compose
           (Ada.Directories.Compose
-             (Ada.Directories.Compose
-                (Ada.Directories.Compose ("..", ".."), "samples"),
-              "module"),
+             (Ada.Directories.Compose (Ada.Directories.Compose ("..", ".."), "samples"), "module"),
            File_Name);
    end Locate_Sample;
 
+   function Read_Text_File (Path : String) return String is
+      File   : Ada.Text_IO.File_Type;
+      Buffer : Ada.Strings.Unbounded.Unbounded_String;
+   begin
+      Ada.Text_IO.Open (File, Ada.Text_IO.In_File, Path);
+      while not Ada.Text_IO.End_Of_File (File) loop
+         Ada.Strings.Unbounded.Append (Buffer, Ada.Text_IO.Get_Line (File));
+         Ada.Strings.Unbounded.Append (Buffer, ASCII.LF);
+      end loop;
+      Ada.Text_IO.Close (File);
+      return Ada.Strings.Unbounded.To_String (Buffer);
+   end Read_Text_File;
+
    procedure Test_Build_Module_Samples (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Lovelace_Path : constant String := Locate_Lovelace;
-      Output_Root   : constant String := Locate_Output_Root;
-      Empty_Sample  : constant String := Locate_Sample ("Empty.love");
-      Dotted_Sample : constant String := Locate_Sample ("Foo.Bar.love");
+      Lovelace_Path     : constant String := Locate_Lovelace;
+      Output_Root       : constant String := Locate_Output_Root;
+      Empty_Sample      : constant String := Locate_Sample ("Empty.love");
+      Dotted_Sample     : constant String := Locate_Sample ("Foo.Bar.love");
+      Procedures_Sample : constant String := Locate_Sample ("Procedures.love");
    begin
       AUnit.Assertions.Assert (Lovelace_Path'Length > 0, "lovelace executable present");
 
@@ -134,6 +163,23 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
          Output_Root   => Output_Root,
          Message       => "Foo.Bar");
       Assert_Build_Artifacts (Output_Root => Output_Root, Unit_Name => "Foo.Bar", Message => "Foo.Bar");
+
+      Build_Sample
+        (Lovelace_Path => Lovelace_Path,
+         Sample_Path   => Procedures_Sample,
+         Output_Root   => Output_Root,
+         Message       => "Procedures");
+      Assert_Build_Artifacts (Output_Root => Output_Root, Unit_Name => "Procedures", Message => "Procedures");
+      Assert_Wat_Contains
+        (Output_Root => Output_Root,
+         Unit_Name   => "Procedures",
+         Fragment    => "(func $Whatever (param i32 f32 f32)",
+         Message     => "Procedures");
+      Assert_Wat_Contains
+        (Output_Root => Output_Root,
+         Unit_Name   => "Procedures",
+         Fragment    => "(func $Sized (param i32 i64 f64)",
+         Message     => "Procedures sized");
    end Test_Build_Module_Samples;
 
 end Lovelace.Main.Integration_Tests.Module_Build;

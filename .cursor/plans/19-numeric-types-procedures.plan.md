@@ -31,10 +31,10 @@ todos:
     status: completed
   - id: "10"
     content: "10. Samples, docs (grammar/tokenizer/parser/lir/codegen/diagnostics), and remaining AUnit/CLI coverage."
-    status: pending
+    status: completed
   - id: "11"
     content: "11. Run all existing tests (nested AUnit crates / workspace)."
-    status: pending
+    status: completed
   - id: "12"
     content: "12. Push (proxy env cleared) and open a PR with gh pr create."
     status: pending

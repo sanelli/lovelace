@@ -1,0 +1,15 @@
+module Procedures;
+
+procedure Whatever(x : integer; y, z : float<32>);
+begin
+end;
+
+procedure Sized(
+   a : signed integer<8>;
+   b : unsigned integer<64>;
+   c : float<64>
+);
+begin
+end;
+
+end.
