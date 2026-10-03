@@ -8,12 +8,14 @@ with Lovelace.Compiler.Types;
 
 package body Lovelace.Compiler.Tests.Parser is
 
+   use type Lovelace.Compiler.Ast.Unit_Kind;
    use type Lovelace.Compiler.Parser.Parser_Error_Code;
 
    procedure Assert_Entrypoint_Module (The_Module : Ast.Module; Expected_Name : String; Message : String);
 
    procedure Assert_Entrypoint_Module (The_Module : Ast.Module; Expected_Name : String; Message : String) is
    begin
+      AUnit.Assertions.Assert (Ast.Kind (The_Module) = Ast.Program_Unit, Message & ": program unit");
       AUnit.Assertions.Assert (Ast.Name (The_Module) = Expected_Name, Message & ": module name");
       AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 1, Message & ": one subroutine");
       declare

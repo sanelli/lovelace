@@ -135,12 +135,16 @@ package body Lovelace.Compiler.Tests.Tokenizer is
    procedure Test_Keyword_Case (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Program_Ident  : constant String := "Program";
+      Module_Ident   : constant String := "Module";
       Begin_Ident    : constant String := "BEGIN";
       Program_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Program_Ident, "Program");
+      Module_Tokens  : constant Tokens.Token_Sequence := Support.Must_Succeed (Module_Ident, "Module");
       Begin_Tokens   : constant Tokens.Token_Sequence := Support.Must_Succeed (Begin_Ident, "BEGIN");
    begin
       Support.Assert_Token_Count (Program_Tokens, 1, "Program");
       Support.Assert_Identifier (Program_Ident, Program_Tokens, 1, "Program", "Program");
+      Support.Assert_Token_Count (Module_Tokens, 1, "Module");
+      Support.Assert_Identifier (Module_Ident, Module_Tokens, 1, "Module", "Module");
       Support.Assert_Token_Count (Begin_Tokens, 1, "BEGIN");
       Support.Assert_Identifier (Begin_Ident, Begin_Tokens, 1, "BEGIN", "BEGIN");
    end Test_Keyword_Case;
@@ -149,13 +153,21 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       pragma Unreferenced (The_Test);
       Programmer        : constant String := "programmer";
       Glued             : constant String := "programbegin";
+      Module_X          : constant String := "modulex";
+      Modules           : constant String := "modules";
       Programmer_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Programmer, "programmer");
       Glued_Tokens      : constant Tokens.Token_Sequence := Support.Must_Succeed (Glued, "programbegin");
+      Module_X_Tokens   : constant Tokens.Token_Sequence := Support.Must_Succeed (Module_X, "modulex");
+      Modules_Tokens    : constant Tokens.Token_Sequence := Support.Must_Succeed (Modules, "modules");
    begin
       Support.Assert_Token_Count (Programmer_Tokens, 1, "programmer");
       Support.Assert_Identifier (Programmer, Programmer_Tokens, 1, "programmer", "programmer");
       Support.Assert_Token_Count (Glued_Tokens, 1, "programbegin");
       Support.Assert_Identifier (Glued, Glued_Tokens, 1, "programbegin", "programbegin");
+      Support.Assert_Token_Count (Module_X_Tokens, 1, "modulex");
+      Support.Assert_Identifier (Module_X, Module_X_Tokens, 1, "modulex", "modulex");
+      Support.Assert_Token_Count (Modules_Tokens, 1, "modules");
+      Support.Assert_Identifier (Modules, Modules_Tokens, 1, "modules", "modules");
    end Test_Keyword_Reservation;
 
    procedure Test_Leading_Digits (The_Test : in out Fixture) is
@@ -168,6 +180,15 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Support.Assert_Error_Count (Two_Foo, 1, "2foo");
       Support.Assert_Error_Code (Two_Foo, 1, Compiler_Tokenizer.Unrecognized_Symbol, "2foo");
    end Test_Leading_Digits;
+
+   procedure Test_Module_Keyword (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String := "module";
+      Token_List  : constant Tokens.Token_Sequence := Support.Must_Succeed (Source_Text, "module keyword");
+   begin
+      Support.Assert_Token_Count (Token_List, 1, "module keyword");
+      Support.Assert_Keyword (Source_Text, Token_List, 1, Tokens.Module_Keyword, "module keyword");
+   end Test_Module_Keyword;
 
    procedure Test_Multi_Error (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);

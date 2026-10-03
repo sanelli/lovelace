@@ -49,8 +49,8 @@ package Lovelace.Compiler.Parser is
    end record;
 
    --  Parse Token_List for Source_Text into a compilation-unit AST.
-   --  Grammar: program_header block "." with program_header = "program" identifier ";"
-   --  and block = "begin" "end". Recursive descent; one token at a time.
+   --  Accepts program_unit (program identifier; begin end.) or module_unit
+   --  (module qualified_identifier; end.). Recursive descent; one token at a time.
    --  @param Source_Text Original UTF-8 source (for identifier lexemes).
    --  @param Token_List Tokens from a successful Tokenize of Source_Text.
    --  @return Module AST, or a single located error.

@@ -16,9 +16,10 @@ package Lovelace.Compiler.Tokens is
 
    --  Which keyword was matched (case-sensitive).
    --  @enum Program_Keyword program
+   --  @enum Module_Keyword module
    --  @enum Begin_Keyword begin
    --  @enum End_Keyword end
-   type Keyword_Subtype is (Program_Keyword, Begin_Keyword, End_Keyword);
+   type Keyword_Subtype is (Program_Keyword, Module_Keyword, Begin_Keyword, End_Keyword);
 
    --  Which punctuation token was matched.
    --  @enum Semicolon ;

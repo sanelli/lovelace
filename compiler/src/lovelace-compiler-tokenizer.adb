@@ -91,24 +91,15 @@ package body Lovelace.Compiler.Tokenizer is
 
    --  Exact lexemes classified as keywords after an identifier match.
    Keyword_Table : constant Keyword_Entry_List :=
-     [Keyword_Entry'
-        (Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("program"),
-         Value  => Tokens.Program_Keyword),
-      Keyword_Entry'
-        (Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("begin"),
-         Value  => Tokens.Begin_Keyword),
-      Keyword_Entry'
-        (Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("end"),
-         Value  => Tokens.End_Keyword)];
+     [Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("program"), Value => Tokens.Program_Keyword),
+      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("module"), Value => Tokens.Module_Keyword),
+      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("begin"), Value => Tokens.Begin_Keyword),
+      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("end"), Value => Tokens.End_Keyword)];
 
    --  Exact lexemes classified as punctuation tokens.
    Punctuation_Table : constant Punctuation_Entry_List :=
-     [Punctuation_Entry'
-        (Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (";"),
-         Value  => Tokens.Semicolon),
-      Punctuation_Entry'
-        (Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("."),
-         Value  => Tokens.Full_Stop)];
+     [Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (";"), Value => Tokens.Semicolon),
+      Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("."), Value => Tokens.Full_Stop)];
 
    Patterns_Ready    : Boolean := False;
    Whitespace_Engine : Lovelace.Common.Regex.Engine;
@@ -122,8 +113,7 @@ package body Lovelace.Compiler.Tokenizer is
    function Hex_Digit (Value : Natural) return Character;
    function Identifier_Pattern return String;
    function Internal_Compile_Error
-     (Error : Lovelace.Common.Regex.Regex_Error; Filename : Source.Filename_Option)
-      return Tokenizer_Error_Sequence;
+     (Error : Lovelace.Common.Regex.Regex_Error; Filename : Source.Filename_Option) return Tokenizer_Error_Sequence;
    function Is_Excluded_Punctuation (Point : Code_Point) return Boolean;
    function Is_Identifier_Continue (Point : Code_Point) return Boolean;
    function Is_Identifier_First (Point : Code_Point) return Boolean;
@@ -131,23 +121,16 @@ package body Lovelace.Compiler.Tokenizer is
    function Lookup_Keyword (Lexeme : String) return Keyword_Options.Option;
    function Lookup_Punctuation (Lexeme : String) return Punctuation_Options.Option;
    function Make_Span
-     (Source_Text : String;
-      Position    : Positive;
-      Byte_Count  : Natural;
-      Line        : Positive;
-      Column      : Positive) return Source.Source_Span;
+     (Source_Text : String; Position : Positive; Byte_Count : Natural; Line : Positive; Column : Positive)
+      return Source.Source_Span;
    function Negated_Class (Exclusions : String) return String;
    function Punctuation_Pattern return String;
    function Register_Scan_Class
-     (Pattern  : String;
-      Kind     : Tokens.Token_Kind;
-      Filename : Source.Filename_Option) return Tokenizer_Error_Sequence;
+     (Pattern : String; Kind : Tokens.Token_Kind; Filename : Source.Filename_Option) return Tokenizer_Error_Sequence;
    function Scalar_To_Class (Point : Code_Point) return String;
    function Success_Result (Token_List : Tokens.Token_Sequence) return Tokenize_Result;
-   function Tokenize_Core
-     (Source_Text : String; Filename : Source.Filename_Option) return Tokenize_Result;
-   function Truncate_Identifier_Length
-     (Source_Text : String; From : Positive; Max_Length : Natural) return Natural;
+   function Tokenize_Core (Source_Text : String; Filename : Source.Filename_Option) return Tokenize_Result;
+   function Truncate_Identifier_Length (Source_Text : String; From : Positive; Max_Length : Natural) return Natural;
    function Unicode_Ranges_To_Class (Ranges : Scalar_Range_List) return String;
    function Whitespace_Pattern return String;
    procedure Advance_Bytes
@@ -248,8 +231,7 @@ package body Lovelace.Compiler.Tokenizer is
       First    : Source.Source_Position;
       Last     : Source.Source_Position;
       Filename : Source.Filename_Option;
-      Detail   : String)
-   is
+      Detail   : String) is
    begin
       Errors.Items.Append
         (Tokenizer_Error'
@@ -285,14 +267,10 @@ package body Lovelace.Compiler.Tokenizer is
 
          Token_Span :=
            Make_Span
-             (Source_Text => Source_Text,
-              Position    => Position,
-              Byte_Count  => Consumed,
-              Line        => Line,
-              Column      => Column);
+             (Source_Text => Source_Text, Position => Position, Byte_Count => Consumed, Line => Line, Column => Column);
          Keyword_Found := Lookup_Keyword (Source_Text (Position .. Position + Consumed - 1));
          case Keyword_Found.Present is
-            when True =>
+            when True  =>
                Tokens.Append
                  (Token_List,
                   Tokens.Token'
@@ -303,19 +281,16 @@ package body Lovelace.Compiler.Tokenizer is
 
             when False =>
                Tokens.Append
-                 (Token_List,
-                  Tokens.Token'
-                    (Kind => Tokens.Identifier, Span => Token_Span, Filename => Filename));
+                 (Token_List, Tokens.Token'(Kind => Tokens.Identifier, Span => Token_Span, Filename => Filename));
          end case;
       else
-         Punctuation_Found :=
-           Lookup_Punctuation (Source_Text (Position .. Position + Consumed - 1));
+         Punctuation_Found := Lookup_Punctuation (Source_Text (Position .. Position + Consumed - 1));
          case Punctuation_Found.Present is
             when False =>
                Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
                return;
 
-            when True =>
+            when True  =>
                Token_Span :=
                  Make_Span
                    (Source_Text => Source_Text,
@@ -381,6 +356,7 @@ package body Lovelace.Compiler.Tokenizer is
       case Compile_Result.Ok is
          when False =>
             return Internal_Compile_Error (Compile_Result.Error, Filename);
+
          when True  =>
             Whitespace_Engine := Compile_Result.Value;
       end case;
@@ -400,8 +376,7 @@ package body Lovelace.Compiler.Tokenizer is
    end Ensure_Patterns;
 
    function Escape_Regex_Lexeme (Lexeme : String) return String is
-      Result            : Ada.Strings.Unbounded.Unbounded_String :=
-        Ada.Strings.Unbounded.Null_Unbounded_String;
+      Result            : Ada.Strings.Unbounded.Unbounded_String := Ada.Strings.Unbounded.Null_Unbounded_String;
       Current_Character : Character;
    begin
       for Index in Lexeme'Range loop
@@ -409,7 +384,8 @@ package body Lovelace.Compiler.Tokenizer is
          case Current_Character is
             when '\' | '|' | '(' | ')' | '[' | ']' | '*' | '+' | '?' | '.' | '^' | '$' | '{' | '}' =>
                Ada.Strings.Unbounded.Append (Result, '\');
-            when others                                                                           =>
+
+            when others                                                                            =>
                null;
          end case;
          Ada.Strings.Unbounded.Append (Result, Current_Character);
@@ -426,8 +402,9 @@ package body Lovelace.Compiler.Tokenizer is
       Image : String (1 .. 8);
       Value : Natural := Natural (Wide_Wide_Character'Pos (Point));
    begin
-      if Wide_Wide_Character'Pos (Point) in Wide_Wide_Character'Pos (Wide_Wide_Character'Val (16#20#)) ..
-        Wide_Wide_Character'Pos (Wide_Wide_Character'Val (16#7E#))
+      if Wide_Wide_Character'Pos (Point)
+         in Wide_Wide_Character'Pos (Wide_Wide_Character'Val (16#20#))
+          .. Wide_Wide_Character'Pos (Wide_Wide_Character'Val (16#7E#))
       then
          return String'(1 .. 1 => Character'Val (Wide_Wide_Character'Pos (Point)));
       end if;
@@ -460,8 +437,7 @@ package body Lovelace.Compiler.Tokenizer is
    end Identifier_Pattern;
 
    function Internal_Compile_Error
-     (Error : Lovelace.Common.Regex.Regex_Error; Filename : Source.Filename_Option)
-      return Tokenizer_Error_Sequence
+     (Error : Lovelace.Common.Regex.Regex_Error; Filename : Source.Filename_Option) return Tokenizer_Error_Sequence
    is
       Errors : Tokenizer_Error_Sequence := Empty_Error_Sequence;
       Origin : constant Source.Source_Position := (Byte_Index => 1, Line => 1, Column => 1);
@@ -482,8 +458,9 @@ package body Lovelace.Compiler.Tokenizer is
          return False;
       end if;
 
-      if Wide_Wide_Character'Pos (Point) in Wide_Wide_Character'Pos (Wide_Wide_Character'Val (16#21#)) ..
-        Wide_Wide_Character'Pos (Wide_Wide_Character'Val (16#7E#))
+      if Wide_Wide_Character'Pos (Point)
+         in Wide_Wide_Character'Pos (Wide_Wide_Character'Val (16#21#))
+          .. Wide_Wide_Character'Pos (Wide_Wide_Character'Val (16#7E#))
       then
          for Index in Ascii_Punctuation'Range loop
             if Wide_Wide_Character'Val (Character'Pos (Ascii_Punctuation (Index))) = Point then
@@ -562,8 +539,7 @@ package body Lovelace.Compiler.Tokenizer is
 
       for Index in 1 .. Natural (Scan_Classes.Length) loop
          Candidate := Scan_Classes.Element (Index);
-         Candidate_Length :=
-           Lovelace.Common.Regex.Match_Prefix (Candidate.The_Engine, Source_Text, Position);
+         Candidate_Length := Lovelace.Common.Regex.Match_Prefix (Candidate.The_Engine, Source_Text, Position);
          if Candidate.Kind = Tokens.Identifier
            and then Candidate_Length > 0
            and then Source_Text (Position) = '@'
@@ -572,10 +548,9 @@ package body Lovelace.Compiler.Tokenizer is
             Candidate_Length := 0;
          end if;
          if Candidate_Length > Match_Length
-           or else
-           (Candidate_Length = Match_Length
-            and then Candidate_Length > 0
-            and then Candidate.Kind = Tokens.Punctuation)
+           or else (Candidate_Length = Match_Length
+                    and then Candidate_Length > 0
+                    and then Candidate.Kind = Tokens.Punctuation)
          then
             Match_Length := Candidate_Length;
             Kind := Candidate.Kind;
@@ -604,11 +579,8 @@ package body Lovelace.Compiler.Tokenizer is
    end Lookup_Punctuation;
 
    function Make_Span
-     (Source_Text : String;
-      Position    : Positive;
-      Byte_Count  : Natural;
-      Line        : Positive;
-      Column      : Positive) return Source.Source_Span
+     (Source_Text : String; Position : Positive; Byte_Count : Natural; Line : Positive; Column : Positive)
+      return Source.Source_Span
    is
       Dummy_Position : Positive := Position;
       Dummy_Line     : Positive := Line;
@@ -644,9 +616,7 @@ package body Lovelace.Compiler.Tokenizer is
    end Punctuation_Pattern;
 
    function Register_Scan_Class
-     (Pattern  : String;
-      Kind     : Tokens.Token_Kind;
-      Filename : Source.Filename_Option) return Tokenizer_Error_Sequence
+     (Pattern : String; Kind : Tokens.Token_Kind; Filename : Source.Filename_Option) return Tokenizer_Error_Sequence
    is
       Compile_Result : constant Lovelace.Common.Regex.Regex_Result := Compile_Cached (Pattern);
    begin
@@ -654,7 +624,7 @@ package body Lovelace.Compiler.Tokenizer is
          when False =>
             return Internal_Compile_Error (Compile_Result.Error, Filename);
 
-         when True =>
+         when True  =>
             Scan_Classes.Append (Scan_Class'(The_Engine => Compile_Result.Value, Kind => Kind));
             return Empty_Error_Sequence;
       end case;
@@ -668,8 +638,7 @@ package body Lovelace.Compiler.Tokenizer is
       Column      : in out Positive;
       Filename    : Source.Filename_Option)
    is
-      First_Position : constant Source.Source_Position :=
-        (Byte_Index => Position, Line => Line, Column => Column);
+      First_Position : constant Source.Source_Position := (Byte_Index => Position, Line => Line, Column => Column);
       Skip_Length    : Natural := Lovelace.Common.Utf_8.Sequence_Length (Source_Text, Position);
       Last_Position  : Source.Source_Position;
    begin
@@ -704,8 +673,7 @@ package body Lovelace.Compiler.Tokenizer is
    is
       Decode_Result  : constant Lovelace.Common.Utf_8.Decode_Results.Result :=
         Lovelace.Common.Utf_8.Decode (Source_Text, Position);
-      First_Position : constant Source.Source_Position :=
-        (Byte_Index => Position, Line => Line, Column => Column);
+      First_Position : constant Source.Source_Position := (Byte_Index => Position, Line => Line, Column => Column);
       Last_Position  : Source.Source_Position;
       Skip_Length    : Natural;
    begin
@@ -714,7 +682,7 @@ package body Lovelace.Compiler.Tokenizer is
             Report_Invalid_Utf_8 (Errors, Source_Text, Position, Line, Column, Filename);
             return;
 
-         when True =>
+         when True  =>
             Append_Error
               (Errors   => Errors,
                Code     => Unrecognized_Symbol,
@@ -777,9 +745,7 @@ package body Lovelace.Compiler.Tokenizer is
       return Tokenize_Core (Source_Text, File_Option);
    end Tokenize;
 
-   function Tokenize_Core
-     (Source_Text : String; Filename : Source.Filename_Option) return Tokenize_Result
-   is
+   function Tokenize_Core (Source_Text : String; Filename : Source.Filename_Option) return Tokenize_Result is
       Token_List        : Tokens.Token_Sequence := Tokens.Empty_Sequence;
       Errors            : Tokenizer_Error_Sequence := Empty_Error_Sequence;
       Position          : Positive := 1;
@@ -845,9 +811,7 @@ package body Lovelace.Compiler.Tokenizer is
       return Success_Result (Token_List);
    end Tokenize_Core;
 
-   function Truncate_Identifier_Length
-     (Source_Text : String; From : Positive; Max_Length : Natural) return Natural
-   is
+   function Truncate_Identifier_Length (Source_Text : String; From : Positive; Max_Length : Natural) return Natural is
       Index           : Positive := From;
       Limit           : constant Positive := From + Max_Length - 1;
       Consumed        : Natural := 0;

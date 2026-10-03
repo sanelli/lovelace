@@ -23,11 +23,11 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Glued_Punctuation (The_Test : in out Fixture);
 
-   --  Program and BEGIN are identifiers, not keywords.
+   --  Program, Module, and BEGIN are identifiers, not keywords.
    --  @param The_Test Unused fixture.
    procedure Test_Keyword_Case (The_Test : in out Fixture);
 
-   --  programmer and programbegin are single identifiers.
+   --  programmer, programbegin, modulex, and modules are single identifiers.
    --  @param The_Test Unused fixture.
    procedure Test_Keyword_Reservation (The_Test : in out Fixture);
 
@@ -39,7 +39,11 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Leading_Digits (The_Test : in out Fixture);
 
-   --  café and emoji identifiers built via Utf_8.Encode.
+   --  module is the Module_Keyword token.
+   --  @param The_Test Unused fixture.
+   procedure Test_Module_Keyword (The_Test : in out Fixture);
+
+   --  cafÃ© and emoji identifiers built via Utf_8.Encode.
    --  @param The_Test Unused fixture.
    procedure Test_Unicode_Identifiers (The_Test : in out Fixture);
 

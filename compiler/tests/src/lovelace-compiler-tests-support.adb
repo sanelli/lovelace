@@ -4,7 +4,6 @@ with AUnit.Assertions;
 with Lovelace.Common.Source;
 with Lovelace.Common.Utf_8;
 with Lovelace.Compiler.Ir_Generator;
-with Lovelace.Compiler.Types;
 
 package body Lovelace.Compiler.Tests.Support is
 
@@ -196,18 +195,12 @@ package body Lovelace.Compiler.Tests.Support is
               (False, Message & ": unexpected parse errors (" & Natural'Image (Parser.Length (Result.Errors)) & ")");
             return
               Ast.Create_Module
-                (Name           => "",
-                 Name_Span      => Origin,
-                 Filename       => Source.Absent_Filename,
-                 Span           => Origin,
-                 The_Subroutine =>
-                   Ast.Create_Subroutine
-                     (Name        => "",
-                      Name_Span   => Origin,
-                      Filename    => Source.Absent_Filename,
-                      Flags       => 0,
-                      Return_Type => Types.Unit_Type,
-                      The_Body    => Ast.Empty_Body));
+                (Name        => "",
+                 Name_Span   => Origin,
+                 Filename    => Source.Absent_Filename,
+                 Span        => Origin,
+                 Kind        => Ast.Program_Unit,
+                 Subroutines => Ast.Empty_Subroutine_Sequence);
       end case;
    end Must_Parse;
 
@@ -226,18 +219,12 @@ package body Lovelace.Compiler.Tests.Support is
               (False, Message & ": unexpected parse errors (" & Natural'Image (Parser.Length (Result.Errors)) & ")");
             return
               Ast.Create_Module
-                (Name           => "",
-                 Name_Span      => Origin,
-                 Filename       => Source.Absent_Filename,
-                 Span           => Origin,
-                 The_Subroutine =>
-                   Ast.Create_Subroutine
-                     (Name        => "",
-                      Name_Span   => Origin,
-                      Filename    => Source.Absent_Filename,
-                      Flags       => 0,
-                      Return_Type => Types.Unit_Type,
-                      The_Body    => Ast.Empty_Body));
+                (Name        => "",
+                 Name_Span   => Origin,
+                 Filename    => Source.Absent_Filename,
+                 Span        => Origin,
+                 Kind        => Ast.Program_Unit,
+                 Subroutines => Ast.Empty_Subroutine_Sequence);
       end case;
    end Must_Parse;
 

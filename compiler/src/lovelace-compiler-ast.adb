@@ -6,20 +6,19 @@ package body Lovelace.Compiler.Ast is
    end Append;
 
    function Create_Module
-     (Name           : String;
-      Name_Span      : Source.Source_Span;
-      Filename       : Source.Filename_Option;
-      Span           : Source.Source_Span;
-      The_Subroutine : Subroutine) return Module
-   is
-      Subroutines : Subroutine_Sequence := Empty_Subroutine_Sequence;
+     (Name        : String;
+      Name_Span   : Source.Source_Span;
+      Filename    : Source.Filename_Option;
+      Span        : Source.Source_Span;
+      Kind        : Unit_Kind;
+      Subroutines : Subroutine_Sequence) return Module is
    begin
-      Append (Sequence => Subroutines, The_Subroutine => The_Subroutine);
       return
         (Module_Name     => Ada.Strings.Unbounded.To_Unbounded_String (Name),
          Name_Span_Value => Name_Span,
          Filename_Value  => Filename,
          Span_Value      => Span,
+         Kind_Value      => Kind,
          Subroutines     => Subroutines);
    end Create_Module;
 
@@ -89,6 +88,11 @@ package body Lovelace.Compiler.Ast is
    begin
       return (Flags and Export_Flag) /= 0;
    end Has_Export;
+
+   function Kind (The_Module : Module) return Unit_Kind is
+   begin
+      return The_Module.Kind_Value;
+   end Kind;
 
    function Length (The_Body : Statement_Sequence) return Natural is
    begin

@@ -34,6 +34,8 @@ package body Lovelace.Compiler.Tests.Suite is
         (Tokenizer_Caller.Create
            ("keyword reservation", Lovelace.Compiler.Tests.Tokenizer.Test_Keyword_Reservation'Access));
       Result.Add_Test
+        (Tokenizer_Caller.Create ("module keyword", Lovelace.Compiler.Tests.Tokenizer.Test_Module_Keyword'Access));
+      Result.Add_Test
         (Tokenizer_Caller.Create
            ("ascii identifiers", Lovelace.Compiler.Tests.Tokenizer.Test_Ascii_Identifiers'Access));
       Result.Add_Test

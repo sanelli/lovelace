@@ -13,13 +13,13 @@ todos:
     status: completed
   - id: "4"
     content: "4. Add Module_Keyword to tokenizer/tokens and tokenizer tests."
-    status: pending
+    status: completed
   - id: "5"
     content: "5. Extend Ast.Module with Unit_Kind and empty-subroutine Create_Module."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Extend recursive-descent parser for module units and qualified identifiers."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Update Reporting/CLI filename-match messaging for program vs module."
     status: pending
