@@ -82,7 +82,11 @@ package body Lovelace.Compiler.Ir_Generator is
    is
    begin
       case Return_Type.Kind is
-         when Lovelace.Compiler.Types.Unit =>
+         when Lovelace.Compiler.Types.Unit                                    =>
+            return Lovelace.Lir.Types.Unit;
+
+         when Lovelace.Compiler.Types.Integer | Lovelace.Compiler.Types.Float =>
+            --  Procedures return Unit only in this slice; step 8 maps param types.
             return Lovelace.Lir.Types.Unit;
       end case;
    end Map_Return_Type;

@@ -128,10 +128,12 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       Ast_Sub         : constant Ast.Subroutine :=
         Ast.Create_Subroutine
           (Name        => "Lib",
+           Module_Name => "Lib",
            Name_Span   => Name_Span,
            Filename    => Source.Absent_Filename,
            Flags       => Ast.Export_Flag,
            Return_Type => Types.Unit_Type,
+           Parameters  => Ast.Empty_Parameter_Sequence,
            The_Body    => Ast.Empty_Body);
       Ast_Subroutines : Ast.Subroutine_Sequence := Ast.Empty_Subroutine_Sequence;
       Ast_Module      : Ast.Module;

@@ -12,19 +12,42 @@ package Lovelace.Compiler.Tokens is
    --  @enum Keyword Reserved word.
    --  @enum Identifier User-defined name.
    --  @enum Punctuation Separator or terminator.
-   type Token_Kind is (Keyword, Identifier, Punctuation);
+   --  @enum Integer_Literal Integral numeric literal lexeme.
+   --  @enum Float_Literal Floating-point numeric literal lexeme.
+   type Token_Kind is (Keyword, Identifier, Punctuation, Integer_Literal, Float_Literal);
 
    --  Which keyword was matched (case-sensitive).
    --  @enum Program_Keyword program
    --  @enum Module_Keyword module
    --  @enum Begin_Keyword begin
    --  @enum End_Keyword end
-   type Keyword_Subtype is (Program_Keyword, Module_Keyword, Begin_Keyword, End_Keyword);
+   --  @enum Procedure_Keyword procedure
+   --  @enum Integer_Keyword integer
+   --  @enum Float_Keyword float
+   --  @enum Signed_Keyword signed
+   --  @enum Unsigned_Keyword unsigned
+   type Keyword_Subtype is
+     (Program_Keyword,
+      Module_Keyword,
+      Begin_Keyword,
+      End_Keyword,
+      Procedure_Keyword,
+      Integer_Keyword,
+      Float_Keyword,
+      Signed_Keyword,
+      Unsigned_Keyword);
 
    --  Which punctuation token was matched.
    --  @enum Semicolon ;
    --  @enum Full_Stop .
-   type Punctuation_Subtype is (Semicolon, Full_Stop);
+   --  @enum Left_Parenthesis (
+   --  @enum Right_Parenthesis )
+   --  @enum Comma ,
+   --  @enum Colon :
+   --  @enum Less_Than <
+   --  @enum Greater_Than >
+   type Punctuation_Subtype is
+     (Semicolon, Full_Stop, Left_Parenthesis, Right_Parenthesis, Comma, Colon, Less_Than, Greater_Than);
 
    --  One lexical token with kind-specific subtype fields.
    --  @disc Kind Selects which variant field is present.
@@ -42,7 +65,7 @@ package Lovelace.Compiler.Tokens is
          when Punctuation =>
             Punctuation_Value : Punctuation_Subtype;
 
-         when Identifier =>
+         when Identifier | Integer_Literal | Float_Literal =>
             null;
       end case;
    end record;

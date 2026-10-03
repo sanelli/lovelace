@@ -172,13 +172,16 @@ package body Lovelace.Compiler.Tests.Tokenizer is
 
    procedure Test_Leading_Digits (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Two     : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("2", "2");
-      Two_Foo : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("2foo", "2foo");
+      Two_Source     : constant String := "2";
+      Two_Foo_Source : constant String := "2foo";
+      Two_Tokens     : constant Tokens.Token_Sequence := Support.Must_Succeed (Two_Source, "2");
+      Two_Foo_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Two_Foo_Source, "2foo");
    begin
-      Support.Assert_Error_Count (Two, 1, "2");
-      Support.Assert_Error_Code (Two, 1, Compiler_Tokenizer.Unrecognized_Symbol, "2");
-      Support.Assert_Error_Count (Two_Foo, 1, "2foo");
-      Support.Assert_Error_Code (Two_Foo, 1, Compiler_Tokenizer.Unrecognized_Symbol, "2foo");
+      Support.Assert_Token_Count (Two_Tokens, 1, "2");
+      Support.Assert_Integer_Literal (Two_Source, Two_Tokens, 1, "2", "2");
+      Support.Assert_Token_Count (Two_Foo_Tokens, 2, "2foo");
+      Support.Assert_Integer_Literal (Two_Foo_Source, Two_Foo_Tokens, 1, "2", "2foo digit");
+      Support.Assert_Identifier (Two_Foo_Source, Two_Foo_Tokens, 2, "foo", "2foo ident");
    end Test_Leading_Digits;
 
    procedure Test_Module_Keyword (The_Test : in out Fixture) is
@@ -211,6 +214,39 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Support.Assert_Keyword (Source_Text, Token_List, 2, Tokens.Begin_Keyword, "begin");
       Support.Assert_First_Position (Token_List, 2, 2, 1, "begin after newline");
    end Test_Newline_Line_Column;
+
+   procedure Test_Numeric_Literals (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Mixed        : constant String := "10 -8u64 #16#FF 1.5 7. 3.4E3";
+      Mixed_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Mixed, "mixed literals");
+   begin
+      Support.Assert_Token_Count (Mixed_Tokens, 6, "mixed literals");
+      Support.Assert_Integer_Literal (Mixed, Mixed_Tokens, 1, "10", "10");
+      Support.Assert_Integer_Literal (Mixed, Mixed_Tokens, 2, "-8u64", "-8u64");
+      Support.Assert_Integer_Literal (Mixed, Mixed_Tokens, 3, "#16#FF", "#16#FF");
+      Support.Assert_Float_Literal (Mixed, Mixed_Tokens, 4, "1.5", "1.5");
+      Support.Assert_Float_Literal (Mixed, Mixed_Tokens, 5, "7.", "7.");
+      Support.Assert_Float_Literal (Mixed, Mixed_Tokens, 6, "3.4E3", "3.4E3");
+   end Test_Numeric_Literals;
+
+   procedure Test_Procedure_Type_Tokens (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String := "procedure integer float signed unsigned ( ) , : < >";
+      Token_List  : constant Tokens.Token_Sequence := Support.Must_Succeed (Source_Text, "proc type tokens");
+   begin
+      Support.Assert_Token_Count (Token_List, 11, "proc type tokens");
+      Support.Assert_Keyword (Source_Text, Token_List, 1, Tokens.Procedure_Keyword, "procedure");
+      Support.Assert_Keyword (Source_Text, Token_List, 2, Tokens.Integer_Keyword, "integer");
+      Support.Assert_Keyword (Source_Text, Token_List, 3, Tokens.Float_Keyword, "float");
+      Support.Assert_Keyword (Source_Text, Token_List, 4, Tokens.Signed_Keyword, "signed");
+      Support.Assert_Keyword (Source_Text, Token_List, 5, Tokens.Unsigned_Keyword, "unsigned");
+      Support.Assert_Punctuation (Token_List, 6, Tokens.Left_Parenthesis, "(");
+      Support.Assert_Punctuation (Token_List, 7, Tokens.Right_Parenthesis, ")");
+      Support.Assert_Punctuation (Token_List, 8, Tokens.Comma, ",");
+      Support.Assert_Punctuation (Token_List, 9, Tokens.Colon, ":");
+      Support.Assert_Punctuation (Token_List, 10, Tokens.Less_Than, "<");
+      Support.Assert_Punctuation (Token_List, 11, Tokens.Greater_Than, ">");
+   end Test_Procedure_Type_Tokens;
 
    procedure Test_Program_Begin_End (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -256,16 +292,17 @@ package body Lovelace.Compiler.Tests.Tokenizer is
 
    procedure Test_Unrecognized_Symbols (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Plus  : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("+", "plus");
-      Comma : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail (",", "comma");
-      Quote : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("""", "quote");
+      Plus       : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("+", "plus");
+      Quote      : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("""", "quote");
+      Comma_Text : constant String := ",";
+      Comma_List : constant Tokens.Token_Sequence := Support.Must_Succeed (Comma_Text, "comma");
    begin
       Support.Assert_Error_Count (Plus, 1, "plus");
       Support.Assert_Error_Code (Plus, 1, Compiler_Tokenizer.Unrecognized_Symbol, "plus");
-      Support.Assert_Error_Count (Comma, 1, "comma");
-      Support.Assert_Error_Code (Comma, 1, Compiler_Tokenizer.Unrecognized_Symbol, "comma");
       Support.Assert_Error_Count (Quote, 1, "quote");
       Support.Assert_Error_Code (Quote, 1, Compiler_Tokenizer.Unrecognized_Symbol, "quote");
+      Support.Assert_Token_Count (Comma_List, 1, "comma");
+      Support.Assert_Punctuation (Comma_List, 1, Tokens.Comma, "comma punct");
    end Test_Unrecognized_Symbols;
 
    procedure Test_Whitespace_Kinds (The_Test : in out Fixture) is

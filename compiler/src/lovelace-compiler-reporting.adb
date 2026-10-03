@@ -62,6 +62,9 @@ package body Lovelace.Compiler.Reporting is
 
          when Parser.Unexpected_Trailing     =>
             return Error_Codes.Unexpected_Trailing;
+
+         when Parser.Name_Clash              =>
+            return Error_Codes.Name_Clash;
       end case;
    end To_Error_Code;
 

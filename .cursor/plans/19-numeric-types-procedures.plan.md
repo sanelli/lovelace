@@ -16,13 +16,13 @@ todos:
     status: completed
   - id: "5"
     content: "5. Tokenizer: procedure/integer/float/signed/unsigned keywords, type/list punctuation, integer and float literal tokens + AUnit tests."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Frontend Types (Integer/Float), AST procedure parameters and Full_Name, Literals interpreter + AUnit tests."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Parser: module procedure declarations, Ada-style parameter lists, builtin type names, name-clash diagnostics + codes."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. IR Generator: map type expressions and named parameters into LIR signatures."
     status: pending

@@ -3,6 +3,7 @@ with AUnit.Test_Caller;
 with Lovelace.Compiler.Tests.Backend;
 with Lovelace.Compiler.Tests.Diagnostics;
 with Lovelace.Compiler.Tests.Ir_Generator;
+with Lovelace.Compiler.Tests.Literals;
 with Lovelace.Compiler.Tests.Parser;
 with Lovelace.Compiler.Tests.Tokenizer;
 
@@ -11,6 +12,7 @@ package body Lovelace.Compiler.Tests.Suite is
    package Backend_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Backend.Fixture);
    package Diagnostics_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Diagnostics.Fixture);
    package Ir_Generator_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Ir_Generator.Fixture);
+   package Literals_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Literals.Fixture);
    package Parser_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Parser.Fixture);
    package Tokenizer_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Tokenizer.Fixture);
 
@@ -40,6 +42,11 @@ package body Lovelace.Compiler.Tests.Suite is
            ("ascii identifiers", Lovelace.Compiler.Tests.Tokenizer.Test_Ascii_Identifiers'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create ("leading digits", Lovelace.Compiler.Tests.Tokenizer.Test_Leading_Digits'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create ("numeric literals", Lovelace.Compiler.Tests.Tokenizer.Test_Numeric_Literals'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
+           ("procedure type tokens", Lovelace.Compiler.Tests.Tokenizer.Test_Procedure_Type_Tokens'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
            ("unicode identifiers", Lovelace.Compiler.Tests.Tokenizer.Test_Unicode_Identifiers'Access));
@@ -96,6 +103,18 @@ package body Lovelace.Compiler.Tests.Suite is
       Result.Add_Test
         (Parser_Caller.Create
            ("wrong order and incomplete", Lovelace.Compiler.Tests.Parser.Test_Wrong_Order_And_Incomplete'Access));
+      Result.Add_Test
+        (Parser_Caller.Create ("module procedure", Lovelace.Compiler.Tests.Parser.Test_Module_Procedure'Access));
+      Result.Add_Test
+        (Parser_Caller.Create ("duplicate parameter", Lovelace.Compiler.Tests.Parser.Test_Duplicate_Parameter'Access));
+      Result.Add_Test
+        (Parser_Caller.Create ("bad type size", Lovelace.Compiler.Tests.Parser.Test_Bad_Type_Size'Access));
+      Result.Add_Test
+        (Literals_Caller.Create ("integer forms", Lovelace.Compiler.Tests.Literals.Test_Integer_Forms'Access));
+      Result.Add_Test
+        (Literals_Caller.Create ("float forms", Lovelace.Compiler.Tests.Literals.Test_Float_Forms'Access));
+      Result.Add_Test
+        (Literals_Caller.Create ("invalid integer", Lovelace.Compiler.Tests.Literals.Test_Invalid_Integer'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
            ("canonical multiline", Lovelace.Compiler.Tests.Ir_Generator.Test_Canonical_Multiline'Access));

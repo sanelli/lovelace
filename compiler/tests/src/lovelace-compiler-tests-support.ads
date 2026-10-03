@@ -87,6 +87,32 @@ package Lovelace.Compiler.Tests.Support is
    procedure Assert_Punctuation
      (Token_List : Tokens.Token_Sequence; Index : Positive; Value : Tokens.Punctuation_Subtype; Message : String);
 
+   --  Assert Integer_Literal kind and lexeme.
+   --  @param Source_Text Original UTF-8 source.
+   --  @param Token_List Token sequence.
+   --  @param Index 1-based token index.
+   --  @param Expected_Lexeme Expected lexeme bytes.
+   --  @param Message Assertion message.
+   procedure Assert_Integer_Literal
+     (Source_Text     : String;
+      Token_List      : Tokens.Token_Sequence;
+      Index           : Positive;
+      Expected_Lexeme : String;
+      Message         : String);
+
+   --  Assert Float_Literal kind and lexeme.
+   --  @param Source_Text Original UTF-8 source.
+   --  @param Token_List Token sequence.
+   --  @param Index 1-based token index.
+   --  @param Expected_Lexeme Expected lexeme bytes.
+   --  @param Message Assertion message.
+   procedure Assert_Float_Literal
+     (Source_Text     : String;
+      Token_List      : Tokens.Token_Sequence;
+      Index           : Positive;
+      Expected_Lexeme : String;
+      Message         : String);
+
    --  Assert token span line and column (first position).
    --  @param Token_List Token sequence.
    --  @param Index 1-based token index.

@@ -24,6 +24,7 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Invalid_Module) = "LV00008", "LV00008");
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Program_Name_Filename_Mismatch) = "LV00009", "LV00009");
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Source_File_Io) = "LV00010", "LV00010");
+      AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Name_Clash) = "LV00011", "LV00011");
    end Test_Error_Code_Labels;
 
    procedure Test_Format_Shape (The_Test : in out Fixture) is
@@ -55,8 +56,7 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       pragma Unreferenced (The_Test);
    begin
       AUnit.Assertions.Assert (Reporting.Love_Basename ("Hello.love") = "Hello", "simple");
-      AUnit.Assertions.Assert
-        (Reporting.Love_Basename ("samples/program/Hello.love") = "Hello", "with directory");
+      AUnit.Assertions.Assert (Reporting.Love_Basename ("samples/program/Hello.love") = "Hello", "with directory");
       AUnit.Assertions.Assert (Reporting.Love_Basename ("Hello") = "Hello", "no suffix");
       AUnit.Assertions.Assert (Reporting.Love_Basename ("Foo.Bar.love") = "Foo.Bar", "dotted stem");
       AUnit.Assertions.Assert
@@ -91,8 +91,7 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert (not Reporting.Unit_Name_Matches_File (Program_Module, "Other.love"), "program mismatch");
       AUnit.Assertions.Assert (Reporting.Unit_Name_Matches_File (Module_Unit, "Foo.Bar.love"), "module match");
       AUnit.Assertions.Assert
-        (Reporting.Unit_Name_Matches_File (Module_Unit, "samples/module/Foo.Bar.love"),
-         "module match path");
+        (Reporting.Unit_Name_Matches_File (Module_Unit, "samples/module/Foo.Bar.love"), "module match path");
       AUnit.Assertions.Assert (not Reporting.Unit_Name_Matches_File (Module_Unit, "Foo.love"), "module mismatch");
    end Test_Unit_Name_Matches_File;
 
