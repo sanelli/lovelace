@@ -1,0 +1,33 @@
+---
+description: Place .love samples under samples/<feature>/, never directly in samples/
+alwaysApply: true
+---
+
+# Samples layout
+
+`.love` samples live under [`samples/`](../../samples/). They exercise features end-to-end (CLI, integration tests, manual checks). They **do not** replace AUnit tests (see testing-aunit).
+
+## Required layout
+
+- **Never** put a `.love` file directly in `samples/` (no `samples/Foo.love`).
+- Always place samples in a **feature subfolder**: `samples/<feature>/…`.
+- `<feature>` is a short kebab-case or single-word name for the main capability (e.g. `program`, `module`).
+- Reuse an existing feature folder when the sample belongs to that feature; create a new folder only for a new feature group.
+- Keep the sample `program` / `module` identifier identical to the `.love` basename (excluding the extension; dots allowed in module names, e.g. `Foo.Bar.love`).
+
+```text
+# BAD
+samples/Hello.love
+samples/Empty.love
+
+# GOOD
+samples/program/Hello.love
+samples/module/Empty.love
+samples/module/Foo.Bar.love
+```
+
+## When adding samples
+
+- For every new user-facing language or CLI feature that needs a sample, add at least one `.love` under the matching `samples/<feature>/` folder in the same change.
+- Prefer the smallest valid surface that demonstrates the feature.
+- Update [`docs/samples.md`](../../docs/samples.md) and any docs/CLI/integration paths that cite the sample.

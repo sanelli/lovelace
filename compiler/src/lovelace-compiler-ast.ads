@@ -32,6 +32,11 @@ package Lovelace.Compiler.Ast is
    --  One compilation-unit module in the AST.
    type Module is private;
 
+   --  Which surface form produced this compilation-unit AST.
+   --  @enum Program_Unit Source used program IDENTIFIER; begin end.
+   --  @enum Module_Unit Source used module qualified_identifier; end.
+   type Unit_Kind is (Program_Unit, Module_Unit);
+
    --  True when Flags includes Export_Flag.
    --  @param Flags Flag bitset.
    --  @return True iff export bit is set.
@@ -117,24 +122,31 @@ package Lovelace.Compiler.Ast is
    --  @return Subroutine at Index.
    function Element (Sequence : Subroutine_Sequence; Index : Positive) return Subroutine;
 
-   --  Build a module with Name and a single The_Subroutine.
-   --  @param Name UTF-8 module name.
-   --  @param Name_Span Source span of the name identifier.
+   --  Build a module with Name, Kind, and Subroutines (may be empty).
+   --  @param Name UTF-8 module name (may be dotted for Module_Unit).
+   --  @param Name_Span Source span of the name (whole qualified name).
    --  @param Filename Optional shared filename from the name token.
    --  @param Span Source span covering the whole compilation unit.
-   --  @param The_Subroutine Sole subroutine contained in the module.
-   --  @return Module with one subroutine.
+   --  @param Kind Program_Unit or Module_Unit.
+   --  @param Subroutines Ordered subroutine list (empty for empty modules).
+   --  @return Module value.
    function Create_Module
-     (Name           : String;
-      Name_Span      : Source.Source_Span;
-      Filename       : Source.Filename_Option;
-      Span           : Source.Source_Span;
-      The_Subroutine : Subroutine) return Module;
+     (Name        : String;
+      Name_Span   : Source.Source_Span;
+      Filename    : Source.Filename_Option;
+      Span        : Source.Source_Span;
+      Kind        : Unit_Kind;
+      Subroutines : Subroutine_Sequence) return Module;
 
    --  UTF-8 name of The_Module.
    --  @param The_Module Module to query.
    --  @return Name bytes.
    function Name (The_Module : Module) return String;
+
+   --  Compilation-unit kind of The_Module.
+   --  @param The_Module Module to query.
+   --  @return Program_Unit or Module_Unit.
+   function Kind (The_Module : Module) return Unit_Kind;
 
    --  Source span of the module name.
    --  @param The_Module Module to query.
@@ -193,6 +205,7 @@ private
       Name_Span_Value : Source.Source_Span;
       Filename_Value  : Source.Filename_Option;
       Span_Value      : Source.Source_Span;
+      Kind_Value      : Unit_Kind := Program_Unit;
       Subroutines     : Subroutine_Sequence;
    end record;
 

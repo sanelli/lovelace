@@ -8,12 +8,28 @@ with Lovelace.Compiler.Types;
 
 package body Lovelace.Compiler.Tests.Parser is
 
+   use type Lovelace.Compiler.Ast.Unit_Kind;
    use type Lovelace.Compiler.Parser.Parser_Error_Code;
 
+   procedure Assert_Empty_Module (The_Module : Ast.Module; Expected_Name : String; Message : String);
+   --  Assert Module_Unit with Expected_Name and zero subroutines.
+
    procedure Assert_Entrypoint_Module (The_Module : Ast.Module; Expected_Name : String; Message : String);
+   --  Assert Program_Unit with one entrypoint+export subroutine named Expected_Name.
+
+   procedure Assert_Empty_Module (The_Module : Ast.Module; Expected_Name : String; Message : String) is
+   begin
+      AUnit.Assertions.Assert (Ast.Kind (The_Module) = Ast.Module_Unit, Message & ": module unit");
+      AUnit.Assertions.Assert (Ast.Name (The_Module) = Expected_Name, Message & ": module name");
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 0, Message & ": no subroutines");
+      AUnit.Assertions.Assert
+        (Ast.Span (The_Module).Last.Byte_Index >= Ast.Span (The_Module).First.Byte_Index,
+         Message & ": unit span bounds");
+   end Assert_Empty_Module;
 
    procedure Assert_Entrypoint_Module (The_Module : Ast.Module; Expected_Name : String; Message : String) is
    begin
+      AUnit.Assertions.Assert (Ast.Kind (The_Module) = Ast.Program_Unit, Message & ": program unit");
       AUnit.Assertions.Assert (Ast.Name (The_Module) = Expected_Name, Message & ": module name");
       AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 1, Message & ": one subroutine");
       declare
@@ -32,6 +48,14 @@ package body Lovelace.Compiler.Tests.Parser is
       end;
    end Assert_Entrypoint_Module;
 
+   procedure Test_Canonical_Module (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String := "module Empty;" & ASCII.LF & "end.";
+      The_Module  : constant Ast.Module := Support.Must_Parse (Source_Text, "canonical module");
+   begin
+      Assert_Empty_Module (The_Module, "Empty", "canonical module");
+   end Test_Canonical_Module;
+
    procedure Test_Canonical_Multiline (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Source_Text : constant String := "program Hello;" & ASCII.LF & "begin" & ASCII.LF & "end.";
@@ -39,6 +63,16 @@ package body Lovelace.Compiler.Tests.Parser is
    begin
       Assert_Entrypoint_Module (The_Module, "Hello", "canonical");
    end Test_Canonical_Multiline;
+
+   procedure Test_Dotted_Module_Name (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String := "module Foo.Bar; end.";
+      The_Module  : constant Ast.Module := Support.Must_Parse (Source_Text, "dotted module");
+   begin
+      Assert_Empty_Module (The_Module, "Foo.Bar", "dotted module");
+      AUnit.Assertions.Assert (Ast.Name_Span (The_Module).First.Byte_Index = 8, "dotted module: name span first");
+      AUnit.Assertions.Assert (Ast.Name_Span (The_Module).Last.Byte_Index = 14, "dotted module: name span last");
+   end Test_Dotted_Module_Name;
 
    procedure Test_Empty_Tokens (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -76,6 +110,45 @@ package body Lovelace.Compiler.Tests.Parser is
       Assert_Entrypoint_Module (Cafe_Module, Cafe_Name, "unicode name");
       Assert_Entrypoint_Module (At_Module, "@foo", "@foo name");
    end Test_Identifier_Names;
+
+   procedure Test_Module_Begin_Rejected (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Errors : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("module Foo; begin end.", "module begin");
+   begin
+      Support.Assert_Parser_Error_Count (Errors, 1, "module begin");
+      Support.Assert_Parser_Error_Code (Errors, 1, Lovelace.Compiler.Parser.Unexpected_Token, "module begin code");
+   end Test_Module_Begin_Rejected;
+
+   procedure Test_Module_Keyword_Case (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Errors : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("Module Empty; end.", "Module keyword case");
+   begin
+      Support.Assert_Parser_Error_Count (Errors, 1, "Module keyword case");
+      Support.Assert_Parser_Error_Code
+        (Errors, 1, Lovelace.Compiler.Parser.Unexpected_Token, "Module keyword case code");
+   end Test_Module_Keyword_Case;
+
+   procedure Test_Module_Trailing_Dot (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Errors : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("module Foo.; end.", "trailing dot");
+   begin
+      Support.Assert_Parser_Error_Count (Errors, 1, "trailing dot");
+      Support.Assert_Parser_Error_Code (Errors, 1, Lovelace.Compiler.Parser.Unexpected_Token, "trailing dot code");
+   end Test_Module_Trailing_Dot;
+
+   procedure Test_Module_Whitespace (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Glued         : constant String := "module Empty;end.";
+      Spaced        : constant String := "    module   Foo.Bar   ;    end      .    ";
+      Glued_Module  : constant Ast.Module := Support.Must_Parse (Glued, "glued module");
+      Spaced_Module : constant Ast.Module := Support.Must_Parse (Spaced, "spaced module");
+   begin
+      Assert_Empty_Module (Glued_Module, "Empty", "glued module");
+      Assert_Empty_Module (Spaced_Module, "Foo.Bar", "spaced module");
+   end Test_Module_Whitespace;
 
    procedure Test_Trailing_And_Keyword_Case (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);

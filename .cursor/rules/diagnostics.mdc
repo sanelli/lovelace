@@ -16,7 +16,7 @@ error: bad type
 
 -- GOOD
 error[L0004]: expected 'Integer', found 'String'
-  --> samples/hello.love:12:18
+  --> samples/program/hello.love:12:18
    |
 12 |   Let N := "3"
    |            ^^^ String cannot be assigned to Integer

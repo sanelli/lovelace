@@ -1,6 +1,6 @@
 with AUnit.Test_Fixtures;
 
---  Tests for program-name vs .love basename (Reporting helpers).
+--  Tests for unit-name vs .love basename (Reporting helpers).
 
 package Lovelace.Main.Tests.Reporting is
 

@@ -15,16 +15,20 @@ package Lovelace.Compiler.Tests.Diagnostics is
    --  @param The_Test Unused fixture.
    procedure Test_Format_Shape (The_Test : in out Fixture);
 
-   --  Love_Basename strips directories and a final .love suffix.
+   --  Love_Basename strips directories and a final .love suffix (including dotted stems).
    --  @param The_Test Unused fixture.
    procedure Test_Love_Basename (The_Test : in out Fixture);
-
-   --  Program_Name_Matches_File compares the AST name to the path stem.
-   --  @param The_Test Unused fixture.
-   procedure Test_Program_Name_Matches_File (The_Test : in out Fixture);
 
    --  To_Error_Code maps tokenizer and parser enums to LV kinds.
    --  @param The_Test Unused fixture.
    procedure Test_Stage_Mappings (The_Test : in out Fixture);
+
+   --  Unit_Kind_Label returns program or module from Ast.Kind.
+   --  @param The_Test Unused fixture.
+   procedure Test_Unit_Kind_Label (The_Test : in out Fixture);
+
+   --  Unit_Name_Matches_File compares the AST name to the path stem.
+   --  @param The_Test Unused fixture.
+   procedure Test_Unit_Name_Matches_File (The_Test : in out Fixture);
 
 end Lovelace.Compiler.Tests.Diagnostics;

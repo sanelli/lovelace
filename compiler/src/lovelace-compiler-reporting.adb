@@ -16,8 +16,7 @@ package body Lovelace.Compiler.Reporting is
       end if;
 
       Finish := Path'Last;
-      if Finish - Start + 1 >= 5 and then Path (Finish - 4 .. Finish) = ".love"
-      then
+      if Finish - Start + 1 >= 5 and then Path (Finish - 4 .. Finish) = ".love" then
          Finish := Finish - 5;
       end if;
 
@@ -27,14 +26,7 @@ package body Lovelace.Compiler.Reporting is
       return Path (Start .. Finish);
    end Love_Basename;
 
-   function Program_Name_Matches_File
-     (The_Module : Ast.Module; Source_Path : String) return Boolean is
-   begin
-      return Ast.Name (The_Module) = Love_Basename (Source_Path);
-   end Program_Name_Matches_File;
-
-   function To_Error_Code
-     (Code : Backend.Backend_Error_Code) return Error_Codes.Error_Code is
+   function To_Error_Code (Code : Backend.Backend_Error_Code) return Error_Codes.Error_Code is
    begin
       case Code is
          when Backend.Internal_Error   =>
@@ -48,9 +40,7 @@ package body Lovelace.Compiler.Reporting is
       end case;
    end To_Error_Code;
 
-   function To_Error_Code
-     (Code : Ir_Generator.Ir_Generator_Error_Code)
-      return Error_Codes.Error_Code is
+   function To_Error_Code (Code : Ir_Generator.Ir_Generator_Error_Code) return Error_Codes.Error_Code is
    begin
       case Code is
          when Ir_Generator.Internal_Error =>
@@ -58,8 +48,7 @@ package body Lovelace.Compiler.Reporting is
       end case;
    end To_Error_Code;
 
-   function To_Error_Code
-     (Code : Parser.Parser_Error_Code) return Error_Codes.Error_Code is
+   function To_Error_Code (Code : Parser.Parser_Error_Code) return Error_Codes.Error_Code is
    begin
       case Code is
          when Parser.Internal_Error          =>
@@ -76,8 +65,7 @@ package body Lovelace.Compiler.Reporting is
       end case;
    end To_Error_Code;
 
-   function To_Error_Code
-     (Code : Tokenizer.Tokenizer_Error_Code) return Error_Codes.Error_Code is
+   function To_Error_Code (Code : Tokenizer.Tokenizer_Error_Code) return Error_Codes.Error_Code is
    begin
       case Code is
          when Tokenizer.Internal_Error      =>
@@ -90,5 +78,21 @@ package body Lovelace.Compiler.Reporting is
             return Error_Codes.Invalid_Utf_8;
       end case;
    end To_Error_Code;
+
+   function Unit_Kind_Label (The_Module : Ast.Module) return String is
+   begin
+      case Ast.Kind (The_Module) is
+         when Ast.Program_Unit =>
+            return "program";
+
+         when Ast.Module_Unit  =>
+            return "module";
+      end case;
+   end Unit_Kind_Label;
+
+   function Unit_Name_Matches_File (The_Module : Ast.Module; Source_Path : String) return Boolean is
+   begin
+      return Ast.Name (The_Module) = Love_Basename (Source_Path);
+   end Unit_Name_Matches_File;
 
 end Lovelace.Compiler.Reporting;

@@ -1,11 +1,11 @@
 # Token grammar (this slice)
 
-Lexical grammar recognized by [`Lovelace.Compiler.Tokenizer`](tokenizer.md). Not a full Lovelace language grammar. The program syntax for this slice is in [program-grammar.md](program-grammar.md).
+Lexical grammar recognized by [`Lovelace.Compiler.Tokenizer`](tokenizer.md). Not a full Lovelace language grammar. The compilation-unit syntax for this slice is in [compilation-unit-grammar.md](compilation-unit-grammar.md).
 
 ```ebnf
 tokens        = { whitespace | token | error } ;
 token         = keyword | identifier | punctuation ;
-keyword       = "program" | "begin" | "end" ;          (* case-sensitive *)
+keyword       = "program" | "module" | "begin" | "end" ;   (* case-sensitive *)
 punctuation   = ";" | "." ;
 identifier    = [ "@" ] identifier_first { identifier_continue } ;
 (* "@" only after start, whitespace, or punctuation; not after an identifier *)
@@ -23,7 +23,9 @@ Examples:
 | Source | Tokens (on success) |
 | --- | --- |
 | `program begin end.` | `program` `begin` `end` `.` |
+| `module Foo.Bar; end.` | `module` `Foo` `.` `Bar` `;` `end` `.` |
 | `end;` | `end` `;` |
 | `Program` | identifier `Program` |
 | `programmer` | identifier `programmer` |
+| `modulex` | identifier `modulex` |
 | `@foo` | identifier `@foo` |

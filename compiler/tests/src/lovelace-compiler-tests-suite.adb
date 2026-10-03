@@ -34,6 +34,8 @@ package body Lovelace.Compiler.Tests.Suite is
         (Tokenizer_Caller.Create
            ("keyword reservation", Lovelace.Compiler.Tests.Tokenizer.Test_Keyword_Reservation'Access));
       Result.Add_Test
+        (Tokenizer_Caller.Create ("module keyword", Lovelace.Compiler.Tests.Tokenizer.Test_Module_Keyword'Access));
+      Result.Add_Test
         (Tokenizer_Caller.Create
            ("ascii identifiers", Lovelace.Compiler.Tests.Tokenizer.Test_Ascii_Identifiers'Access));
       Result.Add_Test
@@ -67,32 +69,50 @@ package body Lovelace.Compiler.Tests.Suite is
       Result.Add_Test
         (Tokenizer_Caller.Create ("clean begin", Lovelace.Compiler.Tests.Tokenizer.Test_Clean_Begin'Access));
       Result.Add_Test
+        (Parser_Caller.Create ("canonical module", Lovelace.Compiler.Tests.Parser.Test_Canonical_Module'Access));
+      Result.Add_Test
         (Parser_Caller.Create ("canonical multiline", Lovelace.Compiler.Tests.Parser.Test_Canonical_Multiline'Access));
       Result.Add_Test
-        (Parser_Caller.Create ("whitespace variants", Lovelace.Compiler.Tests.Parser.Test_Whitespace_Variants'Access));
+        (Parser_Caller.Create ("dotted module name", Lovelace.Compiler.Tests.Parser.Test_Dotted_Module_Name'Access));
+      Result.Add_Test (Parser_Caller.Create ("empty tokens", Lovelace.Compiler.Tests.Parser.Test_Empty_Tokens'Access));
+      Result.Add_Test
+        (Parser_Caller.Create ("end semicolon", Lovelace.Compiler.Tests.Parser.Test_End_Semicolon'Access));
       Result.Add_Test
         (Parser_Caller.Create ("identifier names", Lovelace.Compiler.Tests.Parser.Test_Identifier_Names'Access));
       Result.Add_Test
-        (Parser_Caller.Create ("end semicolon", Lovelace.Compiler.Tests.Parser.Test_End_Semicolon'Access));
+        (Parser_Caller.Create
+           ("module begin rejected", Lovelace.Compiler.Tests.Parser.Test_Module_Begin_Rejected'Access));
+      Result.Add_Test
+        (Parser_Caller.Create ("module keyword case", Lovelace.Compiler.Tests.Parser.Test_Module_Keyword_Case'Access));
+      Result.Add_Test
+        (Parser_Caller.Create ("module trailing dot", Lovelace.Compiler.Tests.Parser.Test_Module_Trailing_Dot'Access));
+      Result.Add_Test
+        (Parser_Caller.Create ("module whitespace", Lovelace.Compiler.Tests.Parser.Test_Module_Whitespace'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("trailing and keyword case", Lovelace.Compiler.Tests.Parser.Test_Trailing_And_Keyword_Case'Access));
+      Result.Add_Test
+        (Parser_Caller.Create ("whitespace variants", Lovelace.Compiler.Tests.Parser.Test_Whitespace_Variants'Access));
       Result.Add_Test
         (Parser_Caller.Create
            ("wrong order and incomplete", Lovelace.Compiler.Tests.Parser.Test_Wrong_Order_And_Incomplete'Access));
       Result.Add_Test
-        (Parser_Caller.Create
-           ("trailing and keyword case", Lovelace.Compiler.Tests.Parser.Test_Trailing_And_Keyword_Case'Access));
-      Result.Add_Test (Parser_Caller.Create ("empty tokens", Lovelace.Compiler.Tests.Parser.Test_Empty_Tokens'Access));
-      Result.Add_Test
         (Ir_Generator_Caller.Create
            ("canonical multiline", Lovelace.Compiler.Tests.Ir_Generator.Test_Canonical_Multiline'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
+           ("dotted module name", Lovelace.Compiler.Tests.Ir_Generator.Test_Dotted_Module_Name'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create ("empty module", Lovelace.Compiler.Tests.Ir_Generator.Test_Empty_Module'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
+           ("export only flags", Lovelace.Compiler.Tests.Ir_Generator.Test_Export_Only_Flags'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
            ("filename shared", Lovelace.Compiler.Tests.Ir_Generator.Test_Filename_Shared'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
            ("identifier names", Lovelace.Compiler.Tests.Ir_Generator.Test_Identifier_Names'Access));
-      Result.Add_Test
-        (Ir_Generator_Caller.Create
-           ("export only flags", Lovelace.Compiler.Tests.Ir_Generator.Test_Export_Only_Flags'Access));
       Result.Add_Test (Backend_Caller.Create ("export only", Lovelace.Compiler.Tests.Backend.Test_Export_Only'Access));
       Result.Add_Test (Backend_Caller.Create ("entrypoint", Lovelace.Compiler.Tests.Backend.Test_Entrypoint'Access));
       Result.Add_Test
@@ -117,10 +137,13 @@ package body Lovelace.Compiler.Tests.Suite is
       Result.Add_Test
         (Diagnostics_Caller.Create ("love basename", Lovelace.Compiler.Tests.Diagnostics.Test_Love_Basename'Access));
       Result.Add_Test
-        (Diagnostics_Caller.Create
-           ("program name matches file", Lovelace.Compiler.Tests.Diagnostics.Test_Program_Name_Matches_File'Access));
-      Result.Add_Test
         (Diagnostics_Caller.Create ("stage mappings", Lovelace.Compiler.Tests.Diagnostics.Test_Stage_Mappings'Access));
+      Result.Add_Test
+        (Diagnostics_Caller.Create
+           ("unit kind label", Lovelace.Compiler.Tests.Diagnostics.Test_Unit_Kind_Label'Access));
+      Result.Add_Test
+        (Diagnostics_Caller.Create
+           ("unit name matches file", Lovelace.Compiler.Tests.Diagnostics.Test_Unit_Name_Matches_File'Access));
       return Result;
    end Suite;
 

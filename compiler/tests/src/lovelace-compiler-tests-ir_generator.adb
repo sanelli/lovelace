@@ -80,13 +80,52 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       Assert_Entrypoint_Lir (Lir_Module, "Hello", Ast_Module, "canonical");
    end Test_Canonical_Multiline;
 
+   procedure Test_Dotted_Module_Name (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text   : constant String := "module Foo.Bar; end.";
+      Ast_Module    : constant Ast.Module := Support.Must_Parse (Source_Text, "dotted module");
+      Lir_Module    : constant Modules.Module := Support.Must_Generate (Ast_Module, "dotted module");
+      Module_Origin : constant Modules.Origin_Option := Modules.Origin (Lir_Module);
+   begin
+      AUnit.Assertions.Assert (Modules.Name (Lir_Module) = "Foo.Bar", "dotted module: name");
+      AUnit.Assertions.Assert (Modules.Subroutine_Count (Lir_Module) = 0, "dotted module: no subroutines");
+      case Module_Origin.Present is
+         when False =>
+            AUnit.Assertions.Assert (False, "dotted module: origin present");
+
+         when True  =>
+            AUnit.Assertions.Assert
+              (Module_Origin.Value.Name_Span = Ast.Name_Span (Ast_Module), "dotted module: name span");
+            AUnit.Assertions.Assert (Module_Origin.Value.Span = Ast.Span (Ast_Module), "dotted module: unit span");
+      end case;
+   end Test_Dotted_Module_Name;
+
+   procedure Test_Empty_Module (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text   : constant String := "module Empty; end.";
+      Ast_Module    : constant Ast.Module := Support.Must_Parse (Source_Text, "empty module");
+      Lir_Module    : constant Modules.Module := Support.Must_Generate (Ast_Module, "empty module");
+      Module_Origin : constant Modules.Origin_Option := Modules.Origin (Lir_Module);
+   begin
+      AUnit.Assertions.Assert (Modules.Name (Lir_Module) = "Empty", "empty module: name");
+      AUnit.Assertions.Assert (Modules.Subroutine_Count (Lir_Module) = 0, "empty module: no subroutines");
+      case Module_Origin.Present is
+         when False =>
+            AUnit.Assertions.Assert (False, "empty module: origin present");
+
+         when True  =>
+            AUnit.Assertions.Assert
+              (Module_Origin.Value.Name_Span = Ast.Name_Span (Ast_Module), "empty module: name span");
+      end case;
+   end Test_Empty_Module;
+
    procedure Test_Export_Only_Flags (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Name_Span  : constant Source.Source_Span :=
+      Name_Span       : constant Source.Source_Span :=
         (First => (Byte_Index => 9, Line => 1, Column => 9), Last => (Byte_Index => 11, Line => 1, Column => 11));
-      Unit_Span  : constant Source.Source_Span :=
+      Unit_Span       : constant Source.Source_Span :=
         (First => (Byte_Index => 1, Line => 1, Column => 1), Last => (Byte_Index => 20, Line => 1, Column => 20));
-      Ast_Sub    : constant Ast.Subroutine :=
+      Ast_Sub         : constant Ast.Subroutine :=
         Ast.Create_Subroutine
           (Name        => "Lib",
            Name_Span   => Name_Span,
@@ -94,17 +133,24 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
            Flags       => Ast.Export_Flag,
            Return_Type => Types.Unit_Type,
            The_Body    => Ast.Empty_Body);
-      Ast_Module : constant Ast.Module :=
-        Ast.Create_Module
-          (Name           => "Lib",
-           Name_Span      => Name_Span,
-           Filename       => Source.Absent_Filename,
-           Span           => Unit_Span,
-           The_Subroutine => Ast_Sub);
-      Lir_Module : constant Modules.Module := Support.Must_Generate (Ast_Module, "export only");
-      Lir_Sub    : constant Subroutines.Subroutine := Modules.Get_Subroutine (Lir_Module, 1);
-      Flags      : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (Lir_Sub);
+      Ast_Subroutines : Ast.Subroutine_Sequence := Ast.Empty_Subroutine_Sequence;
+      Ast_Module      : Ast.Module;
+      Lir_Module      : Modules.Module;
+      Lir_Sub         : Subroutines.Subroutine;
+      Flags           : Subroutines.Subroutine_Flags;
    begin
+      Ast.Append (Sequence => Ast_Subroutines, The_Subroutine => Ast_Sub);
+      Ast_Module :=
+        Ast.Create_Module
+          (Name        => "Lib",
+           Name_Span   => Name_Span,
+           Filename    => Source.Absent_Filename,
+           Span        => Unit_Span,
+           Kind        => Ast.Program_Unit,
+           Subroutines => Ast_Subroutines);
+      Lir_Module := Support.Must_Generate (Ast_Module, "export only");
+      Lir_Sub := Modules.Get_Subroutine (Lir_Module, 1);
+      Flags := Subroutines.Get_Flags (Lir_Sub);
       AUnit.Assertions.Assert (Subroutines.Has_Export (Flags), "export only: export");
       AUnit.Assertions.Assert (not Subroutines.Has_Entrypoint (Flags), "export only: no entrypoint");
       AUnit.Assertions.Assert (Modules.Origin (Lir_Module).Present, "export only: module origin");

@@ -11,7 +11,7 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Unexpected_Trailing Parser: extra tokens after a complete unit (LV00006).
    --  @enum Unsupported_Type Backend: LIR signature type this slice cannot lower (LV00007).
    --  @enum Invalid_Module Backend or LIR validate failure surfaced to the user (LV00008).
-   --  @enum Program_Name_Filename_Mismatch Program identifier differs from .love basename (LV00009).
+   --  @enum Program_Name_Filename_Mismatch Compilation-unit name differs from .love basename (LV00009).
    --  @enum Source_File_Io Source file missing or unreadable (LV00010).
    type Error_Code is
      (Internal_Error,
