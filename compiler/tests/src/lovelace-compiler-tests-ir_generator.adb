@@ -80,6 +80,45 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       Assert_Entrypoint_Lir (Lir_Module, "Hello", Ast_Module, "canonical");
    end Test_Canonical_Multiline;
 
+   procedure Test_Dotted_Module_Name (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text   : constant String := "module Foo.Bar; end.";
+      Ast_Module    : constant Ast.Module := Support.Must_Parse (Source_Text, "dotted module");
+      Lir_Module    : constant Modules.Module := Support.Must_Generate (Ast_Module, "dotted module");
+      Module_Origin : constant Modules.Origin_Option := Modules.Origin (Lir_Module);
+   begin
+      AUnit.Assertions.Assert (Modules.Name (Lir_Module) = "Foo.Bar", "dotted module: name");
+      AUnit.Assertions.Assert (Modules.Subroutine_Count (Lir_Module) = 0, "dotted module: no subroutines");
+      case Module_Origin.Present is
+         when False =>
+            AUnit.Assertions.Assert (False, "dotted module: origin present");
+
+         when True  =>
+            AUnit.Assertions.Assert
+              (Module_Origin.Value.Name_Span = Ast.Name_Span (Ast_Module), "dotted module: name span");
+            AUnit.Assertions.Assert (Module_Origin.Value.Span = Ast.Span (Ast_Module), "dotted module: unit span");
+      end case;
+   end Test_Dotted_Module_Name;
+
+   procedure Test_Empty_Module (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text   : constant String := "module Empty; end.";
+      Ast_Module    : constant Ast.Module := Support.Must_Parse (Source_Text, "empty module");
+      Lir_Module    : constant Modules.Module := Support.Must_Generate (Ast_Module, "empty module");
+      Module_Origin : constant Modules.Origin_Option := Modules.Origin (Lir_Module);
+   begin
+      AUnit.Assertions.Assert (Modules.Name (Lir_Module) = "Empty", "empty module: name");
+      AUnit.Assertions.Assert (Modules.Subroutine_Count (Lir_Module) = 0, "empty module: no subroutines");
+      case Module_Origin.Present is
+         when False =>
+            AUnit.Assertions.Assert (False, "empty module: origin present");
+
+         when True  =>
+            AUnit.Assertions.Assert
+              (Module_Origin.Value.Name_Span = Ast.Name_Span (Ast_Module), "empty module: name span");
+      end case;
+   end Test_Empty_Module;
+
    procedure Test_Export_Only_Flags (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Name_Span       : constant Source.Source_Span :=

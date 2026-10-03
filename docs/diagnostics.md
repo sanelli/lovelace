@@ -24,13 +24,13 @@ Rules:
 - The caret line pads to `Column`, then uses `^` for a single column or repeated `^` across `First` … `Last` when the span covers more than one column.
 - Colour (when enabled): `[err]` and the `[LVxxxxx]` line are red; the printer itself emits no ANSI escapes.
 
-Example (`LV00009`):
+Example (`LV00009` for a program; modules use the same code with a `module identifier …` description):
 
 ```text
 [err] Hello.love:1,9
 program Hello; begin end.
         ^^^^^
-[LV00009] program name does not match file name
+[LV00009] program identifier 'Hello' does not match file stem 'Other'
 ```
 
 Multiple errors: each block is printed in order; the process exits non-zero if any error occurred.
@@ -60,7 +60,7 @@ When there is no useful source span (or for CLI usage errors):
 | `LV00006` | Unexpected_Trailing | Parser |
 | `LV00007` | Unsupported_Type | Backend |
 | `LV00008` | Invalid_Module | Backend / LIR validate surfaced to the user |
-| `LV00009` | Program_Name_Filename_Mismatch | Build (program id vs `.love` stem) |
+| `LV00009` | Program_Name_Filename_Mismatch | Build (program/module id vs `.love` stem) |
 | `LV00010` | Source_File_Io | Build (missing or unreadable source) |
 
 Stage-local enums (tokenizer, parser, …) map to these labels at report time via `Lovelace.Compiler.Reporting`.

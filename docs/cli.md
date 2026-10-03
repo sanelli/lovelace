@@ -58,19 +58,19 @@ A `.love` path is **required** for now. Future builds may accept `.pjlove` / `.s
 | `--output-format <fmt>` | `wasm` (default), `wat`, `wasm,wat`, or `wat,wasm` |
 | `--output-folder <path>` | Output root (default `.output` in the current working directory) |
 
-#### Program name vs filename
+#### Unit name vs filename
 
-The `program` identifier must **exactly** match the `.love` basename without the extension (case-sensitive). Mismatch → [`LV00009`](diagnostics.md).
+The `program` or `module` identifier must **exactly** match the `.love` basename without the extension (case-sensitive). Module names may include dots (`module Foo.Bar;` ↔ `Foo.Bar.love`). Mismatch → [`LV00009`](diagnostics.md).
 
 #### Output layout
 
 Under the output root:
 
 ```text
-obj/<Program>.lir
-bin/<Program>.wasm    # if format includes wasm
-bin/<Program>.wat     # if format includes wat
-bin/<Program>.wit     # unless --no-wit
+obj/<Unit>.lir
+bin/<Unit>.wasm    # if format includes wasm
+bin/<Unit>.wat     # if format includes wat
+bin/<Unit>.wit     # unless --no-wit
 ```
 
 The `.lir` file is LIR **1.0** (origins included; see [lir-binary.md](lir-binary.md)). Backends: [codegen.md](codegen.md).
@@ -93,13 +93,15 @@ Skipped stages log an `[info]` line (for example `LIR up to date, skipping front
 #### Examples
 
 ```text
-lovelace build samples/Hello.love
-lovelace --no-logo build samples/Hello.love --force
-lovelace build samples/Hello.love --output-format wasm,wat --output-folder /tmp/out
-lovelace build samples/Hello.love --no-wit --output-format wat
+lovelace build samples/program/Hello.love
+lovelace build samples/module/Empty.love
+lovelace build samples/module/Foo.Bar.love
+lovelace --no-logo build samples/program/Hello.love --force
+lovelace build samples/program/Hello.love --output-format wasm,wat --output-folder /tmp/out
+lovelace build samples/program/Hello.love --no-wit --output-format wat
 ```
 
-Sample program: [`samples/Hello.love`](../samples/Hello.love). Policy for adding samples: [samples.md](samples.md).
+Samples: [`samples/program/Hello.love`](../samples/program/Hello.love) (program), [`samples/module/Empty.love`](../samples/module/Empty.love) and [`samples/module/Foo.Bar.love`](../samples/module/Foo.Bar.love) (modules). Policy: [samples.md](samples.md).
 
 #### Running the artifact
 
@@ -109,6 +111,8 @@ With an entrypoint, plain Wasmtime finds `wasi:cli/run@0.3.0`:
 wasmtime run -Sp3 -W component-model-async=y .output/bin/Hello.wasm
 wasmtime run -Sp3 -W component-model-async=y .output/bin/Hello.wat
 ```
+
+Empty modules have no entrypoint; build them for artifacts only (do not expect `wasmtime run` to succeed).
 
 See [codegen.md](codegen.md) for export naming and kebab-case rules.
 
@@ -130,7 +134,7 @@ By default the script runs workspace `alr build`, all unit crates below, then th
 | `lir/tests` | `alr -C lir/tests run` | LIR types / codecs unit tests |
 | `compiler/tests` | `alr -C compiler/tests run` | Compiler frontend / backend unit tests |
 | `lovelace/tests` (`lovelace_tests`) | `alr -C lovelace/tests run` | Unit tests for argument parsing, output-format, help, version, basename |
-| `lovelace/integration_tests` (`lovelace_integration_tests`) | `alr -C lovelace/integration_tests run` | Optional: build `samples/Hello.love` into `.tests/integration-tests/` and run Wasmtime on `.wasm` / `.wat` (prints `INCONCLUSIVE: wasmtime not found` and passes if Wasmtime is missing) |
+| `lovelace/integration_tests` (`lovelace_integration_tests`) | `alr -C lovelace/integration_tests run` | Optional: build `samples/program/Hello.love` into `.tests/integration-tests/` and run Wasmtime on `.wasm` / `.wat` (prints `INCONCLUSIVE: wasmtime not found` and passes if Wasmtime is missing); also builds module samples under `samples/module/` |
 
 Integration tests are **not** part of the default unit-test checklist; use `-SkipIntegration` when you only want units, or `-SkipUnit` when you only want integration.
 

@@ -2,7 +2,7 @@
 
 `Lovelace.Compiler.Tokenizer` turns UTF-8 source into a token sequence, or a list of located errors. It lives in crate `lovelace_compiler` and uses the host [regex engine](regex-engine.md) (`Compile` / `Match_Prefix`) for whitespace, identifiers, and punctuation.
 
-This slice is keywords, identifiers, and two punctuation marks. A recursive-descent parser for the minimal program form is documented in [parser.md](parser.md) and [program-grammar.md](program-grammar.md). There is no CLI wiring and no `lovelace` executable dependency on `lovelace_compiler` yet.
+This slice is keywords, identifiers, and two punctuation marks. A recursive-descent parser for program and module compilation units is documented in [parser.md](parser.md) and [compilation-unit-grammar.md](compilation-unit-grammar.md).
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). The token grammar for this slice is in [token-grammar.md](token-grammar.md).
 
@@ -48,13 +48,13 @@ Empty source and whitespace-only source succeed with an empty token sequence.
 
 | `Token_Kind` | Subtype | This slice |
 | --- | --- | --- |
-| `Keyword` | `Keyword_Subtype` | `program`, `begin`, `end` |
+| `Keyword` | `Keyword_Subtype` | `program`, `module`, `begin`, `end` |
 | `Identifier` | (none) | Names, including `@foo`, `café`, emoji |
 | `Punctuation` | `Punctuation_Subtype` | `;` → `Semicolon`, `.` → `Full_Stop` |
 
-Keywords are **case-sensitive**. `Program`, `BEGIN`, and `End` are identifiers.
+Keywords are **case-sensitive**. `Program`, `Module`, `BEGIN`, and `End` are identifiers.
 
-The scanner matches a full identifier first, then classifies. `programmer` is one identifier, not `program` plus `mer`. `programbegin` is one identifier.
+The scanner matches a full identifier first, then classifies. `programmer` is one identifier, not `program` plus `mer`. `programbegin` and `modulex` are identifiers.
 
 Lexeme text is not stored on the token. Recover it with `Lexeme (Source_Text, The_Token)`, which slices `Source_Text (First.Byte_Index .. Last.Byte_Index)`. `Last.Byte_Index` is the **last byte** of the last scalar (the span covers the full UTF-8 sequence).
 
@@ -121,7 +121,7 @@ This slice does **not** emit tokens for:
 - Comments
 - Operators
 - Comma (today: `Unrecognized_Symbol`)
-- Keywords other than `program`, `begin`, `end`
+- Keywords other than `program`, `module`, `begin`, `end`
 
 ## Tests
 

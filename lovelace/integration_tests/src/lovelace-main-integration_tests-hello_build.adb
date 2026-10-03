@@ -17,7 +17,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
    --  Repo .tests/integration-tests output folder.
 
    function Locate_Sample return String;
-   --  Path to samples/Hello.love relative to this crate.
+   --  Path to samples/program/Hello.love relative to this crate.
 
    function Compose_Under (Root, Relative : String) return String is
    begin
@@ -68,7 +68,9 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
       Relative : constant String :=
         Ada.Directories.Compose
           (Ada.Directories.Compose
-             (Ada.Directories.Compose ("..", ".."), "samples"),
+             (Ada.Directories.Compose
+                (Ada.Directories.Compose ("..", ".."), "samples"),
+              "program"),
            "Hello.love");
    begin
       return Relative;

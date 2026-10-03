@@ -11,6 +11,18 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  @param The_Test Unused fixture.
    procedure Test_Canonical_Multiline (The_Test : in out Fixture);
 
+   --  Dotted module name is preserved on the LIR module with zero subroutines.
+   --  @param The_Test Unused fixture.
+   procedure Test_Dotted_Module_Name (The_Test : in out Fixture);
+
+   --  Empty module Empty; end. lowers to a LIR module with no subroutines.
+   --  @param The_Test Unused fixture.
+   procedure Test_Empty_Module (The_Test : in out Fixture);
+
+   --  Hand-built AST with export-only flags maps export without entrypoint.
+   --  @param The_Test Unused fixture.
+   procedure Test_Export_Only_Flags (The_Test : in out Fixture);
+
    --  Tokenize+Parse with a filename label shares storage on LIR module and subroutine.
    --  @param The_Test Unused fixture.
    procedure Test_Filename_Shared (The_Test : in out Fixture);
@@ -18,9 +30,5 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  Unicode and @-prefixed identifiers preserve names into LIR.
    --  @param The_Test Unused fixture.
    procedure Test_Identifier_Names (The_Test : in out Fixture);
-
-   --  Hand-built AST with export-only flags maps export without entrypoint.
-   --  @param The_Test Unused fixture.
-   procedure Test_Export_Only_Flags (The_Test : in out Fixture);
 
 end Lovelace.Compiler.Tests.Ir_Generator;

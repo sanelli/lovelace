@@ -1,14 +1,15 @@
 # Compiler parser
 
-`Lovelace.Compiler.Parser` turns a successful tokenizer `Token_Sequence` into a frontend AST module. It lives in crate `lovelace_compiler`. The parser is **recursive descent** (LL(k)): it consumes **one token at a time** and mirrors a non-left-recursive grammar. See also [program-grammar.md](program-grammar.md) and the Cursor rule `parser-recursive-descent`.
+`Lovelace.Compiler.Parser` turns a successful tokenizer `Token_Sequence` into a frontend AST module. It lives in crate `lovelace_compiler`. The parser is **recursive descent** (LL(k)): it consumes **one token at a time** and mirrors a non-left-recursive grammar. See also [compilation-unit-grammar.md](compilation-unit-grammar.md) and the Cursor rule `parser-recursive-descent`.
 
-This slice accepts only:
+This slice accepts:
 
 ```text
 program IDENTIFIER; begin end.
+module IDENTIFIER(.IDENTIFIER)*; end.
 ```
 
-There is no CLI wiring in this slice. Lowering AST to LIR is documented in [ir-generator.md](ir-generator.md). Frontend AST and types remain distinct from LIR packages.
+Lowering AST to LIR is documented in [ir-generator.md](ir-generator.md). Frontend AST and types remain distinct from LIR packages. The CLI wires Tokenize → Parse → Generate → backends; see [cli.md](cli.md).
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). Lexical tokens come from [tokenizer.md](tokenizer.md). Source spans and filenames: [source-locations.md](source-locations.md).
 
@@ -25,7 +26,7 @@ Callers tokenize first. `Parse` does not call `Tokenize`. Callers that need LIR 
 | Package | Role |
 | --- | --- |
 | `Lovelace.Compiler.Types` | Frontend `Type_Expression` (Unit only in this slice) |
-| `Lovelace.Compiler.Ast` | Module, subroutine, `Subroutine_Flags`, empty body |
+| `Lovelace.Compiler.Ast` | Module, `Unit_Kind`, subroutine, `Subroutine_Flags`, empty body |
 | `Lovelace.Compiler.Parser` | `Parse`, `Parse_Result`, `Parser_Error` |
 | `Lovelace.Compiler.Ir_Generator` | AST → LIR (see [ir-generator.md](ir-generator.md)) |
 
@@ -47,22 +48,28 @@ Handle both discriminants. Do not read `The_Module` when `Ok` is `False`.
 ## Grammar (this slice)
 
 ```ebnf
-compilation_unit = program_header , block , "." ;
-program_header   = "program" , identifier , ";" ;
-block            = "begin" , "end" ;
+compilation_unit     = program_unit | module_unit ;
+program_unit         = "program" , identifier , ";" , "begin" , "end" , "." ;
+module_unit          = "module" , qualified_identifier , ";" , "end" , "." ;
+qualified_identifier = identifier , { "." , identifier } ;
 ```
 
-Keywords are case-sensitive (`program`, not `Program`). The unit terminator after `end` is only `.` (`Full_Stop`). `end;` is a parse error. Extra tokens after a complete unit are `Unexpected_Trailing`.
+Keywords are case-sensitive (`program` / `module`, not `Program` / `Module`). The unit terminator after `end` is only `.` (`Full_Stop`). `end;` is a parse error. Modules have **no** `begin`. Extra tokens after a complete unit are `Unexpected_Trailing`.
 
 ## AST shape
 
-On success the parser builds:
+**Program** (`Unit_Kind = Program_Unit`):
 
-- A **module** named `IDENTIFIER`
-- One **subroutine** with the same name
-- Empty body
-- Return type **unit** (`Lovelace.Compiler.Types.Unit`)
-- Flags: both `Export_Flag` and `Entrypoint_Flag` (frontend bitset, not LIR’s type)
+- A module named `IDENTIFIER`
+- One subroutine with the same name
+- Empty body; return type **unit**
+- Flags: both `Export_Flag` and `Entrypoint_Flag`
+
+**Module** (`Unit_Kind = Module_Unit`):
+
+- A module named the qualified identifier (UTF-8 with `.` separators, e.g. `Foo.Bar`)
+- **Zero** subroutines (empty compilation unit in this slice)
+- `Name_Span` covers the whole qualified name (first identifier through last)
 
 Spans cover the name and the whole unit (first token through the final `.`). Optional filenames come from tokenization ([source-locations.md](source-locations.md)).
 

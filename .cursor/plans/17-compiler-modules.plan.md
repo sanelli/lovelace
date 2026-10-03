@@ -22,13 +22,13 @@ todos:
     status: completed
   - id: "7"
     content: "7. Update Reporting/CLI filename-match messaging for program vs module."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. Add AUnit tests, samples (Empty.love, Foo.Bar.love), and CLI/integration build coverage."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Update docs (grammar, parser, tokenizer, cli, diagnostics, samples, ir-generator)."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Run all existing tests (nested AUnit crates / workspace)."
     status: pending
@@ -133,12 +133,12 @@ Recursive descent (existing cursor helpers):
 
 **Samples** (update [`docs/samples.md`](docs/samples.md)):
 
-- [`samples/Empty.love`](samples/Empty.love) — `module Empty; end.`
-- [`samples/Foo.Bar.love`](samples/Foo.Bar.love) — `module Foo.Bar; end.`
+- [`samples/module/Empty.love`](samples/module/Empty.love) — `module Empty; end.`
+- [`samples/module/Foo.Bar.love`](samples/module/Foo.Bar.love) — `module Foo.Bar; end.`
 
 **CLI / integration:**
 
-- Unit or integration coverage that `lovelace build samples/Empty.love` (and optionally `Foo.Bar.love`) writes artifacts; **do not** require `wasmtime run` (no entrypoint). Keep Hello program + wasmtime path as-is.
+- Unit or integration coverage that `lovelace build samples/module/Empty.love` (and optionally `Foo.Bar.love`) writes artifacts; **do not** require `wasmtime run` (no entrypoint). Keep Hello program + wasmtime path as-is.
 
 ### 9. Docs
 
