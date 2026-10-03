@@ -94,12 +94,25 @@ package body Lovelace.Compiler.Tokenizer is
      [Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("program"), Value => Tokens.Program_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("module"), Value => Tokens.Module_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("begin"), Value => Tokens.Begin_Keyword),
-      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("end"), Value => Tokens.End_Keyword)];
+      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("end"), Value => Tokens.End_Keyword),
+      Keyword_Entry'
+        (Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("procedure"), Value => Tokens.Procedure_Keyword),
+      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("integer"), Value => Tokens.Integer_Keyword),
+      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("float"), Value => Tokens.Float_Keyword),
+      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("signed"), Value => Tokens.Signed_Keyword),
+      Keyword_Entry'
+        (Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("unsigned"), Value => Tokens.Unsigned_Keyword)];
 
    --  Exact lexemes classified as punctuation tokens.
    Punctuation_Table : constant Punctuation_Entry_List :=
      [Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (";"), Value => Tokens.Semicolon),
-      Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("."), Value => Tokens.Full_Stop)];
+      Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("."), Value => Tokens.Full_Stop),
+      Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("("), Value => Tokens.Left_Parenthesis),
+      Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (")"), Value => Tokens.Right_Parenthesis),
+      Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (","), Value => Tokens.Comma),
+      Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (":"), Value => Tokens.Colon),
+      Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("<"), Value => Tokens.Less_Than),
+      Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (">"), Value => Tokens.Greater_Than)];
 
    Patterns_Ready    : Boolean := False;
    Whitespace_Engine : Lovelace.Common.Regex.Engine;
@@ -111,7 +124,9 @@ package body Lovelace.Compiler.Tokenizer is
    function Failure_Result (Errors : Tokenizer_Error_Sequence) return Tokenize_Result;
    function Format_Scalar (Point : Code_Point) return String;
    function Hex_Digit (Value : Natural) return Character;
+   function Float_Literal_Pattern return String;
    function Identifier_Pattern return String;
+   function Integer_Literal_Pattern return String;
    function Internal_Compile_Error
      (Error : Lovelace.Common.Regex.Regex_Error; Filename : Source.Filename_Option) return Tokenizer_Error_Sequence;
    function Is_Excluded_Punctuation (Point : Code_Point) return Boolean;
@@ -258,55 +273,83 @@ package body Lovelace.Compiler.Tokenizer is
       Punctuation_Found : Punctuation_Options.Option;
       Last_Position     : Source.Source_Position;
    begin
-      if Kind = Tokens.Identifier or else Kind = Tokens.Keyword then
-         Consumed := Truncate_Identifier_Length (Source_Text, Position, Match_Length);
-         if Consumed = 0 then
-            Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
-            return;
-         end if;
-
-         Token_Span :=
-           Make_Span
-             (Source_Text => Source_Text, Position => Position, Byte_Count => Consumed, Line => Line, Column => Column);
-         Keyword_Found := Lookup_Keyword (Source_Text (Position .. Position + Consumed - 1));
-         case Keyword_Found.Present is
-            when True  =>
-               Tokens.Append
-                 (Token_List,
-                  Tokens.Token'
-                    (Kind          => Tokens.Keyword,
-                     Span          => Token_Span,
-                     Filename      => Filename,
-                     Keyword_Value => Keyword_Found.Value));
-
-            when False =>
-               Tokens.Append
-                 (Token_List, Tokens.Token'(Kind => Tokens.Identifier, Span => Token_Span, Filename => Filename));
-         end case;
-      else
-         Punctuation_Found := Lookup_Punctuation (Source_Text (Position .. Position + Consumed - 1));
-         case Punctuation_Found.Present is
-            when False =>
+      case Kind is
+         when Tokens.Identifier | Tokens.Keyword =>
+            Consumed := Truncate_Identifier_Length (Source_Text, Position, Match_Length);
+            if Consumed = 0 then
                Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
                return;
+            end if;
 
-            when True  =>
-               Token_Span :=
-                 Make_Span
-                   (Source_Text => Source_Text,
-                    Position    => Position,
-                    Byte_Count  => Consumed,
-                    Line        => Line,
-                    Column      => Column);
-               Tokens.Append
-                 (Token_List,
-                  Tokens.Token'
-                    (Kind              => Tokens.Punctuation,
-                     Span              => Token_Span,
-                     Filename          => Filename,
-                     Punctuation_Value => Punctuation_Found.Value));
-         end case;
-      end if;
+            Token_Span :=
+              Make_Span
+                (Source_Text => Source_Text,
+                 Position    => Position,
+                 Byte_Count  => Consumed,
+                 Line        => Line,
+                 Column      => Column);
+            Keyword_Found := Lookup_Keyword (Source_Text (Position .. Position + Consumed - 1));
+            case Keyword_Found.Present is
+               when True  =>
+                  Tokens.Append
+                    (Token_List,
+                     Tokens.Token'
+                       (Kind          => Tokens.Keyword,
+                        Span          => Token_Span,
+                        Filename      => Filename,
+                        Keyword_Value => Keyword_Found.Value));
+
+               when False =>
+                  Tokens.Append
+                    (Token_List, Tokens.Token'(Kind => Tokens.Identifier, Span => Token_Span, Filename => Filename));
+            end case;
+
+         when Tokens.Integer_Literal             =>
+            Token_Span :=
+              Make_Span
+                (Source_Text => Source_Text,
+                 Position    => Position,
+                 Byte_Count  => Consumed,
+                 Line        => Line,
+                 Column      => Column);
+            Tokens.Append
+              (Token_List, Tokens.Token'(Kind => Tokens.Integer_Literal, Span => Token_Span, Filename => Filename));
+
+         when Tokens.Float_Literal               =>
+            Token_Span :=
+              Make_Span
+                (Source_Text => Source_Text,
+                 Position    => Position,
+                 Byte_Count  => Consumed,
+                 Line        => Line,
+                 Column      => Column);
+            Tokens.Append
+              (Token_List, Tokens.Token'(Kind => Tokens.Float_Literal, Span => Token_Span, Filename => Filename));
+
+         when Tokens.Punctuation                 =>
+            Punctuation_Found := Lookup_Punctuation (Source_Text (Position .. Position + Consumed - 1));
+            case Punctuation_Found.Present is
+               when False =>
+                  Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
+                  return;
+
+               when True  =>
+                  Token_Span :=
+                    Make_Span
+                      (Source_Text => Source_Text,
+                       Position    => Position,
+                       Byte_Count  => Consumed,
+                       Line        => Line,
+                       Column      => Column);
+                  Tokens.Append
+                    (Token_List,
+                     Tokens.Token'
+                       (Kind              => Tokens.Punctuation,
+                        Span              => Token_Span,
+                        Filename          => Filename,
+                        Punctuation_Value => Punctuation_Found.Value));
+            end case;
+      end case;
 
       Advance_Bytes
         (Source_Text   => Source_Text,
@@ -361,6 +404,17 @@ package body Lovelace.Compiler.Tokenizer is
             Whitespace_Engine := Compile_Result.Value;
       end case;
 
+      --  Float before integer so 1.0 / 7. win longest-match over 1 / 7.
+      Class_Errors := Register_Scan_Class (Float_Literal_Pattern, Tokens.Float_Literal, Filename);
+      if Length (Class_Errors) > 0 then
+         return Class_Errors;
+      end if;
+
+      Class_Errors := Register_Scan_Class (Integer_Literal_Pattern, Tokens.Integer_Literal, Filename);
+      if Length (Class_Errors) > 0 then
+         return Class_Errors;
+      end if;
+
       Class_Errors := Register_Scan_Class (Identifier_Pattern, Tokens.Identifier, Filename);
       if Length (Class_Errors) > 0 then
          return Class_Errors;
@@ -397,6 +451,11 @@ package body Lovelace.Compiler.Tokenizer is
    begin
       return (Ok => False, Errors => Errors);
    end Failure_Result;
+
+   function Float_Literal_Pattern return String is
+   begin
+      return "[+-]?[0-9]+\.([0-9]+)?([eE][+-]?[0-9]+)?";
+   end Float_Literal_Pattern;
 
    function Format_Scalar (Point : Code_Point) return String is
       Image : String (1 .. 8);
@@ -435,6 +494,11 @@ package body Lovelace.Compiler.Tokenizer is
    begin
       return "(@)?" & Negated_Class (First_Exclusions) & Negated_Class (Shared_Exclusions) & "*";
    end Identifier_Pattern;
+
+   function Integer_Literal_Pattern return String is
+   begin
+      return "[+-]?(#2#[01]+|#8#[0-7]+|#10#[0-9]+|#16#[0-9A-Fa-f]+|[0-9]+)([su](8|16|32|64)?)?";
+   end Integer_Literal_Pattern;
 
    function Internal_Compile_Error
      (Error : Lovelace.Common.Regex.Regex_Error; Filename : Source.Filename_Option) return Tokenizer_Error_Sequence

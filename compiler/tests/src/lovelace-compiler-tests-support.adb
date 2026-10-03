@@ -49,6 +49,19 @@ package body Lovelace.Compiler.Tests.Support is
          Message & ": column expected" & Positive'Image (Column) & " got" & Positive'Image (Item.Span.First.Column));
    end Assert_First_Position;
 
+   procedure Assert_Float_Literal
+     (Source_Text     : String;
+      Token_List      : Tokens.Token_Sequence;
+      Index           : Positive;
+      Expected_Lexeme : String;
+      Message         : String)
+   is
+      Item : constant Tokens.Token := Tokens.Element (Token_List, Index);
+   begin
+      AUnit.Assertions.Assert (Item.Kind = Tokens.Float_Literal, Message & ": kind Float_Literal");
+      AUnit.Assertions.Assert (Tokens.Lexeme (Source_Text, Item) = Expected_Lexeme, Message & ": lexeme");
+   end Assert_Float_Literal;
+
    procedure Assert_Identifier
      (Source_Text     : String;
       Token_List      : Tokens.Token_Sequence;
@@ -61,6 +74,19 @@ package body Lovelace.Compiler.Tests.Support is
       AUnit.Assertions.Assert (Item.Kind = Tokens.Identifier, Message & ": kind Identifier");
       AUnit.Assertions.Assert (Tokens.Lexeme (Source_Text, Item) = Expected_Lexeme, Message & ": lexeme");
    end Assert_Identifier;
+
+   procedure Assert_Integer_Literal
+     (Source_Text     : String;
+      Token_List      : Tokens.Token_Sequence;
+      Index           : Positive;
+      Expected_Lexeme : String;
+      Message         : String)
+   is
+      Item : constant Tokens.Token := Tokens.Element (Token_List, Index);
+   begin
+      AUnit.Assertions.Assert (Item.Kind = Tokens.Integer_Literal, Message & ": kind Integer_Literal");
+      AUnit.Assertions.Assert (Tokens.Lexeme (Source_Text, Item) = Expected_Lexeme, Message & ": lexeme");
+   end Assert_Integer_Literal;
 
    procedure Assert_Keyword
      (Source_Text : String;

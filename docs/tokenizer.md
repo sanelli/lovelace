@@ -1,8 +1,8 @@
 # Compiler tokenizer
 
-`Lovelace.Compiler.Tokenizer` turns UTF-8 source into a token sequence, or a list of located errors. It lives in crate `lovelace_compiler` and uses the host [regex engine](regex-engine.md) (`Compile` / `Match_Prefix`) for whitespace, identifiers, and punctuation.
+`Lovelace.Compiler.Tokenizer` turns UTF-8 source into a token sequence, or a list of located errors. It lives in crate `lovelace_compiler` and uses the host [regex engine](regex-engine.md) (`Compile` / `Match_Prefix`) for whitespace, identifiers, punctuation, and numeric literals.
 
-This slice is keywords, identifiers, and two punctuation marks. A recursive-descent parser for program and module compilation units is documented in [parser.md](parser.md) and [compilation-unit-grammar.md](compilation-unit-grammar.md).
+This slice covers keywords, identifiers, punctuation for units and type lists, and integer/float literals. A recursive-descent parser for program and module compilation units is documented in [parser.md](parser.md) and [compilation-unit-grammar.md](compilation-unit-grammar.md). Literal lexeme interpretation (not wired into bodies yet) is in [literals.md](literals.md).
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). The token grammar for this slice is in [token-grammar.md](token-grammar.md).
 
@@ -48,13 +48,17 @@ Empty source and whitespace-only source succeed with an empty token sequence.
 
 | `Token_Kind` | Subtype | This slice |
 | --- | --- | --- |
-| `Keyword` | `Keyword_Subtype` | `program`, `module`, `begin`, `end` |
+| `Keyword` | `Keyword_Subtype` | `program`, `module`, `begin`, `end`, `procedure`, `integer`, `float`, `signed`, `unsigned` |
 | `Identifier` | (none) | Names, including `@foo`, `café`, emoji |
-| `Punctuation` | `Punctuation_Subtype` | `;` → `Semicolon`, `.` → `Full_Stop` |
+| `Punctuation` | `Punctuation_Subtype` | `;` `.` `(` `)` `,` `:` `<` `>` |
+| `Integer_Literal` | (none) | Optional sign/base/suffix forms (see [token-grammar.md](token-grammar.md)) |
+| `Float_Literal` | (none) | Decimal forms with `.` and optional exponent |
 
-Keywords are **case-sensitive**. `Program`, `Module`, `BEGIN`, and `End` are identifiers.
+Keywords are **case-sensitive**. `Program`, `Module`, `BEGIN`, `Procedure`, and `End` are identifiers.
 
 The scanner matches a full identifier first, then classifies. `programmer` is one identifier, not `program` plus `mer`. `programbegin` and `modulex` are identifiers.
+
+Float literal patterns are tried **before** integer patterns so `1.0` is a single `Float_Literal`.
 
 Lexeme text is not stored on the token. Recover it with `Lexeme (Source_Text, The_Token)`, which slices `Source_Text (First.Byte_Index .. Last.Byte_Index)`. `Last.Byte_Index` is the **last byte** of the last scalar (the span covers the full UTF-8 sequence).
 
@@ -85,7 +89,7 @@ Scan Unicode **scalars** via `Lovelace.Common.Utf_8`. Do not treat Ada `Characte
 
 **Allowed:** `name`, `foo_bar`, `_x`, `foo2`, letters with diacritics (`café`), emoji and other symbols (`🚀`).
 
-**Not identifier characters** (errors, not tokens): ASCII graphic punctuation other than `_` (`$` `%` `^` `~` `'` `?` and the rest of that set), plus Unicode punctuation blocks listed in the tokenizer body.
+**Not identifier characters** (errors, not tokens): ASCII graphic punctuation other than `_` and the punctuation subtypes above (`$` `%` `^` `~` `'` `?` and the rest of that set), plus Unicode punctuation blocks listed in the tokenizer body.
 
 ## Filename sharing
 
@@ -100,14 +104,12 @@ Scan Unicode **scalars** via `Lovelace.Common.Utf_8`. Do not treat Ada `Characte
 | Code | Meaning |
 | --- | --- |
 | `Internal_Error` | Compiler bug, such as a hardcoded regex pattern failing to compile |
-| `Unrecognized_Symbol` | Valid scalar that does not start a token (`+`, `,`, `"`, `2`, `@` alone, …) |
+| `Unrecognized_Symbol` | Valid scalar that does not start a token (`+` alone, `"`, …) |
 | `Invalid_Utf_8` | Bytes that are not valid UTF-8 |
 
 There are no error tokens and no `null` tokens. The scanner collects **all** user-source errors in one pass (it does not stop at the first). After each error it skips one scalar, or one byte / invalid sequence for `Invalid_Utf_8`, and continues.
 
 If any error is collected — user or internal — `Tokenize` returns `Ok => False` with the full error list. Recovered tokens from that pass are not returned.
-
-A comma, plus, quote, or digit-only run is an **error**, not a token. `2foo` reports `Unrecognized_Symbol` at `2` (then `foo` may still be recognized during recovery; only the error list is returned).
 
 Clean input such as `begin` succeeds (`Ok => True`). That also shows the built-in patterns compiled.
 
@@ -117,11 +119,8 @@ This slice does **not** emit tokens for:
 
 - String literals (internal spaces will be kept when they exist)
 - Character literals
-- Numeric literals
 - Comments
-- Operators
-- Comma (today: `Unrecognized_Symbol`)
-- Keywords other than `program`, `module`, `begin`, `end`
+- Operators beyond the punctuation list above
 
 ## Tests
 

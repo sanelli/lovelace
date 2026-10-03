@@ -1,5 +1,10 @@
 package body Lovelace.Compiler.Backend.Model is
 
+   procedure Append (Sequence : in out Core_Parameter_Sequence; The_Type : Core_Value_Type) is
+   begin
+      Sequence.Items.Append (The_Type);
+   end Append;
+
    procedure Append (Sequence : in out Instruction_Sequence; Item : Core_Instruction) is
    begin
       Sequence.Items.Append (Item);
@@ -23,6 +28,11 @@ package body Lovelace.Compiler.Backend.Model is
          Exports           => Export_Vectors.Empty_Vector);
    end Create;
 
+   function Element (Sequence : Core_Parameter_Sequence; Index : Positive) return Core_Value_Type is
+   begin
+      return Sequence.Items.Element (Index);
+   end Element;
+
    function Element (Sequence : Instruction_Sequence; Index : Positive) return Core_Instruction is
    begin
       return Sequence.Items.Element (Index);
@@ -32,6 +42,11 @@ package body Lovelace.Compiler.Backend.Model is
    begin
       return (Items => Instruction_Vectors.Empty_Vector);
    end Empty_Instructions;
+
+   function Empty_Parameters return Core_Parameter_Sequence is
+   begin
+      return (Items => Core_Parameter_Vectors.Empty_Vector);
+   end Empty_Parameters;
 
    function Export_Count (The_Model : Component_Model) return Natural is
    begin
@@ -63,6 +78,11 @@ package body Lovelace.Compiler.Backend.Model is
 
       return False;
    end Has_Run_Export;
+
+   function Length (Sequence : Core_Parameter_Sequence) return Natural is
+   begin
+      return Natural (Sequence.Items.Length);
+   end Length;
 
    function Length (Sequence : Instruction_Sequence) return Natural is
    begin

@@ -35,7 +35,7 @@ Inside a subroutine, in order:
 
 1. `(name "…")`
 2. Optional `(origin …)` when a subroutine origin is present
-3. Optional `(param t1 t2 …)` — omit the whole form when there are zero parameters
+3. Optional `(param "name1" t1 "name2" t2 …)` — alternating quoted parameter name and type token; omit the whole form when there are zero parameters
 4. **Required** `(result t)` — always present; use `unit` for procedures
 5. Optional bare identifiers `export` and/or `entrypoint` (flag bits, not strings)
 6. `(body …)` — may be empty
@@ -57,7 +57,9 @@ Subroutine origin (after `(name …)`): same shape but **without** `(span …)` 
 
 Type tokens (canonical lowercase):
 
-`unit` `i8` `i16` `i32` `i64` `i128` `u8` `u16` `u32` `u64` `u128` `f16` `f32` `f64`
+`unit` `i8` `i16` `i32` `i64` `u8` `u16` `u32` `u64` `f32` `f64`
+
+(`i128`, `u128`, and `f16` are not in this closed set yet.)
 
 Exactly one `(result …)` with a single type. **Never** invent a `void` token.
 
@@ -88,7 +90,7 @@ Other Unicode scalars (including emoji) are raw UTF-8 inside the quotes.
   (depend "other")
   (subroutine
     (name "Main")
-    (param i32 f64)
+    (param "x" i32 "y" f64)
     (result i32)
     export
     entrypoint

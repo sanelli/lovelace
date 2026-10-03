@@ -24,17 +24,17 @@ LIR is a **stack machine** with sequential (linear) byte memory, in the spirit o
 | Ada `Value_Type` | Token / role |
 | --- | --- |
 | `Unit` | `unit` — no stack value |
-| `I8` … `I128` | `i8` … `i128` — signed integers |
-| `U8` … `U128` | `u8` … `u128` — unsigned integers |
-| `F16` `F32` `F64` | `f16` `f32` `f64` — floating point |
+| `I8` `I16` `I32` `I64` | `i8` … `i64` — signed integers |
+| `U8` `U16` `U32` `U64` | `u8` … `u64` — unsigned integers |
+| `F32` `F64` | `f32` `f64` — floating point |
 
 **There is no `void` type.** Procedures are subroutines whose return type is **`unit`**.
 
 Every subroutine **must** have a return type. Returning `unit` tells the Lovelace backend the subroutine is a procedure and pushes nothing on the operand stack. A non-`unit` return type pushes one value of that type.
 
-No references or aggregates are in the closed set until specified. `I128`, `U128`, and `F16` are first-class in LIR; mapping them (and `unit`) to WASM is a backend concern.
+No references or aggregates are in the closed set until specified. `I128`, `U128`, and `F16` are **not** in this closed set yet (deferred). Mapping scalars (and `unit`) to WASM is a backend concern.
 
-Binary codes are `0` … `13` in enumeration order (`To_Code` / `From_Code`). See [lir-binary.md](lir-binary.md).
+Binary codes are `0` … `10` in enumeration order (`To_Code` / `From_Code`). See [lir-binary.md](lir-binary.md).
 
 ## Modules and subroutines
 
@@ -48,12 +48,12 @@ A **module** has:
 
 A **subroutine** has:
 
-- a **signature**: UTF-8 name, **mandatory** return type, zero or more unnamed parameter types
+- a **signature**: UTF-8 name, **mandatory** return type, zero or more **named** parameters (each UTF-8 name + `Value_Type`)
 - **flags** (`export` = bit 0, `entrypoint` = bit 1)
 - an instruction body (may be empty)
 - an optional **origin** (`Subroutine_Origin`: name span, optional shared filename), persisted in `.lir` / `.tlir` (version numbers stay **1.0**)
 
-Origins support diagnostics and frontend lowering. Codecs round-trip them when present (`origin_present = 0` / omit text form when absent). `Validate` does not require origins. Shared position types live in [`Lovelace.Common.Source`](source-locations.md); the compiler copies them via the [IR Generator](ir-generator.md). The format **version fields remain 1.0**; only the layout gained origin fields. The CLI writes `.lir` under the build output `obj/` folder ([cli.md](cli.md)); user diagnostics use `LV#####` codes ([diagnostics.md](diagnostics.md)).
+Origins support diagnostics and frontend lowering. Codecs round-trip them when present (`origin_present = 0` / omit text form when absent). `Validate` does not require origins. Shared position types live in [`Lovelace.Common.Source`](source-locations.md); the compiler copies them via the [IR Generator](ir-generator.md). The format **version fields remain 1.0**; layout includes origin fields and named parameters. The CLI writes `.lir` under the build output `obj/` folder ([cli.md](cli.md)); user diagnostics use `LV#####` codes ([diagnostics.md](diagnostics.md)).
 
 The only opcode in this slice is `No_Operation` (`noop` in text).
 
@@ -73,9 +73,9 @@ The only opcode in this slice is `No_Operation` (`noop` in text).
 
 Builders allow temporarily invalid modules (for example two entrypoints while appending). **Encode**, **Write**, **To_Text**, and **Print** call `Validate` first and fail on:
 
-- empty module, dependency, or subroutine name
-- invalid UTF-8 in any name
-- duplicate dependency or subroutine names
+- empty module, dependency, subroutine, or parameter name
+- invalid UTF-8 in any name (including parameter names)
+- duplicate dependency, subroutine, or parameter names (parameters unique within a signature)
 - self-dependency (a depend name equals the module name)
 - more than one `Entrypoint` flag
 

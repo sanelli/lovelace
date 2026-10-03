@@ -1,18 +1,20 @@
 package body Lovelace.Lir.Types is
 
-   procedure Append (Sequence : in out Value_Type_Sequence; The_Type : Value_Type) is
+   procedure Append (Sequence : in out Parameter_Sequence; Name : String; The_Type : Value_Type) is
+      The_Parameter : constant Parameter :=
+        (Name => Ada.Strings.Unbounded.To_Unbounded_String (Name), The_Type => The_Type);
    begin
-      Sequence.Items.Append (The_Type);
+      Sequence.Items.Append (The_Parameter);
    end Append;
 
-   function Element (Sequence : Value_Type_Sequence; Index : Positive) return Value_Type is
+   function Element (Sequence : Parameter_Sequence; Index : Positive) return Parameter is
    begin
       return Sequence.Items.Element (Index);
    end Element;
 
-   function Empty_Sequence return Value_Type_Sequence is
+   function Empty_Sequence return Parameter_Sequence is
    begin
-      return (Items => Value_Type_Vectors.Empty_Vector);
+      return (Items => Parameter_Vectors.Empty_Vector);
    end Empty_Sequence;
 
    function From_Code (Code : Interfaces.Unsigned_8) return Value_Type_Options.Option is
@@ -24,7 +26,7 @@ package body Lovelace.Lir.Types is
       return Value_Type_Options.From_Value (Value_Type'Val (Natural (Code)));
    end From_Code;
 
-   function Length (Sequence : Value_Type_Sequence) return Natural is
+   function Length (Sequence : Parameter_Sequence) return Natural is
    begin
       return Natural (Sequence.Items.Length);
    end Length;

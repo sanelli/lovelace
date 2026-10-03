@@ -17,7 +17,9 @@ package Lovelace.Compiler.Parser is
    --  @enum Unexpected_End_Of_Input Fewer tokens than the grammar requires.
    --  @enum Unexpected_Token Wrong token kind or subtype at the cursor.
    --  @enum Unexpected_Trailing Extra tokens after a complete unit.
-   type Parser_Error_Code is (Internal_Error, Unexpected_End_Of_Input, Unexpected_Token, Unexpected_Trailing);
+   --  @enum Name_Clash Duplicate or conflicting procedure/parameter name.
+   type Parser_Error_Code is
+     (Internal_Error, Unexpected_End_Of_Input, Unexpected_Token, Unexpected_Trailing, Name_Clash);
 
    --  One located parser diagnostic.
    --  @field Code Predefined parser error code.
@@ -50,7 +52,7 @@ package Lovelace.Compiler.Parser is
 
    --  Parse Token_List for Source_Text into a compilation-unit AST.
    --  Accepts program_unit (program identifier; begin end.) or module_unit
-   --  (module qualified_identifier; end.). Recursive descent; one token at a time.
+   --  (module qualified_identifier; { procedure ... } end.). Recursive descent.
    --  @param Source_Text Original UTF-8 source (for identifier lexemes).
    --  @param Token_List Tokens from a successful Tokenize of Source_Text.
    --  @return Module AST, or a single located error.

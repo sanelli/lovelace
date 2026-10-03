@@ -32,6 +32,9 @@ package body Lovelace.Compiler.Error_Codes is
 
          when Source_File_Io                 =>
             return "LV00010";
+
+         when Name_Clash                     =>
+            return "LV00011";
       end case;
    end Label;
 

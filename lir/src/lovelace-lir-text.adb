@@ -240,7 +240,7 @@ package body Lovelace.Lir.Text is
                Flags_Value     : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (The_Subroutine);
                Body_Instrs     : constant Instructions.Instruction_Sequence :=
                  Subroutines.Get_Instructions (The_Subroutine);
-               Parameter_Count : constant Natural := Types.Length (The_Signature.Parameter_Types);
+               Parameter_Count : constant Natural := Types.Length (The_Signature.Parameters);
             begin
                Append_Line (Buffer, Indent (1) & "(subroutine");
                Ada.Strings.Unbounded.Append (Buffer, Indent (2) & "(name ");
@@ -252,8 +252,14 @@ package body Lovelace.Lir.Text is
                if Parameter_Count > 0 then
                   Ada.Strings.Unbounded.Append (Buffer, Indent (2) & "(param");
                   for Parameter_Index in 1 .. Parameter_Count loop
-                     Ada.Strings.Unbounded.Append
-                       (Buffer, " " & Type_Token (Types.Element (The_Signature.Parameter_Types, Parameter_Index)));
+                     declare
+                        The_Parameter : constant Types.Parameter :=
+                          Types.Element (The_Signature.Parameters, Parameter_Index);
+                     begin
+                        Ada.Strings.Unbounded.Append (Buffer, " ");
+                        Append_Quoted (Buffer, Ada.Strings.Unbounded.To_String (The_Parameter.Name));
+                        Ada.Strings.Unbounded.Append (Buffer, " " & Type_Token (The_Parameter.The_Type));
+                     end;
                   end loop;
                   Append_Line (Buffer, ")");
                end if;
@@ -310,9 +316,6 @@ package body Lovelace.Lir.Text is
          when Types.I64  =>
             return "i64";
 
-         when Types.I128 =>
-            return "i128";
-
          when Types.U8   =>
             return "u8";
 
@@ -324,12 +327,6 @@ package body Lovelace.Lir.Text is
 
          when Types.U64  =>
             return "u64";
-
-         when Types.U128 =>
-            return "u128";
-
-         when Types.F16  =>
-            return "f16";
 
          when Types.F32  =>
             return "f32";

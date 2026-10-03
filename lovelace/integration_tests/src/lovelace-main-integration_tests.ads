@@ -1,4 +1,4 @@
---  Optional AUnit integration tests (CLI build + wasmtime).
+--  Optional AUnit integration tests: CLI build, wasm-tools validate, entrypoint run.
 
 package Lovelace.Main.Integration_Tests is
 

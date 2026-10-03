@@ -114,14 +114,19 @@ package body Lovelace.Lir.Binary is
 
    procedure Append_Subroutine (Buffer : in out Byte_Sequence; The_Subroutine : Subroutines.Subroutine) is
       The_Signature : constant Subroutines.Signature := Subroutines.Get_Signature (The_Subroutine);
-      Params        : constant Types.Value_Type_Sequence := The_Signature.Parameter_Types;
+      Params        : constant Types.Parameter_Sequence := The_Signature.Parameters;
       Body_Instrs   : constant Instructions.Instruction_Sequence := Subroutines.Get_Instructions (The_Subroutine);
    begin
       Append_String (Buffer, Ada.Strings.Unbounded.To_String (The_Signature.Name));
       Append_Byte (Buffer, Types.To_Code (The_Signature.Return_Type));
       Append_U32 (Buffer, Interfaces.Unsigned_32 (Types.Length (Params)));
       for Parameter_Index in 1 .. Types.Length (Params) loop
-         Append_Byte (Buffer, Types.To_Code (Types.Element (Params, Parameter_Index)));
+         declare
+            The_Parameter : constant Types.Parameter := Types.Element (Params, Parameter_Index);
+         begin
+            Append_String (Buffer, Ada.Strings.Unbounded.To_String (The_Parameter.Name));
+            Append_Byte (Buffer, Types.To_Code (The_Parameter.The_Type));
+         end;
       end loop;
       Append_U32 (Buffer, Interfaces.Unsigned_32 (Subroutines.Get_Flags (The_Subroutine)));
       Append_Subroutine_Origin (Buffer, The_Subroutine);
@@ -471,7 +476,7 @@ package body Lovelace.Lir.Binary is
       Parameter_Count   : Interfaces.Unsigned_32;
       Flags_Value       : Interfaces.Unsigned_32;
       Instruction_Count : Interfaces.Unsigned_32;
-      Parameters        : Types.Value_Type_Sequence := Types.Empty_Sequence;
+      Parameters        : Types.Parameter_Sequence := Types.Empty_Sequence;
       Return_Option     : Types.Value_Type_Options.Option;
    begin
       if not Read_String (Bytes, Cursor, Name_Text) then
@@ -497,9 +502,14 @@ package body Lovelace.Lir.Binary is
       end if;
       for Unused in 1 .. Natural (Parameter_Count) loop
          declare
-            Type_Code   : Interfaces.Unsigned_8;
-            Type_Option : Types.Value_Type_Options.Option;
+            Parameter_Name : Ada.Strings.Unbounded.Unbounded_String;
+            Type_Code      : Interfaces.Unsigned_8;
+            Type_Option    : Types.Value_Type_Options.Option;
          begin
+            if not Read_String (Bytes, Cursor, Parameter_Name) then
+               Code := Errors.Truncated;
+               return False;
+            end if;
             if not Read_Byte (Bytes, Cursor, Type_Code) then
                Code := Errors.Truncated;
                return False;
@@ -511,7 +521,7 @@ package body Lovelace.Lir.Binary is
                   return False;
 
                when True  =>
-                  Types.Append (Parameters, Type_Option.Value);
+                  Types.Append (Parameters, Ada.Strings.Unbounded.To_String (Parameter_Name), Type_Option.Value);
             end case;
          end;
       end loop;
@@ -522,7 +532,7 @@ package body Lovelace.Lir.Binary is
 
       The_Subroutine :=
         Subroutines.Create
-          (The_Signature => (Name => Name_Text, Return_Type => Return_Option.Value, Parameter_Types => Parameters),
+          (The_Signature => (Name => Name_Text, Return_Type => Return_Option.Value, Parameters => Parameters),
            Flags         => Subroutines.Subroutine_Flags (Flags_Value));
 
       if not Parse_Subroutine_Origin (Bytes, Cursor, The_Subroutine, Code) then

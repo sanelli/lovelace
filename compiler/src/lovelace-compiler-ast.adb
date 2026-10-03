@@ -1,5 +1,10 @@
 package body Lovelace.Compiler.Ast is
 
+   procedure Append (Sequence : in out Parameter_Sequence; The_Parameter : Parameter) is
+   begin
+      Sequence.Items.Append (The_Parameter);
+   end Append;
+
    procedure Append (Sequence : in out Subroutine_Sequence; The_Subroutine : Subroutine) is
    begin
       Sequence.Items.Append (The_Subroutine);
@@ -24,20 +29,29 @@ package body Lovelace.Compiler.Ast is
 
    function Create_Subroutine
      (Name        : String;
+      Module_Name : String;
       Name_Span   : Source.Source_Span;
       Filename    : Source.Filename_Option;
       Flags       : Subroutine_Flags;
       Return_Type : Types.Type_Expression;
+      Parameters  : Parameter_Sequence;
       The_Body    : Statement_Sequence) return Subroutine is
    begin
       return
         (Subroutine_Name   => Ada.Strings.Unbounded.To_Unbounded_String (Name),
+         Full_Name_Value   => Ada.Strings.Unbounded.To_Unbounded_String (Module_Name & "." & Name),
          Name_Span_Value   => Name_Span,
          Filename_Value    => Filename,
          Flags_Value       => Flags,
-         Return_Type_Value => Unit_Type_Expression (Return_Type),
+         Return_Type_Value => Return_Type,
+         Parameters_Value  => Parameters,
          Body_Value        => The_Body);
    end Create_Subroutine;
+
+   function Element (Sequence : Parameter_Sequence; Index : Positive) return Parameter is
+   begin
+      return Sequence.Items.Element (Index);
+   end Element;
 
    function Element (Sequence : Subroutine_Sequence; Index : Positive) return Subroutine is
    begin
@@ -48,6 +62,11 @@ package body Lovelace.Compiler.Ast is
    begin
       return (Count => 0);
    end Empty_Body;
+
+   function Empty_Parameter_Sequence return Parameter_Sequence is
+   begin
+      return (Items => Parameter_Vectors.Empty_Vector);
+   end Empty_Parameter_Sequence;
 
    function Empty_Subroutine_Sequence return Subroutine_Sequence is
    begin
@@ -63,6 +82,11 @@ package body Lovelace.Compiler.Ast is
    begin
       return The_Subroutine.Filename_Value;
    end Filename;
+
+   function Full_Name (The_Subroutine : Subroutine) return String is
+   begin
+      return Ada.Strings.Unbounded.To_String (The_Subroutine.Full_Name_Value);
+   end Full_Name;
 
    function Get_Body (The_Subroutine : Subroutine) return Statement_Sequence is
    begin
@@ -99,6 +123,11 @@ package body Lovelace.Compiler.Ast is
       return The_Body.Count;
    end Length;
 
+   function Length (Sequence : Parameter_Sequence) return Natural is
+   begin
+      return Natural (Sequence.Items.Length);
+   end Length;
+
    function Length (Sequence : Subroutine_Sequence) return Natural is
    begin
       return Natural (Sequence.Items.Length);
@@ -124,9 +153,14 @@ package body Lovelace.Compiler.Ast is
       return The_Subroutine.Name_Span_Value;
    end Name_Span;
 
+   function Parameters (The_Subroutine : Subroutine) return Parameter_Sequence is
+   begin
+      return The_Subroutine.Parameters_Value;
+   end Parameters;
+
    function Return_Type (The_Subroutine : Subroutine) return Types.Type_Expression is
    begin
-      return Types.Type_Expression (The_Subroutine.Return_Type_Value);
+      return The_Subroutine.Return_Type_Value;
    end Return_Type;
 
    function Span (The_Module : Module) return Source.Source_Span is

@@ -7,6 +7,10 @@ package Lovelace.Compiler.Tests.Parser is
    --  Fixture for parser matrix tests.
    type Fixture is new AUnit.Test_Fixtures.Test_Fixture with null record;
 
+   --  Unsupported type sizes yield Unexpected_Token.
+   --  @param The_Test Unused fixture.
+   procedure Test_Bad_Type_Size (The_Test : in out Fixture);
+
    --  Canonical module Empty; end.
    --  @param The_Test Unused fixture.
    procedure Test_Canonical_Module (The_Test : in out Fixture);
@@ -18,6 +22,10 @@ package Lovelace.Compiler.Tests.Parser is
    --  Dotted module name Foo.Bar is one qualified identifier.
    --  @param The_Test Unused fixture.
    procedure Test_Dotted_Module_Name (The_Test : in out Fixture);
+
+   --  Duplicate parameter names yield Name_Clash.
+   --  @param The_Test Unused fixture.
+   procedure Test_Duplicate_Parameter (The_Test : in out Fixture);
 
    --  Empty token list yields Unexpected_End_Of_Input.
    --  @param The_Test Unused fixture.
@@ -38,6 +46,10 @@ package Lovelace.Compiler.Tests.Parser is
    --  Module (identifier) as first keyword fails.
    --  @param The_Test Unused fixture.
    procedure Test_Module_Keyword_Case (The_Test : in out Fixture);
+
+   --  Module with a multi-parameter empty procedure parses successfully.
+   --  @param The_Test Unused fixture.
+   procedure Test_Module_Procedure (The_Test : in out Fixture);
 
    --  Trailing dot in a qualified name is Unexpected_Token or end of input.
    --  @param The_Test Unused fixture.

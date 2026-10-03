@@ -13,9 +13,11 @@ package body Lovelace.Compiler.Ir_Generator is
    function Map_Flags (Flags : Ast.Subroutine_Flags) return Lovelace.Lir.Subroutines.Subroutine_Flags;
    --  Rebuild LIR flag bits from frontend Has_Export / Has_Entrypoint.
 
-   function Map_Return_Type
-     (Return_Type : Lovelace.Compiler.Types.Type_Expression) return Lovelace.Lir.Types.Value_Type;
-   --  Map frontend Unit to LIR Unit (exhaustive on Type_Kind).
+   function Map_Parameters (Parameters : Ast.Parameter_Sequence) return Lovelace.Lir.Types.Parameter_Sequence;
+   --  Map frontend parameters to named LIR parameters.
+
+   function Map_Value_Type (The_Type : Lovelace.Compiler.Types.Type_Expression) return Lovelace.Lir.Types.Value_Type;
+   --  Map a frontend type expression to a LIR Value_Type (exhaustive).
 
    function Failure (Detail : String) return Generate_Result is
    begin
@@ -35,10 +37,12 @@ package body Lovelace.Compiler.Ir_Generator is
       for Index in 1 .. Ast.Subroutine_Count (The_Module) loop
          declare
             Ast_Subroutine : constant Ast.Subroutine := Ast.Get_Subroutine (The_Module, Index);
+            Parameters     : constant Lovelace.Lir.Types.Parameter_Sequence :=
+              Map_Parameters (Ast.Parameters (Ast_Subroutine));
             The_Signature  : constant Lovelace.Lir.Subroutines.Signature :=
-              (Name            => Ada.Strings.Unbounded.To_Unbounded_String (Ast.Name (Ast_Subroutine)),
-               Return_Type     => Map_Return_Type (Ast.Return_Type (Ast_Subroutine)),
-               Parameter_Types => Lovelace.Lir.Types.Empty_Sequence);
+              (Name        => Ada.Strings.Unbounded.To_Unbounded_String (Ast.Name (Ast_Subroutine)),
+               Return_Type => Map_Value_Type (Ast.Return_Type (Ast_Subroutine)),
+               Parameters  => Parameters);
             Lir_Subroutine : Lovelace.Lir.Subroutines.Subroutine :=
               Lovelace.Lir.Subroutines.Create
                 (The_Signature => The_Signature, Flags => Map_Flags (Ast.Get_Flags (Ast_Subroutine)));
@@ -78,13 +82,71 @@ package body Lovelace.Compiler.Ir_Generator is
       return Result;
    end Map_Flags;
 
-   function Map_Return_Type (Return_Type : Lovelace.Compiler.Types.Type_Expression) return Lovelace.Lir.Types.Value_Type
-   is
+   function Map_Parameters (Parameters : Ast.Parameter_Sequence) return Lovelace.Lir.Types.Parameter_Sequence is
+      Result : Lovelace.Lir.Types.Parameter_Sequence := Lovelace.Lir.Types.Empty_Sequence;
    begin
-      case Return_Type.Kind is
-         when Lovelace.Compiler.Types.Unit =>
+      for Index in 1 .. Ast.Length (Parameters) loop
+         declare
+            The_Parameter : constant Ast.Parameter := Ast.Element (Parameters, Index);
+         begin
+            Lovelace.Lir.Types.Append
+              (Sequence => Result,
+               Name     => Ada.Strings.Unbounded.To_String (The_Parameter.Parameter_Name),
+               The_Type => Map_Value_Type (The_Parameter.Parameter_Type));
+         end;
+      end loop;
+
+      return Result;
+   end Map_Parameters;
+
+   function Map_Value_Type (The_Type : Lovelace.Compiler.Types.Type_Expression) return Lovelace.Lir.Types.Value_Type is
+   begin
+      case The_Type.Kind is
+         when Lovelace.Compiler.Types.Unit    =>
             return Lovelace.Lir.Types.Unit;
+
+         when Lovelace.Compiler.Types.Integer =>
+            case The_Type.The_Signedness is
+               when Lovelace.Compiler.Types.Signed   =>
+                  case The_Type.Integer_Bit_Size is
+                     when Lovelace.Compiler.Types.Bits_8  =>
+                        return Lovelace.Lir.Types.I8;
+
+                     when Lovelace.Compiler.Types.Bits_16 =>
+                        return Lovelace.Lir.Types.I16;
+
+                     when Lovelace.Compiler.Types.Bits_32 =>
+                        return Lovelace.Lir.Types.I32;
+
+                     when Lovelace.Compiler.Types.Bits_64 =>
+                        return Lovelace.Lir.Types.I64;
+                  end case;
+
+               when Lovelace.Compiler.Types.Unsigned =>
+                  case The_Type.Integer_Bit_Size is
+                     when Lovelace.Compiler.Types.Bits_8  =>
+                        return Lovelace.Lir.Types.U8;
+
+                     when Lovelace.Compiler.Types.Bits_16 =>
+                        return Lovelace.Lir.Types.U16;
+
+                     when Lovelace.Compiler.Types.Bits_32 =>
+                        return Lovelace.Lir.Types.U32;
+
+                     when Lovelace.Compiler.Types.Bits_64 =>
+                        return Lovelace.Lir.Types.U64;
+                  end case;
+            end case;
+
+         when Lovelace.Compiler.Types.Float   =>
+            case The_Type.Float_Bit_Size is
+               when Lovelace.Compiler.Types.Bits_32 =>
+                  return Lovelace.Lir.Types.F32;
+
+               when Lovelace.Compiler.Types.Bits_64 =>
+                  return Lovelace.Lir.Types.F64;
+            end case;
       end case;
-   end Map_Return_Type;
+   end Map_Value_Type;
 
 end Lovelace.Compiler.Ir_Generator;

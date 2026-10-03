@@ -31,4 +31,12 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  @param The_Test Unused fixture.
    procedure Test_Identifier_Names (The_Test : in out Fixture);
 
+   --  Module procedure parameters lower to named LIR signature entries with mapped types.
+   --  @param The_Test Unused fixture.
+   procedure Test_Module_Procedure_Parameters (The_Test : in out Fixture);
+
+   --  Every supported integer and float size/signedness maps to the matching LIR Value_Type.
+   --  @param The_Test Unused fixture.
+   procedure Test_Parameter_Type_Mapping (The_Test : in out Fixture);
+
 end Lovelace.Compiler.Tests.Ir_Generator;

@@ -25,11 +25,11 @@ package body Lovelace.Main.Tests.Suite is
    begin
       Result.Add_Test
         (Arguments_Caller.Create
-           ("globals before command",
+           ("arguments: globals before command",
             Lovelace.Main.Tests.Arguments.Test_Globals_Before_Command'Access));
       Result.Add_Test
         (Arguments_Caller.Create
-           ("global after command is argument",
+           ("arguments: global after command is argument",
             Lovelace
               .Main
               .Tests
@@ -37,39 +37,39 @@ package body Lovelace.Main.Tests.Suite is
               .Test_Global_After_Command_Is_Argument'Access));
       Result.Add_Test
         (Arguments_Caller.Create
-           ("unknown global",
+           ("arguments: unknown global rejected",
             Lovelace.Main.Tests.Arguments.Test_Unknown_Global'Access));
       Result.Add_Test
         (Arguments_Caller.Create
-           ("no command",
+           ("arguments: no command",
             Lovelace.Main.Tests.Arguments.Test_No_Command'Access));
 
       Result.Add_Test
         (Build_Caller.Create
-           ("output format values",
+           ("build: output format values",
             Lovelace.Main.Tests.Build.Test_Output_Format_Values'Access));
       Result.Add_Test
         (Build_Caller.Create
-           ("output format invalid",
+           ("build: output format invalid",
             Lovelace.Main.Tests.Build.Test_Output_Format_Invalid'Access));
 
       Result.Add_Test
         (Help_Caller.Create
-           ("help build topic",
+           ("help: build topic succeeds",
             Lovelace.Main.Tests.Help.Test_Help_Build_Topic'Access));
       Result.Add_Test
         (Help_Caller.Create
-           ("help mentions build",
+           ("help: CLI stdout mentions build",
             Lovelace.Main.Tests.Help.Test_Help_Mentions_Build'Access));
 
       Result.Add_Test
         (Version_Caller.Create
-           ("version prefix",
+           ("version: product version prefix",
             Lovelace.Main.Tests.Version.Test_Version_Prefix'Access));
 
       Result.Add_Test
         (Reporting_Caller.Create
-           ("love basename",
+           ("reporting: love basename",
             Lovelace.Main.Tests.Reporting.Test_Love_Basename'Access));
 
       return Result;

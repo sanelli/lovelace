@@ -35,7 +35,7 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Ascii_Identifiers (The_Test : in out Fixture);
 
-   --  Leading ASCII digits are Unrecognized_Symbol.
+   --  Leading ASCII digits form Integer_Literal tokens (2foo is two tokens).
    --  @param The_Test Unused fixture.
    procedure Test_Leading_Digits (The_Test : in out Fixture);
 
@@ -43,7 +43,15 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Module_Keyword (The_Test : in out Fixture);
 
-   --  cafÃ© and emoji identifiers built via Utf_8.Encode.
+   --  Integer and float literal forms tokenize successfully.
+   --  @param The_Test Unused fixture.
+   procedure Test_Numeric_Literals (The_Test : in out Fixture);
+
+   --  New keywords and punctuation for procedures and types.
+   --  @param The_Test Unused fixture.
+   procedure Test_Procedure_Type_Tokens (The_Test : in out Fixture);
+
+   --  Unicode cafe and emoji identifiers built via Utf_8.Encode.
    --  @param The_Test Unused fixture.
    procedure Test_Unicode_Identifiers (The_Test : in out Fixture);
 
@@ -71,7 +79,7 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Filename_Shared_On_Errors (The_Test : in out Fixture);
 
-   --  +, comma, and quote are Unrecognized_Symbol.
+   --  +, quote remain Unrecognized_Symbol; comma is Punctuation.
    --  @param The_Test Unused fixture.
    procedure Test_Unrecognized_Symbols (The_Test : in out Fixture);
 

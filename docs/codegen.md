@@ -31,7 +31,7 @@ LIR ownership and codecs: [lir.md](lir.md). Frontend lowering into LIR: [ir-gene
 | --- | --- |
 | `Lovelace.Compiler.Backend` | Shared `Backend_Error`, `Byte_Sequence`, emit result shapes |
 | `Lovelace.Compiler.Backend.Model` | In-memory component sketch after lowering |
-| `Lovelace.Compiler.Backend.Lowering` | `Lower` (Validate, Unit-only check, `_start` / exports) |
+| `Lovelace.Compiler.Backend.Lowering` | `Lower` (Validate, Unit return, core param widening, `_start` / exports) |
 | `Lovelace.Compiler.Backend.Wit` | Companion WIT printer |
 | `Lovelace.Compiler.Backend.Leb128` | Unsigned / signed LEB128 for binary emit |
 | `Lovelace.Compiler.Backend.Wasm` | Component binary encoder |
@@ -71,10 +71,34 @@ Component Model `externname`s must be kebab-case; PascalCase LIR identifiers suc
 | LIR signature | Supported |
 | --- | --- |
 | `Unit` return, no parameters | Yes → core `[] -> []`, WIT/component `func()` |
+| `Unit` return, numeric parameters, **not** export/entrypoint | Yes → core functype with widened params (see below); no WIT line (not exported) |
 | Entrypoint wrapper `_start` | Yes → core `[] -> [i32]`, component `func() -> result` inside `wasi:cli/run` |
-| Any other `Value_Type` or parameters | No → `Unsupported_Type` |
+| Non-`Unit` return | No → `Unsupported_Type` |
+| Export or entrypoint with parameters | No → `Unsupported_Type` (module procedures are not exported yet) |
 
-`I128`, `U128`, `F16`, and other scalars remain deferred backend work.
+### LIR → core WASM → WIT (when exported later)
+
+Small integers widen to core `i32` / `i64`. WIT column is the Canonical ABI / WIT type for a future export of that parameter; this slice does not emit parameterful WIT exports yet.
+
+| LIR | Core WASM | WIT (future export) |
+| --- | --- | --- |
+| `I8` | `i32` | `s8` |
+| `I16` | `i32` | `s16` |
+| `I32` | `i32` | `s32` |
+| `I64` | `i64` | `s64` |
+| `U8` | `i32` | `u8` |
+| `U16` | `i32` | `u16` |
+| `U32` | `i32` | `u32` |
+| `U64` | `i64` | `u64` |
+| `F32` | `f32` | `f32` |
+| `F64` | `f64` | `f64` |
+
+Example core WAT for a non-exported module procedure with parameters:
+
+```wat
+(func $Whatever (param i32 f32 f32)
+)
+```
 
 In the component type section, bare `(result)` is a separate `defvaltype`; the `run` functype references it by type index (inline `0x6a` is not a valid `valtype`).
 
@@ -146,4 +170,6 @@ Each failure carries a UTF-8 `Detail` string.
 
 ## Tests
 
-Nested crate `lovelace_compiler_tests` covers export-only, entrypoint, both flags, two exports, noop bodies, unsupported types, invalid modules, component preamble bytes, and Wasm/Wat WIT equality. Run with `alr -C compiler/tests run`.
+Nested crate `lovelace_compiler_tests` covers export-only, entrypoint, both flags, two exports, noop bodies, typed core parameters, unsupported types, invalid modules, component preamble bytes, and Wasm/Wat WIT equality. Run with `alr -C compiler/tests run`.
+
+End-to-end CLI checks live in `lovelace/integration_tests`: build samples, optionally `wasm-tools validate` every `.wasm`/`.wat`, and run entrypoint programs with `wasmtime` when present.

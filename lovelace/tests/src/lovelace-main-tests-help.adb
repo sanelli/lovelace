@@ -16,10 +16,26 @@ package body Lovelace.Main.Tests.Help is
 
    procedure Test_Help_Build_Topic (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Tokens : Cli_Arguments.String_Vectors.Vector;
+      Tokens       : Cli_Arguments.String_Vectors.Vector;
+      Discard_Path : constant String :=
+        Ada.Directories.Compose
+          (Ada.Directories.Current_Directory, "help-build-out.txt");
+      Discard_File : Ada.Text_IO.File_Type;
+      Succeeded    : Boolean;
    begin
       Tokens.Append ("build");
-      AUnit.Assertions.Assert (Cli_Help.Run (Tokens), "help build");
+
+      Ada.Text_IO.Create (Discard_File, Ada.Text_IO.Out_File, Discard_Path);
+      Ada.Text_IO.Set_Output (Discard_File);
+      Succeeded := Cli_Help.Run (Tokens);
+      Ada.Text_IO.Set_Output (Ada.Text_IO.Standard_Output.all);
+      Ada.Text_IO.Close (Discard_File);
+
+      if Ada.Directories.Exists (Discard_Path) then
+         Ada.Directories.Delete_File (Discard_Path);
+      end if;
+
+      AUnit.Assertions.Assert (Succeeded, "help build");
    end Test_Help_Build_Topic;
 
    procedure Test_Help_Mentions_Build (The_Test : in out Fixture) is

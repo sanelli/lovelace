@@ -1,6 +1,9 @@
 with Lovelace.Common.Utf_8;
+with Lovelace.Lir.Types;
 
 package body Lovelace.Lir.Modules is
+
+   package Types renames Lovelace.Lir.Types;
 
    procedure Append_Dependency (The_Module : in out Module; Dependency_Name : String) is
    begin
@@ -155,6 +158,33 @@ package body Lovelace.Lir.Modules is
                   if Ada.Strings.Unbounded.To_String (Prior_Signature.Name) = Subroutine_Name_Text then
                      return Errors.Validation_Results.From_Failure (Errors.Duplicate_Name);
                   end if;
+               end;
+            end loop;
+
+            for Parameter_Index in 1 .. Types.Length (The_Signature.Parameters) loop
+               declare
+                  The_Parameter       : constant Types.Parameter :=
+                    Types.Element (The_Signature.Parameters, Parameter_Index);
+                  Parameter_Name_Text : constant String := Ada.Strings.Unbounded.To_String (The_Parameter.Name);
+               begin
+                  if Parameter_Name_Text'Length = 0 then
+                     return Errors.Validation_Results.From_Failure (Errors.Empty_Name);
+                  end if;
+
+                  if not Is_Valid_Utf_8 (Parameter_Name_Text) then
+                     return Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
+                  end if;
+
+                  for Prior_Parameter_Index in 1 .. Parameter_Index - 1 loop
+                     declare
+                        Prior_Parameter : constant Types.Parameter :=
+                          Types.Element (The_Signature.Parameters, Prior_Parameter_Index);
+                     begin
+                        if Ada.Strings.Unbounded.To_String (Prior_Parameter.Name) = Parameter_Name_Text then
+                           return Errors.Validation_Results.From_Failure (Errors.Duplicate_Name);
+                        end if;
+                     end;
+                  end loop;
                end;
             end loop;
 

@@ -17,15 +17,15 @@ package Lovelace.Lir.Subroutines is
    --  Bit 1: subroutine is the module entrypoint.
    Entrypoint_Flag : constant Subroutine_Flags := 2**1;
 
-   --  Name, return type, and parameter types.
+   --  Name, return type, and named parameters.
    --  @field Name UTF-8 subroutine name.
    --  @field Return_Type Result type; Unit means a procedure (no stack
    --  result) for the Lovelace backend.
-   --  @field Parameter_Types Ordered parameter types (unnamed).
+   --  @field Parameters Ordered named parameters (name + type each).
    type Signature is record
-      Name            : Ada.Strings.Unbounded.Unbounded_String;
-      Return_Type     : Types.Value_Type;
-      Parameter_Types : Types.Value_Type_Sequence;
+      Name        : Ada.Strings.Unbounded.Unbounded_String;
+      Return_Type : Types.Value_Type;
+      Parameters  : Types.Parameter_Sequence;
    end record;
 
    --  In-memory source origin for a subroutine (also stored in .lir / .tlir v1.0 layouts).
