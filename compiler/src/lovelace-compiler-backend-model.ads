@@ -17,8 +17,7 @@ package Lovelace.Compiler.Backend.Model is
    --  @field Value Immediate for I32_Constant.
    type Core_Instruction_Kind is (Call_Function, I32_Constant);
 
-   type Core_Instruction (Kind : Core_Instruction_Kind := Call_Function) is
-   record
+   type Core_Instruction (Kind : Core_Instruction_Kind := Call_Function) is record
       case Kind is
          when Call_Function =>
             Target_Index : Positive;
@@ -38,8 +37,7 @@ package Lovelace.Compiler.Backend.Model is
    --  Append Item to Sequence.
    --  @param Sequence Sequence to extend.
    --  @param Item Instruction to append.
-   procedure Append
-     (Sequence : in out Instruction_Sequence; Item : Core_Instruction);
+   procedure Append (Sequence : in out Instruction_Sequence; Item : Core_Instruction);
 
    --  Number of instructions in Sequence.
    --  @param Sequence Instruction list.
@@ -50,20 +48,50 @@ package Lovelace.Compiler.Backend.Model is
    --  @param Sequence Instruction list.
    --  @param Index 1-based index.
    --  @return Instruction at Index.
-   function Element
-     (Sequence : Instruction_Sequence; Index : Positive)
-      return Core_Instruction;
+   function Element (Sequence : Instruction_Sequence; Index : Positive) return Core_Instruction;
+
+   --  Core WASM value type used in functypes (after LIR numeric widening).
+   --  @enum I32 32-bit integer (also widened I8/I16/U8/U16/U32).
+   --  @enum I64 64-bit integer (also widened U64).
+   --  @enum F32 32-bit float.
+   --  @enum F64 64-bit float.
+   type Core_Value_Type is (I32, I64, F32, F64);
+
+   --  Ordered list of core parameter types for a Core_Function.
+   type Core_Parameter_Sequence is private;
+
+   --  Empty core parameter sequence.
+   --  @return Sequence with no elements.
+   function Empty_Parameters return Core_Parameter_Sequence;
+
+   --  Append The_Type to the end of Sequence.
+   --  @param Sequence Sequence to extend.
+   --  @param The_Type Core parameter type.
+   procedure Append (Sequence : in out Core_Parameter_Sequence; The_Type : Core_Value_Type);
+
+   --  Number of parameters in Sequence.
+   --  @param Sequence Parameter list.
+   --  @return Element count.
+   function Length (Sequence : Core_Parameter_Sequence) return Natural;
+
+   --  Parameter type at Index (1 .. Length (Sequence)).
+   --  @param Sequence Parameter list.
+   --  @param Index 1-based index.
+   --  @return Core value type at Index.
+   function Element (Sequence : Core_Parameter_Sequence; Index : Positive) return Core_Value_Type;
 
    --  One core function in the nested core module.
    --  @field Name UTF-8 core function name (LIR name or "_start").
+   --  @field Parameter_Types Core parameter types (widened from LIR); empty for `_start`.
    --  @field Result_Is_I32 True when the function returns i32 (_start); False for Unit [].
    --  @field Instructions Body instructions (noop already stripped).
    --  @field Core_Exported True when the core module must export this function for aliasing.
    type Core_Function is record
-      Name          : Ada.Strings.Unbounded.Unbounded_String;
-      Result_Is_I32 : Boolean;
-      Instructions  : Instruction_Sequence;
-      Core_Exported : Boolean;
+      Name            : Ada.Strings.Unbounded.Unbounded_String;
+      Parameter_Types : Core_Parameter_Sequence;
+      Result_Is_I32   : Boolean;
+      Instructions    : Instruction_Sequence;
+      Core_Exported   : Boolean;
    end record;
 
    --  One canon-lifted component export.
@@ -95,8 +123,7 @@ package Lovelace.Compiler.Backend.Model is
    --  @param The_Model Model to query.
    --  @param Index 1-based index.
    --  @return Core function at Index.
-   function Get_Function
-     (The_Model : Component_Model; Index : Positive) return Core_Function;
+   function Get_Function (The_Model : Component_Model; Index : Positive) return Core_Function;
 
    --  Number of component exports (lifted).
    --  @param The_Model Model to query.
@@ -107,8 +134,7 @@ package Lovelace.Compiler.Backend.Model is
    --  @param The_Model Model to query.
    --  @param Index 1-based index.
    --  @return Lifted export at Index.
-   function Get_Export
-     (The_Model : Component_Model; Index : Positive) return Lifted_Export;
+   function Get_Export (The_Model : Component_Model; Index : Positive) return Lifted_Export;
 
    --  True when the model includes a run export (entrypoint was present).
    --  @param The_Model Model to query.
@@ -123,35 +149,32 @@ package Lovelace.Compiler.Backend.Model is
    --  Append The_Function to The_Model.
    --  @param The_Model Model to extend.
    --  @param The_Function Core function to append.
-   procedure Append_Function
-     (The_Model : in out Component_Model; The_Function : Core_Function);
+   procedure Append_Function (The_Model : in out Component_Model; The_Function : Core_Function);
 
    --  Append The_Export to The_Model.
    --  @param The_Model Model to extend.
    --  @param The_Export Lifted export to append.
-   procedure Append_Export
-     (The_Model : in out Component_Model; The_Export : Lifted_Export);
+   procedure Append_Export (The_Model : in out Component_Model; The_Export : Lifted_Export);
 
 private
 
    package Instruction_Vectors is new
-     Ada.Containers.Indefinite_Vectors
-       (Index_Type   => Positive,
-        Element_Type => Core_Instruction);
+     Ada.Containers.Indefinite_Vectors (Index_Type => Positive, Element_Type => Core_Instruction);
 
    type Instruction_Sequence is record
       Items : Instruction_Vectors.Vector;
    end record;
 
-   package Function_Vectors is new
-     Ada.Containers.Vectors
-       (Index_Type   => Positive,
-        Element_Type => Core_Function);
+   package Core_Parameter_Vectors is new
+     Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Core_Value_Type);
 
-   package Export_Vectors is new
-     Ada.Containers.Vectors
-       (Index_Type   => Positive,
-        Element_Type => Lifted_Export);
+   type Core_Parameter_Sequence is record
+      Items : Core_Parameter_Vectors.Vector;
+   end record;
+
+   package Function_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Core_Function);
+
+   package Export_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Lifted_Export);
 
    type Component_Model is record
       Module_Name_Value : Ada.Strings.Unbounded.Unbounded_String;

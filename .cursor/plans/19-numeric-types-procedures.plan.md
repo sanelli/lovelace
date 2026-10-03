@@ -28,7 +28,7 @@ todos:
     status: completed
   - id: "9"
     content: "9. Backend: lower all remaining numeric param sizes to core WASM/WAT functypes; document WIT mapping; update backend tests."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Samples, docs (grammar/tokenizer/parser/lir/codegen/diagnostics), and remaining AUnit/CLI coverage."
     status: pending

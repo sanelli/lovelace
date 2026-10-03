@@ -147,6 +147,8 @@ package body Lovelace.Compiler.Tests.Suite is
       Result.Add_Test (Backend_Caller.Create ("two exports", Lovelace.Compiler.Tests.Backend.Test_Two_Exports'Access));
       Result.Add_Test (Backend_Caller.Create ("noop body", Lovelace.Compiler.Tests.Backend.Test_Noop_Body'Access));
       Result.Add_Test
+        (Backend_Caller.Create ("typed parameters", Lovelace.Compiler.Tests.Backend.Test_Typed_Parameters'Access));
+      Result.Add_Test
         (Backend_Caller.Create ("unsupported type", Lovelace.Compiler.Tests.Backend.Test_Unsupported_Type'Access));
       Result.Add_Test
         (Backend_Caller.Create ("invalid module", Lovelace.Compiler.Tests.Backend.Test_Invalid_Module'Access));

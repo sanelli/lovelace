@@ -27,7 +27,11 @@ package Lovelace.Compiler.Tests.Backend is
    --  @param The_Test Unused fixture.
    procedure Test_Noop_Body (The_Test : in out Fixture);
 
-   --  Unsupported I32 return type yields Unsupported_Type.
+   --  Non-exported Unit procedure parameters widen into core WAT/WASM functypes.
+   --  @param The_Test Unused fixture.
+   procedure Test_Typed_Parameters (The_Test : in out Fixture);
+
+   --  Unsupported I32 return, and export with parameters, yield Unsupported_Type.
    --  @param The_Test Unused fixture.
    procedure Test_Unsupported_Type (The_Test : in out Fixture);
 

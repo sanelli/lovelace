@@ -40,6 +40,11 @@ package body Lovelace.Compiler.Tests.Backend is
      (Name : String; Flags : Subroutines.Subroutine_Flags; Noop_Count : Natural := 0) return Subroutines.Subroutine;
    --  Build a Unit/no-params subroutine with optional noop instructions.
 
+   function Make_Unit_Subroutine_With_Parameters
+     (Name : String; Flags : Subroutines.Subroutine_Flags; Parameters : Types.Parameter_Sequence)
+      return Subroutines.Subroutine;
+   --  Build a Unit-return subroutine with Parameters.
+
    function Must_Emit_Wasm
      (The_Module : Modules.Module; Message : String) return Lovelace.Compiler.Backend.Wasm_Emit_Result;
    --  Require Emit_Wasm success.
@@ -124,6 +129,16 @@ package body Lovelace.Compiler.Tests.Backend is
 
       return Result;
    end Make_Unit_Subroutine;
+
+   function Make_Unit_Subroutine_With_Parameters
+     (Name : String; Flags : Subroutines.Subroutine_Flags; Parameters : Types.Parameter_Sequence)
+      return Subroutines.Subroutine
+   is
+      The_Signature : constant Subroutines.Signature :=
+        (Name => Ada.Strings.Unbounded.To_Unbounded_String (Name), Return_Type => Types.Unit, Parameters => Parameters);
+   begin
+      return Subroutines.Create (The_Signature => The_Signature, Flags => Flags);
+   end Make_Unit_Subroutine_With_Parameters;
 
    function Must_Emit_Wasm
      (The_Module : Modules.Module; Message : String) return Lovelace.Compiler.Backend.Wasm_Emit_Result
@@ -294,6 +309,53 @@ package body Lovelace.Compiler.Tests.Backend is
       Assert_Not_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "$_start", "two exports wat start");
    end Test_Two_Exports;
 
+   procedure Test_Typed_Parameters (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Parameters   : Types.Parameter_Sequence := Types.Empty_Sequence;
+      The_Module   : Modules.Module := Modules.Create ("Types");
+      Wat_Emitted  : Lovelace.Compiler.Backend.Wat_Emit_Result;
+      Wasm_Emitted : Lovelace.Compiler.Backend.Wasm_Emit_Result;
+   begin
+      Types.Append (Parameters, "i8", Types.I8);
+      Types.Append (Parameters, "i16", Types.I16);
+      Types.Append (Parameters, "i32", Types.I32);
+      Types.Append (Parameters, "i64", Types.I64);
+      Types.Append (Parameters, "u8", Types.U8);
+      Types.Append (Parameters, "u16", Types.U16);
+      Types.Append (Parameters, "u32", Types.U32);
+      Types.Append (Parameters, "u64", Types.U64);
+      Types.Append (Parameters, "f32", Types.F32);
+      Types.Append (Parameters, "f64", Types.F64);
+      Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine_With_Parameters ("Map", 0, Parameters));
+      Wat_Emitted := Must_Emit_Wat (The_Module, "typed parameters wat");
+      Wasm_Emitted := Must_Emit_Wasm (The_Module, "typed parameters wasm");
+
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
+         "(func $Map (param i32 i32 i32 i64 i32 i32 i32 i64 f32 f64)",
+         "typed parameters wat functype");
+      Assert_Not_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text), "export map:", "typed parameters wit no export");
+      Assert_Component_Preamble (Wasm_Emitted.Wasm_Bytes, "typed parameters wasm");
+      --  Core functype: 0x60, 10 params, i32 i32 i32 i64 i32 i32 i32 i64 f32 f64, 0 results.
+      Assert_Bytes_Contain
+        (Wasm_Emitted.Wasm_Bytes,
+         Character'Val (16#60#)
+         & Character'Val (16#0A#)
+         & Character'Val (16#7F#)
+         & Character'Val (16#7F#)
+         & Character'Val (16#7F#)
+         & Character'Val (16#7E#)
+         & Character'Val (16#7F#)
+         & Character'Val (16#7F#)
+         & Character'Val (16#7F#)
+         & Character'Val (16#7E#)
+         & Character'Val (16#7D#)
+         & Character'Val (16#7C#)
+         & Character'Val (16#00#),
+         "typed parameters wasm functype");
+   end Test_Typed_Parameters;
+
    procedure Test_Unsupported_Type (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       The_Module    : Modules.Module := Modules.Create ("Lib");
@@ -301,6 +363,8 @@ package body Lovelace.Compiler.Tests.Backend is
         (Name        => Ada.Strings.Unbounded.To_Unbounded_String ("Get"),
          Return_Type => Types.I32,
          Parameters  => Types.Empty_Sequence);
+      Export_Params : Types.Parameter_Sequence := Types.Empty_Sequence;
+      Export_Module : Modules.Module := Modules.Create ("Lib");
    begin
       Modules.Append_Subroutine
         (The_Module, Subroutines.Create (The_Signature => The_Signature, Flags => Subroutines.Export_Flag));
@@ -325,6 +389,23 @@ package body Lovelace.Compiler.Tests.Backend is
             when False =>
                AUnit.Assertions.Assert
                  (Wasm_Out.Error.Code = Lovelace.Compiler.Backend.Unsupported_Type, "unsupported type wasm: code");
+         end case;
+      end;
+
+      Types.Append (Export_Params, "x", Types.I32);
+      Modules.Append_Subroutine
+        (Export_Module, Make_Unit_Subroutine_With_Parameters ("Helper", Subroutines.Export_Flag, Export_Params));
+
+      declare
+         Wat_Out : constant Lovelace.Compiler.Backend.Wat_Emit_Result := Wat_Backend.Emit_Wat (Export_Module);
+      begin
+         case Wat_Out.Ok is
+            when True  =>
+               AUnit.Assertions.Assert (False, "export params wat: expected failure");
+
+            when False =>
+               AUnit.Assertions.Assert
+                 (Wat_Out.Error.Code = Lovelace.Compiler.Backend.Unsupported_Type, "export params wat: code");
          end case;
       end;
    end Test_Unsupported_Type;
