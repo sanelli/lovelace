@@ -132,6 +132,13 @@ package body Lovelace.Compiler.Tests.Suite is
       Result.Add_Test
         (Ir_Generator_Caller.Create
            ("identifier names", Lovelace.Compiler.Tests.Ir_Generator.Test_Identifier_Names'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
+           ("module procedure parameters",
+            Lovelace.Compiler.Tests.Ir_Generator.Test_Module_Procedure_Parameters'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
+           ("parameter type mapping", Lovelace.Compiler.Tests.Ir_Generator.Test_Parameter_Type_Mapping'Access));
       Result.Add_Test (Backend_Caller.Create ("export only", Lovelace.Compiler.Tests.Backend.Test_Export_Only'Access));
       Result.Add_Test (Backend_Caller.Create ("entrypoint", Lovelace.Compiler.Tests.Backend.Test_Entrypoint'Access));
       Result.Add_Test

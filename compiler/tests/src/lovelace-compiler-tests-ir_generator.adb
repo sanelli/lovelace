@@ -202,4 +202,91 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       Assert_Entrypoint_Lir (At_Lir, "@foo", At_Ast, "@foo name");
    end Test_Identifier_Names;
 
+   procedure Test_Module_Procedure_Parameters (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text    : constant String :=
+        "module MyModule; procedure Whatever(x : integer; y, z : float<32>); begin end; end.";
+      Ast_Module     : constant Ast.Module := Support.Must_Parse (Source_Text, "module procedure params");
+      Lir_Module     : constant Modules.Module := Support.Must_Generate (Ast_Module, "module procedure params");
+      Lir_Subroutine : constant Subroutines.Subroutine := Modules.Get_Subroutine (Lir_Module, 1);
+      The_Signature  : constant Subroutines.Signature := Subroutines.Get_Signature (Lir_Subroutine);
+      Flags          : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (Lir_Subroutine);
+      Parameters     : constant Lovelace.Lir.Types.Parameter_Sequence := The_Signature.Parameters;
+   begin
+      AUnit.Assertions.Assert (Modules.Name (Lir_Module) = "MyModule", "module procedure params: module name");
+      AUnit.Assertions.Assert (Modules.Subroutine_Count (Lir_Module) = 1, "module procedure params: one sub");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (The_Signature.Name) = "Whatever", "module procedure params: name");
+      AUnit.Assertions.Assert (The_Signature.Return_Type = Lovelace.Lir.Types.Unit, "module procedure params: Unit");
+      AUnit.Assertions.Assert (not Subroutines.Has_Export (Flags), "module procedure params: no export");
+      AUnit.Assertions.Assert (not Subroutines.Has_Entrypoint (Flags), "module procedure params: no entry");
+      AUnit.Assertions.Assert (Lovelace.Lir.Types.Length (Parameters) = 3, "module procedure params: three");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Lovelace.Lir.Types.Element (Parameters, 1).Name) = "x",
+         "module procedure params: x name");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Types.Element (Parameters, 1).The_Type = Lovelace.Lir.Types.I32,
+         "module procedure params: x I32");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Lovelace.Lir.Types.Element (Parameters, 2).Name) = "y",
+         "module procedure params: y name");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Types.Element (Parameters, 2).The_Type = Lovelace.Lir.Types.F32,
+         "module procedure params: y F32");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Lovelace.Lir.Types.Element (Parameters, 3).Name) = "z",
+         "module procedure params: z name");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Types.Element (Parameters, 3).The_Type = Lovelace.Lir.Types.F32,
+         "module procedure params: z F32");
+   end Test_Module_Procedure_Parameters;
+
+   procedure Test_Parameter_Type_Mapping (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text   : constant String :=
+        "module Types; procedure Map("
+        & "i8 : signed integer<8>; "
+        & "i16 : signed integer<16>; "
+        & "i32 : integer; "
+        & "i64 : integer<64>; "
+        & "u8 : unsigned integer<8>; "
+        & "u16 : unsigned integer<16>; "
+        & "u32 : unsigned integer; "
+        & "u64 : unsigned integer<64>; "
+        & "f32 : float; "
+        & "f64 : float<64>"
+        & "); begin end; end.";
+      Ast_Module    : constant Ast.Module := Support.Must_Parse (Source_Text, "param type mapping");
+      Lir_Module    : constant Modules.Module := Support.Must_Generate (Ast_Module, "param type mapping");
+      The_Signature : constant Subroutines.Signature :=
+        Subroutines.Get_Signature (Modules.Get_Subroutine (Lir_Module, 1));
+      Parameters    : constant Lovelace.Lir.Types.Parameter_Sequence := The_Signature.Parameters;
+
+      procedure Assert_Param (Index : Positive; Expected_Name : String; Expected_Type : Lovelace.Lir.Types.Value_Type);
+      --  Assert Parameters (Index) has Expected_Name and Expected_Type.
+
+      procedure Assert_Param (Index : Positive; Expected_Name : String; Expected_Type : Lovelace.Lir.Types.Value_Type)
+      is
+         The_Parameter : constant Lovelace.Lir.Types.Parameter := Lovelace.Lir.Types.Element (Parameters, Index);
+      begin
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String (The_Parameter.Name) = Expected_Name,
+            "param type mapping: " & Expected_Name & " name");
+         AUnit.Assertions.Assert
+           (The_Parameter.The_Type = Expected_Type, "param type mapping: " & Expected_Name & " type");
+      end Assert_Param;
+   begin
+      AUnit.Assertions.Assert (Lovelace.Lir.Types.Length (Parameters) = 10, "param type mapping: ten params");
+      Assert_Param (1, "i8", Lovelace.Lir.Types.I8);
+      Assert_Param (2, "i16", Lovelace.Lir.Types.I16);
+      Assert_Param (3, "i32", Lovelace.Lir.Types.I32);
+      Assert_Param (4, "i64", Lovelace.Lir.Types.I64);
+      Assert_Param (5, "u8", Lovelace.Lir.Types.U8);
+      Assert_Param (6, "u16", Lovelace.Lir.Types.U16);
+      Assert_Param (7, "u32", Lovelace.Lir.Types.U32);
+      Assert_Param (8, "u64", Lovelace.Lir.Types.U64);
+      Assert_Param (9, "f32", Lovelace.Lir.Types.F32);
+      Assert_Param (10, "f64", Lovelace.Lir.Types.F64);
+   end Test_Parameter_Type_Mapping;
+
 end Lovelace.Compiler.Tests.Ir_Generator;

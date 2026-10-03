@@ -33,7 +33,7 @@ package Lovelace.Compiler.Ir_Generator is
       end case;
    end record;
 
-   --  Lower The_Module into LIR (names, flags, Unit return type, origins, empty bodies).
+   --  Lower The_Module into LIR (names, flags, typed named parameters, origins, empty bodies).
    --  @param The_Module Frontend compilation-unit AST.
    --  @return LIR module, or Internal_Error when Validate fails.
    function Generate (The_Module : Ast.Module) return Generate_Result;

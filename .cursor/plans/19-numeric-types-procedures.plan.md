@@ -25,7 +25,7 @@ todos:
     status: completed
   - id: "8"
     content: "8. IR Generator: map type expressions and named parameters into LIR signatures."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Backend: lower all remaining numeric param sizes to core WASM/WAT functypes; document WIT mapping; update backend tests."
     status: pending
