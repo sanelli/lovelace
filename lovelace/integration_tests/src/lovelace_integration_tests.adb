@@ -14,9 +14,11 @@ procedure Lovelace_Integration_Tests is
    Reporter : Lovelace.Test_Status.Silent_Reporter;
    Options  : AUnit.Options.AUnit_Options := AUnit.Options.Default_Options;
 begin
+   Lovelace.Test_Status.Report_Suite_Header ("lovelace integration tests");
    Lovelace.Main.Integration_Tests.Support.Report_And_Require_Tools;
 
    --  Per-test lines come from Support.Report_Test_Result.
    Options.Report_Successes := False;
    Runner (Reporter, Options);
+   Lovelace.Test_Status.Report_Suite_Footer;
 end Lovelace_Integration_Tests;

@@ -30,10 +30,19 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
       Validate_Status : Helpers.Tool_Status;
    begin
       Helpers.Build_Sample
-        (Lovelace_Path => Lovelace_Path, Sample_Path => Sample_Path, Output_Root => Output_Root, Message => Message);
-      Helpers.Assert_Build_Artifacts (Output_Root => Output_Root, Unit_Name => Unit_Name, Message => Message);
+        (Lovelace_Path => Lovelace_Path,
+         Sample_Path   => Sample_Path,
+         Output_Root   => Output_Root,
+         Message       => Message);
+      Helpers.Assert_Build_Artifacts
+        (Output_Root => Output_Root,
+         Unit_Name   => Unit_Name,
+         Message     => Message);
       Helpers.Validate_Unit_Artifacts
-        (Output_Root => Output_Root, Unit_Name => Unit_Name, Message => Message, Status => Validate_Status);
+        (Output_Root => Output_Root,
+         Unit_Name   => Unit_Name,
+         Message     => Message,
+         Status      => Validate_Status);
 
       case Validate_Status is
          when Helpers.Missing   =>
@@ -49,16 +58,22 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
 
    procedure Test_Build_And_Validate (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Test_Name         : constant String := "build and validate modules";
+      Test_Name         : constant String :=
+        "build: validate modules Empty and Foo.Bar";
       Lovelace_Path     : constant String := Helpers.Locate_Lovelace;
-      Output_Root       : constant String := Helpers.Locate_Output_Root ("modules");
-      Empty_Sample      : constant String := Helpers.Locate_Sample ("module", "Empty.love");
-      Dotted_Sample     : constant String := Helpers.Locate_Sample ("module", "Foo.Bar.love");
-      Procedures_Sample : constant String := Helpers.Locate_Sample ("module", "Procedures.love");
+      Output_Root       : constant String :=
+        Helpers.Locate_Output_Root ("modules");
+      Empty_Sample      : constant String :=
+        Helpers.Locate_Sample ("module", "Empty.love");
+      Dotted_Sample     : constant String :=
+        Helpers.Locate_Sample ("module", "Foo.Bar.love");
+      Procedures_Sample : constant String :=
+        Helpers.Locate_Sample ("module", "Procedures.love");
       Aggregate_Status  : Helpers.Tool_Status := Helpers.Succeeded;
       Outcome           : Helpers.Test_Outcome := Helpers.Ok;
    begin
-      AUnit.Assertions.Assert (Lovelace_Path'Length > 0, "lovelace executable present");
+      AUnit.Assertions.Assert
+        (Lovelace_Path'Length > 0, "lovelace executable present");
 
       Helpers.Reset_Output_Root (Output_Root);
 

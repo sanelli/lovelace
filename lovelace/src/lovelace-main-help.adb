@@ -6,39 +6,67 @@ package body Lovelace.Main.Help is
    procedure Put_General (File : Ada.Text_IO.File_Type);
    procedure Put_Line (File : Ada.Text_IO.File_Type; Text : String);
 
+   function Run_To_File
+     (Command_Arguments : Arguments.String_Vectors.Vector;
+      File              : Ada.Text_IO.File_Type) return Boolean;
+   --  Write help for Command_Arguments to File.
+
    procedure Put_Build (File : Ada.Text_IO.File_Type) is
    begin
       Put_Line (File, "Usage: lovelace build <file.love> [options...]");
       Put_Line (File, "");
-      Put_Line (File, "Compile a Lovelace source file through tokenize, parse, LIR, and");
-      Put_Line (File, "WASM/WAT/WIT backends. The program or module identifier must match");
-      Put_Line (File, "the .love basename (excluding the extension; dots are allowed in");
+      Put_Line
+        (File,
+         "Compile a Lovelace source file through tokenize, parse, LIR, and");
+      Put_Line
+        (File,
+         "WASM/WAT/WIT backends. The program or module identifier must match");
+      Put_Line
+        (File,
+         "the .love basename (excluding the extension; dots are allowed in");
       Put_Line (File, "module names, e.g. Foo.Bar.love).");
       Put_Line (File, "");
       Put_Line (File, "Options:");
-      Put_Line (File, "  --force                  Rebuild from source; ignore incremental skips");
-      Put_Line (File, "  --no-wit                 Do not write a companion .wit file");
-      Put_Line (File, "  --output-format <fmt>    wasm (default), wat, wasm,wat, or wat,wasm");
-      Put_Line (File, "  --output-folder <path>   Replace the default .output directory");
+      Put_Line
+        (File,
+         "  --force                  Rebuild from source; ignore incremental skips");
+      Put_Line
+        (File,
+         "  --no-wit                 Do not write a companion .wit file");
+      Put_Line
+        (File,
+         "  --output-format <fmt>    wasm (default), wat, wasm,wat, or wat,wasm");
+      Put_Line
+        (File,
+         "  --output-folder <path>   Replace the default .output directory");
       Put_Line (File, "");
       Put_Line (File, "Output layout under the output folder:");
       Put_Line (File, "  obj/<Unit>.lir");
-      Put_Line (File, "  bin/<Unit>.wasm and/or .wat, plus .wit unless --no-wit");
+      Put_Line
+        (File, "  bin/<Unit>.wasm and/or .wat, plus .wit unless --no-wit");
       Put_Line (File, "");
-      Put_Line (File, "Incremental builds skip stages whose outputs are newer than inputs.");
-      Put_Line (File, "Pass --force to rebuild every stage from the .love file.");
+      Put_Line
+        (File,
+         "Incremental builds skip stages whose outputs are newer than inputs.");
+      Put_Line
+        (File, "Pass --force to rebuild every stage from the .love file.");
       Put_Line (File, "");
       Put_Line (File, "Examples:");
       Put_Line (File, "  lovelace build foo.love");
       Put_Line (File, "  lovelace build foo.love --force");
       Put_Line (File, "  lovelace build foo.love --no-wit");
-      Put_Line (File, "  lovelace build foo.love --output-format wat --no-wit");
-      Put_Line (File, "  lovelace build foo.love --no-wit --output-format wasm --output-folder bar");
+      Put_Line
+        (File, "  lovelace build foo.love --output-format wat --no-wit");
+      Put_Line
+        (File,
+         "  lovelace build foo.love --no-wit --output-format wasm --output-folder bar");
    end Put_Build;
 
    procedure Put_General (File : Ada.Text_IO.File_Type) is
    begin
-      Put_Line (File, "Usage: lovelace [global-options...] <command> [command-parameters...]");
+      Put_Line
+        (File,
+         "Usage: lovelace [global-options...] <command> [command-parameters...]");
       Put_Line (File, "");
       Put_Line (File, "Global options (must appear before the command):");
       Put_Line (File, "  --no-logo     Do not print the startup logo");
@@ -58,13 +86,24 @@ package body Lovelace.Main.Help is
    end Put_Line;
 
    function Run
-     (Command_Arguments : Arguments.String_Vectors.Vector; To_Standard_Error : Boolean := False) return Boolean
-   is
-      File : constant Ada.Text_IO.File_Access :=
-        (if To_Standard_Error then Ada.Text_IO.Standard_Error else Ada.Text_IO.Standard_Output);
+     (Command_Arguments : Arguments.String_Vectors.Vector;
+      To_Standard_Error : Boolean := False) return Boolean is
+   begin
+      if To_Standard_Error then
+         return
+           Run_To_File (Command_Arguments, Ada.Text_IO.Standard_Error.all);
+      else
+         --  Current_Output so tests can redirect without printing to the console.
+         return Run_To_File (Command_Arguments, Ada.Text_IO.Current_Output);
+      end if;
+   end Run;
+
+   function Run_To_File
+     (Command_Arguments : Arguments.String_Vectors.Vector;
+      File              : Ada.Text_IO.File_Type) return Boolean is
    begin
       if Natural (Command_Arguments.Length) = 0 then
-         Put_General (File.all);
+         Put_General (File);
          return True;
       end if;
 
@@ -73,25 +112,29 @@ package body Lovelace.Main.Help is
             Topic : constant String := Command_Arguments.Element (1);
          begin
             if Topic = "build" then
-               Put_Build (File.all);
+               Put_Build (File);
                return True;
             elsif Topic = "help" then
-               Put_Line (File.all, "Usage: lovelace help [command]");
-               Put_Line (File.all, "Show general help, or details for build, help, or version.");
+               Put_Line (File, "Usage: lovelace help [command]");
+               Put_Line
+                 (File,
+                  "Show general help, or details for build, help, or version.");
                return True;
             elsif Topic = "version" then
-               Put_Line (File.all, "Usage: lovelace version");
-               Put_Line (File.all, "Print the product version as 0.0.1-alpha.1 @ <githash>.");
+               Put_Line (File, "Usage: lovelace version");
+               Put_Line
+                 (File,
+                  "Print the product version as 0.0.1-alpha.1 @ <githash>.");
                return True;
             else
-               Put_Line (File.all, "Unknown help topic '" & Topic & "'.");
+               Put_Line (File, "Unknown help topic '" & Topic & "'.");
                return False;
             end if;
          end;
       end if;
 
-      Put_Line (File.all, "Usage: lovelace help [command]");
+      Put_Line (File, "Usage: lovelace help [command]");
       return False;
-   end Run;
+   end Run_To_File;
 
 end Lovelace.Main.Help;

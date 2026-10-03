@@ -12,6 +12,16 @@ package Lovelace.Test_Status is
    --  @enum Inconclusive Optional tool or precondition missing.
    type Test_Outcome is (Ok, Fail, Inconclusive);
 
+   --  Print a cyan suite banner:
+   --  ===========
+   --  == name ==
+   --  ===========
+   --  @param Name Suite display name (e.g. "lovelace", "common").
+   procedure Report_Suite_Header (Name : String);
+
+   --  Print a blank line after a suite's status lines.
+   procedure Report_Suite_Footer;
+
    --  Print "NAME  [OK|FAIL|INCONCLUSIVE]" with colored status.
    --  @param Name Test display name.
    --  @param Outcome Result to print.

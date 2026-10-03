@@ -173,17 +173,16 @@ package body Lovelace.Main.Integration_Tests.Support is
       Wasm_Tools_Path : constant String := Locate_Tool ("wasm-tools");
       Wasmtime_Path   : constant String := Locate_Tool ("wasmtime");
    begin
-      Ada.Text_IO.Put_Line ("tools:");
       if Wasm_Tools_Path'Length = 0 then
-         Ada.Text_IO.Put_Line ("  wasm-tools  [missing]");
+         Report_Test_Result ("tools: wasm-tools available", Fail);
       else
-         Ada.Text_IO.Put_Line ("  wasm-tools  [available] " & Wasm_Tools_Path);
+         Report_Test_Result ("tools: wasm-tools available", Ok);
       end if;
 
       if Wasmtime_Path'Length = 0 then
-         Ada.Text_IO.Put_Line ("  wasmtime    [missing]");
+         Report_Test_Result ("tools: wasmtime available", Fail);
       else
-         Ada.Text_IO.Put_Line ("  wasmtime    [available] " & Wasmtime_Path);
+         Report_Test_Result ("tools: wasmtime available", Ok);
       end if;
 
       AUnit.Assertions.Assert
@@ -192,7 +191,6 @@ package body Lovelace.Main.Integration_Tests.Support is
       AUnit.Assertions.Assert
         (Wasmtime_Path'Length > 0,
          "wasmtime must be on PATH for integration tests");
-      Ada.Text_IO.New_Line;
    end Report_And_Require_Tools;
 
    procedure Report_Test_Result (Name : String; Outcome : Test_Outcome) is

@@ -10,5 +10,7 @@ procedure Lovelace_Tests is
      AUnit.Run.Test_Runner (Lovelace.Main.Tests.Suite.Suite);
    Reporter : Lovelace.Test_Status.Status_Reporter;
 begin
+   Lovelace.Test_Status.Report_Suite_Header ("lovelace");
    Runner (Reporter);
+   Lovelace.Test_Status.Report_Suite_Footer;
 end Lovelace_Tests;

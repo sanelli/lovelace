@@ -37,7 +37,7 @@ todos:
     status: completed
   - id: "12"
     content: "12. Push (proxy env cleared) and open a PR with gh pr create."
-    status: pending
+    status: completed
 isProject: false
 ---
 

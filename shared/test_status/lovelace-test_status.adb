@@ -11,8 +11,9 @@ package body Lovelace.Test_Status is
    ANSI_Green : constant String := ASCII.ESC & "[32m";
    ANSI_Red   : constant String := ASCII.ESC & "[31m";
    ANSI_Gray  : constant String := ASCII.ESC & "[90m";
+   ANSI_Cyan  : constant String := ASCII.ESC & "[36m";
 
-   Name_Width : constant := 48;
+   Name_Width : constant := 64;
 
    function Display_Name (Test : Results.Test_Result) return String;
    --  Routine name when set, otherwise test name.
@@ -91,6 +92,20 @@ package body Lovelace.Test_Status is
          Results.Result_Lists.Next (Cursor);
       end loop;
    end Report_List;
+
+   procedure Report_Suite_Footer is
+   begin
+      Ada.Text_IO.New_Line;
+   end Report_Suite_Footer;
+
+   procedure Report_Suite_Header (Name : String) is
+      Middle : constant String := "== " & Name & " ==";
+      Border : constant String (Middle'Range) := [others => '='];
+   begin
+      Ada.Text_IO.Put_Line (ANSI_Cyan & Border & ANSI_Reset);
+      Ada.Text_IO.Put_Line (ANSI_Cyan & Middle & ANSI_Reset);
+      Ada.Text_IO.Put_Line (ANSI_Cyan & Border & ANSI_Reset);
+   end Report_Suite_Header;
 
    procedure Report_Test_Result (Name : String; Outcome : Test_Outcome) is
       Prefix : constant String := Padded_Name (Name);

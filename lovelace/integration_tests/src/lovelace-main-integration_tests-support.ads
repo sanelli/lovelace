@@ -40,7 +40,7 @@ package Lovelace.Main.Integration_Tests.Support is
    --  @return Absolute output directory path.
    function Locate_Output_Root (Subfolder : String := "") return String;
 
-   --  Print wasm-tools and wasmtime paths; assert both are on PATH.
+   --  Report wasm-tools and wasmtime as status lines; assert both are on PATH.
    procedure Report_And_Require_Tools;
 
    --  Print "NAME  [OK|FAIL|INCONCLUSIVE]" for one test.
@@ -58,26 +58,36 @@ package Lovelace.Main.Integration_Tests.Support is
    --  @param Sample_Path Path to the .love source.
    --  @param Output_Root Build output folder.
    --  @param Message Assertion prefix on failure.
-   procedure Build_Sample (Lovelace_Path : String; Sample_Path : String; Output_Root : String; Message : String);
+   procedure Build_Sample
+     (Lovelace_Path : String;
+      Sample_Path   : String;
+      Output_Root   : String;
+      Message       : String);
 
    --  Assert obj/Unit_Name.lir and bin Unit_Name .wasm/.wat/.wit exist.
    --  @param Output_Root Build output folder.
    --  @param Unit_Name Unit stem (matches .love basename).
    --  @param Message Assertion prefix.
-   procedure Assert_Build_Artifacts (Output_Root : String; Unit_Name : String; Message : String);
+   procedure Assert_Build_Artifacts
+     (Output_Root : String; Unit_Name : String; Message : String);
 
    --  Assert bin/Unit_Name.wat contains Fragment.
    --  @param Output_Root Build output folder.
    --  @param Unit_Name Unit stem.
    --  @param Fragment Required UTF-8 substring.
    --  @param Message Assertion prefix.
-   procedure Assert_Wat_Contains (Output_Root : String; Unit_Name : String; Fragment : String; Message : String);
+   procedure Assert_Wat_Contains
+     (Output_Root : String;
+      Unit_Name   : String;
+      Fragment    : String;
+      Message     : String);
 
    --  If wasm-tools is on PATH, validate Path; otherwise Status is Missing.
    --  @param Path .wasm or .wat file to validate.
    --  @param Message Assertion prefix when validation fails.
    --  @param Status Missing, Succeeded, or Failed.
-   procedure Validate_Artifact (Path : String; Message : String; Status : out Tool_Status);
+   procedure Validate_Artifact
+     (Path : String; Message : String; Status : out Tool_Status);
 
    --  Validate bin/Unit_Name.wasm and .wat when wasm-tools is available.
    --  @param Output_Root Build output folder.
@@ -85,20 +95,28 @@ package Lovelace.Main.Integration_Tests.Support is
    --  @param Message Assertion prefix.
    --  @param Status Missing if wasm-tools absent; Succeeded if both files validate.
    procedure Validate_Unit_Artifacts
-     (Output_Root : String; Unit_Name : String; Message : String; Status : out Tool_Status);
+     (Output_Root : String;
+      Unit_Name   : String;
+      Message     : String;
+      Status      : out Tool_Status);
 
    --  Run an entrypoint artifact with the current host policy (wasmtime today).
    --  Future: WASI -> wasmtime; native -> lovelace CLI; web -> headless Chrome/Node + JS glue.
    --  @param Path .wasm or .wat component with wasi:cli/run.
    --  @param Message Assertion prefix when the run fails.
    --  @param Status Missing if wasmtime absent; Succeeded if exit 0.
-   procedure Run_Entrypoint_Artifact (Path : String; Message : String; Status : out Tool_Status);
+   procedure Run_Entrypoint_Artifact
+     (Path : String; Message : String; Status : out Tool_Status);
 
    --  Run bin/Unit_Name.wasm and .wat when wasmtime is available (program/entrypoint only).
    --  @param Output_Root Build output folder.
    --  @param Unit_Name Unit stem.
    --  @param Message Assertion prefix.
    --  @param Status Missing if wasmtime absent; Succeeded if both runs exit 0.
-   procedure Run_Unit_Entrypoint (Output_Root : String; Unit_Name : String; Message : String; Status : out Tool_Status);
+   procedure Run_Unit_Entrypoint
+     (Output_Root : String;
+      Unit_Name   : String;
+      Message     : String;
+      Status      : out Tool_Status);
 
 end Lovelace.Main.Integration_Tests.Support;
