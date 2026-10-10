@@ -14,7 +14,9 @@ package Lovelace.Compiler.Tokens is
    --  @enum Punctuation Separator or terminator.
    --  @enum Integer_Literal Integral numeric literal lexeme.
    --  @enum Float_Literal Floating-point numeric literal lexeme.
-   type Token_Kind is (Keyword, Identifier, Punctuation, Integer_Literal, Float_Literal);
+   --  @enum Directive Language directive introducer such as `#if`.
+   --  @enum String_Literal Double-quoted UTF-8 string lexeme (including quotes).
+   type Token_Kind is (Keyword, Identifier, Punctuation, Integer_Literal, Float_Literal, Directive, String_Literal);
 
    --  Which keyword was matched (case-sensitive).
    --  @enum Program_Keyword program
@@ -46,8 +48,16 @@ package Lovelace.Compiler.Tokens is
    --  @enum Colon :
    --  @enum Less_Than <
    --  @enum Greater_Than >
+   --  @enum Equals =
    type Punctuation_Subtype is
-     (Semicolon, Full_Stop, Left_Parenthesis, Right_Parenthesis, Comma, Colon, Less_Than, Greater_Than);
+     (Semicolon, Full_Stop, Left_Parenthesis, Right_Parenthesis, Comma, Colon, Less_Than, Greater_Than, Equals);
+
+   --  Which directive token was matched.
+   --  @enum If_Directive #if
+   --  @enum Elsif_Directive #elsif
+   --  @enum Else_Directive #else
+   --  @enum End_Directive #end
+   type Directive_Subtype is (If_Directive, Elsif_Directive, Else_Directive, End_Directive);
 
    --  One lexical token with kind-specific subtype fields.
    --  @disc Kind Selects which variant field is present.
@@ -55,6 +65,7 @@ package Lovelace.Compiler.Tokens is
    --  @field Filename Optional shared filename from tokenization.
    --  @field Keyword_Value Keyword subtype when Kind is Keyword.
    --  @field Punctuation_Value Punctuation subtype when Kind is Punctuation.
+   --  @field Directive_Value Directive subtype when Kind is Directive.
    type Token (Kind : Token_Kind) is record
       Span     : Source.Source_Span;
       Filename : Source.Filename_Option;
@@ -65,7 +76,10 @@ package Lovelace.Compiler.Tokens is
          when Punctuation =>
             Punctuation_Value : Punctuation_Subtype;
 
-         when Identifier | Integer_Literal | Float_Literal =>
+         when Directive =>
+            Directive_Value : Directive_Subtype;
+
+         when Identifier | Integer_Literal | Float_Literal | String_Literal =>
             null;
       end case;
    end record;

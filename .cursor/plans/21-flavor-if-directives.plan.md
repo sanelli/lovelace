@@ -13,16 +13,16 @@ todos:
     status: completed
   - id: "4"
     content: "4. Add Lovelace.Compiler.Flavor (Wasi/Native/Web, Default, Try_Parse_Name, Name) with GNATdoc; gnatformat."
-    status: pending
+    status: completed
   - id: "5"
     content: "5. Extend Tokens: Directive + Directive_Subtype, String_Literal kind, Equals punctuation; update Token variant and Lexeme; gnatformat."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Tokenizer: scan #if/#elsif/#else/#end, string literals, Equals; Unterminated_String_Literal; keep based integers; AUnit tokenizer tests; gnatformat."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Diagnostics: Invalid_Flavor_Condition LV00012, Unterminated_String_Literal LV00013; Error_Codes + Reporting + diagnostics.md; gnatformat."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. Parser API: Active_Flavor on Parse; thread Flavor through test support Must_Parse/Must_Fail_Parse (default Wasi); fix all call sites; gnatformat."
     status: pending

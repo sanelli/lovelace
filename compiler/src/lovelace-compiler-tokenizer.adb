@@ -29,6 +29,13 @@ package body Lovelace.Compiler.Tokenizer is
 
    type Punctuation_Entry_List is array (Positive range <>) of Punctuation_Entry;
 
+   type Directive_Entry is record
+      Lexeme : Ada.Strings.Unbounded.Unbounded_String;
+      Value  : Tokens.Directive_Subtype;
+   end record;
+
+   type Directive_Entry_List is array (Positive range <>) of Directive_Entry;
+
    type Scan_Class is record
       The_Engine : Lovelace.Common.Regex.Engine;
       Kind       : Tokens.Token_Kind;
@@ -37,6 +44,8 @@ package body Lovelace.Compiler.Tokenizer is
    package Keyword_Options is new Lovelace.Common.Option (Element_Type => Tokens.Keyword_Subtype);
 
    package Punctuation_Options is new Lovelace.Common.Option (Element_Type => Tokens.Punctuation_Subtype);
+
+   package Directive_Options is new Lovelace.Common.Option (Element_Type => Tokens.Directive_Subtype);
 
    package Scan_Class_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Scan_Class);
 
@@ -112,19 +121,29 @@ package body Lovelace.Compiler.Tokenizer is
       Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (","), Value => Tokens.Comma),
       Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (":"), Value => Tokens.Colon),
       Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("<"), Value => Tokens.Less_Than),
-      Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (">"), Value => Tokens.Greater_Than)];
+      Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (">"), Value => Tokens.Greater_Than),
+      Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("="), Value => Tokens.Equals)];
+
+   --  Exact lexemes classified as directive tokens (longest match prefers #elsif over #else).
+   Directive_Table : constant Directive_Entry_List :=
+     [Directive_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("#elsif"), Value => Tokens.Elsif_Directive),
+      Directive_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("#else"), Value => Tokens.Else_Directive),
+      Directive_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("#end"), Value => Tokens.End_Directive),
+      Directive_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("#if"), Value => Tokens.If_Directive)];
 
    Patterns_Ready    : Boolean := False;
    Whitespace_Engine : Lovelace.Common.Regex.Engine;
    Scan_Classes      : Scan_Class_Vectors.Vector;
 
    function Ascii_Punctuation_Class return String;
+   function Compile_Cached (Pattern : String) return Lovelace.Common.Regex.Regex_Result;
+   function Directive_Pattern return String;
    function Ensure_Patterns (Filename : Source.Filename_Option) return Tokenizer_Error_Sequence;
    function Escape_Regex_Lexeme (Lexeme : String) return String;
    function Failure_Result (Errors : Tokenizer_Error_Sequence) return Tokenize_Result;
+   function Float_Literal_Pattern return String;
    function Format_Scalar (Point : Code_Point) return String;
    function Hex_Digit (Value : Natural) return Character;
-   function Float_Literal_Pattern return String;
    function Identifier_Pattern return String;
    function Integer_Literal_Pattern return String;
    function Internal_Compile_Error
@@ -133,6 +152,7 @@ package body Lovelace.Compiler.Tokenizer is
    function Is_Identifier_Continue (Point : Code_Point) return Boolean;
    function Is_Identifier_First (Point : Code_Point) return Boolean;
    function Is_In_Ranges (Point : Code_Point; Ranges : Scalar_Range_List) return Boolean;
+   function Lookup_Directive (Lexeme : String) return Directive_Options.Option;
    function Lookup_Keyword (Lexeme : String) return Keyword_Options.Option;
    function Lookup_Punctuation (Lexeme : String) return Punctuation_Options.Option;
    function Make_Span
@@ -143,6 +163,7 @@ package body Lovelace.Compiler.Tokenizer is
    function Register_Scan_Class
      (Pattern : String; Kind : Tokens.Token_Kind; Filename : Source.Filename_Option) return Tokenizer_Error_Sequence;
    function Scalar_To_Class (Point : Code_Point) return String;
+   function String_Literal_Pattern return String;
    function Success_Result (Token_List : Tokens.Token_Sequence) return Tokenize_Result;
    function Tokenize_Core (Source_Text : String; Filename : Source.Filename_Option) return Tokenize_Result;
    function Truncate_Identifier_Length (Source_Text : String; From : Positive; Max_Length : Natural) return Natural;
@@ -172,7 +193,6 @@ package body Lovelace.Compiler.Tokenizer is
       Match_Length : Natural;
       Kind         : Tokens.Token_Kind;
       Filename     : Source.Filename_Option);
-   function Compile_Cached (Pattern : String) return Lovelace.Common.Regex.Regex_Result;
    procedure Longest_Scan_Match
      (Source_Text     : String;
       Position        : Positive;
@@ -187,6 +207,13 @@ package body Lovelace.Compiler.Tokenizer is
       Column      : in out Positive;
       Filename    : Source.Filename_Option);
    procedure Report_Unrecognized_Symbol
+     (Errors      : in out Tokenizer_Error_Sequence;
+      Source_Text : String;
+      Position    : in out Positive;
+      Line        : in out Positive;
+      Column      : in out Positive;
+      Filename    : Source.Filename_Option);
+   procedure Report_Unterminated_String
      (Errors      : in out Tokenizer_Error_Sequence;
       Source_Text : String;
       Position    : in out Positive;
@@ -271,6 +298,7 @@ package body Lovelace.Compiler.Tokenizer is
       Token_Span        : Source.Source_Span;
       Keyword_Found     : Keyword_Options.Option;
       Punctuation_Found : Punctuation_Options.Option;
+      Directive_Found   : Directive_Options.Option;
       Last_Position     : Source.Source_Position;
    begin
       case Kind is
@@ -326,6 +354,41 @@ package body Lovelace.Compiler.Tokenizer is
             Tokens.Append
               (Token_List, Tokens.Token'(Kind => Tokens.Float_Literal, Span => Token_Span, Filename => Filename));
 
+         when Tokens.String_Literal              =>
+            Token_Span :=
+              Make_Span
+                (Source_Text => Source_Text,
+                 Position    => Position,
+                 Byte_Count  => Consumed,
+                 Line        => Line,
+                 Column      => Column);
+            Tokens.Append
+              (Token_List, Tokens.Token'(Kind => Tokens.String_Literal, Span => Token_Span, Filename => Filename));
+
+         when Tokens.Directive                   =>
+            Directive_Found := Lookup_Directive (Source_Text (Position .. Position + Consumed - 1));
+            case Directive_Found.Present is
+               when False =>
+                  Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
+                  return;
+
+               when True  =>
+                  Token_Span :=
+                    Make_Span
+                      (Source_Text => Source_Text,
+                       Position    => Position,
+                       Byte_Count  => Consumed,
+                       Line        => Line,
+                       Column      => Column);
+                  Tokens.Append
+                    (Token_List,
+                     Tokens.Token'
+                       (Kind            => Tokens.Directive,
+                        Span            => Token_Span,
+                        Filename        => Filename,
+                        Directive_Value => Directive_Found.Value));
+            end case;
+
          when Tokens.Punctuation                 =>
             Punctuation_Found := Lookup_Punctuation (Source_Text (Position .. Position + Consumed - 1));
             case Punctuation_Found.Present is
@@ -375,6 +438,19 @@ package body Lovelace.Compiler.Tokenizer is
       return Lovelace.Common.Regex.Compile (Pattern);
    end Compile_Cached;
 
+   function Directive_Pattern return String is
+      Result : Ada.Strings.Unbounded.Unbounded_String := Ada.Strings.Unbounded.Null_Unbounded_String;
+   begin
+      for Index in Directive_Table'Range loop
+         if Index > Directive_Table'First then
+            Ada.Strings.Unbounded.Append (Result, '|');
+         end if;
+         Ada.Strings.Unbounded.Append
+           (Result, Escape_Regex_Lexeme (Ada.Strings.Unbounded.To_String (Directive_Table (Index).Lexeme)));
+      end loop;
+      return Ada.Strings.Unbounded.To_String (Result);
+   end Directive_Pattern;
+
    function Element (Errors : Tokenizer_Error_Sequence; Index : Positive) return Tokenizer_Error is
    begin
       return Errors.Items.Element (Index);
@@ -411,6 +487,17 @@ package body Lovelace.Compiler.Tokenizer is
       end if;
 
       Class_Errors := Register_Scan_Class (Integer_Literal_Pattern, Tokens.Integer_Literal, Filename);
+      if Length (Class_Errors) > 0 then
+         return Class_Errors;
+      end if;
+
+      --  Directives before identifiers so #if is not unrecognized; exact forms avoid #16#Ã¢ÂÂ¦ bases.
+      Class_Errors := Register_Scan_Class (Directive_Pattern, Tokens.Directive, Filename);
+      if Length (Class_Errors) > 0 then
+         return Class_Errors;
+      end if;
+
+      Class_Errors := Register_Scan_Class (String_Literal_Pattern, Tokens.String_Literal, Filename);
       if Length (Class_Errors) > 0 then
          return Class_Errors;
       end if;
@@ -622,6 +709,16 @@ package body Lovelace.Compiler.Tokenizer is
       end loop;
    end Longest_Scan_Match;
 
+   function Lookup_Directive (Lexeme : String) return Directive_Options.Option is
+   begin
+      for Index in Directive_Table'Range loop
+         if Ada.Strings.Unbounded.To_String (Directive_Table (Index).Lexeme) = Lexeme then
+            return Directive_Options.From_Value (Directive_Table (Index).Value);
+         end if;
+      end loop;
+      return Directive_Options.None;
+   end Lookup_Directive;
+
    function Lookup_Keyword (Lexeme : String) return Keyword_Options.Option is
    begin
       for Index in Keyword_Table'Range loop
@@ -768,6 +865,46 @@ package body Lovelace.Compiler.Tokenizer is
       end case;
    end Report_Unrecognized_Symbol;
 
+   procedure Report_Unterminated_String
+     (Errors      : in out Tokenizer_Error_Sequence;
+      Source_Text : String;
+      Position    : in out Positive;
+      Line        : in out Positive;
+      Column      : in out Positive;
+      Filename    : Source.Filename_Option)
+   is
+      First_Position : constant Source.Source_Position := (Byte_Index => Position, Line => Line, Column => Column);
+      Last_Position  : Source.Source_Position;
+      Skip_Length    : Natural := 0;
+      Index          : Positive := Position;
+   begin
+      while Index <= Source_Text'Last loop
+         exit when Source_Text (Index) = ASCII.LF or else Source_Text (Index) = ASCII.CR;
+         Skip_Length := Skip_Length + 1;
+         Index := Index + 1;
+      end loop;
+
+      if Skip_Length = 0 then
+         Skip_Length := 1;
+      end if;
+
+      Append_Error
+        (Errors   => Errors,
+         Code     => Unterminated_String_Literal,
+         First    => First_Position,
+         Last     => First_Position,
+         Filename => Filename,
+         Detail   => "unterminated string literal");
+
+      Advance_Bytes
+        (Source_Text   => Source_Text,
+         Byte_Count    => Skip_Length,
+         Position      => Position,
+         Line          => Line,
+         Column        => Column,
+         Last_Position => Last_Position);
+   end Report_Unterminated_String;
+
    function Scalar_To_Class (Point : Code_Point) return String is
       Hex   : String (1 .. 6);
       Value : Natural := Natural (Wide_Wide_Character'Pos (Point));
@@ -778,6 +915,12 @@ package body Lovelace.Compiler.Tokenizer is
       end loop;
       return "\u{" & Hex & "}";
    end Scalar_To_Class;
+
+   function String_Literal_Pattern return String is
+   begin
+      --  Double-quoted UTF-8 bytes with no escapes; Lexeme includes both quotes.
+      return """[^""]*""";
+   end String_Literal_Pattern;
 
    function Success_Result (Token_List : Tokens.Token_Sequence) return Tokenize_Result is
    begin
@@ -846,7 +989,11 @@ package body Lovelace.Compiler.Tokenizer is
                Match_Length    => Match_Length,
                Kind            => Kind);
             if Match_Length = 0 then
-               Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
+               if Position <= Source_Text'Last and then Source_Text (Position) = '"' then
+                  Report_Unterminated_String (Errors, Source_Text, Position, Line, Column, Filename);
+               else
+                  Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
+               end if;
                After_Delimiter := False;
             else
                Append_Matched
@@ -859,7 +1006,8 @@ package body Lovelace.Compiler.Tokenizer is
                   Match_Length => Match_Length,
                   Kind         => Kind,
                   Filename     => Filename);
-               After_Delimiter := Kind = Tokens.Punctuation;
+               After_Delimiter :=
+                 Kind = Tokens.Punctuation or else Kind = Tokens.Directive or else Kind = Tokens.String_Literal;
             end if;
          end if;
 

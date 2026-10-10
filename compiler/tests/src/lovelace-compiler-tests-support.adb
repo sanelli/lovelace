@@ -9,11 +9,32 @@ package body Lovelace.Compiler.Tests.Support is
 
    package Source renames Lovelace.Common.Source;
 
+   use type Tokens.Directive_Subtype;
    use type Tokens.Keyword_Subtype;
    use type Tokens.Punctuation_Subtype;
    use type Tokens.Token_Kind;
    use type Tokenizer.Tokenizer_Error_Code;
    use type Parser.Parser_Error_Code;
+
+   procedure Assert_Directive
+     (Source_Text : String;
+      Token_List  : Tokens.Token_Sequence;
+      Index       : Positive;
+      Value       : Tokens.Directive_Subtype;
+      Message     : String)
+   is
+      Item : constant Tokens.Token := Tokens.Element (Token_List, Index);
+   begin
+      AUnit.Assertions.Assert (Item.Kind = Tokens.Directive, Message & ": kind Directive");
+      case Item.Kind is
+         when Tokens.Directive =>
+            AUnit.Assertions.Assert (Item.Directive_Value = Value, Message & ": directive subtype");
+
+         when others           =>
+            null;
+      end case;
+      AUnit.Assertions.Assert (Tokens.Lexeme (Source_Text, Item)'Length > 0, Message & ": non-empty lexeme");
+   end Assert_Directive;
 
    procedure Assert_Error_Code
      (Errors  : Tokenizer.Tokenizer_Error_Sequence;
@@ -140,6 +161,19 @@ package body Lovelace.Compiler.Tests.Support is
             null;
       end case;
    end Assert_Punctuation;
+
+   procedure Assert_String_Literal
+     (Source_Text     : String;
+      Token_List      : Tokens.Token_Sequence;
+      Index           : Positive;
+      Expected_Lexeme : String;
+      Message         : String)
+   is
+      Item : constant Tokens.Token := Tokens.Element (Token_List, Index);
+   begin
+      AUnit.Assertions.Assert (Item.Kind = Tokens.String_Literal, Message & ": kind String_Literal");
+      AUnit.Assertions.Assert (Tokens.Lexeme (Source_Text, Item) = Expected_Lexeme, Message & ": lexeme");
+   end Assert_String_Literal;
 
    procedure Assert_Token_Count (Token_List : Tokens.Token_Sequence; Expected_Length : Natural; Message : String) is
       Actual_Length : constant Natural := Tokens.Length (Token_List);

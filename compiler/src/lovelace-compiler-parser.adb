@@ -192,6 +192,9 @@ package body Lovelace.Compiler.Parser is
 
                when Tokens.Greater_Than      =>
                   return "punctuation "">""";
+
+               when Tokens.Equals            =>
+                  return "punctuation ""=""";
             end case;
 
          when Tokens.Integer_Literal =>
@@ -199,6 +202,24 @@ package body Lovelace.Compiler.Parser is
 
          when Tokens.Float_Literal   =>
             return "float literal """ & Tokens.Lexeme (Source_Text, The_Token) & '"';
+
+         when Tokens.Directive       =>
+            case The_Token.Directive_Value is
+               when Tokens.If_Directive    =>
+                  return "directive ""#if""";
+
+               when Tokens.Elsif_Directive =>
+                  return "directive ""#elsif""";
+
+               when Tokens.Else_Directive  =>
+                  return "directive ""#else""";
+
+               when Tokens.End_Directive   =>
+                  return "directive ""#end""";
+            end case;
+
+         when Tokens.String_Literal  =>
+            return "string literal """ & Tokens.Lexeme (Source_Text, The_Token) & '"';
       end case;
    end Describe_Token;
 

@@ -18,8 +18,14 @@ package Lovelace.Compiler.Parser is
    --  @enum Unexpected_Token Wrong token kind or subtype at the cursor.
    --  @enum Unexpected_Trailing Extra tokens after a complete unit.
    --  @enum Name_Clash Duplicate or conflicting procedure/parameter name.
+   --  @enum Invalid_Flavor_Condition `#if`/`#elsif` flavor string is not wasi/native/web.
    type Parser_Error_Code is
-     (Internal_Error, Unexpected_End_Of_Input, Unexpected_Token, Unexpected_Trailing, Name_Clash);
+     (Internal_Error,
+      Unexpected_End_Of_Input,
+      Unexpected_Token,
+      Unexpected_Trailing,
+      Name_Clash,
+      Invalid_Flavor_Condition);
 
    --  One located parser diagnostic.
    --  @field Code Predefined parser error code.

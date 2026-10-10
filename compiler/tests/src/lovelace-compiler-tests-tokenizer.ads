@@ -79,7 +79,7 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Filename_Shared_On_Errors (The_Test : in out Fixture);
 
-   --  +, quote remain Unrecognized_Symbol; comma is Punctuation.
+   --  + remains Unrecognized_Symbol; comma is Punctuation.
    --  @param The_Test Unused fixture.
    procedure Test_Unrecognized_Symbols (The_Test : in out Fixture);
 
@@ -94,5 +94,13 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  Clean begin succeeds (built-in patterns compile).
    --  @param The_Test Unused fixture.
    procedure Test_Clean_Begin (The_Test : in out Fixture);
+
+   --  Bare # and #pragma are Unrecognized_Symbol; opening " alone is Unterminated_String_Literal.
+   --  @param The_Test Unused fixture.
+   procedure Test_Directive_And_String_Errors (The_Test : in out Fixture);
+
+   --  #if #elsif #else #end, string literals, Equals; based integers unchanged.
+   --  @param The_Test Unused fixture.
+   procedure Test_Directives_And_Strings (The_Test : in out Fixture);
 
 end Lovelace.Compiler.Tests.Tokenizer;

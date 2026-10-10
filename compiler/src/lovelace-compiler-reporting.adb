@@ -51,34 +51,40 @@ package body Lovelace.Compiler.Reporting is
    function To_Error_Code (Code : Parser.Parser_Error_Code) return Error_Codes.Error_Code is
    begin
       case Code is
-         when Parser.Internal_Error          =>
+         when Parser.Internal_Error           =>
             return Error_Codes.Internal_Error;
 
-         when Parser.Unexpected_End_Of_Input =>
+         when Parser.Unexpected_End_Of_Input  =>
             return Error_Codes.Unexpected_End_Of_Input;
 
-         when Parser.Unexpected_Token        =>
+         when Parser.Unexpected_Token         =>
             return Error_Codes.Unexpected_Token;
 
-         when Parser.Unexpected_Trailing     =>
+         when Parser.Unexpected_Trailing      =>
             return Error_Codes.Unexpected_Trailing;
 
-         when Parser.Name_Clash              =>
+         when Parser.Name_Clash               =>
             return Error_Codes.Name_Clash;
+
+         when Parser.Invalid_Flavor_Condition =>
+            return Error_Codes.Invalid_Flavor_Condition;
       end case;
    end To_Error_Code;
 
    function To_Error_Code (Code : Tokenizer.Tokenizer_Error_Code) return Error_Codes.Error_Code is
    begin
       case Code is
-         when Tokenizer.Internal_Error      =>
+         when Tokenizer.Internal_Error              =>
             return Error_Codes.Internal_Error;
 
-         when Tokenizer.Unrecognized_Symbol =>
+         when Tokenizer.Unrecognized_Symbol         =>
             return Error_Codes.Unrecognized_Symbol;
 
-         when Tokenizer.Invalid_Utf_8       =>
+         when Tokenizer.Invalid_Utf_8               =>
             return Error_Codes.Invalid_Utf_8;
+
+         when Tokenizer.Unterminated_String_Literal =>
+            return Error_Codes.Unterminated_String_Literal;
       end case;
    end To_Error_Code;
 

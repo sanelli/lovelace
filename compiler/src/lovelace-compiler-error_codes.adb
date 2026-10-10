@@ -35,6 +35,12 @@ package body Lovelace.Compiler.Error_Codes is
 
          when Name_Clash                     =>
             return "LV00011";
+
+         when Invalid_Flavor_Condition       =>
+            return "LV00012";
+
+         when Unterminated_String_Literal    =>
+            return "LV00013";
       end case;
    end Label;
 
