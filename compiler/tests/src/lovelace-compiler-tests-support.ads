@@ -1,4 +1,5 @@
 with Lovelace.Compiler.Ast;
+with Lovelace.Compiler.Flavor;
 with Lovelace.Compiler.Parser;
 with Lovelace.Compiler.Tokens;
 with Lovelace.Compiler.Tokenizer;
@@ -87,6 +88,32 @@ package Lovelace.Compiler.Tests.Support is
    procedure Assert_Punctuation
      (Token_List : Tokens.Token_Sequence; Index : Positive; Value : Tokens.Punctuation_Subtype; Message : String);
 
+   --  Assert token Kind Directive and subtype.
+   --  @param Source_Text Original UTF-8 source.
+   --  @param Token_List Token sequence.
+   --  @param Index 1-based token index.
+   --  @param Value Expected directive subtype.
+   --  @param Message Assertion message.
+   procedure Assert_Directive
+     (Source_Text : String;
+      Token_List  : Tokens.Token_Sequence;
+      Index       : Positive;
+      Value       : Tokens.Directive_Subtype;
+      Message     : String);
+
+   --  Assert String_Literal kind and lexeme (including quotes).
+   --  @param Source_Text Original UTF-8 source.
+   --  @param Token_List Token sequence.
+   --  @param Index 1-based token index.
+   --  @param Expected_Lexeme Expected lexeme bytes including quotes.
+   --  @param Message Assertion message.
+   procedure Assert_String_Literal
+     (Source_Text     : String;
+      Token_List      : Tokens.Token_Sequence;
+      Index           : Positive;
+      Expected_Lexeme : String;
+      Message         : String);
+
    --  Assert Integer_Literal kind and lexeme.
    --  @param Source_Text Original UTF-8 source.
    --  @param Token_List Token sequence.
@@ -151,21 +178,29 @@ package Lovelace.Compiler.Tests.Support is
    --  Tokenize then Parse Source_Text; require success and return the module.
    --  @param Source_Text UTF-8 Lovelace source.
    --  @param Message Assertion message on failure.
+   --  @param Active_Flavor Flavor for `#if` selection (default wasi).
    --  @return Parsed module.
-   function Must_Parse (Source_Text : String; Message : String) return Ast.Module;
+   function Must_Parse
+     (Source_Text : String; Message : String; Active_Flavor : Flavor.Flavor := Flavor.Default) return Ast.Module;
 
    --  Tokenize with Filename then Parse Source_Text; require success and return the module.
    --  @param Source_Text UTF-8 Lovelace source.
    --  @param Filename Shared filename label for tokens and AST.
    --  @param Message Assertion message on failure.
+   --  @param Active_Flavor Flavor for `#if` selection (default wasi).
    --  @return Parsed module.
-   function Must_Parse (Source_Text : String; Filename : String; Message : String) return Ast.Module;
+   function Must_Parse
+     (Source_Text : String; Filename : String; Message : String; Active_Flavor : Flavor.Flavor := Flavor.Default)
+      return Ast.Module;
 
    --  Tokenize then Parse Source_Text; require parse failure and return errors.
    --  @param Source_Text UTF-8 Lovelace source (must tokenize successfully).
    --  @param Message Assertion message on unexpected success.
+   --  @param Active_Flavor Flavor for `#if` selection (default wasi).
    --  @return Parser error sequence.
-   function Must_Fail_Parse (Source_Text : String; Message : String) return Parser.Parser_Error_Sequence;
+   function Must_Fail_Parse
+     (Source_Text : String; Message : String; Active_Flavor : Flavor.Flavor := Flavor.Default)
+      return Parser.Parser_Error_Sequence;
 
    --  Require Generate success and return the LIR module.
    --  @param The_Module Frontend AST module.

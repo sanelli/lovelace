@@ -14,6 +14,8 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Program_Name_Filename_Mismatch Compilation-unit name differs from .love basename (LV00009).
    --  @enum Source_File_Io Source file missing or unreadable (LV00010).
    --  @enum Name_Clash Parser: duplicate or conflicting procedure/parameter name (LV00011).
+   --  @enum Invalid_Flavor_Condition Parser: `#if`/`#elsif` flavor string is not wasi/native/web (LV00012).
+   --  @enum Unterminated_String_Literal Tokenizer: opening `"` without a matching closer (LV00013).
    type Error_Code is
      (Internal_Error,
       Unrecognized_Symbol,
@@ -25,7 +27,9 @@ package Lovelace.Compiler.Error_Codes is
       Invalid_Module,
       Program_Name_Filename_Mismatch,
       Source_File_Io,
-      Name_Clash);
+      Name_Clash,
+      Invalid_Flavor_Condition,
+      Unterminated_String_Literal);
 
    --  Canonical LV##### label for Code.
    --  @param Code Diagnostic kind.

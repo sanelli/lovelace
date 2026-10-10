@@ -2,7 +2,7 @@
 
 Crate `lovelace` (`lovelace/`) is the host executable. Build it with `alr -C lovelace build`; the binary is `lovelace/bin/lovelace`.
 
-Related docs: [diagnostics](diagnostics.md), [codegen](codegen.md), [samples](samples.md), [LIR](lir.md).
+Related docs: [diagnostics](diagnostics.md), [codegen](codegen.md), [samples](samples.md), [LIR](lir.md), [directives](directives.md).
 
 ## Invocation
 
@@ -57,6 +57,7 @@ A `.love` path is **required** for now. Future builds may accept `.pjlove` / `.s
 | `--no-wit` | Do not write the companion `.wit` file (WIT may still be computed when emitting) |
 | `--output-format <fmt>` | `wasm` (default), `wat`, `wasm,wat`, or `wat,wasm` |
 | `--output-folder <path>` | Output root (default `.output` in the current working directory) |
+| `--flavor <name>` | Active compile-time flavor for `#if` selection: `wasi` (default), `native`, or `web`. See [directives.md](directives.md). |
 
 #### Unit name vs filename
 
@@ -96,12 +97,14 @@ Skipped stages log an `[info]` line (for example `LIR up to date, skipping front
 lovelace build samples/program/Hello.love
 lovelace build samples/module/Empty.love
 lovelace build samples/module/Foo.Bar.love
+lovelace build samples/directives/FlavorSelect.love
+lovelace build samples/directives/FlavorSelect.love --flavor native
 lovelace --no-logo build samples/program/Hello.love --force
 lovelace build samples/program/Hello.love --output-format wasm,wat --output-folder /tmp/out
 lovelace build samples/program/Hello.love --no-wit --output-format wat
 ```
 
-Samples: [`samples/program/Hello.love`](../samples/program/Hello.love) (program), [`samples/module/Empty.love`](../samples/module/Empty.love) and [`samples/module/Foo.Bar.love`](../samples/module/Foo.Bar.love) (modules). Policy: [samples.md](samples.md).
+Samples: [`samples/program/Hello.love`](../samples/program/Hello.love) (program), [`samples/module/Empty.love`](../samples/module/Empty.love) and [`samples/module/Foo.Bar.love`](../samples/module/Foo.Bar.love) (modules), [`samples/directives/FlavorSelect.love`](../samples/directives/FlavorSelect.love) (flavor `#if`). Policy: [samples.md](samples.md).
 
 #### Running the artifact
 

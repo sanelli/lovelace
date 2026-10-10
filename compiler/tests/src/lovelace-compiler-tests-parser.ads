@@ -35,6 +35,38 @@ package Lovelace.Compiler.Tests.Parser is
    --  @param The_Test Unused fixture.
    procedure Test_End_Semicolon (The_Test : in out Fixture);
 
+   --  Duplicate procedure names in the active flavor path yield Name_Clash.
+   --  @param The_Test Unused fixture.
+   procedure Test_Flavor_Active_Clash (The_Test : in out Fixture);
+
+   --  Same procedure name in mutually exclusive arms succeeds.
+   --  @param The_Test Unused fixture.
+   procedure Test_Flavor_Exclusive_Names (The_Test : in out Fixture);
+
+   --  Syntax error in an inactive arm still fails parse.
+   --  @param The_Test Unused fixture.
+   procedure Test_Flavor_Inactive_Syntax_Error (The_Test : in out Fixture);
+
+   --  `#if flavor = "nope"` yields Invalid_Flavor_Condition.
+   --  @param The_Test Unused fixture.
+   procedure Test_Flavor_Invalid_Condition (The_Test : in out Fixture);
+
+   --  Nested `#if` keeps only the active nested arm.
+   --  @param The_Test Unused fixture.
+   procedure Test_Flavor_Nested (The_Test : in out Fixture);
+
+   --  `#if` inside a procedure body is Unexpected_Token.
+   --  @param The_Test Unused fixture.
+   procedure Test_Flavor_Placement_In_Procedure (The_Test : in out Fixture);
+
+   --  `#if` in a program unit is Unexpected_Token.
+   --  @param The_Test Unused fixture.
+   procedure Test_Flavor_Placement_In_Program (The_Test : in out Fixture);
+
+   --  Same source with wasi/native/web yields different surviving procedures.
+   --  @param The_Test Unused fixture.
+   procedure Test_Flavor_Selection (The_Test : in out Fixture);
+
    --  Unicode and @-prefixed identifiers name module and subroutine.
    --  @param The_Test Unused fixture.
    procedure Test_Identifier_Names (The_Test : in out Fixture);

@@ -2,7 +2,7 @@
 
 `Lovelace.Compiler.Tokenizer` turns UTF-8 source into a token sequence, or a list of located errors. It lives in crate `lovelace_compiler` and uses the host [regex engine](regex-engine.md) (`Compile` / `Match_Prefix`) for whitespace, identifiers, punctuation, and numeric literals.
 
-This slice covers keywords, identifiers, punctuation for units and type lists, and integer/float literals. A recursive-descent parser for program and module compilation units is documented in [parser.md](parser.md) and [compilation-unit-grammar.md](compilation-unit-grammar.md). Literal lexeme interpretation (not wired into bodies yet) is in [literals.md](literals.md).
+This slice covers keywords, identifiers, punctuation for units and type lists, integer/float literals, flavor **directives** (`#if` / `#elsif` / `#else` / `#end`), and double-quoted **string literals** (no escapes). A recursive-descent parser for program and module compilation units is documented in [parser.md](parser.md) and [compilation-unit-grammar.md](compilation-unit-grammar.md). Flavor selection: [directives.md](directives.md). Literal lexeme interpretation (not wired into bodies yet) is in [literals.md](literals.md).
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). The token grammar for this slice is in [token-grammar.md](token-grammar.md).
 
@@ -50,17 +50,21 @@ Empty source and whitespace-only source succeed with an empty token sequence.
 | --- | --- | --- |
 | `Keyword` | `Keyword_Subtype` | `program`, `module`, `begin`, `end`, `procedure`, `integer`, `float`, `signed`, `unsigned` |
 | `Identifier` | (none) | Names, including `@foo`, `café`, emoji |
-| `Punctuation` | `Punctuation_Subtype` | `;` `.` `(` `)` `,` `:` `<` `>` |
+| `Punctuation` | `Punctuation_Subtype` | `;` `.` `(` `)` `,` `:` `<` `>` `=` |
 | `Integer_Literal` | (none) | Optional sign/base/suffix forms (see [token-grammar.md](token-grammar.md)) |
 | `Float_Literal` | (none) | Decimal forms with `.` and optional exponent |
+| `Directive` | `Directive_Subtype` | `#if`, `#elsif`, `#else`, `#end` |
+| `String_Literal` | (none) | `"…"` with no escapes; Lexeme includes both quotes |
 
-Keywords are **case-sensitive**. `Program`, `Module`, `BEGIN`, `Procedure`, and `End` are identifiers.
+Keywords are **case-sensitive**. `Program`, `Module`, `BEGIN`, `Procedure`, and `End` are identifiers. `#end` is a **directive**, distinct from keyword `end`.
 
 The scanner matches a full identifier first, then classifies. `programmer` is one identifier, not `program` plus `mer`. `programbegin` and `modulex` are identifiers.
 
+Longest-match scan order: float → integer → directive → string → identifier → punctuation. Exact directive forms do not steal based integers such as `#16#FF`.
+
 Float literal patterns are tried **before** integer patterns so `1.0` is a single `Float_Literal`.
 
-Lexeme text is not stored on the token. Recover it with `Lexeme (Source_Text, The_Token)`, which slices `Source_Text (First.Byte_Index .. Last.Byte_Index)`. `Last.Byte_Index` is the **last byte** of the last scalar (the span covers the full UTF-8 sequence).
+Lexeme text is not stored on the token. Recover it with `Lexeme (Source_Text, The_Token)`, which slices `Source_Text (First.Byte_Index .. Last.Byte_Index)`. `Last.Byte_Index` is the **last byte** of the last scalar (the span covers the full UTF-8 sequence). For strings, the Lexeme includes the surrounding `"` characters; the parser strips them when reading a flavor name.
 
 `Source_Position` stores 1-based `Byte_Index`, `Line`, and `Column`. Column counts Unicode scalars on the line; tab is one column. LF, CR, and CRLF (one line break) update line and column.
 
@@ -68,7 +72,7 @@ Lexeme text is not stored on the token. Recover it with `Lexeme (Source_Text, Th
 
 Any space between tokens is **ignored**: consumed, not emitted, not attached to the previous or next token. That includes ASCII space, tab, LF, CR, FF, Unicode space separators, and line terminators (NBSP, NEL, ideographic space, and similar). Adjacent tokens with no space (`end;`) are valid.
 
-String literals are not tokenized yet. When they exist, spaces **inside** a string will be kept; that path does not exist in this slice.
+Spaces **inside** a string literal are kept as part of the string token.
 
 ## Identifiers
 
@@ -104,8 +108,9 @@ Scan Unicode **scalars** via `Lovelace.Common.Utf_8`. Do not treat Ada `Characte
 | Code | Meaning |
 | --- | --- |
 | `Internal_Error` | Compiler bug, such as a hardcoded regex pattern failing to compile |
-| `Unrecognized_Symbol` | Valid scalar that does not start a token (`+` alone, `"`, …) |
+| `Unrecognized_Symbol` | Valid scalar that does not start a token (`+` alone, `#` not starting a directive or based integer, …) |
 | `Invalid_Utf_8` | Bytes that are not valid UTF-8 |
+| `Unterminated_String` | Opening `"` without a closing `"` before end of file |
 
 There are no error tokens and no `null` tokens. The scanner collects **all** user-source errors in one pass (it does not stop at the first). After each error it skips one scalar, or one byte / invalid sequence for `Invalid_Utf_8`, and continues.
 
@@ -117,7 +122,6 @@ Clean input such as `begin` succeeds (`Ok => True`). That also shows the built-i
 
 This slice does **not** emit tokens for:
 
-- String literals (internal spaces will be kept when they exist)
 - Character literals
 - Comments
 - Operators beyond the punctuation list above

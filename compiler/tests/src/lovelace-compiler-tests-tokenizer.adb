@@ -58,6 +58,39 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Support.Assert_Keyword (Source_Text, Token_List, 1, Tokens.Begin_Keyword, "begin");
    end Test_Clean_Begin;
 
+   procedure Test_Directive_And_String_Errors (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Bare_Hash   : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("#", "bare hash");
+      Pragma_Text : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("#pragma", "pragma");
+      Quote       : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("""", "quote");
+      Open_String : constant Compiler_Tokenizer.Tokenizer_Error_Sequence :=
+        Support.Must_Fail ("""hello", "open string");
+   begin
+      Support.Assert_Error_Count (Bare_Hash, 1, "bare hash");
+      Support.Assert_Error_Code (Bare_Hash, 1, Compiler_Tokenizer.Unrecognized_Symbol, "bare hash");
+      Support.Assert_Error_Count (Pragma_Text, 1, "pragma");
+      Support.Assert_Error_Code (Pragma_Text, 1, Compiler_Tokenizer.Unrecognized_Symbol, "pragma");
+      Support.Assert_Error_Count (Quote, 1, "quote");
+      Support.Assert_Error_Code (Quote, 1, Compiler_Tokenizer.Unterminated_String_Literal, "quote");
+      Support.Assert_Error_Count (Open_String, 1, "open string");
+      Support.Assert_Error_Code (Open_String, 1, Compiler_Tokenizer.Unterminated_String_Literal, "open string");
+   end Test_Directive_And_String_Errors;
+
+   procedure Test_Directives_And_Strings (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String := "#if #elsif #else #end ""wasi"" = #16#FFs32";
+      Token_List  : constant Tokens.Token_Sequence := Support.Must_Succeed (Source_Text, "directives strings");
+   begin
+      Support.Assert_Token_Count (Token_List, 7, "directives strings");
+      Support.Assert_Directive (Source_Text, Token_List, 1, Tokens.If_Directive, "#if");
+      Support.Assert_Directive (Source_Text, Token_List, 2, Tokens.Elsif_Directive, "#elsif");
+      Support.Assert_Directive (Source_Text, Token_List, 3, Tokens.Else_Directive, "#else");
+      Support.Assert_Directive (Source_Text, Token_List, 4, Tokens.End_Directive, "#end");
+      Support.Assert_String_Literal (Source_Text, Token_List, 5, """wasi""", "string");
+      Support.Assert_Punctuation (Token_List, 6, Tokens.Equals, "equals");
+      Support.Assert_Integer_Literal (Source_Text, Token_List, 7, "#16#FFs32", "based integer");
+   end Test_Directives_And_Strings;
+
    procedure Test_Empty_And_Whitespace (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Nbsp       : constant String := Support.To_Utf_8 (Wide_Wide_Character'Val (16#00A0#));
@@ -293,14 +326,11 @@ package body Lovelace.Compiler.Tests.Tokenizer is
    procedure Test_Unrecognized_Symbols (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Plus       : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("+", "plus");
-      Quote      : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("""", "quote");
       Comma_Text : constant String := ",";
       Comma_List : constant Tokens.Token_Sequence := Support.Must_Succeed (Comma_Text, "comma");
    begin
       Support.Assert_Error_Count (Plus, 1, "plus");
       Support.Assert_Error_Code (Plus, 1, Compiler_Tokenizer.Unrecognized_Symbol, "plus");
-      Support.Assert_Error_Count (Quote, 1, "quote");
-      Support.Assert_Error_Code (Quote, 1, Compiler_Tokenizer.Unrecognized_Symbol, "quote");
       Support.Assert_Token_Count (Comma_List, 1, "comma");
       Support.Assert_Punctuation (Comma_List, 1, Tokens.Comma, "comma punct");
    end Test_Unrecognized_Symbols;

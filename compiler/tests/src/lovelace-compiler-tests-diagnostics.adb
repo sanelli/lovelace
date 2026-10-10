@@ -25,6 +25,8 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Program_Name_Filename_Mismatch) = "LV00009", "LV00009");
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Source_File_Io) = "LV00010", "LV00010");
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Name_Clash) = "LV00011", "LV00011");
+      AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Invalid_Flavor_Condition) = "LV00012", "LV00012");
+      AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Unterminated_String_Literal) = "LV00013", "LV00013");
    end Test_Error_Code_Labels;
 
    procedure Test_Format_Shape (The_Test : in out Fixture) is
@@ -70,8 +72,14 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert
         (Reporting.To_Error_Code (Tokenizer.Unrecognized_Symbol) = Error_Codes.Unrecognized_Symbol, "tokenizer map");
       AUnit.Assertions.Assert
+        (Reporting.To_Error_Code (Tokenizer.Unterminated_String_Literal) = Error_Codes.Unterminated_String_Literal,
+         "unterminated string map");
+      AUnit.Assertions.Assert
         (Reporting.To_Error_Code (Parser.Unexpected_Trailing) = Error_Codes.Unexpected_Trailing, "parser map");
       AUnit.Assertions.Assert (Reporting.To_Error_Code (Parser.Name_Clash) = Error_Codes.Name_Clash, "name clash map");
+      AUnit.Assertions.Assert
+        (Reporting.To_Error_Code (Parser.Invalid_Flavor_Condition) = Error_Codes.Invalid_Flavor_Condition,
+         "invalid flavor map");
    end Test_Stage_Mappings;
 
    procedure Test_Unit_Kind_Label (The_Test : in out Fixture) is

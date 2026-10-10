@@ -90,6 +90,8 @@ Steps 1–3 are mostly frontend. Steps 4–5 make the language callable across m
 
 **Out of scope:** general expressions in `#if`, `#pragma` warning control, platform OS splits inside native (that stays in Ada native backing later).
 
+**Status (issue [#21](https://github.com/sanelli/lovelace/issues/21)):** Done for this slice — `Lovelace.Compiler.Flavor`, tokens (`Directive` / `String_Literal` / `=`), parse-all-arms keep-active-only, CLI `--flavor` (default `wasi`), end form `#end`, sample [`FlavorSelect.love`](../../samples/directives/FlavorSelect.love), docs under [directives.md](../directives.md).
+
 ### 2. `export` on module procedures
 
 **Goal:** Stdlib symbols can be visible to importers.
@@ -217,6 +219,6 @@ Then do **10**, then native/web + **11** as separate milestones.
 |---|---|---|
 | Formatting | A: host/`s32` · B: bytes in Augusta | A, then B |
 | External decl syntax | `native("wasi", …)` vs dedicated WASI import form | Pick one in issue #1 of this work |
-| `#end` token | `#end` / `#endif` / … | Match other directives style when introduced |
+| `#end` token | `#end` / `#endif` / … | **Locked:** `#end` (issue [#21](https://github.com/sanelli/lovelace/issues/21)) |
 | Augusta path | `augusta/std/io.love` vs `augusta.std.io.love` | Match dotted module ↔ path rule from step 5 |
 | One LIR vs many before emit | Merge early vs link LIR then emit | Either fine if one component results |

@@ -14,7 +14,8 @@ package Lovelace.Compiler.Tokenizer is
    --  @enum Internal_Error Compiler bug such as a hardcoded pattern failing to compile.
    --  @enum Unrecognized_Symbol Valid scalar that does not start a token.
    --  @enum Invalid_Utf_8 Bytes that are not valid UTF-8.
-   type Tokenizer_Error_Code is (Internal_Error, Unrecognized_Symbol, Invalid_Utf_8);
+   --  @enum Unterminated_String_Literal Opening `"` without a matching closer.
+   type Tokenizer_Error_Code is (Internal_Error, Unrecognized_Symbol, Invalid_Utf_8, Unterminated_String_Literal);
 
    --  One located tokenizer diagnostic.
    --  @field Code Predefined tokenizer error code.
