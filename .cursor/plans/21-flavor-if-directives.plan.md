@@ -37,16 +37,16 @@ todos:
     status: completed
   - id: "12"
     content: "12. Sample samples/directives/FlavorSelect.love; update docs/samples.md."
-    status: pending
+    status: completed
   - id: "13"
     content: "13. Docs: token-grammar, compilation-unit-grammar, tokenizer, parser, cli, directives.md, roadmap step-1 note."
-    status: pending
+    status: completed
   - id: "14"
     content: "14. Run all existing tests (nested AUnit crates / workspace / scripts/run-tests.ps1)."
-    status: pending
+    status: completed
   - id: "15"
     content: "15. Push (proxy env cleared) and open a PR with gh pr create."
-    status: pending
+    status: completed
 isProject: false
 ---
 

@@ -1,0 +1,15 @@
+module FlavorSelect;
+#if flavor = "wasi"
+   procedure WasiOnly();
+   begin
+   end;
+#elsif flavor = "native"
+   procedure NativeOnly();
+   begin
+   end;
+#else
+   procedure WebOnly();
+   begin
+   end;
+#end
+end.
