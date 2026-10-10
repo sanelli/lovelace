@@ -3,6 +3,7 @@ with Ada.Strings.Unbounded;
 
 with Lovelace.Common.Source;
 with Lovelace.Compiler.Ast;
+with Lovelace.Compiler.Flavor;
 with Lovelace.Compiler.Tokens;
 
 --  Parse a token sequence for one minimal Lovelace compilation unit into an AST.
@@ -58,11 +59,15 @@ package Lovelace.Compiler.Parser is
 
    --  Parse Token_List for Source_Text into a compilation-unit AST.
    --  Accepts program_unit (program identifier; begin end.) or module_unit
-   --  (module qualified_identifier; { procedure ... } end.). Recursive descent.
+   --  (module qualified_identifier; { module_declaration } end.). Recursive
+   --  descent. Flavor `#if` arms are selected using Active_Flavor; inactive arms
+   --  are parsed for syntax but omitted from the AST.
    --  @param Source_Text Original UTF-8 source (for identifier lexemes).
    --  @param Token_List Tokens from a successful Tokenize of Source_Text.
+   --  @param Active_Flavor Flavor used to select `#if flavor = "â¦"` arms.
    --  @return Module AST, or a single located error.
-   function Parse (Source_Text : String; Token_List : Tokens.Token_Sequence) return Parse_Result;
+   function Parse
+     (Source_Text : String; Token_List : Tokens.Token_Sequence; Active_Flavor : Flavor.Flavor) return Parse_Result;
 
    --  Empty error sequence.
    --  @return Sequence with no elements.

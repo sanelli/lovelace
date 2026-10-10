@@ -25,16 +25,16 @@ todos:
     status: completed
   - id: "8"
     content: "8. Parser API: Active_Flavor on Parse; thread Flavor through test support Must_Parse/Must_Fail_Parse (default Wasi); fix all call sites; gnatformat."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Parser grammar: module_declaration + Parse_Flavor_Conditional (parse all arms, keep active only); placement errors; gnatformat."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. AUnit parser/selection tests (three flavors, elsif/else, nesting, inactive errors, clash rules, placement)."
-    status: pending
+    status: completed
   - id: "11"
     content: "11. CLI: lovelace build --flavor wasi|native|web (default wasi); wire into Parse; help + bad-value CLI error; gnatformat."
-    status: pending
+    status: completed
   - id: "12"
     content: "12. Sample samples/directives/FlavorSelect.love; update docs/samples.md."
     status: pending

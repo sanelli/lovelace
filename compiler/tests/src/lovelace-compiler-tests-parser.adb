@@ -2,6 +2,7 @@ with Ada.Strings.Unbounded;
 with AUnit.Assertions;
 
 with Lovelace.Compiler.Ast;
+with Lovelace.Compiler.Flavor;
 with Lovelace.Compiler.Parser;
 with Lovelace.Compiler.Tests.Support;
 with Lovelace.Compiler.Tokens;
@@ -105,7 +106,8 @@ package body Lovelace.Compiler.Tests.Parser is
    procedure Test_Empty_Tokens (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Token_List : constant Tokens.Token_Sequence := Tokens.Empty_Sequence;
-      Result     : constant Lovelace.Compiler.Parser.Parse_Result := Lovelace.Compiler.Parser.Parse ("", Token_List);
+      Result     : constant Lovelace.Compiler.Parser.Parse_Result :=
+        Lovelace.Compiler.Parser.Parse ("", Token_List, Lovelace.Compiler.Flavor.Default);
    begin
       case Result.Ok is
          when True  =>
@@ -126,6 +128,184 @@ package body Lovelace.Compiler.Tests.Parser is
       Support.Assert_Parser_Error_Count (Errors, 1, "end semicolon");
       Support.Assert_Parser_Error_Code (Errors, 1, Lovelace.Compiler.Parser.Unexpected_Token, "end semicolon code");
    end Test_End_Semicolon;
+
+   procedure Test_Flavor_Active_Clash (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String :=
+        "module M;"
+        & ASCII.LF
+        & "#if flavor = ""wasi"""
+        & ASCII.LF
+        & "procedure Dup(); begin end;"
+        & ASCII.LF
+        & "procedure Dup(); begin end;"
+        & ASCII.LF
+        & "#end"
+        & ASCII.LF
+        & "end.";
+      Errors      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse (Source_Text, "active clash", Flavor.Wasi);
+   begin
+      Support.Assert_Parser_Error_Count (Errors, 1, "active clash");
+      Support.Assert_Parser_Error_Code (Errors, 1, Lovelace.Compiler.Parser.Name_Clash, "active clash code");
+   end Test_Flavor_Active_Clash;
+
+   procedure Test_Flavor_Exclusive_Names (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String :=
+        "module M;"
+        & ASCII.LF
+        & "#if flavor = ""wasi"""
+        & ASCII.LF
+        & "procedure Same(); begin end;"
+        & ASCII.LF
+        & "#else"
+        & ASCII.LF
+        & "procedure Same(); begin end;"
+        & ASCII.LF
+        & "#end"
+        & ASCII.LF
+        & "end.";
+      The_Module  : constant Ast.Module := Support.Must_Parse (Source_Text, "exclusive names", Flavor.Wasi);
+   begin
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 1, "exclusive names: one");
+      AUnit.Assertions.Assert (Ast.Name (Ast.Get_Subroutine (The_Module, 1)) = "Same", "exclusive names: Same");
+   end Test_Flavor_Exclusive_Names;
+
+   procedure Test_Flavor_Inactive_Syntax_Error (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String :=
+        "module M;"
+        & ASCII.LF
+        & "#if flavor = ""wasi"""
+        & ASCII.LF
+        & "procedure Ok(); begin end;"
+        & ASCII.LF
+        & "#else"
+        & ASCII.LF
+        & "procedure Bad(;"
+        & ASCII.LF
+        & "#end"
+        & ASCII.LF
+        & "end.";
+      Errors      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse (Source_Text, "inactive syntax", Flavor.Wasi);
+   begin
+      Support.Assert_Parser_Error_Count (Errors, 1, "inactive syntax");
+      Support.Assert_Parser_Error_Code (Errors, 1, Lovelace.Compiler.Parser.Unexpected_Token, "inactive syntax code");
+   end Test_Flavor_Inactive_Syntax_Error;
+
+   procedure Test_Flavor_Invalid_Condition (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String :=
+        "module M;"
+        & ASCII.LF
+        & "#if flavor = ""nope"""
+        & ASCII.LF
+        & "procedure P(); begin end;"
+        & ASCII.LF
+        & "#end"
+        & ASCII.LF
+        & "end.";
+      Errors      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse (Source_Text, "invalid flavor", Flavor.Wasi);
+   begin
+      Support.Assert_Parser_Error_Count (Errors, 1, "invalid flavor");
+      Support.Assert_Parser_Error_Code
+        (Errors, 1, Lovelace.Compiler.Parser.Invalid_Flavor_Condition, "invalid flavor code");
+   end Test_Flavor_Invalid_Condition;
+
+   procedure Test_Flavor_Nested (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String :=
+        "module M;"
+        & ASCII.LF
+        & "#if flavor = ""wasi"""
+        & ASCII.LF
+        & "#if flavor = ""wasi"""
+        & ASCII.LF
+        & "procedure Inner(); begin end;"
+        & ASCII.LF
+        & "#else"
+        & ASCII.LF
+        & "procedure Other(); begin end;"
+        & ASCII.LF
+        & "#end"
+        & ASCII.LF
+        & "#end"
+        & ASCII.LF
+        & "end.";
+      The_Module  : constant Ast.Module := Support.Must_Parse (Source_Text, "nested", Flavor.Wasi);
+   begin
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 1, "nested: one");
+      AUnit.Assertions.Assert (Ast.Name (Ast.Get_Subroutine (The_Module, 1)) = "Inner", "nested: Inner");
+   end Test_Flavor_Nested;
+
+   procedure Test_Flavor_Placement_In_Procedure (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String :=
+        "module M;"
+        & ASCII.LF
+        & "procedure P();"
+        & ASCII.LF
+        & "begin"
+        & ASCII.LF
+        & "#if flavor = ""wasi"""
+        & ASCII.LF
+        & "#end"
+        & ASCII.LF
+        & "end;"
+        & ASCII.LF
+        & "end.";
+      Errors      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse (Source_Text, "if in procedure", Flavor.Wasi);
+   begin
+      Support.Assert_Parser_Error_Count (Errors, 1, "if in procedure");
+      Support.Assert_Parser_Error_Code (Errors, 1, Lovelace.Compiler.Parser.Unexpected_Token, "if in procedure code");
+   end Test_Flavor_Placement_In_Procedure;
+
+   procedure Test_Flavor_Placement_In_Program (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String :=
+        "program Hello;" & ASCII.LF & "#if flavor = ""wasi""" & ASCII.LF & "#end" & ASCII.LF & "begin end.";
+      Errors      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse (Source_Text, "if in program", Flavor.Wasi);
+   begin
+      Support.Assert_Parser_Error_Count (Errors, 1, "if in program");
+      Support.Assert_Parser_Error_Code (Errors, 1, Lovelace.Compiler.Parser.Unexpected_Token, "if in program code");
+   end Test_Flavor_Placement_In_Program;
+
+   procedure Test_Flavor_Selection (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text   : constant String :=
+        "module FlavorSelect;"
+        & ASCII.LF
+        & "#if flavor = ""wasi"""
+        & ASCII.LF
+        & "procedure WasiOnly(); begin end;"
+        & ASCII.LF
+        & "#elsif flavor = ""native"""
+        & ASCII.LF
+        & "procedure NativeOnly(); begin end;"
+        & ASCII.LF
+        & "#else"
+        & ASCII.LF
+        & "procedure WebOnly(); begin end;"
+        & ASCII.LF
+        & "#end"
+        & ASCII.LF
+        & "end.";
+      Wasi_Module   : constant Ast.Module := Support.Must_Parse (Source_Text, "wasi", Flavor.Wasi);
+      Native_Module : constant Ast.Module := Support.Must_Parse (Source_Text, "native", Flavor.Native);
+      Web_Module    : constant Ast.Module := Support.Must_Parse (Source_Text, "web", Flavor.Web);
+   begin
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (Wasi_Module) = 1, "wasi count");
+      AUnit.Assertions.Assert (Ast.Name (Ast.Get_Subroutine (Wasi_Module, 1)) = "WasiOnly", "wasi name");
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (Native_Module) = 1, "native count");
+      AUnit.Assertions.Assert (Ast.Name (Ast.Get_Subroutine (Native_Module, 1)) = "NativeOnly", "native name");
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (Web_Module) = 1, "web count");
+      AUnit.Assertions.Assert (Ast.Name (Ast.Get_Subroutine (Web_Module, 1)) = "WebOnly", "web name");
+   end Test_Flavor_Selection;
 
    procedure Test_Identifier_Names (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);

@@ -11,6 +11,7 @@ with Lovelace.Compiler.Backend.Wasm;
 with Lovelace.Compiler.Backend.Wat;
 with Lovelace.Compiler.Diagnostics;
 with Lovelace.Compiler.Error_Codes;
+with Lovelace.Compiler.Flavor;
 with Lovelace.Compiler.Ir_Generator;
 with Lovelace.Compiler.Parser;
 with Lovelace.Compiler.Reporting;
@@ -31,6 +32,7 @@ package body Lovelace.Main.Build is
    package Backend_Wat renames Lovelace.Compiler.Backend.Wat;
    package Diagnostics renames Lovelace.Compiler.Diagnostics;
    package Error_Codes renames Lovelace.Compiler.Error_Codes;
+   package Flavor renames Lovelace.Compiler.Flavor;
    package Ir_Generator renames Lovelace.Compiler.Ir_Generator;
    package Parser renames Lovelace.Compiler.Parser;
    package Reporting renames Lovelace.Compiler.Reporting;
@@ -44,6 +46,7 @@ package body Lovelace.Main.Build is
       No_Wit        : Boolean := False;
       Force         : Boolean := False;
       Output_Format : Output_Format_Set;
+      The_Flavor    : Flavor.Flavor := Flavor.Default;
    end record;
 
    function Compose_Path (Left, Right : String) return String;
@@ -95,7 +98,8 @@ package body Lovelace.Main.Build is
          Output_Root   => Ada.Strings.Unbounded.To_Unbounded_String (".output"),
          No_Wit        => False,
          Force         => False,
-         Output_Format => (Want_Wasm => True, Want_Wat => False));
+         Output_Format => (Want_Wasm => True, Want_Wat => False),
+         The_Flavor    => Flavor.Default);
 
       while Index <= Argument_Count loop
          declare
@@ -107,6 +111,22 @@ package body Lovelace.Main.Build is
             elsif Token = "--force" then
                Options.Force := True;
                Index := Index + 1;
+            elsif Token = "--flavor" then
+               if Index >= Argument_Count then
+                  Report_Cli_Error ("--flavor requires a value (wasi, native, or web)");
+                  return False;
+               end if;
+               declare
+                  Flavor_Text : constant String := Command_Arguments.Element (Index + 1);
+                  Parsed      : Flavor.Flavor;
+               begin
+                  if not Flavor.Try_Parse_Name (Flavor_Text, Parsed) then
+                     Report_Cli_Error ("invalid --flavor '" & Flavor_Text & "'; expected wasi, native, or web");
+                     return False;
+                  end if;
+                  Options.The_Flavor := Parsed;
+               end;
+               Index := Index + 2;
             elsif Token = "--output-format" then
                if Index >= Argument_Count then
                   Report_Cli_Error ("--output-format requires a value");
@@ -315,7 +335,8 @@ package body Lovelace.Main.Build is
                   Terminal.Put_Info ("Parsing");
                   declare
                      Parse_Result : constant Parser.Parse_Result :=
-                       Parser.Parse (Ada.Strings.Unbounded.To_String (Source_Text), Token_Result.Tokens);
+                       Parser.Parse
+                         (Ada.Strings.Unbounded.To_String (Source_Text), Token_Result.Tokens, Options.The_Flavor);
                   begin
                      case Parse_Result.Ok is
                         when False =>

@@ -109,6 +109,32 @@ package body Lovelace.Compiler.Tests.Suite is
         (Parser_Caller.Create ("parser: end semicolon", Lovelace.Compiler.Tests.Parser.Test_End_Semicolon'Access));
       Result.Add_Test
         (Parser_Caller.Create
+           ("parser: flavor active clash", Lovelace.Compiler.Tests.Parser.Test_Flavor_Active_Clash'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: flavor exclusive names", Lovelace.Compiler.Tests.Parser.Test_Flavor_Exclusive_Names'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: flavor inactive syntax error",
+            Lovelace.Compiler.Tests.Parser.Test_Flavor_Inactive_Syntax_Error'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: flavor invalid condition", Lovelace.Compiler.Tests.Parser.Test_Flavor_Invalid_Condition'Access));
+      Result.Add_Test
+        (Parser_Caller.Create ("parser: flavor nested", Lovelace.Compiler.Tests.Parser.Test_Flavor_Nested'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: flavor placement in procedure",
+            Lovelace.Compiler.Tests.Parser.Test_Flavor_Placement_In_Procedure'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: flavor placement in program",
+            Lovelace.Compiler.Tests.Parser.Test_Flavor_Placement_In_Program'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: flavor selection", Lovelace.Compiler.Tests.Parser.Test_Flavor_Selection'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
            ("parser: identifier names", Lovelace.Compiler.Tests.Parser.Test_Identifier_Names'Access));
       Result.Add_Test
         (Parser_Caller.Create

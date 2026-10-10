@@ -3,6 +3,8 @@ with Lovelace.Compiler.Types;
 package body Lovelace.Compiler.Parser is
 
    use type Ast.Subroutine_Flags;
+   use type Flavor.Flavor;
+   use type Tokens.Directive_Subtype;
    use type Tokens.Keyword_Subtype;
    use type Tokens.Punctuation_Subtype;
    use type Tokens.Token_Kind;
@@ -21,6 +23,7 @@ package body Lovelace.Compiler.Parser is
       First_Span             : Source.Source_Span := Origin_Span;
       Last_Consumed_Span     : Source.Source_Span := Origin_Span;
       Last_Consumed_Filename : Source.Filename_Option := Source.Absent_Filename;
+      Active_Flavor          : Flavor.Flavor := Flavor.Wasi;
    end record;
 
    --  Step result without carrying an Ast.Module on success.
@@ -59,6 +62,9 @@ package body Lovelace.Compiler.Parser is
    procedure Advance (The_Cursor : in out Cursor);
    function At_End (The_Cursor : Cursor) return Boolean;
    function Describe_Token (Source_Text : String; The_Token : Tokens.Token) return String;
+   function Expect_Directive
+     (The_Cursor : in out Cursor; Source_Text : String; Expected : Tokens.Directive_Subtype; Label : String)
+      return Step_Result;
    function Expect_Identifier
      (The_Cursor : in out Cursor; Source_Text : String; The_Token : out Tokens.Token) return Step_Result;
    function Expect_Keyword
@@ -68,6 +74,7 @@ package body Lovelace.Compiler.Parser is
      (The_Cursor : in out Cursor; Source_Text : String; Expected : Tokens.Punctuation_Subtype; Label : String)
       return Step_Result;
    function Failure_From_Step (Step : Step_Result) return Parse_Result;
+   function Is_Directive (The_Token : Tokens.Token; Expected : Tokens.Directive_Subtype) return Boolean;
    function Is_Keyword (The_Token : Tokens.Token; Expected : Tokens.Keyword_Subtype) return Boolean;
    function Is_Punctuation (The_Token : Tokens.Token; Expected : Tokens.Punctuation_Subtype) return Boolean;
    function Make_Failure
@@ -77,10 +84,24 @@ package body Lovelace.Compiler.Parser is
    function Parse_Block (The_Cursor : in out Cursor; Source_Text : String) return Step_Result;
    function Parse_Compilation_Unit
      (The_Cursor : in out Cursor; Source_Text : String; The_Unit : out Unit_Parse) return Step_Result;
+   function Parse_Flavor_Condition
+     (The_Cursor : in out Cursor; Source_Text : String; Condition_Flavor : out Flavor.Flavor) return Step_Result;
+   function Parse_Flavor_Conditional
+     (The_Cursor : in out Cursor; Source_Text : String; The_Unit : in out Unit_Parse; Keep_Declarations : Boolean)
+      return Step_Result;
    function Parse_Float_Type
      (The_Cursor : in out Cursor; Source_Text : String; The_Type : out Types.Type_Expression) return Step_Result;
    function Parse_Integer_Type
      (The_Cursor : in out Cursor; Source_Text : String; The_Type : out Types.Type_Expression) return Step_Result;
+   function Parse_Module_Declaration
+     (The_Cursor : in out Cursor; Source_Text : String; The_Unit : in out Unit_Parse; Keep_Declarations : Boolean)
+      return Step_Result;
+   function Parse_Module_Declaration_List
+     (The_Cursor        : in out Cursor;
+      Source_Text       : String;
+      The_Unit          : in out Unit_Parse;
+      Keep_Declarations : Boolean;
+      Stop_At_Arm_End   : Boolean) return Step_Result;
    function Parse_Module_Unit
      (The_Cursor : in out Cursor; Source_Text : String; The_Unit : out Unit_Parse) return Step_Result;
    function Parse_Parameter_Group
@@ -98,7 +119,9 @@ package body Lovelace.Compiler.Parser is
       Subroutines    : Ast.Subroutine_Sequence;
       Parameters     : out Ast.Parameter_Sequence) return Step_Result;
    function Parse_Procedure_Declaration
-     (The_Cursor : in out Cursor; Source_Text : String; The_Unit : in out Unit_Parse) return Step_Result;
+     (The_Cursor : in out Cursor; Source_Text : String; The_Unit : in out Unit_Parse; Keep_Declarations : Boolean)
+      return Step_Result;
+   function String_Literal_Content (Source_Text : String; The_Token : Tokens.Token) return String;
    function Parse_Program_Unit
      (The_Cursor : in out Cursor; Source_Text : String; The_Unit : out Unit_Parse) return Step_Result;
    function Parse_Qualified_Identifier
@@ -233,6 +256,31 @@ package body Lovelace.Compiler.Parser is
       return (Items => Error_Vectors.Empty_Vector);
    end Empty_Error_Sequence;
 
+   function Expect_Directive
+     (The_Cursor : in out Cursor; Source_Text : String; Expected : Tokens.Directive_Subtype; Label : String)
+      return Step_Result is
+   begin
+      if At_End (The_Cursor) then
+         return Step_End_Of_Input (The_Cursor, "expected directive """ & Label & """, found end of input");
+      end if;
+
+      declare
+         Current : constant Tokens.Token := Peek (The_Cursor);
+      begin
+         if not Is_Directive (Current, Expected) then
+            return
+              Make_Failure
+                (Code     => Unexpected_Token,
+                 Span     => Current.Span,
+                 Filename => Current.Filename,
+                 Detail   => "expected directive """ & Label & """, found " & Describe_Token (Source_Text, Current));
+         end if;
+
+         Advance (The_Cursor);
+         return (Ok => True);
+      end;
+   end Expect_Directive;
+
    function Expect_Identifier
      (The_Cursor : in out Cursor; Source_Text : String; The_Token : out Tokens.Token) return Step_Result is
    begin
@@ -331,6 +379,11 @@ package body Lovelace.Compiler.Parser is
       end case;
    end Failure_From_Step;
 
+   function Is_Directive (The_Token : Tokens.Token; Expected : Tokens.Directive_Subtype) return Boolean is
+   begin
+      return The_Token.Kind = Tokens.Directive and then The_Token.Directive_Value = Expected;
+   end Is_Directive;
+
    function Is_Keyword (The_Token : Tokens.Token; Expected : Tokens.Keyword_Subtype) return Boolean is
    begin
       return The_Token.Kind = Tokens.Keyword and then The_Token.Keyword_Value = Expected;
@@ -369,14 +422,17 @@ package body Lovelace.Compiler.Parser is
       return False;
    end Parameter_Name_Exists;
 
-   function Parse (Source_Text : String; Token_List : Tokens.Token_Sequence) return Parse_Result is
+   function Parse
+     (Source_Text : String; Token_List : Tokens.Token_Sequence; Active_Flavor : Flavor.Flavor) return Parse_Result
+   is
       The_Cursor : Cursor :=
         (Token_List             => Token_List,
          Next_Index             => 1,
          Has_Consumed           => False,
          First_Span             => Origin_Span,
          Last_Consumed_Span     => Origin_Span,
-         Last_Consumed_Filename => Source.Absent_Filename);
+         Last_Consumed_Filename => Source.Absent_Filename,
+         Active_Flavor          => Active_Flavor);
       The_Unit   : Unit_Parse;
       Step       : Step_Result;
    begin
@@ -480,6 +536,198 @@ package body Lovelace.Compiler.Parser is
          end case;
       end;
    end Parse_Compilation_Unit;
+
+   function Parse_Flavor_Condition
+     (The_Cursor : in out Cursor; Source_Text : String; Condition_Flavor : out Flavor.Flavor) return Step_Result
+   is
+      Flavor_Token : Tokens.Token := Dummy_Identifier;
+      String_Token : Tokens.Token :=
+        (Kind => Tokens.String_Literal, Span => Origin_Span, Filename => Source.Absent_Filename);
+      Step         : Step_Result;
+      Content      : Ada.Strings.Unbounded.Unbounded_String;
+   begin
+      Condition_Flavor := Flavor.Wasi;
+
+      --  flavor_condition = "flavor" , "=" , string_literal
+      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => Flavor_Token);
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            null;
+      end case;
+
+      if Tokens.Lexeme (Source_Text, Flavor_Token) /= "flavor" then
+         return
+           Make_Failure
+             (Code     => Unexpected_Token,
+              Span     => Flavor_Token.Span,
+              Filename => Flavor_Token.Filename,
+              Detail   => "expected identifier ""flavor"", found " & Describe_Token (Source_Text, Flavor_Token));
+      end if;
+
+      Step :=
+        Expect_Punctuation
+          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Equals, Label => "=");
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            null;
+      end case;
+
+      if At_End (The_Cursor) then
+         return Step_End_Of_Input (The_Cursor, "expected string literal, found end of input");
+      end if;
+
+      declare
+         Current : constant Tokens.Token := Peek (The_Cursor);
+      begin
+         if Current.Kind /= Tokens.String_Literal then
+            return
+              Make_Failure
+                (Code     => Unexpected_Token,
+                 Span     => Current.Span,
+                 Filename => Current.Filename,
+                 Detail   => "expected string literal, found " & Describe_Token (Source_Text, Current));
+         end if;
+
+         String_Token := Current;
+         Advance (The_Cursor);
+      end;
+
+      Content := Ada.Strings.Unbounded.To_Unbounded_String (String_Literal_Content (Source_Text, String_Token));
+      if not Flavor.Try_Parse_Name (Ada.Strings.Unbounded.To_String (Content), Condition_Flavor) then
+         return
+           Make_Failure
+             (Code     => Invalid_Flavor_Condition,
+              Span     => String_Token.Span,
+              Filename => String_Token.Filename,
+              Detail   =>
+                "invalid flavor """
+                & Ada.Strings.Unbounded.To_String (Content)
+                & """; expected ""wasi"", ""native"", or ""web""");
+      end if;
+
+      return (Ok => True);
+   end Parse_Flavor_Condition;
+
+   function Parse_Flavor_Conditional
+     (The_Cursor : in out Cursor; Source_Text : String; The_Unit : in out Unit_Parse; Keep_Declarations : Boolean)
+      return Step_Result
+   is
+      Step             : Step_Result;
+      Condition_Flavor : Flavor.Flavor;
+      Matched          : Boolean := False;
+      Arm_Keep         : Boolean;
+   begin
+      --  flavor_conditional = "#if" , flavor_condition , { module_declaration } ,
+      --    { "#elsif" , flavor_condition , { module_declaration } } ,
+      --    [ "#else" , { module_declaration } ] , "#end"
+      Step :=
+        Expect_Directive
+          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.If_Directive, Label => "#if");
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            null;
+      end case;
+
+      Step :=
+        Parse_Flavor_Condition
+          (The_Cursor => The_Cursor, Source_Text => Source_Text, Condition_Flavor => Condition_Flavor);
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            null;
+      end case;
+
+      Arm_Keep := Keep_Declarations and then Condition_Flavor = The_Cursor.Active_Flavor;
+      if Arm_Keep then
+         Matched := True;
+      end if;
+
+      Step :=
+        Parse_Module_Declaration_List
+          (The_Cursor        => The_Cursor,
+           Source_Text       => Source_Text,
+           The_Unit          => The_Unit,
+           Keep_Declarations => Arm_Keep,
+           Stop_At_Arm_End   => True);
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            null;
+      end case;
+
+      while not At_End (The_Cursor) and then Is_Directive (Peek (The_Cursor), Tokens.Elsif_Directive) loop
+         Advance (The_Cursor);
+
+         Step :=
+           Parse_Flavor_Condition
+             (The_Cursor => The_Cursor, Source_Text => Source_Text, Condition_Flavor => Condition_Flavor);
+         case Step.Ok is
+            when False =>
+               return Step;
+
+            when True  =>
+               null;
+         end case;
+
+         Arm_Keep := Keep_Declarations and then not Matched and then Condition_Flavor = The_Cursor.Active_Flavor;
+         if Arm_Keep then
+            Matched := True;
+         end if;
+
+         Step :=
+           Parse_Module_Declaration_List
+             (The_Cursor        => The_Cursor,
+              Source_Text       => Source_Text,
+              The_Unit          => The_Unit,
+              Keep_Declarations => Arm_Keep,
+              Stop_At_Arm_End   => True);
+         case Step.Ok is
+            when False =>
+               return Step;
+
+            when True  =>
+               null;
+         end case;
+      end loop;
+
+      if not At_End (The_Cursor) and then Is_Directive (Peek (The_Cursor), Tokens.Else_Directive) then
+         Advance (The_Cursor);
+
+         Arm_Keep := Keep_Declarations and then not Matched;
+
+         Step :=
+           Parse_Module_Declaration_List
+             (The_Cursor        => The_Cursor,
+              Source_Text       => Source_Text,
+              The_Unit          => The_Unit,
+              Keep_Declarations => Arm_Keep,
+              Stop_At_Arm_End   => True);
+         case Step.Ok is
+            when False =>
+               return Step;
+
+            when True  =>
+               null;
+         end case;
+      end if;
+
+      return
+        Expect_Directive
+          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.End_Directive, Label => "#end");
+   end Parse_Flavor_Conditional;
 
    function Parse_Float_Type
      (The_Cursor : in out Cursor; Source_Text : String; The_Type : out Types.Type_Expression) return Step_Result
@@ -672,6 +920,91 @@ package body Lovelace.Compiler.Parser is
       end case;
    end Parse_Integer_Type;
 
+   function Parse_Module_Declaration
+     (The_Cursor : in out Cursor; Source_Text : String; The_Unit : in out Unit_Parse; Keep_Declarations : Boolean)
+      return Step_Result is
+   begin
+      if At_End (The_Cursor) then
+         return Step_End_Of_Input (The_Cursor, "expected procedure or ""#if"", found end of input");
+      end if;
+
+      declare
+         Current : constant Tokens.Token := Peek (The_Cursor);
+      begin
+
+         if Is_Directive (Current, Tokens.If_Directive) then
+            return
+              Parse_Flavor_Conditional
+                (The_Cursor        => The_Cursor,
+                 Source_Text       => Source_Text,
+                 The_Unit          => The_Unit,
+                 Keep_Declarations => Keep_Declarations);
+         end if;
+
+         if Is_Keyword (Current, Tokens.Procedure_Keyword) then
+            return
+              Parse_Procedure_Declaration
+                (The_Cursor        => The_Cursor,
+                 Source_Text       => Source_Text,
+                 The_Unit          => The_Unit,
+                 Keep_Declarations => Keep_Declarations);
+         end if;
+
+         return
+           Make_Failure
+             (Code     => Unexpected_Token,
+              Span     => Current.Span,
+              Filename => Current.Filename,
+              Detail   => "expected procedure or ""#if"", found " & Describe_Token (Source_Text, Current));
+      end;
+   end Parse_Module_Declaration;
+
+   function Parse_Module_Declaration_List
+     (The_Cursor        : in out Cursor;
+      Source_Text       : String;
+      The_Unit          : in out Unit_Parse;
+      Keep_Declarations : Boolean;
+      Stop_At_Arm_End   : Boolean) return Step_Result
+   is
+      Step : Step_Result;
+   begin
+      loop
+         if At_End (The_Cursor) then
+            return (Ok => True);
+         end if;
+
+         declare
+            Current : constant Tokens.Token := Peek (The_Cursor);
+         begin
+            if Stop_At_Arm_End
+              and then (Is_Directive (Current, Tokens.Elsif_Directive)
+                        or else Is_Directive (Current, Tokens.Else_Directive)
+                        or else Is_Directive (Current, Tokens.End_Directive))
+            then
+               return (Ok => True);
+            end if;
+
+            if not Stop_At_Arm_End and then Is_Keyword (Current, Tokens.End_Keyword) then
+               return (Ok => True);
+            end if;
+         end;
+
+         Step :=
+           Parse_Module_Declaration
+             (The_Cursor        => The_Cursor,
+              Source_Text       => Source_Text,
+              The_Unit          => The_Unit,
+              Keep_Declarations => Keep_Declarations);
+         case Step.Ok is
+            when False =>
+               return Step;
+
+            when True  =>
+               null;
+         end case;
+      end loop;
+   end Parse_Module_Declaration_List;
+
    function Parse_Module_Unit
      (The_Cursor : in out Cursor; Source_Text : String; The_Unit : out Unit_Parse) return Step_Result
    is
@@ -685,7 +1018,7 @@ package body Lovelace.Compiler.Parser is
          Stop_Span   => Origin_Span,
          Subroutines => Ast.Empty_Subroutine_Sequence);
 
-      --  module_unit = "module" , qualified_identifier , ";" , { procedure_declaration } , "end" , "."
+      --  module_unit = "module" , qualified_identifier , ";" , { module_declaration } , "end" , "."
       Step :=
         Expect_Keyword
           (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Module_Keyword, Label => "module");
@@ -723,25 +1056,20 @@ package body Lovelace.Compiler.Parser is
             null;
       end case;
 
-      loop
-         if At_End (The_Cursor) then
-            exit;
-         end if;
+      Step :=
+        Parse_Module_Declaration_List
+          (The_Cursor        => The_Cursor,
+           Source_Text       => Source_Text,
+           The_Unit          => The_Unit,
+           Keep_Declarations => True,
+           Stop_At_Arm_End   => False);
+      case Step.Ok is
+         when False =>
+            return Step;
 
-         if not Is_Keyword (Peek (The_Cursor), Tokens.Procedure_Keyword) then
-            exit;
-         end if;
-
-         Step :=
-           Parse_Procedure_Declaration (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Unit => The_Unit);
-         case Step.Ok is
-            when False =>
-               return Step;
-
-            when True  =>
-               null;
-         end case;
-      end loop;
+         when True  =>
+            null;
+      end case;
 
       Step :=
         Expect_Keyword
@@ -946,7 +1274,8 @@ package body Lovelace.Compiler.Parser is
    end Parse_Parameter_List;
 
    function Parse_Procedure_Declaration
-     (The_Cursor : in out Cursor; Source_Text : String; The_Unit : in out Unit_Parse) return Step_Result
+     (The_Cursor : in out Cursor; Source_Text : String; The_Unit : in out Unit_Parse; Keep_Declarations : Boolean)
+      return Step_Result
    is
       Name_Token     : Tokens.Token := Dummy_Identifier;
       Procedure_Name : Ada.Strings.Unbounded.Unbounded_String;
@@ -985,22 +1314,24 @@ package body Lovelace.Compiler.Parser is
       declare
          Name : constant String := Ada.Strings.Unbounded.To_String (Procedure_Name);
       begin
-         if Name = Module_Name then
-            return
-              Make_Failure
-                (Code     => Name_Clash,
-                 Span     => Name_Token.Span,
-                 Filename => Name_Token.Filename,
-                 Detail   => "procedure name """ & Name & """ conflicts with the module name");
-         end if;
+         if Keep_Declarations then
+            if Name = Module_Name then
+               return
+                 Make_Failure
+                   (Code     => Name_Clash,
+                    Span     => Name_Token.Span,
+                    Filename => Name_Token.Filename,
+                    Detail   => "procedure name """ & Name & """ conflicts with the module name");
+            end if;
 
-         if Subroutine_Name_Exists (The_Unit.Subroutines, Name) then
-            return
-              Make_Failure
-                (Code     => Name_Clash,
-                 Span     => Name_Token.Span,
-                 Filename => Name_Token.Filename,
-                 Detail   => "procedure name """ & Name & """ is duplicated in this module");
+            if Subroutine_Name_Exists (The_Unit.Subroutines, Name) then
+               return
+                 Make_Failure
+                   (Code     => Name_Clash,
+                    Span     => Name_Token.Span,
+                    Filename => Name_Token.Filename,
+                    Detail   => "procedure name """ & Name & """ is duplicated in this module");
+            end if;
          end if;
       end;
 
@@ -1020,14 +1351,25 @@ package body Lovelace.Compiler.Parser is
       end if;
 
       if not Is_Punctuation (Peek (The_Cursor), Tokens.Right_Parenthesis) then
-         Step :=
-           Parse_Parameter_List
-             (The_Cursor     => The_Cursor,
-              Source_Text    => Source_Text,
-              Module_Name    => Module_Name,
-              Procedure_Name => Ada.Strings.Unbounded.To_String (Procedure_Name),
-              Subroutines    => The_Unit.Subroutines,
-              Parameters     => Parameters);
+         if Keep_Declarations then
+            Step :=
+              Parse_Parameter_List
+                (The_Cursor     => The_Cursor,
+                 Source_Text    => Source_Text,
+                 Module_Name    => Module_Name,
+                 Procedure_Name => Ada.Strings.Unbounded.To_String (Procedure_Name),
+                 Subroutines    => The_Unit.Subroutines,
+                 Parameters     => Parameters);
+         else
+            Step :=
+              Parse_Parameter_List
+                (The_Cursor     => The_Cursor,
+                 Source_Text    => Source_Text,
+                 Module_Name    => "",
+                 Procedure_Name => Ada.Strings.Unbounded.To_String (Procedure_Name),
+                 Subroutines    => Ast.Empty_Subroutine_Sequence,
+                 Parameters     => Parameters);
+         end if;
          case Step.Ok is
             when False =>
                return Step;
@@ -1079,17 +1421,19 @@ package body Lovelace.Compiler.Parser is
             null;
       end case;
 
-      The_Subroutine :=
-        Ast.Create_Subroutine
-          (Name        => Ada.Strings.Unbounded.To_String (Procedure_Name),
-           Module_Name => Module_Name,
-           Name_Span   => Name_Token.Span,
-           Filename    => Name_Token.Filename,
-           Flags       => 0,
-           Return_Type => Types.Unit_Type,
-           Parameters  => Parameters,
-           The_Body    => Ast.Empty_Body);
-      Ast.Append (Sequence => The_Unit.Subroutines, The_Subroutine => The_Subroutine);
+      if Keep_Declarations then
+         The_Subroutine :=
+           Ast.Create_Subroutine
+             (Name        => Ada.Strings.Unbounded.To_String (Procedure_Name),
+              Module_Name => Module_Name,
+              Name_Span   => Name_Token.Span,
+              Filename    => Name_Token.Filename,
+              Flags       => 0,
+              Return_Type => Types.Unit_Type,
+              Parameters  => Parameters,
+              The_Body    => Ast.Empty_Body);
+         Ast.Append (Sequence => The_Unit.Subroutines, The_Subroutine => The_Subroutine);
+      end if;
       return (Ok => True);
    end Parse_Procedure_Declaration;
 
@@ -1282,6 +1626,16 @@ package body Lovelace.Compiler.Parser is
         Make_Failure
           (Code => Unexpected_End_Of_Input, Span => Origin_Span, Filename => Source.Absent_Filename, Detail => Detail);
    end Step_End_Of_Input;
+
+   function String_Literal_Content (Source_Text : String; The_Token : Tokens.Token) return String is
+      Lexeme : constant String := Tokens.Lexeme (Source_Text, The_Token);
+   begin
+      if Lexeme'Length >= 2 and then Lexeme (Lexeme'First) = '"' and then Lexeme (Lexeme'Last) = '"' then
+         return Lexeme (Lexeme'First + 1 .. Lexeme'Last - 1);
+      end if;
+
+      return Lexeme;
+   end String_Literal_Content;
 
    function Subroutine_Name_Exists (Subroutines : Ast.Subroutine_Sequence; Name : String) return Boolean is
    begin

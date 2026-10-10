@@ -1,4 +1,5 @@
 with Lovelace.Compiler.Ast;
+with Lovelace.Compiler.Flavor;
 with Lovelace.Compiler.Parser;
 with Lovelace.Compiler.Tokens;
 with Lovelace.Compiler.Tokenizer;
@@ -177,21 +178,29 @@ package Lovelace.Compiler.Tests.Support is
    --  Tokenize then Parse Source_Text; require success and return the module.
    --  @param Source_Text UTF-8 Lovelace source.
    --  @param Message Assertion message on failure.
+   --  @param Active_Flavor Flavor for `#if` selection (default wasi).
    --  @return Parsed module.
-   function Must_Parse (Source_Text : String; Message : String) return Ast.Module;
+   function Must_Parse
+     (Source_Text : String; Message : String; Active_Flavor : Flavor.Flavor := Flavor.Default) return Ast.Module;
 
    --  Tokenize with Filename then Parse Source_Text; require success and return the module.
    --  @param Source_Text UTF-8 Lovelace source.
    --  @param Filename Shared filename label for tokens and AST.
    --  @param Message Assertion message on failure.
+   --  @param Active_Flavor Flavor for `#if` selection (default wasi).
    --  @return Parsed module.
-   function Must_Parse (Source_Text : String; Filename : String; Message : String) return Ast.Module;
+   function Must_Parse
+     (Source_Text : String; Filename : String; Message : String; Active_Flavor : Flavor.Flavor := Flavor.Default)
+      return Ast.Module;
 
    --  Tokenize then Parse Source_Text; require parse failure and return errors.
    --  @param Source_Text UTF-8 Lovelace source (must tokenize successfully).
    --  @param Message Assertion message on unexpected success.
+   --  @param Active_Flavor Flavor for `#if` selection (default wasi).
    --  @return Parser error sequence.
-   function Must_Fail_Parse (Source_Text : String; Message : String) return Parser.Parser_Error_Sequence;
+   function Must_Fail_Parse
+     (Source_Text : String; Message : String; Active_Flavor : Flavor.Flavor := Flavor.Default)
+      return Parser.Parser_Error_Sequence;
 
    --  Require Generate success and return the LIR module.
    --  @param The_Module Frontend AST module.
