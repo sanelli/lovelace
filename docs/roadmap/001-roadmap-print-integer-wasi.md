@@ -101,6 +101,8 @@ Steps 1–3 are mostly frontend. Steps 4–5 make the language callable across m
 - Clarify policy: Lovelace export-for-import vs WIT kebab export. For v1 one-component builds, prefer **Lovelace visibility** without forcing Canonical ABI export of `print` on day one.
 - Today’s backend rejects export/entrypoint **with parameters** for WIT — do not conflate that limitation with intra-component calls to Augusta.
 
+**Status (issue [#23](https://github.com/sanelli/lovelace/issues/23)):** Done for this slice — keyword `export`, optional `export procedure` → `Export_Flag`, WIT/component export only for nullary `Export_Flag`, parameterized exports lower as core-only; sample [`ExportProcedures.love`](../../samples/module/ExportProcedures.love).
+
 ### 3. Unit-level `import` (syntax + AST only)
 
 **Goal:** Parse and persist imports; no resolution yet.

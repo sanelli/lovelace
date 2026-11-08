@@ -14,7 +14,7 @@ module_declaration   = procedure_declaration | flavor_conditional ;
 qualified_identifier = identifier , { "." , identifier } ;
 
 procedure_declaration = procedure_header , "begin" , "end" , ";" ;
-procedure_header      = "procedure" , identifier , "(" , [ parameter_list ] , ")" , ";" ;
+procedure_header      = [ "export" ] , "procedure" , identifier , "(" , [ parameter_list ] , ")" , ";" ;
 parameter_list        = parameter_group , { ";" , parameter_group } ;
 parameter_group       = identifier , { "," , identifier } , ":" , type_name ;
 type_name             = integer_type | float_type ;
@@ -38,6 +38,7 @@ Defaults: omitted signedness → signed; omitted integer size → 32; omitted fl
 | --- | --- |
 | `"program"` | keyword `program` |
 | `"module"` | keyword `module` |
+| `"export"` | keyword `export` |
 | `"procedure"` | keyword `procedure` |
 | `"integer"` / `"float"` / `"signed"` / `"unsigned"` | matching keywords |
 | `"begin"` | keyword `begin` |
@@ -58,6 +59,7 @@ Examples (all valid when tokenized then parsed):
 | `module Empty; end.` | Canonical empty module |
 | `module Foo.Bar; end.` | Dotted module name |
 | `module MyModule; procedure Whatever(x : integer; y, z : float<32>); begin end; end.` | Module procedure with Ada-style params |
+| `module Lib; export procedure Print(Value : integer); begin end; end.` | Exported module procedure (`Export_Flag`) |
 | `module FlavorSelect; #if flavor = "wasi" procedure WasiOnly(); begin end; #end end.` | Flavor selection (see [samples](samples.md)) |
 
 Not accepted in this slice: `end;` after a program `end`, `module …; begin end.` (modules have no unit-level `begin`), procedures inside `program` units, `#if` in `program` units or inside procedure bodies, `float<16>` / `integer<128>`, wrong keyword order, missing final `.`, trailing tokens after `.`, `Program` / `Module` as the first keyword (identifiers, not keywords), trailing `.` in a qualified name (`module Foo.;`), duplicate parameter or procedure names among **surviving** declarations ([`LV00011`](diagnostics.md)).

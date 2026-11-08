@@ -129,6 +129,48 @@ package body Lovelace.Compiler.Tests.Parser is
       Support.Assert_Parser_Error_Code (Errors, 1, Lovelace.Compiler.Parser.Unexpected_Token, "end semicolon code");
    end Test_End_Semicolon;
 
+   procedure Test_Export_Procedure (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Nullary_Source : constant String := "module Lib; export procedure Helper(); begin end; end.";
+      Params_Source  : constant String := "module Lib; export procedure Print(Value : integer); begin end; end.";
+      Flavor_Source  : constant String :=
+        "module Lib;"
+        & ASCII.LF
+        & "#if flavor = ""wasi"""
+        & ASCII.LF
+        & "export procedure WasiPrint(Value : integer); begin end;"
+        & ASCII.LF
+        & "#elsif flavor = ""native"""
+        & ASCII.LF
+        & "procedure NativeOnly(); begin end;"
+        & ASCII.LF
+        & "#end"
+        & ASCII.LF
+        & "end.";
+      Lone_Export    : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("module Lib; export begin end; end.", "lone export");
+      Nullary_Module : constant Ast.Module := Support.Must_Parse (Nullary_Source, "export nullary");
+      Params_Module  : constant Ast.Module := Support.Must_Parse (Params_Source, "export params");
+      Wasi_Module    : constant Ast.Module := Support.Must_Parse (Flavor_Source, "export flavor", Flavor.Wasi);
+      Native_Module  : constant Ast.Module := Support.Must_Parse (Flavor_Source, "export flavor native", Flavor.Native);
+      Nullary_Sub    : constant Ast.Subroutine := Ast.Get_Subroutine (Nullary_Module, 1);
+      Params_Sub     : constant Ast.Subroutine := Ast.Get_Subroutine (Params_Module, 1);
+      Wasi_Sub       : constant Ast.Subroutine := Ast.Get_Subroutine (Wasi_Module, 1);
+      Native_Sub     : constant Ast.Subroutine := Ast.Get_Subroutine (Native_Module, 1);
+   begin
+      AUnit.Assertions.Assert (Ast.Has_Export (Ast.Get_Flags (Nullary_Sub)), "nullary export");
+      AUnit.Assertions.Assert (not Ast.Has_Entrypoint (Ast.Get_Flags (Nullary_Sub)), "nullary not entry");
+      AUnit.Assertions.Assert (Ast.Has_Export (Ast.Get_Flags (Params_Sub)), "params export");
+      AUnit.Assertions.Assert (not Ast.Has_Entrypoint (Ast.Get_Flags (Params_Sub)), "params not entry");
+      AUnit.Assertions.Assert (Ast.Length (Ast.Parameters (Params_Sub)) = 1, "one param");
+      AUnit.Assertions.Assert (Ast.Has_Export (Ast.Get_Flags (Wasi_Sub)), "wasi export survives");
+      AUnit.Assertions.Assert (Ast.Name (Wasi_Sub) = "WasiPrint", "wasi name");
+      AUnit.Assertions.Assert (not Ast.Has_Export (Ast.Get_Flags (Native_Sub)), "native not export");
+      AUnit.Assertions.Assert (Ast.Name (Native_Sub) = "NativeOnly", "native name");
+      Support.Assert_Parser_Error_Count (Lone_Export, 1, "lone export");
+      Support.Assert_Parser_Error_Code (Lone_Export, 1, Lovelace.Compiler.Parser.Unexpected_Token, "lone export code");
+   end Test_Export_Procedure;
+
    procedure Test_Flavor_Active_Clash (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Source_Text : constant String :=

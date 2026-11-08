@@ -9,7 +9,7 @@ todos:
     content: "2. Sync main, then gh issue develop <n> --name feature/<n>-compiler-ir-generator --checkout --base main. Verify with gh issue develop --list <n>."
     status: completed
   - id: "3"
-    content: "3. Save this plan as .cursor/plans/<n>-compiler-ir-generator.plan.md with #<n> in the body."
+    content: "3. Save this plan as .cursor/plans/<nnn>-compiler-ir-generator.plan.md with #<n> in the body."
     status: completed
   - id: "4"
     content: "4. Move Lovelace.Compiler.Source to Lovelace.Common.Source; migrate compiler/tests/docs; add common AUnit coverage; gnatformat."
@@ -43,7 +43,7 @@ isProject: false
 
 Branch: `feature/11-compiler-ir-generator` (linked to #11; created from `main` via `gh issue develop`).
 
-Plan file: [`.cursor/plans/11-compiler-ir-generator.plan.md`](11-compiler-ir-generator.plan.md).
+Plan file: [`.cursor/plans/011-compiler-ir-generator.plan.md`](011-compiler-ir-generator.plan.md).
 
 Depends on landed parser ([#9](https://github.com/sanelli/lovelace/issues/9)) and LIR crate ([#7](https://github.com/sanelli/lovelace/issues/7)). Branch from current `main` only.
 
@@ -222,7 +222,7 @@ Root workspace already pins common, compiler, and lir.
 
 1. Create a GitHub issue with `gh issue create` (IR Generator + Common.Source move + LIR origins); reuse if an equivalent open issue exists; record `<n>`. **Done: #11.**
 2. Sync `main`, then `gh issue develop 11 --name feature/11-compiler-ir-generator --checkout --base main`. Verify with `gh issue develop --list 11`. **Done.**
-3. Save this plan as `.cursor/plans/11-compiler-ir-generator.plan.md` with `#11` in the body. **Done.**
+3. Save this plan as `.cursor/plans/011-compiler-ir-generator.plan.md` with `#11` in the body. **Done.**
 4. Move `Lovelace.Compiler.Source` → `Lovelace.Common.Source`; migrate compiler/tests/docs; add common AUnit coverage; `gnatformat`. **Done.**
 5. Add optional source origins on LIR Module and Subroutine (in-memory only; codecs leave absent); update LIR tests and docs. **Done.**
 6. Wire `lovelace_compiler` → `lovelace_lir` in `alire.toml` + `lovelace_compiler.gpr`; `alr update` / build to confirm. **Done.**

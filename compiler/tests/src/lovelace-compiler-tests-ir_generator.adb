@@ -159,6 +159,29 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       AUnit.Assertions.Assert (Subroutines.Origin (Lir_Sub).Present, "export only: subroutine origin");
    end Test_Export_Only_Flags;
 
+   procedure Test_Export_Procedure_Parameters (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text    : constant String := "module Lib; export procedure Print(Value : integer); begin end; end.";
+      Ast_Module     : constant Ast.Module := Support.Must_Parse (Source_Text, "export procedure params");
+      Lir_Module     : constant Modules.Module := Support.Must_Generate (Ast_Module, "export procedure params");
+      Lir_Subroutine : constant Subroutines.Subroutine := Modules.Get_Subroutine (Lir_Module, 1);
+      The_Signature  : constant Subroutines.Signature := Subroutines.Get_Signature (Lir_Subroutine);
+      Flags          : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (Lir_Subroutine);
+      Parameters     : constant Lovelace.Lir.Types.Parameter_Sequence := The_Signature.Parameters;
+   begin
+      AUnit.Assertions.Assert (Modules.Name (Lir_Module) = "Lib", "export procedure params: module");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (The_Signature.Name) = "Print", "export procedure params: name");
+      AUnit.Assertions.Assert (Subroutines.Has_Export (Flags), "export procedure params: export");
+      AUnit.Assertions.Assert (not Subroutines.Has_Entrypoint (Flags), "export procedure params: no entry");
+      AUnit.Assertions.Assert (Lovelace.Lir.Types.Length (Parameters) = 1, "export procedure params: one");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Lovelace.Lir.Types.Element (Parameters, 1).Name) = "Value",
+         "export procedure params: Value");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Types.Element (Parameters, 1).The_Type = Lovelace.Lir.Types.I32, "export procedure params: I32");
+   end Test_Export_Procedure_Parameters;
+
    procedure Test_Filename_Shared (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Source_Text   : constant String := "program Hello; begin end.";

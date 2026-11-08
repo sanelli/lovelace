@@ -252,6 +252,32 @@ package body Lovelace.Compiler.Tests.Backend is
       Assert_Bytes_Contain (Wasm_Emitted.Wasm_Bytes, "helper", "export only wasm helper");
    end Test_Export_Only;
 
+   procedure Test_Export_With_Parameters (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Parameters   : Types.Parameter_Sequence := Types.Empty_Sequence;
+      The_Module   : Modules.Module := Modules.Create ("Lib");
+      Wat_Emitted  : Lovelace.Compiler.Backend.Wat_Emit_Result;
+      Wasm_Emitted : Lovelace.Compiler.Backend.Wasm_Emit_Result;
+   begin
+      Types.Append (Parameters, "Value", Types.I32);
+      Modules.Append_Subroutine
+        (The_Module, Make_Unit_Subroutine_With_Parameters ("Print", Subroutines.Export_Flag, Parameters));
+      Wat_Emitted := Must_Emit_Wat (The_Module, "export params wat");
+      Wasm_Emitted := Must_Emit_Wasm (The_Module, "export params wasm");
+
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
+         "(func $Print (param i32)",
+         "export params wat functype");
+      Assert_Not_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text), "export print:", "export params wit no kebab");
+      Assert_Not_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
+         "(export ""Print""",
+         "export params wat no core export");
+      Assert_Component_Preamble (Wasm_Emitted.Wasm_Bytes, "export params wasm");
+   end Test_Export_With_Parameters;
+
    procedure Test_Invalid_Module (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       The_Module : constant Modules.Module := Modules.Create ("");
@@ -358,13 +384,13 @@ package body Lovelace.Compiler.Tests.Backend is
 
    procedure Test_Unsupported_Type (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      The_Module    : Modules.Module := Modules.Create ("Lib");
-      The_Signature : constant Subroutines.Signature :=
+      The_Module        : Modules.Module := Modules.Create ("Lib");
+      The_Signature     : constant Subroutines.Signature :=
         (Name        => Ada.Strings.Unbounded.To_Unbounded_String ("Get"),
          Return_Type => Types.I32,
          Parameters  => Types.Empty_Sequence);
-      Export_Params : Types.Parameter_Sequence := Types.Empty_Sequence;
-      Export_Module : Modules.Module := Modules.Create ("Lib");
+      Entrypoint_Params : Types.Parameter_Sequence := Types.Empty_Sequence;
+      Entrypoint_Module : Modules.Module := Modules.Create ("Lib");
    begin
       Modules.Append_Subroutine
         (The_Module, Subroutines.Create (The_Signature => The_Signature, Flags => Subroutines.Export_Flag));
@@ -392,20 +418,21 @@ package body Lovelace.Compiler.Tests.Backend is
          end case;
       end;
 
-      Types.Append (Export_Params, "x", Types.I32);
+      Types.Append (Entrypoint_Params, "x", Types.I32);
       Modules.Append_Subroutine
-        (Export_Module, Make_Unit_Subroutine_With_Parameters ("Helper", Subroutines.Export_Flag, Export_Params));
+        (Entrypoint_Module,
+         Make_Unit_Subroutine_With_Parameters ("Main", Subroutines.Entrypoint_Flag, Entrypoint_Params));
 
       declare
-         Wat_Out : constant Lovelace.Compiler.Backend.Wat_Emit_Result := Wat_Backend.Emit_Wat (Export_Module);
+         Wat_Out : constant Lovelace.Compiler.Backend.Wat_Emit_Result := Wat_Backend.Emit_Wat (Entrypoint_Module);
       begin
          case Wat_Out.Ok is
             when True  =>
-               AUnit.Assertions.Assert (False, "export params wat: expected failure");
+               AUnit.Assertions.Assert (False, "entrypoint params wat: expected failure");
 
             when False =>
                AUnit.Assertions.Assert
-                 (Wat_Out.Error.Code = Lovelace.Compiler.Backend.Unsupported_Type, "export params wat: code");
+                 (Wat_Out.Error.Code = Lovelace.Compiler.Backend.Unsupported_Type, "entrypoint params wat: code");
          end case;
       end;
    end Test_Unsupported_Type;

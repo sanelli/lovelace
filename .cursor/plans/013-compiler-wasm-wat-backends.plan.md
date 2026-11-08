@@ -9,7 +9,7 @@ todos:
     content: "2. Sync main, then gh issue develop <n> --name feature/<n>-compiler-wasm-wat-backends --checkout --base main; verify with gh issue develop --list <n>."
     status: completed
   - id: "3"
-    content: "3. Save plan as .cursor/plans/<n>-compiler-wasm-wat-backends.plan.md with #<n> in the body."
+    content: "3. Save plan as .cursor/plans/<nnn>-compiler-wasm-wat-backends.plan.md with #<n> in the body."
     status: completed
   - id: "4"
     content: "4. Add Backend package skeleton + Backend_Error / emit result types; gnatformat."
@@ -46,7 +46,7 @@ isProject: false
 
 Branch: `feature/13-compiler-wasm-wat-backends` (linked to #13; created from `main` via `gh issue develop`).
 
-Plan file: [`.cursor/plans/13-compiler-wasm-wat-backends.plan.md`](13-compiler-wasm-wat-backends.plan.md).
+Plan file: [`.cursor/plans/013-compiler-wasm-wat-backends.plan.md`](013-compiler-wasm-wat-backends.plan.md).
 
 Depends on landed LIR ([#7](https://github.com/sanelli/lovelace/issues/7)) and IR Generator ([#11](https://github.com/sanelli/lovelace/issues/11)). No new Alire crates; all work stays in [`compiler/`](../../compiler/) (`lovelace_compiler`).
 
@@ -258,7 +258,7 @@ Build **Model + Lowering + Wit** first; then **Wat** (easier to eyeball); then *
 
 1. Create GitHub issue (`gh issue create`) for compiler WASM/WAT/WIT backends; reuse if an equivalent open issue exists; record `#13`.
 2. Sync `main`, then `gh issue develop 13 --name feature/13-compiler-wasm-wat-backends --checkout --base main`. Verify with `gh issue develop --list 13`.
-3. Save this plan as `.cursor/plans/13-compiler-wasm-wat-backends.plan.md` with `#13` in the body.
+3. Save this plan as `.cursor/plans/013-compiler-wasm-wat-backends.plan.md` with `#13` in the body.
 4. Add Backend package skeleton + `Backend_Error` / emit result types; gnatformat.
 5. Implement `Backend.Model` + `Backend.Lowering` (Validate, Unit-only check, `_start` synthesis, export set).
 6. Implement `Backend.Wit` companion printer; AUnit golden fragments.

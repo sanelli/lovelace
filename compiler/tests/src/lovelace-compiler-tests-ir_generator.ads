@@ -23,6 +23,10 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  @param The_Test Unused fixture.
    procedure Test_Export_Only_Flags (The_Test : in out Fixture);
 
+   --  export procedure with parameters maps Export_Flag and LIR parameters.
+   --  @param The_Test Unused fixture.
+   procedure Test_Export_Procedure_Parameters (The_Test : in out Fixture);
+
    --  Tokenize+Parse with a filename label shares storage on LIR module and subroutine.
    --  @param The_Test Unused fixture.
    procedure Test_Filename_Shared (The_Test : in out Fixture);

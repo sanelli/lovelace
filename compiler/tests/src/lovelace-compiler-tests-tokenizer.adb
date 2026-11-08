@@ -106,6 +106,28 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Support.Assert_Token_Count (Unicode, 0, "nbsp");
    end Test_Empty_And_Whitespace;
 
+   procedure Test_Export_Keyword (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Alone            : constant String := "export";
+      Before_Procedure : constant String := "export procedure";
+      Export_Case      : constant String := "Export";
+      Exporter         : constant String := "exporter";
+      Alone_Tokens     : constant Tokens.Token_Sequence := Support.Must_Succeed (Alone, "export");
+      Pair_Tokens      : constant Tokens.Token_Sequence := Support.Must_Succeed (Before_Procedure, "export procedure");
+      Case_Tokens      : constant Tokens.Token_Sequence := Support.Must_Succeed (Export_Case, "Export");
+      Exporter_Tokens  : constant Tokens.Token_Sequence := Support.Must_Succeed (Exporter, "exporter");
+   begin
+      Support.Assert_Token_Count (Alone_Tokens, 1, "export");
+      Support.Assert_Keyword (Alone, Alone_Tokens, 1, Tokens.Export_Keyword, "export keyword");
+      Support.Assert_Token_Count (Pair_Tokens, 2, "export procedure");
+      Support.Assert_Keyword (Before_Procedure, Pair_Tokens, 1, Tokens.Export_Keyword, "export before procedure");
+      Support.Assert_Keyword (Before_Procedure, Pair_Tokens, 2, Tokens.Procedure_Keyword, "procedure after export");
+      Support.Assert_Token_Count (Case_Tokens, 1, "Export");
+      Support.Assert_Identifier (Export_Case, Case_Tokens, 1, "Export", "Export");
+      Support.Assert_Token_Count (Exporter_Tokens, 1, "exporter");
+      Support.Assert_Identifier (Exporter, Exporter_Tokens, 1, "exporter", "exporter");
+   end Test_Export_Keyword;
+
    procedure Test_Filename_Omitted (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Token_List : constant Tokens.Token_Sequence := Support.Must_Succeed ("begin", "omitted filename");

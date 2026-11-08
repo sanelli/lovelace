@@ -9,7 +9,7 @@ todos:
     content: "2. Create, link, and check out feature/7-lir-crate from main with gh issue develop --base main"
     status: completed
   - id: "3"
-    content: "3. Save plan as .cursor/plans/7-lir-crate.plan.md with #7 in the body"
+    content: "3. Save plan as .cursor/plans/007-lir-crate.plan.md with #7 in the body"
     status: completed
   - id: "4"
     content: "4. Update rules: new lir.mdc; compiler-pipeline, agent-workflow, lovelace-project"
@@ -47,7 +47,7 @@ isProject: false
 
 Branch: `feature/7-lir-crate` (linked to #7 from `main` via `gh issue develop`).
 
-Plan file: [`.cursor/plans/7-lir-crate.plan.md`](7-lir-crate.plan.md).
+Plan file: [`.cursor/plans/007-lir-crate.plan.md`](007-lir-crate.plan.md).
 
 **Out of scope:** `.love` parser, AST→LIR lowering, analysis/opt passes, extra opcodes, `.tlir` parser, `lovelace_compiler` `depends-on` `lovelace_lir`, CLI commands, WASM/WIT emission.
 
@@ -273,9 +273,9 @@ Clear proxy env, then `gh issue list` / search. Reuse an existing LIR-crate issu
 
 `git fetch origin`; `git checkout main`; `git pull origin main`. Then `gh issue develop 7 --name feature/7-lir-crate --checkout --base main`. Verify with `gh issue develop --list 7` (branch URL present). Do not use `git checkout -b`.
 
-### 3. Save plan as .cursor/plans/7-lir-crate.plan.md with #7 in the body
+### 3. Save plan as .cursor/plans/007-lir-crate.plan.md with #7 in the body
 
-Copy this plan to [`.cursor/plans/7-lir-crate.plan.md`](7-lir-crate.plan.md) (filename starts with the issue number). Put `#7` in the plan. Do not use `docs/plans/`.
+Copy this plan to [`.cursor/plans/007-lir-crate.plan.md`](007-lir-crate.plan.md) (filename starts with the issue number zero-padded to 3 digits). Put `#7` in the plan. Do not use `docs/plans/`.
 
 ### 4. Update rules: new lir.mdc; compiler-pipeline, agent-workflow, lovelace-project
 

@@ -96,10 +96,11 @@ package body Lovelace.Compiler.Backend.Lowering is
                The_Flags        : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (The_Subroutine);
                Body_Out         : Model.Instruction_Sequence;
                Body_Outcome     : Lower_Result;
-               Core_Exported    : constant Boolean := Subroutines.Has_Export (The_Flags);
                Parameter_Types  : Model.Core_Parameter_Sequence;
                Parameter_Detail : Ada.Strings.Unbounded.Unbounded_String;
                Source_Name      : constant String := Ada.Strings.Unbounded.To_String (The_Signature.Name);
+               Parameter_Count  : constant Natural := Types.Length (The_Signature.Parameters);
+               Component_Export : constant Boolean := Subroutines.Has_Export (The_Flags) and then Parameter_Count = 0;
             begin
                if The_Signature.Return_Type /= Types.Unit then
                   return
@@ -107,13 +108,11 @@ package body Lovelace.Compiler.Backend.Lowering is
                       (Unsupported_Type, "backend this slice supports only Unit return; got subroutine " & Source_Name);
                end if;
 
-               if (Subroutines.Has_Export (The_Flags) or else Subroutines.Has_Entrypoint (The_Flags))
-                 and then Types.Length (The_Signature.Parameters) > 0
-               then
+               if Subroutines.Has_Entrypoint (The_Flags) and then Parameter_Count > 0 then
                   return
                     Failure
                       (Unsupported_Type,
-                       "backend this slice supports parameters only on non-exported procedures; got subroutine "
+                       "backend this slice supports parameters only on non-entrypoint procedures; got subroutine "
                        & Source_Name);
                end if;
 
@@ -148,9 +147,9 @@ package body Lovelace.Compiler.Backend.Lowering is
                    Parameter_Types => Parameter_Types,
                    Result_Is_I32   => False,
                    Instructions    => Body_Out,
-                   Core_Exported   => Core_Exported));
+                   Core_Exported   => Component_Export));
 
-               if Subroutines.Has_Export (The_Flags) then
+               if Component_Export then
                   Model.Append_Export
                     (The_Model,
                      (Export_Name         =>

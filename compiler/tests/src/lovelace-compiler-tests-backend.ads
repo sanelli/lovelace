@@ -11,6 +11,10 @@ package Lovelace.Compiler.Tests.Backend is
    --  @param The_Test Unused fixture.
    procedure Test_Export_Only (The_Test : in out Fixture);
 
+   --  Export_Flag with parameters: core functype only; no WIT kebab export.
+   --  @param The_Test Unused fixture.
+   procedure Test_Export_With_Parameters (The_Test : in out Fixture);
+
    --  Entrypoint: WIT has run; WAT has $_start, i32.const 0, and export "run".
    --  @param The_Test Unused fixture.
    procedure Test_Entrypoint (The_Test : in out Fixture);
@@ -31,7 +35,7 @@ package Lovelace.Compiler.Tests.Backend is
    --  @param The_Test Unused fixture.
    procedure Test_Typed_Parameters (The_Test : in out Fixture);
 
-   --  Unsupported I32 return, and export with parameters, yield Unsupported_Type.
+   --  Unsupported I32 return, and entrypoint with parameters, yield Unsupported_Type.
    --  @param The_Test Unused fixture.
    procedure Test_Unsupported_Type (The_Test : in out Fixture);
 

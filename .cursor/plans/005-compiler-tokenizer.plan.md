@@ -9,7 +9,7 @@ todos:
     content: 2. Create and check out feature/5-compiler-tokenizer
     status: completed
   - id: "3"
-    content: 3. Save plan as .cursor/plans/5-compiler-tokenizer.plan.md
+    content: 3. Save plan as .cursor/plans/005-compiler-tokenizer.plan.md
     status: completed
   - id: "4"
     content: 4. Add Lovelace.Common.Option and AUnit tests in common/tests
@@ -282,7 +282,7 @@ Done: `feature/5-compiler-tokenizer` (based on `feature/3-utf8-regex-engine`), l
 
 ## 3. Save the plan
 
-Done: [`.cursor/plans/5-compiler-tokenizer.plan.md`](.cursor/plans/5-compiler-tokenizer.plan.md).
+Done: [`.cursor/plans/005-compiler-tokenizer.plan.md`](.cursor/plans/005-compiler-tokenizer.plan.md).
 
 ## 4. Add `Lovelace.Common.Option` and AUnit tests
 

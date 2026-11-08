@@ -9,7 +9,7 @@ todos:
     content: "2. Sync main, then gh issue develop <n> --name feature/<n>-compiler-modules --checkout --base main. Verify with gh issue develop --list <n>."
     status: completed
   - id: "3"
-    content: "3. Save this plan as .cursor/plans/<n>-compiler-modules.plan.md with #<n> in the body."
+    content: "3. Save this plan as .cursor/plans/<nnn>-compiler-modules.plan.md with #<n> in the body."
     status: completed
   - id: "4"
     content: "4. Add Module_Keyword to tokenizer/tokens and tokenizer tests."
@@ -80,7 +80,7 @@ flowchart LR
 
 1. Create GitHub issue with `gh issue create` (title/body for compiler module units); record `#17`.
 2. Sync `main`, then `gh issue develop 17 --name feature/17-compiler-modules --checkout --base main`. Verify with `gh issue develop --list 17`.
-3. Save this plan as [`.cursor/plans/17-compiler-modules.plan.md`](.cursor/plans/) with `#17` in the body.
+3. Save this plan as [`.cursor/plans/017-compiler-modules.plan.md`](.cursor/plans/) with `#17` in the body.
 4. Tokenizer: add `Module_Keyword` / lexeme `module`.
 5. AST: add `Unit_Kind`; allow empty modules.
 6. Parser: recursive-descent module form + qualified names; dispatch on first keyword.

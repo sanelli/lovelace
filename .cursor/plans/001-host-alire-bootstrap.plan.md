@@ -9,7 +9,7 @@ todos:
     content: 2. Create and check out feature/1-host-alire-bootstrap
     status: completed
   - id: "3"
-    content: 3. Save plan as .cursor/plans/1-host-alire-bootstrap.plan.md
+    content: 3. Save plan as .cursor/plans/001-host-alire-bootstrap.plan.md
     status: completed
   - id: "4"
     content: 4. Add abstract shared/lovelace_host_switches.gpr (Ada 2022, -gnatwae, full -gnaty, -gnatyM79, -gnato, -fstack-check)
@@ -65,7 +65,7 @@ Done: `feature/1-host-alire-bootstrap`.
 
 ## 3. Save the plan
 
-Done: [`.cursor/plans/1-host-alire-bootstrap.plan.md`](.cursor/plans/1-host-alire-bootstrap.plan.md).
+Done: [`.cursor/plans/001-host-alire-bootstrap.plan.md`](.cursor/plans/001-host-alire-bootstrap.plan.md).
 
 ## 4. Shared host switches (not a crate)
 
