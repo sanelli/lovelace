@@ -9,7 +9,7 @@ todos:
     content: 2. Create and check out feature/3-utf8-regex-engine
     status: completed
   - id: "3"
-    content: 3. Save plan as .cursor/plans/3-utf8-regex-engine.plan.md
+    content: 3. Save plan as .cursor/plans/003-utf8-regex-engine.plan.md
     status: completed
   - id: "4"
     content: "4. Update Cursor rules: UTF-8 strings/sources/4-byte chars; crate names lovelace_*; packages Lovelace.*"
@@ -69,7 +69,7 @@ Done: `feature/3-utf8-regex-engine` (based on `feature/1-host-alire-bootstrap`; 
 
 ## 3. Save the plan
 
-Done: [`.cursor/plans/3-utf8-regex-engine.plan.md`](.cursor/plans/3-utf8-regex-engine.plan.md).
+Done: [`.cursor/plans/003-utf8-regex-engine.plan.md`](.cursor/plans/003-utf8-regex-engine.plan.md).
 
 ## 4. Update Cursor rules first
 

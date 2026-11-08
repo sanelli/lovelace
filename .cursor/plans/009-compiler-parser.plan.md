@@ -9,7 +9,7 @@ todos:
     content: "2. Sync main, then gh issue develop 9 --name feature/9-compiler-parser --checkout --base main. Verify with gh issue develop --list 9."
     status: completed
   - id: "3"
-    content: "3. Save this plan as .cursor/plans/9-compiler-parser.plan.md with #9 in the body."
+    content: "3. Save this plan as .cursor/plans/009-compiler-parser.plan.md with #9 in the body."
     status: completed
   - id: "4"
     content: "4. Implement Lovelace.Compiler.Types (Unit-only extensible Type_Expression)."
@@ -205,7 +205,7 @@ TODOs are 1:1 with these steps (same numbers, same meaning).
 
 1. Create a GitHub issue with `gh issue create` (title/body for compiler parser + minimal AST); record `#9`. Reuse if an equivalent open issue exists. **Done:** https://github.com/sanelli/lovelace/issues/9
 2. Sync `main`, then `gh issue develop 9 --name feature/9-compiler-parser --checkout --base main`. Verify with `gh issue develop --list 9`. **Done:** branch linked and checked out.
-3. Save this plan as [`.cursor/plans/9-compiler-parser.plan.md`](.cursor/plans/) with `#9` in the body. **Done.**
+3. Save this plan as [`.cursor/plans/009-compiler-parser.plan.md`](.cursor/plans/) with `#9` in the body. **Done.**
 4. Implement `Lovelace.Compiler.Types` (Unit-only extensible `Type_Expression`). **Done.**
 5. Implement `Lovelace.Compiler.Ast` (module, subroutine, empty statements, `Subroutine_Flags` bitset, spans). **Done.**
 6. Rewrite `Lovelace.Compiler.Parser` as a **recursive-descent** parser that consumes **one token at a time** (LL(k); no fixed six-slot indexing). Public `Parse` / error codes stay; body replaced. **Done.**

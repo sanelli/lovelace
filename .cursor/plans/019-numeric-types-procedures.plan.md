@@ -9,7 +9,7 @@ todos:
     content: "2. Sync main, then gh issue develop <n> --name feature/<n>-numeric-types-procedures --checkout --base main. Verify with gh issue develop --list <n>."
     status: completed
   - id: "3"
-    content: "3. Save this plan as .cursor/plans/<n>-numeric-types-procedures.plan.md with #<n> in the body."
+    content: "3. Save this plan as .cursor/plans/<nnn>-numeric-types-procedures.plan.md with #<n> in the body."
     status: completed
   - id: "4"
     content: "4. LIR: remove I128/U128/F16; add named parameters to signatures and .lir/.tlir (version stays 1.0); update LIR docs/tests/rules."
@@ -47,7 +47,7 @@ isProject: false
 
 Branch: `feature/19-numeric-types-procedures` (linked to #19; created from `main` via `gh issue develop`).
 
-Plan file: [`.cursor/plans/19-numeric-types-procedures.plan.md`](19-numeric-types-procedures.plan.md).
+Plan file: [`.cursor/plans/019-numeric-types-procedures.plan.md`](019-numeric-types-procedures.plan.md).
 
 Depends on modules on `main` ([#17](https://github.com/sanelli/lovelace/issues/17)). Branch from current `main` only.
 
@@ -123,7 +123,7 @@ Small integers widen to core i32/i64. Procedures are not exported this slice, so
 
 1. Create GitHub issue with `gh issue create`; record `#19`.
 2. Sync `main`, then `gh issue develop 19 --name feature/19-numeric-types-procedures --checkout --base main`. Verify with `gh issue develop --list 19`.
-3. Save this plan as [`.cursor/plans/19-numeric-types-procedures.plan.md`](19-numeric-types-procedures.plan.md) with `#19` in the body.
+3. Save this plan as [`.cursor/plans/019-numeric-types-procedures.plan.md`](019-numeric-types-procedures.plan.md) with `#19` in the body.
 4. LIR: drop I128/U128/F16; named params in signatures/codecs (v1.0); docs/tests/rules.
 5. Tokenizer: keywords, punctuation, integer/float literals + tests.
 6. Frontend Types (Integer/Float), AST params + Full_Name, Literals package + tests.

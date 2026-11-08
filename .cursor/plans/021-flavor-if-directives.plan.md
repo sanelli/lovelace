@@ -9,7 +9,7 @@ todos:
     content: "2. Sync main, then gh issue develop <n> --name feature/<n>-flavor-if-directives --checkout --base main. Verify with gh issue develop --list <n>."
     status: completed
   - id: "3"
-    content: "3. Save this plan as .cursor/plans/<n>-flavor-if-directives.plan.md with #<n> in the body."
+    content: "3. Save this plan as .cursor/plans/<nnn>-flavor-if-directives.plan.md with #<n> in the body."
     status: completed
   - id: "4"
     content: "4. Add Lovelace.Compiler.Flavor (Wasi/Native/Web, Default, Try_Parse_Name, Name) with GNATdoc; gnatformat."
@@ -56,7 +56,7 @@ isProject: false
 
 Branch: `feature/21-flavor-if-directives` (linked to #21; created from `main` via `gh issue develop`).
 
-Plan file: [`.cursor/plans/21-flavor-if-directives.plan.md`](21-flavor-if-directives.plan.md).
+Plan file: [`.cursor/plans/021-flavor-if-directives.plan.md`](021-flavor-if-directives.plan.md).
 
 Roadmap: [docs/roadmap/001-roadmap-print-integer-wasi.md](../../docs/roadmap/001-roadmap-print-integer-wasi.md) § Macro step 1.
 

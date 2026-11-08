@@ -8,7 +8,7 @@ todos:
     content: "2. Sync main, then gh issue develop 15 --name feature/15-cli-build-command --checkout --base main; verify with gh issue develop --list 15."
     status: completed
   - id: "3"
-    content: "3. Rename CreatePlan file to .cursor/plans/15-cli-build-command.plan.md with #15 in the body (do not rewrite a second copy)."
+    content: "3. Rename CreatePlan file to .cursor/plans/015-cli-build-command.plan.md with #15 in the body (do not rewrite a second copy)."
     status: completed
   - id: "4"
     content: "4. Add samples/ barebone empty-body .love for build; document samples-per-feature policy in docs."
@@ -51,7 +51,7 @@ isProject: false
 
 Branch: `feature/15-cli-build-command` (linked; created from `main` via `gh issue develop`).
 
-Plan file: [`.cursor/plans/15-cli-build-command.plan.md`](15-cli-build-command.plan.md).
+Plan file: [`.cursor/plans/015-cli-build-command.plan.md`](015-cli-build-command.plan.md).
 
 ## Standing rules for this work
 
@@ -140,7 +140,7 @@ Done: `feature/15-cli-build-command` (verified with `gh issue develop --list 15`
 
 ## 3. Rename plan file (do not rewrite)
 
-Done: [`.cursor/plans/15-cli-build-command.plan.md`](15-cli-build-command.plan.md).
+Done: [`.cursor/plans/015-cli-build-command.plan.md`](015-cli-build-command.plan.md).
 
 ## 4. Samples: barebone program + policy note
 

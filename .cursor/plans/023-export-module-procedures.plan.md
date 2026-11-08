@@ -9,7 +9,7 @@ todos:
     content: "2. Sync main, then gh issue develop <n> --name feature/<n>-export-module-procedures --checkout --base main. Verify with gh issue develop --list <n>."
     status: completed
   - id: "3"
-    content: "3. Save this plan as .cursor/plans/<n>-export-module-procedures.plan.md with #<n> in the body."
+    content: "3. Save this plan as .cursor/plans/<nnn>-export-module-procedures.plan.md with #<n> in the body."
     status: completed
   - id: "4"
     content: "4. Tokenizer: add export keyword + AUnit + token-grammar/tokenizer docs; gnatformat."
@@ -41,7 +41,7 @@ isProject: false
 
 Branch: `feature/23-export-module-procedures` (linked to #23; created from `main` via `gh issue develop`).
 
-Plan file: [`.cursor/plans/23-export-module-procedures.plan.md`](23-export-module-procedures.plan.md).
+Plan file: [`.cursor/plans/023-export-module-procedures.plan.md`](023-export-module-procedures.plan.md).
 
 Roadmap: [docs/roadmap/001-roadmap-print-integer-wasi.md](../../docs/roadmap/001-roadmap-print-integer-wasi.md) § Macro step 2.
 
@@ -112,7 +112,7 @@ gh issue develop --list 23
 
 ### 3. Save plan file
 
-Write [`.cursor/plans/23-export-module-procedures.plan.md`](23-export-module-procedures.plan.md) with `#23` in the body.
+Write [`.cursor/plans/023-export-module-procedures.plan.md`](023-export-module-procedures.plan.md) with `#23` in the body.
 
 **Done:** this file.
 
