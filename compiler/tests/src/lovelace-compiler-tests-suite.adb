@@ -42,6 +42,9 @@ package body Lovelace.Compiler.Tests.Suite is
            ("tokenizer: module keyword", Lovelace.Compiler.Tests.Tokenizer.Test_Module_Keyword'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
+           ("tokenizer: export keyword", Lovelace.Compiler.Tests.Tokenizer.Test_Export_Keyword'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
            ("tokenizer: ascii identifiers", Lovelace.Compiler.Tests.Tokenizer.Test_Ascii_Identifiers'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create

@@ -171,6 +171,9 @@ package body Lovelace.Compiler.Parser is
                when Tokens.End_Keyword       =>
                   return "keyword ""end""";
 
+               when Tokens.Export_Keyword    =>
+                  return "keyword ""export""";
+
                when Tokens.Procedure_Keyword =>
                   return "keyword ""procedure""";
 
@@ -521,6 +524,7 @@ package body Lovelace.Compiler.Parser is
 
             when Tokens.Begin_Keyword
                | Tokens.End_Keyword
+               | Tokens.Export_Keyword
                | Tokens.Procedure_Keyword
                | Tokens.Integer_Keyword
                | Tokens.Float_Keyword

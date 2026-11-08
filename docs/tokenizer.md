@@ -48,7 +48,7 @@ Empty source and whitespace-only source succeed with an empty token sequence.
 
 | `Token_Kind` | Subtype | This slice |
 | --- | --- | --- |
-| `Keyword` | `Keyword_Subtype` | `program`, `module`, `begin`, `end`, `procedure`, `integer`, `float`, `signed`, `unsigned` |
+| `Keyword` | `Keyword_Subtype` | `program`, `module`, `begin`, `end`, `export`, `procedure`, `integer`, `float`, `signed`, `unsigned` |
 | `Identifier` | (none) | Names, including `@foo`, `café`, emoji |
 | `Punctuation` | `Punctuation_Subtype` | `;` `.` `(` `)` `,` `:` `<` `>` `=` |
 | `Integer_Literal` | (none) | Optional sign/base/suffix forms (see [token-grammar.md](token-grammar.md)) |
@@ -56,9 +56,9 @@ Empty source and whitespace-only source succeed with an empty token sequence.
 | `Directive` | `Directive_Subtype` | `#if`, `#elsif`, `#else`, `#end` |
 | `String_Literal` | (none) | `"…"` with no escapes; Lexeme includes both quotes |
 
-Keywords are **case-sensitive**. `Program`, `Module`, `BEGIN`, `Procedure`, and `End` are identifiers. `#end` is a **directive**, distinct from keyword `end`.
+Keywords are **case-sensitive**. `Program`, `Module`, `BEGIN`, `Procedure`, `Export`, and `End` are identifiers. `#end` is a **directive**, distinct from keyword `end`.
 
-The scanner matches a full identifier first, then classifies. `programmer` is one identifier, not `program` plus `mer`. `programbegin` and `modulex` are identifiers.
+The scanner matches a full identifier first, then classifies. `programmer` is one identifier, not `program` plus `mer`. `programbegin`, `modulex`, and `exporter` are identifiers.
 
 Longest-match scan order: float → integer → directive → string → identifier → punctuation. Exact directive forms do not steal based integers such as `#16#FF`.
 

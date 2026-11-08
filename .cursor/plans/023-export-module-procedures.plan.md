@@ -13,7 +13,7 @@ todos:
     status: completed
   - id: "4"
     content: "4. Tokenizer: add export keyword + AUnit + token-grammar/tokenizer docs; gnatformat."
-    status: pending
+    status: completed
   - id: "5"
     content: "5. Parser: optional export → Export_Flag; AUnit parser/flavor tests; update parser + compilation-unit grammar docs; gnatformat."
     status: pending
