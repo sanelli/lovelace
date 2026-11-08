@@ -1,0 +1,11 @@
+module ExportProcedures;
+
+export procedure Print(Value : integer);
+begin
+end;
+
+procedure InternalHelper(X : integer);
+begin
+end;
+
+end.

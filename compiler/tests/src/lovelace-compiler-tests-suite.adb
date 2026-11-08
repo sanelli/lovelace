@@ -166,6 +166,9 @@ package body Lovelace.Compiler.Tests.Suite is
            ("parser: module procedure", Lovelace.Compiler.Tests.Parser.Test_Module_Procedure'Access));
       Result.Add_Test
         (Parser_Caller.Create
+           ("parser: export procedure", Lovelace.Compiler.Tests.Parser.Test_Export_Procedure'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
            ("parser: duplicate parameter", Lovelace.Compiler.Tests.Parser.Test_Duplicate_Parameter'Access));
       Result.Add_Test
         (Parser_Caller.Create ("parser: bad type size", Lovelace.Compiler.Tests.Parser.Test_Bad_Type_Size'Access));
@@ -193,6 +196,10 @@ package body Lovelace.Compiler.Tests.Suite is
            ("ir generator: export-only flags", Lovelace.Compiler.Tests.Ir_Generator.Test_Export_Only_Flags'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
+           ("ir generator: export procedure parameters",
+            Lovelace.Compiler.Tests.Ir_Generator.Test_Export_Procedure_Parameters'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
            ("ir generator: filename shared", Lovelace.Compiler.Tests.Ir_Generator.Test_Filename_Shared'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
@@ -208,6 +215,9 @@ package body Lovelace.Compiler.Tests.Suite is
 
       Result.Add_Test
         (Backend_Caller.Create ("backend: export only", Lovelace.Compiler.Tests.Backend.Test_Export_Only'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: export with parameters", Lovelace.Compiler.Tests.Backend.Test_Export_With_Parameters'Access));
       Result.Add_Test
         (Backend_Caller.Create ("backend: entrypoint", Lovelace.Compiler.Tests.Backend.Test_Entrypoint'Access));
       Result.Add_Test

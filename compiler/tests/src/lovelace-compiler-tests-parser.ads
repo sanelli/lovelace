@@ -35,6 +35,10 @@ package Lovelace.Compiler.Tests.Parser is
    --  @param The_Test Unused fixture.
    procedure Test_End_Semicolon (The_Test : in out Fixture);
 
+   --  export procedure sets Export_Flag; plain procedure does not; lone export fails.
+   --  @param The_Test Unused fixture.
+   procedure Test_Export_Procedure (The_Test : in out Fixture);
+
    --  Duplicate procedure names in the active flavor path yield Name_Clash.
    --  @param The_Test Unused fixture.
    procedure Test_Flavor_Active_Clash (The_Test : in out Fixture);

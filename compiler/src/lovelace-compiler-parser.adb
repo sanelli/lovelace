@@ -929,7 +929,7 @@ package body Lovelace.Compiler.Parser is
       return Step_Result is
    begin
       if At_End (The_Cursor) then
-         return Step_End_Of_Input (The_Cursor, "expected procedure or ""#if"", found end of input");
+         return Step_End_Of_Input (The_Cursor, "expected ""export"", procedure, or ""#if"", found end of input");
       end if;
 
       declare
@@ -945,7 +945,7 @@ package body Lovelace.Compiler.Parser is
                  Keep_Declarations => Keep_Declarations);
          end if;
 
-         if Is_Keyword (Current, Tokens.Procedure_Keyword) then
+         if Is_Keyword (Current, Tokens.Export_Keyword) or else Is_Keyword (Current, Tokens.Procedure_Keyword) then
             return
               Parse_Procedure_Declaration
                 (The_Cursor        => The_Cursor,
@@ -959,7 +959,7 @@ package body Lovelace.Compiler.Parser is
              (Code     => Unexpected_Token,
               Span     => Current.Span,
               Filename => Current.Filename,
-              Detail   => "expected procedure or ""#if"", found " & Describe_Token (Source_Text, Current));
+              Detail   => "expected ""export"", procedure, or ""#if"", found " & Describe_Token (Source_Text, Current));
       end;
    end Parse_Module_Declaration;
 
@@ -1285,11 +1285,28 @@ package body Lovelace.Compiler.Parser is
       Procedure_Name : Ada.Strings.Unbounded.Unbounded_String;
       Module_Name    : constant String := Ada.Strings.Unbounded.To_String (The_Unit.Module_Name);
       Parameters     : Ast.Parameter_Sequence := Ast.Empty_Parameter_Sequence;
+      Flags          : Ast.Subroutine_Flags := 0;
       Step           : Step_Result;
       The_Subroutine : Ast.Subroutine;
    begin
       --  procedure_declaration = procedure_header , "begin" , "end" , ";"
-      --  procedure_header = "procedure" , identifier , "(" , [ parameter_list ] , ")" , ";"
+      --  procedure_header = [ "export" ] , "procedure" , identifier , "(" , [ parameter_list ] , ")" , ";"
+      if not At_End (The_Cursor) and then Is_Keyword (Peek (The_Cursor), Tokens.Export_Keyword) then
+         Step :=
+           Expect_Keyword
+             (The_Cursor  => The_Cursor,
+              Source_Text => Source_Text,
+              Expected    => Tokens.Export_Keyword,
+              Label       => "export");
+         case Step.Ok is
+            when False =>
+               return Step;
+
+            when True  =>
+               Flags := Ast.Export_Flag;
+         end case;
+      end if;
+
       Step :=
         Expect_Keyword
           (The_Cursor  => The_Cursor,
@@ -1432,7 +1449,7 @@ package body Lovelace.Compiler.Parser is
               Module_Name => Module_Name,
               Name_Span   => Name_Token.Span,
               Filename    => Name_Token.Filename,
-              Flags       => 0,
+              Flags       => Flags,
               Return_Type => Types.Unit_Type,
               Parameters  => Parameters,
               The_Body    => Ast.Empty_Body);

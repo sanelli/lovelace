@@ -74,7 +74,7 @@ Keywords are case-sensitive. The unit terminator after a unit-level `end` is onl
 **Module** (`Unit_Kind = Module_Unit`):
 
 - A module named the qualified identifier (UTF-8 with `.` separators, e.g. `Foo.Bar`)
-- Zero or more procedures from **active** declarations only (flags `0` — not exported / not entrypoint yet). Inactive `#if` arms do not appear in the AST.
+- Zero or more procedures from **active** declarations only. Optional `export` sets `Export_Flag` (not `Entrypoint_Flag`); plain procedures keep flags `0`. Inactive `#if` arms do not appear in the AST.
 - Each procedure has unqualified `Name`, `Full_Name` = `ModuleName.ProcedureName`, ordered parameters, Unit return, empty body
 - `Name_Span` on the module covers the whole qualified name
 

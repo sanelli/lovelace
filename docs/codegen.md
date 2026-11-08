@@ -62,7 +62,9 @@ If there is no entrypoint, no `_start` and no `wasi:cli/run` export are produced
 
 ## Exports
 
-Every LIR subroutine with `Export_Flag` is canon-lifted and component-exported under a **kebab-case** form of its LIR name (ASCII letters/digits lowercased; other bytes become `-`). A subroutine may be both entrypoint and export: then both `wasi:cli/run@0.3.0` and the named export appear. Core module export names keep the original LIR spelling.
+`Export_Flag` on LIR means **Lovelace visibility** (for future `import` / cross-module calls). **WIT/component export** is emitted only when that subroutine also has **zero parameters**: it is canon-lifted under a **kebab-case** form of its LIR name (ASCII letters/digits lowercased; other bytes become `-`). Parameterized `Export_Flag` procedures lower to core functypes only (no `Core_Exported`, no WIT line) so Augusta-style `print(integer)` can exist without Canonical ABI export yet.
+
+A nullary subroutine may be both entrypoint and export: then both `wasi:cli/run@0.3.0` and the named export appear. Core module export names keep the original LIR spelling.
 
 Component Model `externname`s must be kebab-case; PascalCase LIR identifiers such as `Hello` become `hello`.
 
@@ -71,10 +73,10 @@ Component Model `externname`s must be kebab-case; PascalCase LIR identifiers suc
 | LIR signature | Supported |
 | --- | --- |
 | `Unit` return, no parameters | Yes → core `[] -> []`, WIT/component `func()` |
-| `Unit` return, numeric parameters, **not** export/entrypoint | Yes → core functype with widened params (see below); no WIT line (not exported) |
+| `Unit` return, numeric parameters, **not** entrypoint (including `Export_Flag`) | Yes → core functype with widened params (see below); WIT kebab export only if nullary `Export_Flag` |
 | Entrypoint wrapper `_start` | Yes → core `[] -> [i32]`, component `func() -> result` inside `wasi:cli/run` |
 | Non-`Unit` return | No → `Unsupported_Type` |
-| Export or entrypoint with parameters | No → `Unsupported_Type` (module procedures are not exported yet) |
+| Entrypoint with parameters | No → `Unsupported_Type` |
 
 ### LIR → core WASM → WIT (when exported later)
 
@@ -93,7 +95,7 @@ Small integers widen to core `i32` / `i64`. WIT column is the Canonical ABI / WI
 | `F32` | `f32` | `f32` |
 | `F64` | `f64` | `f64` |
 
-Example core WAT for a non-exported module procedure with parameters:
+Example core WAT for a module procedure with parameters (exported or not; no WIT line when parameterized):
 
 ```wat
 (func $Whatever (param i32 f32 f32)

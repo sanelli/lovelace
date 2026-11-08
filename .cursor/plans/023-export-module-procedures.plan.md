@@ -16,22 +16,22 @@ todos:
     status: completed
   - id: "5"
     content: "5. Parser: optional export → Export_Flag; AUnit parser/flavor tests; update parser + compilation-unit grammar docs; gnatformat."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. IR-generator AUnit for exported parameterized procedure (Map_Flags unchanged); docs if needed; gnatformat."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Backend Lower: WIT/Core_Exported only for nullary Export_Flag; allow parameterized Export_Flag as core-only; update backend tests + codegen.md; gnatformat."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. Sample samples/module/ExportProcedures.love; docs/samples.md; integration list if needed; roadmap step-2 status note."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Run all existing tests (nested AUnit crates / workspace / scripts/run-tests.ps1)."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Push (proxy env cleared) and open a PR with gh pr create."
-    status: pending
+    status: completed
 isProject: false
 ---
 
