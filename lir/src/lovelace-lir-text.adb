@@ -285,6 +285,25 @@ package body Lovelace.Lir.Text is
                if Subroutines.Has_Entrypoint (Flags_Value) then
                   Append_Line (Buffer, Indent (2) & "entrypoint");
                end if;
+               if Subroutines.Has_Native (Flags_Value) then
+                  Append_Line (Buffer, Indent (2) & "native");
+               end if;
+
+               declare
+                  The_Native : constant Subroutines.Native_Binding_Option := Subroutines.Native (The_Subroutine);
+               begin
+                  case The_Native.Present is
+                     when False =>
+                        null;
+
+                     when True  =>
+                        Ada.Strings.Unbounded.Append (Buffer, Indent (2) & "(native ");
+                        Append_Quoted (Buffer, Ada.Strings.Unbounded.To_String (The_Native.Value.Target));
+                        Ada.Strings.Unbounded.Append (Buffer, " ");
+                        Append_Quoted (Buffer, Ada.Strings.Unbounded.To_String (The_Native.Value.Key));
+                        Append_Line (Buffer, ")");
+                  end case;
+               end;
 
                if Instructions.Length (Body_Instrs) = 0 then
                   Append_Line (Buffer, Indent (2) & "(body))");

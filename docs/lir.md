@@ -49,11 +49,14 @@ A **module** has:
 A **subroutine** has:
 
 - a **signature**: UTF-8 name, **mandatory** return type, zero or more **named** parameters (each UTF-8 name + `Value_Type`)
-- **flags** (`export` = bit 0, `entrypoint` = bit 1)
-- an instruction body (may be empty)
+- **flags** (`export` = bit 0, `entrypoint` = bit 1, `native` = bit 2)
+- an instruction body (may be empty; **must** be empty when `native`)
 - an optional **origin** (`Subroutine_Origin`: name span, optional shared filename), persisted in `.lir` / `.tlir` (version numbers stay **1.0**)
+- an optional **native binding** (`Target` + `Key` UTF-8 strings), present **iff** `Native_Flag`, persisted after the origin in `.lir` / `.tlir`
 
-Origins support diagnostics and frontend lowering. Codecs round-trip them when present (`origin_present = 0` / omit text form when absent). `Validate` does not require origins. Shared position types live in [`Lovelace.Common.Source`](source-locations.md); the compiler copies them via the [IR Generator](ir-generator.md). The format **version fields remain 1.0**; layout includes origin fields and named parameters. The CLI writes `.lir` under the build output `obj/` folder ([cli.md](cli.md)); user diagnostics use `LV#####` codes ([diagnostics.md](diagnostics.md)).
+Origins support diagnostics and frontend lowering. Codecs round-trip them when present (`origin_present = 0` / omit text form when absent). `Validate` does not require origins. Native bindings round-trip the same way (`native_present` + two strings when present). Shared position types live in [`Lovelace.Common.Source`](source-locations.md); the compiler copies them via the [IR Generator](ir-generator.md). The format **version fields remain 1.0**; layout includes origin fields, optional native binding, and named parameters. The CLI writes `.lir` under the build output `obj/` folder ([cli.md](cli.md)); user diagnostics use `LV#####` codes ([diagnostics.md](diagnostics.md)).
+
+`Validate` rejects native/entrypoint together, `Native_Flag` without a binding (or the reverse), native with a non-empty instruction body, and empty target/key strings (`Invalid_Native_Binding` / `Empty_Name`).
 
 Opcodes in this slice:
 
@@ -63,7 +66,7 @@ Opcodes in this slice:
 | `Constant_I32` | `1` | `i32.const <n>` | little-endian `i32` (4 bytes) |
 | `Call` | `2` | `call <index>` | little-endian `u32` **1-based** subroutine index (4 bytes) |
 
-`Validate` rejects `Call` when `Target_Index` is `0` or greater than `Subroutine_Count` (`Invalid_Call_Target`).
+`Validate` rejects `Call` when `Target_Index` is `0` or greater than `Subroutine_Count` (`Invalid_Call_Target`). See native rules above.
 
 ## Ada packages
 

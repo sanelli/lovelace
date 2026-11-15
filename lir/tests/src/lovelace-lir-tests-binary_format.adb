@@ -105,9 +105,9 @@ package body Lovelace.Lir.Tests.Binary_Format is
          declare
             Typed_Bytes : constant Ada.Streams.Stream_Element_Array := Support.Must_Encode (Typed, "typed");
          begin
-            --  Return type is 13 bytes before end: param_count+flags+origin+instr_count.
+            --  Return type is 14 bytes before end: param_count+flags+origin+native+instr_count.
             Support.Assert_Decode_Error
-              (Support.Replace_Byte (Typed_Bytes, Typed_Bytes'Last - 13, 16#FF#), Errors.Unknown_Type, "unknown type");
+              (Support.Replace_Byte (Typed_Bytes, Typed_Bytes'Last - 14, 16#FF#), Errors.Unknown_Type, "unknown type");
          end;
       end;
 
@@ -233,6 +233,36 @@ package body Lovelace.Lir.Tests.Binary_Format is
                Flags      => Subroutines.Export_Flag or Subroutines.Entrypoint_Flag,
                Noop_Count => 1));
          Support.Assert_Binary_Round_Trip (Clean, "subroutines and flags");
+      end;
+
+      declare
+         Native_Module : Modules.Module := Modules.Create ("io");
+         Print_Sub     : Subroutines.Subroutine :=
+           Support.Make_Subroutine
+             ("print",
+              Types.Unit,
+              Parameters => Params,
+              Flags      => Subroutines.Export_Flag);
+         Decoded       : Modules.Module;
+         Decoded_Sub   : Subroutines.Subroutine;
+         Decoded_Native : Subroutines.Native_Binding_Option;
+      begin
+         Subroutines.Set_Native_Binding (Print_Sub, "wasi", "native-print-integer");
+         Modules.Append_Subroutine (Native_Module, Print_Sub);
+         Support.Assert_Binary_Round_Trip (Native_Module, "native binding");
+         Decoded := Support.Must_Decode (Support.Must_Encode (Native_Module, "native encode"), "native decode");
+         Decoded_Sub := Modules.Get_Subroutine (Decoded, 1);
+         Decoded_Native := Subroutines.Native (Decoded_Sub);
+         AUnit.Assertions.Assert
+           (Subroutines.Has_Native (Subroutines.Get_Flags (Decoded_Sub)), "native flag");
+         AUnit.Assertions.Assert (Decoded_Native.Present, "native present");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String (Decoded_Native.Value.Target) = "wasi", "native target");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String (Decoded_Native.Value.Key) = "native-print-integer",
+            "native key");
+         AUnit.Assertions.Assert
+           (Instructions.Length (Subroutines.Get_Instructions (Decoded_Sub)) = 0, "native empty body");
       end;
    end Test_Subroutines_And_Flags;
 

@@ -17,6 +17,30 @@ package Lovelace.Lir.Subroutines is
    --  Bit 1: subroutine is the module entrypoint.
    Entrypoint_Flag : constant Subroutine_Flags := 2**1;
 
+   --  Bit 2: subroutine is a native(target, key) binding (empty instruction body).
+   Native_Flag : constant Subroutine_Flags := 2**2;
+
+   --  Target and intrinsic key from native("target", "key").
+   --  @field Target UTF-8 first string (e.g. wasi).
+   --  @field Key UTF-8 second string (e.g. native-print-integer).
+   type Native_Binding is record
+      Target : Ada.Strings.Unbounded.Unbounded_String;
+      Key    : Ada.Strings.Unbounded.Unbounded_String;
+   end record;
+
+   --  Optional native binding on a subroutine.
+   --  @disc Present True when Value is stored; False when absent.
+   --  @field Value Binding when Present is True.
+   type Native_Binding_Option (Present : Boolean := False) is record
+      case Present is
+         when True =>
+            Value : Native_Binding;
+
+         when False =>
+            null;
+      end case;
+   end record;
+
    --  Name, return type, and named parameters.
    --  @field Name UTF-8 subroutine name.
    --  @field Return_Type Result type; Unit means a procedure (no stack
@@ -63,6 +87,12 @@ package Lovelace.Lir.Subroutines is
    --  @param The_Origin Source location metadata.
    procedure Set_Origin (The_Subroutine : in out Subroutine; The_Origin : Subroutine_Origin);
 
+   --  Store a native binding and set Native_Flag (replaces any previous binding).
+   --  @param The_Subroutine Subroutine to update.
+   --  @param Target UTF-8 native target (e.g. wasi).
+   --  @param Key UTF-8 intrinsic key (e.g. native-print-integer).
+   procedure Set_Native_Binding (The_Subroutine : in out Subroutine; Target : String; Key : String);
+
    --  Append Item to the instruction body of The_Subroutine.
    --  @param The_Subroutine Subroutine to extend.
    --  @param Item Instruction to append.
@@ -88,6 +118,11 @@ package Lovelace.Lir.Subroutines is
    --  @return Present origin, or absent when Create left it unset / codecs decode.
    function Origin (The_Subroutine : Subroutine) return Origin_Option;
 
+   --  Optional native binding of The_Subroutine.
+   --  @param The_Subroutine Subroutine to query.
+   --  @return Present binding, or absent when not native / Create left it unset.
+   function Native (The_Subroutine : Subroutine) return Native_Binding_Option;
+
    --  True when Flags includes Export_Flag.
    --  @param Flags Flag bitset.
    --  @return True iff export bit is set.
@@ -98,12 +133,18 @@ package Lovelace.Lir.Subroutines is
    --  @return True iff entrypoint bit is set.
    function Has_Entrypoint (Flags : Subroutine_Flags) return Boolean;
 
+   --  True when Flags includes Native_Flag.
+   --  @param Flags Flag bitset.
+   --  @return True iff native bit is set.
+   function Has_Native (Flags : Subroutine_Flags) return Boolean;
+
 private
 
    type Subroutine is record
       The_Signature    : Signature;
       Flags            : Subroutine_Flags := 0;
       Origin_Value     : Origin_Option := (Present => False);
+      Native_Value     : Native_Binding_Option := (Present => False);
       Instruction_Body : Instructions.Instruction_Sequence;
    end record;
 

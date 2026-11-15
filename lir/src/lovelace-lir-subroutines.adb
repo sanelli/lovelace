@@ -11,6 +11,7 @@ package body Lovelace.Lir.Subroutines is
         (The_Signature    => The_Signature,
          Flags            => Flags,
          Origin_Value     => (Present => False),
+         Native_Value     => (Present => False),
          Instruction_Body => Instructions.Empty_Sequence);
    end Create;
 
@@ -39,10 +40,30 @@ package body Lovelace.Lir.Subroutines is
       return (Flags and Export_Flag) /= 0;
    end Has_Export;
 
+   function Has_Native (Flags : Subroutine_Flags) return Boolean is
+   begin
+      return (Flags and Native_Flag) /= 0;
+   end Has_Native;
+
+   function Native (The_Subroutine : Subroutine) return Native_Binding_Option is
+   begin
+      return The_Subroutine.Native_Value;
+   end Native;
+
    function Origin (The_Subroutine : Subroutine) return Origin_Option is
    begin
       return The_Subroutine.Origin_Value;
    end Origin;
+
+   procedure Set_Native_Binding (The_Subroutine : in out Subroutine; Target : String; Key : String) is
+   begin
+      The_Subroutine.Flags := The_Subroutine.Flags or Native_Flag;
+      The_Subroutine.Native_Value :=
+        (Present => True,
+         Value   =>
+           (Target => Ada.Strings.Unbounded.To_Unbounded_String (Target),
+            Key    => Ada.Strings.Unbounded.To_Unbounded_String (Key)));
+   end Set_Native_Binding;
 
    procedure Set_Origin (The_Subroutine : in out Subroutine; The_Origin : Subroutine_Origin) is
    begin

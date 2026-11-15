@@ -16,7 +16,7 @@ todos:
     status: completed
   - id: "5"
     content: "5. LIR Native_Flag + native binding metadata; binary/text codecs; Validate empty body; AUnit + lir docs; gnatformat."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. IR generator lowers native decls; reject unknown target/key / flavor mismatch; diagnostics LV00021+; AUnit; gnatformat."
     status: pending
@@ -198,6 +198,8 @@ Write [`.cursor/plans/031-wasi-native-print-augusta-io.plan.md`](031-wasi-native
 - `Validate`: native ⇒ empty body + both binding strings non-empty; non-native ⇒ no binding; reject native+entrypoint.
 - Binary + text codecs round-trip the flag and binding; update [`lir-binary.md`](../../docs/lir-binary.md), [`lir-text.md`](../../docs/lir-text.md), [`lir.md`](../../docs/lir.md).
 - AUnit encode/decode/validate cases in `lovelace_lir_tests`.
+
+**Done:** `Native_Flag` / `Set_Native_Binding` / codecs (`native_present`); `Invalid_Native_Binding`; AUnit + lir docs.
 
 ### 6. IR generator + diagnostics (macro-step 6 — lower)
 
