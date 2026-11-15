@@ -2,9 +2,10 @@ with Ada.Strings.Unbounded;
 
 with Lovelace.Common.Source;
 with Lovelace.Compiler.Ast;
+with Lovelace.Compiler.Unit_Graph;
 with Lovelace.Lir.Modules;
 
---  Lower a frontend AST module into a LIR module.
+--  Lower frontend AST unit(s) into one LIR module (same-unit or multi-unit flatten).
 
 package Lovelace.Compiler.Ir_Generator is
 
@@ -12,9 +13,16 @@ package Lovelace.Compiler.Ir_Generator is
 
    --  Why Generate failed.
    --  @enum Internal_Error Compiler bug such as Validate failing on frontend AST.
-   --  @enum Unresolved_Call Call target is not a same-unit procedure.
+   --  @enum Unresolved_Call Call target is not a same-unit / imported procedure.
    --  @enum Invalid_Arguments Call arity or argument/formal types are not supported.
-   type Ir_Generator_Error_Code is (Internal_Error, Unresolved_Call, Invalid_Arguments);
+   --  @enum Call_Without_Import Callee module prefix is neither self nor an import of the caller.
+   --  @enum Not_Exported Imported procedure exists but lacks Export_Flag.
+   type Ir_Generator_Error_Code is
+     (Internal_Error,
+      Unresolved_Call,
+      Invalid_Arguments,
+      Call_Without_Import,
+      Not_Exported);
 
    --  One IR Generator failure.
    --  @field Code Predefined error code.
@@ -40,9 +48,15 @@ package Lovelace.Compiler.Ir_Generator is
       end case;
    end record;
 
-   --  Lower The_Module into LIR (signatures, origins, same-unit call bodies).
+   --  Lower a single compilation-unit AST into LIR (thin wrap over the multi-unit API).
    --  @param The_Module Frontend compilation-unit AST.
    --  @return LIR module, or a located IR error.
    function Generate (The_Module : Ast.Module) return Generate_Result;
+
+   --  Flatten Units (root first) into one LIR module with import-gated call resolve.
+   --  @param Units Compilation set from Unit_Graph.Load (root at index 1).
+   --  @return Combined LIR module, or a located IR error.
+   function Generate
+     (Units : Unit_Graph.Compilation_Set) return Generate_Result;
 
 end Lovelace.Compiler.Ir_Generator;

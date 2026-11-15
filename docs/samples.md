@@ -18,10 +18,14 @@ For **every** new user-facing feature, add at least one `.love` file under `samp
 | Path | Feature |
 | --- | --- |
 | [`samples/program/Hello.love`](../samples/program/Hello.love) | Minimal empty-body program for `lovelace build` and wasmtime integration |
-| [`samples/import/ImportDecl.love`](../samples/import/ImportDecl.love) | File-leading `import` before an empty-body program (no resolution yet) |
+| [`samples/import/ImportDecl.love`](../samples/import/ImportDecl.love) | File-leading `import ImportLib;` before an empty-body program (resolves same-folder module) |
+| [`samples/import/ImportLib.love`](../samples/import/ImportLib.love) | Empty module dependency for `ImportDecl` |
 | [`samples/module/Empty.love`](../samples/module/Empty.love) | Minimal empty module (`module Empty; end.`) |
 | [`samples/module/Foo.Bar.love`](../samples/module/Foo.Bar.love) | Dotted module name (`module Foo.Bar; end.`) |
 | [`samples/module/Procedures.love`](../samples/module/Procedures.love) | Module procedures with Ada-style typed parameters |
 | [`samples/module/ExportProcedures.love`](../samples/module/ExportProcedures.love) | `export procedure` (Lovelace visibility) plus a non-exported helper |
 | [`samples/directives/FlavorSelect.love`](../samples/directives/FlavorSelect.love) | Flavor `#if` / `#elsif` / `#else` / `#end` (default `--flavor wasi` keeps `WasiOnly`) |
 | [`samples/calls/SameModuleCall.love`](../samples/calls/SameModuleCall.love) | Same-unit qualified call with integer literal (`SameModuleCall.Sink(42)`) |
+| [`samples/resolve/Caller.love`](../samples/resolve/Caller.love) | Multi-unit program: `import Lib` / `import pkg.Util` and cross-module calls |
+| [`samples/resolve/Lib.love`](../samples/resolve/Lib.love) | Exported `Sink` module for resolve (`Lib.love`) |
+| [`samples/resolve/pkg/Util.love`](../samples/resolve/pkg/Util.love) | Mixed path for dotted module `pkg.Util` (`pkg/Util.love`) |

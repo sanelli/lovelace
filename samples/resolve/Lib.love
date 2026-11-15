@@ -1,0 +1,7 @@
+module Lib;
+
+export procedure Sink(value : integer);
+begin
+end;
+
+end.

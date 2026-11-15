@@ -58,10 +58,25 @@ A `.love` path is **required** for now. Future builds may accept `.pjlove` / `.s
 | `--output-format <fmt>` | `wasm` (default), `wat`, `wasm,wat`, or `wat,wasm` |
 | `--output-folder <path>` | Output root (default `.output` in the current working directory) |
 | `--flavor <name>` | Active compile-time flavor for `#if` selection: `wasi` (default), `native`, or `web`. See [directives.md](directives.md). |
+| `--include-path <dir>` / `-I <dir>` | Extra module search root (repeatable; `-Idir` glued form also accepted). See module search below. |
 
 #### Unit name vs filename
 
 The `program` or `module` identifier must **exactly** match the `.love` basename without the extension (case-sensitive). Module names may include dots (`module Foo.Bar;` ↔ `Foo.Bar.love`). Mismatch → [`LV00009`](diagnostics.md).
+
+#### Module search (imports)
+
+Imported module names are resolved under an ordered list of search roots:
+
+1. Directory of the root `.love` file
+2. Current working directory
+3. Each `--include-path` / `-I` directory (CLI order)
+4. Augusta stdlib root — **exactly one** slot:
+   - `AUGUSTA_HOME` if set
+   - else `LOVELACE_HOME/lib/augusta` if `LOVELACE_HOME` is set
+   - else `~/.lovelace/lib/augusta`
+
+For module `a.b.c`, every mixed slash/dot relative form is a candidate (`a/b/c.love`, `a/b.c.love`, `a.b/c.love`, `a.b.c.love`). Exactly one existing file must match; zero → [`LV00016`](diagnostics.md); two or more → [`LV00020`](diagnostics.md). See [ir-generator.md](ir-generator.md).
 
 #### Output layout
 

@@ -65,10 +65,15 @@ When there is no useful source span (or for CLI usage errors):
 | `LV00011` | Name_Clash | Parser (duplicate or conflicting procedure/parameter/import name; self-import) |
 | `LV00012` | Invalid_Flavor_Condition | Parser (`#if`/`#elsif` flavor string not wasi/native/web) |
 | `LV00013` | Unterminated_String_Literal | Tokenizer (opening `"` without a matching closer) |
-| `LV00014` | Unresolved_Call | IR Generator (call target not same-unit `MODULE.SUBROUTINE`) |
+| `LV00014` | Unresolved_Call | IR Generator (call target not a same-unit / imported procedure) |
 | `LV00015` | Invalid_Arguments | IR Generator (call arity / literal / formal mismatch) |
+| `LV00016` | Unknown_Module | Unit graph (import name has no candidate `.love` on search roots) |
+| `LV00017` | Call_Without_Import | IR Generator (callee module prefix not imported by the caller) |
+| `LV00018` | Not_Exported | IR Generator (imported procedure exists but lacks `Export_Flag`) |
+| `LV00019` | Circular_Import | Unit graph (import cycle among compilation units) |
+| `LV00020` | Ambiguous_Module_Path | Unit graph (two or more distinct `.love` files match one import) |
 
-Stage-local enums (tokenizer, parser, IR generator, …) map to these labels at report time via `Lovelace.Compiler.Reporting`.
+Stage-local enums (tokenizer, parser, IR generator, unit graph, …) map to these labels at report time via `Lovelace.Compiler.Reporting` (unit-graph failures also expose `Unit_Graph.Surface_Error_Code`).
 
 ## Warnings (not yet in this slice)
 

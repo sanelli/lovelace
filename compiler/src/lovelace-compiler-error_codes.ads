@@ -18,6 +18,11 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Unterminated_String_Literal Tokenizer: opening `"` without a matching closer (LV00013).
    --  @enum Unresolved_Call IR Generator: call target is not a same-unit procedure (LV00014).
    --  @enum Invalid_Arguments IR Generator: call arity or argument/formal mismatch (LV00015).
+   --  @enum Unknown_Module Unit graph: import name has no candidate .love on the search roots (LV00016).
+   --  @enum Call_Without_Import IR Generator: callee module prefix is not imported by the caller (LV00017).
+   --  @enum Not_Exported IR Generator: imported procedure exists but lacks Export_Flag (LV00018).
+   --  @enum Circular_Import Unit graph: import cycle among compilation units (LV00019).
+   --  @enum Ambiguous_Module_Path Unit graph: two or more distinct .love files match one import (LV00020).
    type Error_Code is
      (Internal_Error,
       Unrecognized_Symbol,
@@ -33,7 +38,12 @@ package Lovelace.Compiler.Error_Codes is
       Invalid_Flavor_Condition,
       Unterminated_String_Literal,
       Unresolved_Call,
-      Invalid_Arguments);
+      Invalid_Arguments,
+      Unknown_Module,
+      Call_Without_Import,
+      Not_Exported,
+      Circular_Import,
+      Ambiguous_Module_Path);
 
    --  Canonical LV##### label for Code.
    --  @param Code Diagnostic kind.

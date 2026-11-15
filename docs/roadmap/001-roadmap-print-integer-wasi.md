@@ -141,6 +141,8 @@ Steps 1–3 are mostly frontend. Steps 4–5 make the language callable across m
 - Diagnostics: unknown module, unknown subroutine, call without import (unused-import warning optional later).
 - Apply flavor `#if` when loading each unit.
 
+**Status (issue [#29](https://github.com/sanelli/lovelace/issues/29)):** Done for this slice — `Module_Path` mixed slash/dot candidates + ambiguity, `Unit_Graph`, `LV00016`–`LV00020`, multi-unit IR flatten, `--include-path`/`-I`, Augusta slot, samples under [`samples/resolve/`](../../samples/resolve/).
+
 ### 6. External / WASI import declarations (language + LIR)
 
 **Goal:** Augusta can declare procedures satisfied by WASI component imports.
@@ -229,5 +231,5 @@ Then do **10**, then native/web + **11** as separate milestones.
 | Formatting | A: host/`s32` · B: bytes in Augusta | A, then B |
 | External decl syntax | `native("wasi", …)` vs dedicated WASI import form | Pick one in issue #1 of this work |
 | `#end` token | `#end` / `#endif` / … | **Locked:** `#end` (issue [#21](https://github.com/sanelli/lovelace/issues/21)) |
-| Augusta path | `augusta/std/io.love` vs `augusta.std.io.love` | Match dotted module ↔ path rule from step 5 |
+| Augusta path | `augusta/std/io.love` vs `augusta.std.io.love` | **Locked:** all mixed slash/dot forms accepted; error if more than one file matches |
 | One LIR vs many before emit | Merge early vs link LIR then emit | Either fine if one component results |
