@@ -20,6 +20,7 @@ package Lovelace.Lir.Errors is
    --  @enum Duplicate_Name Duplicate dependency, subroutine, or parameter name.
    --  @enum Duplicate_Entrypoint More than one Entrypoint flag.
    --  @enum Self_Dependency A dependency name equals the module name.
+   --  @enum Invalid_Call_Target Call Target_Index is 0 or past Subroutine_Count.
    type Error_Code is
      (Internal_Error,
       Io_Failure,
@@ -35,7 +36,8 @@ package Lovelace.Lir.Errors is
       Empty_Name,
       Duplicate_Name,
       Duplicate_Entrypoint,
-      Self_Dependency);
+      Self_Dependency,
+      Invalid_Call_Target);
 
    --  Empty success payload for validation Results.
    type Empty_Success is null record;

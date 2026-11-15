@@ -19,4 +19,8 @@ package Lovelace.Compiler.Tests.Literals is
    --  @param The_Test Unused fixture.
    procedure Test_Invalid_Integer (The_Test : in out Fixture);
 
+   --  To_Integer_32 evaluates decimal/based/negative forms; overflow fails.
+   --  @param The_Test Unused fixture.
+   procedure Test_To_Integer_32 (The_Test : in out Fixture);
+
 end Lovelace.Compiler.Tests.Literals;

@@ -1,5 +1,6 @@
 with Ada.Containers.Indefinite_Vectors;
 with Ada.Strings.Unbounded;
+with Ada.Unchecked_Conversion;
 with GNAT.OS_Lib;
 
 with Lovelace.Common.Source;
@@ -16,6 +17,11 @@ package body Lovelace.Lir.Binary is
    use type Ada.Strings.Unbounded.Unbounded_String;
 
    package Source renames Lovelace.Common.Source;
+
+   function Integer_32_Bits is new
+     Ada.Unchecked_Conversion (Source => Interfaces.Integer_32, Target => Interfaces.Unsigned_32);
+   function Bits_To_Integer_32 is new
+     Ada.Unchecked_Conversion (Source => Interfaces.Unsigned_32, Target => Interfaces.Integer_32);
 
    Magic_0 : constant Interfaces.Unsigned_8 := 16#4C#;
    Magic_1 : constant Interfaces.Unsigned_8 := 16#49#;
@@ -74,6 +80,16 @@ package body Lovelace.Lir.Binary is
    procedure Append_Instruction (Buffer : in out Byte_Sequence; Item : Instructions.Instruction) is
    begin
       Append_U16 (Buffer, Opcodes.To_Word (Item.Operation));
+      case Item.Operation is
+         when Opcodes.No_Operation =>
+            null;
+
+         when Opcodes.Constant_I32 =>
+            Append_U32 (Buffer, Integer_32_Bits (Item.Immediate_I32));
+
+         when Opcodes.Call         =>
+            Append_U32 (Buffer, Item.Target_Index);
+      end case;
    end Append_Instruction;
 
    procedure Append_Module_Origin (Buffer : in out Byte_Sequence; The_Module : Modules.Module) is
@@ -564,6 +580,29 @@ package body Lovelace.Lir.Binary is
                   case Opcode_Option.Value is
                      when Opcodes.No_Operation =>
                         The_Instruction := (Operation => Opcodes.No_Operation);
+
+                     when Opcodes.Constant_I32 =>
+                        declare
+                           Raw : Interfaces.Unsigned_32;
+                        begin
+                           if not Read_U32 (Bytes, Cursor, Raw) then
+                              Code := Errors.Truncated;
+                              return False;
+                           end if;
+                           The_Instruction :=
+                             (Operation => Opcodes.Constant_I32, Immediate_I32 => Bits_To_Integer_32 (Raw));
+                        end;
+
+                     when Opcodes.Call         =>
+                        declare
+                           Target : Interfaces.Unsigned_32;
+                        begin
+                           if not Read_U32 (Bytes, Cursor, Target) then
+                              Code := Errors.Truncated;
+                              return False;
+                           end if;
+                           The_Instruction := (Operation => Opcodes.Call, Target_Index => Target);
+                        end;
                   end case;
                   Subroutines.Append_Instruction (The_Subroutine, The_Instruction);
             end case;

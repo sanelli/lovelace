@@ -1,4 +1,5 @@
 with Ada.Containers.Indefinite_Vectors;
+with Interfaces;
 
 with Lovelace.Lir.Opcodes;
 
@@ -8,10 +9,18 @@ package Lovelace.Lir.Instructions is
 
    --  One instruction selected by Operation.
    --  @disc Operation Opcode that selects the instruction variant.
+   --  @field Immediate_I32 Signed 32-bit constant for Constant_I32.
+   --  @field Target_Index 1-based subroutine index for Call.
    type Instruction (Operation : Opcodes.Opcode := Opcodes.No_Operation) is record
       case Operation is
          when Opcodes.No_Operation =>
             null;
+
+         when Opcodes.Constant_I32 =>
+            Immediate_I32 : Interfaces.Integer_32 := 0;
+
+         when Opcodes.Call =>
+            Target_Index : Interfaces.Unsigned_32 := 0;
       end case;
    end record;
 

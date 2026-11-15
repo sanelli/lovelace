@@ -63,7 +63,13 @@ Type tokens (canonical lowercase):
 
 Exactly one `(result …)` with a single type. **Never** invent a `void` token.
 
-Only instruction token in v1: `noop` (lowercase). The canonical writer puts one instruction per line.
+Instruction tokens (lowercase; one instruction per line in the canonical writer):
+
+| Token | Meaning |
+| --- | --- |
+| `noop` | `No_Operation` |
+| `i32.const <decimal>` | `Constant_I32` (signed decimal, no leading `+`) |
+| `call <index>` | `Call` (1-based subroutine index, decimal) |
 
 ## Quoted strings
 

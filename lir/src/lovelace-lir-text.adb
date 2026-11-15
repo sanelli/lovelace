@@ -185,6 +185,19 @@ package body Lovelace.Lir.Text is
       case Item.Operation is
          when Opcodes.No_Operation =>
             return "noop";
+
+         when Opcodes.Constant_I32 =>
+            declare
+               Image : constant String := Interfaces.Integer_32'Image (Item.Immediate_I32);
+            begin
+               if Image'Length > 0 and then Image (Image'First) = ' ' then
+                  return "i32.const " & Image (Image'First + 1 .. Image'Last);
+               end if;
+               return "i32.const " & Image;
+            end;
+
+         when Opcodes.Call         =>
+            return "call " & Unsigned_Image (Item.Target_Index);
       end case;
    end Instruction_Token;
 

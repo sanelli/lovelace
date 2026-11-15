@@ -159,6 +159,9 @@ package body Lovelace.Compiler.Tests.Suite is
            ("parser: module whitespace", Lovelace.Compiler.Tests.Parser.Test_Module_Whitespace'Access));
       Result.Add_Test
         (Parser_Caller.Create
+           ("parser: qualified calls", Lovelace.Compiler.Tests.Parser.Test_Qualified_Calls'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
            ("parser: trailing and keyword case", Lovelace.Compiler.Tests.Parser.Test_Trailing_And_Keyword_Case'Access));
       Result.Add_Test
         (Parser_Caller.Create
@@ -187,6 +190,9 @@ package body Lovelace.Compiler.Tests.Suite is
       Result.Add_Test
         (Literals_Caller.Create
            ("literals: invalid integer", Lovelace.Compiler.Tests.Literals.Test_Invalid_Integer'Access));
+      Result.Add_Test
+        (Literals_Caller.Create
+           ("literals: to integer 32", Lovelace.Compiler.Tests.Literals.Test_To_Integer_32'Access));
 
       Result.Add_Test
         (Ir_Generator_Caller.Create

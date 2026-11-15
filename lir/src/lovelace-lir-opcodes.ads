@@ -6,10 +6,12 @@ with Lovelace.Common.Option;
 
 package Lovelace.Lir.Opcodes is
 
-   --  LIR opcode. Only No_Operation is defined in this slice.
+   --  LIR opcode.
    --  @enum No_Operation Instruction that does nothing.
-   type Opcode is (No_Operation);
-   for Opcode use (No_Operation => 0);
+   --  @enum Constant_I32 Push a signed 32-bit integer constant.
+   --  @enum Call Call a subroutine by 1-based index in this module.
+   type Opcode is (No_Operation, Constant_I32, Call);
+   for Opcode use (No_Operation => 0, Constant_I32 => 1, Call => 2);
    for Opcode'Size use 16;
 
    --  Optional Opcode when decoding a raw word.
@@ -27,7 +29,7 @@ package Lovelace.Lir.Opcodes is
 
    --  Number of immediate bytes after the opcode word.
    --  @param Operation Opcode whose immediates are counted.
-   --  @return Immediate byte count (0 for No_Operation).
+   --  @return Immediate byte count.
    function Immediate_Length (Operation : Opcode) return Natural;
 
    --  Total encoded size in the stream: 2 plus Immediate_Length.

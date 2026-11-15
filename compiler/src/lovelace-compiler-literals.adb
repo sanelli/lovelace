@@ -1,10 +1,30 @@
 package body Lovelace.Compiler.Literals is
 
+   use type Interfaces.Integer_32;
+   use type Interfaces.Unsigned_64;
+
    function Failure (Code : Literal_Error_Code; Detail : String) return Integer_Literal_Results.Result;
    function Float_Failure (Code : Literal_Error_Code; Detail : String) return Float_Literal_Results.Result;
+   function Integer_32_Failure (Code : Literal_Error_Code; Detail : String) return Integer_32_Results.Result;
+   function Digit_Value (Byte : Character; Base : Positive; Value : out Natural) return Boolean;
    function Is_Digit_For_Base (Byte : Character; Base : Positive) return Boolean;
    function Parse_Size_Suffix
      (Text : String; Index : in out Positive; The_Size : out Types.Integer_Size) return Boolean;
+
+   function Digit_Value (Byte : Character; Base : Positive; Value : out Natural) return Boolean is
+   begin
+      Value := 0;
+      if Byte in '0' .. '9' then
+         Value := Character'Pos (Byte) - Character'Pos ('0');
+      elsif Byte in 'A' .. 'F' then
+         Value := 10 + (Character'Pos (Byte) - Character'Pos ('A'));
+      elsif Byte in 'a' .. 'f' then
+         Value := 10 + (Character'Pos (Byte) - Character'Pos ('a'));
+      else
+         return False;
+      end if;
+      return Value < Base;
+   end Digit_Value;
 
    function Failure (Code : Literal_Error_Code; Detail : String) return Integer_Literal_Results.Result is
    begin
@@ -15,6 +35,11 @@ package body Lovelace.Compiler.Literals is
    begin
       return (Ok => False, Error => (Code => Code, Detail => Ada.Strings.Unbounded.To_Unbounded_String (Detail)));
    end Float_Failure;
+
+   function Integer_32_Failure (Code : Literal_Error_Code; Detail : String) return Integer_32_Results.Result is
+   begin
+      return (Ok => False, Error => (Code => Code, Detail => Ada.Strings.Unbounded.To_Unbounded_String (Detail)));
+   end Integer_32_Failure;
 
    function Interpret_Float (Lexeme : String) return Float_Literal_Results.Result is
       Index       : Positive := Lexeme'First;
@@ -178,5 +203,58 @@ package body Lovelace.Compiler.Literals is
 
       return False;
    end Parse_Size_Suffix;
+
+   function To_Integer_32 (The_Value : Integer_Literal_Value) return Integer_32_Results.Result is
+      Digits_Text : constant String := Ada.Strings.Unbounded.To_String (The_Value.Digits_Text);
+      Magnitude   : Interfaces.Unsigned_64 := 0;
+      Base_U      : constant Interfaces.Unsigned_64 := Interfaces.Unsigned_64 (The_Value.Base);
+      Max_Pos     : constant Interfaces.Unsigned_64 := Interfaces.Unsigned_64 (Interfaces.Integer_32'Last);
+      Max_Neg_Mag : constant Interfaces.Unsigned_64 := Interfaces.Unsigned_64 (Interfaces.Integer_32'Last) + 1;
+   begin
+      if Digits_Text'Length = 0 then
+         return Integer_32_Failure (Invalid_Literal, "integer literal has no digits");
+      end if;
+
+      for Index in Digits_Text'Range loop
+         declare
+            Dig : Natural;
+         begin
+            if not Digit_Value (Digits_Text (Index), The_Value.Base, Dig) then
+               return Integer_32_Failure (Invalid_Literal, "invalid digit in integer literal");
+            end if;
+            if Magnitude > (Interfaces.Unsigned_64'Last - Interfaces.Unsigned_64 (Dig)) / Base_U then
+               return Integer_32_Failure (Invalid_Literal, "integer literal magnitude overflows");
+            end if;
+            Magnitude := Magnitude * Base_U + Interfaces.Unsigned_64 (Dig);
+         end;
+      end loop;
+
+      if The_Value.Is_Negative then
+         if Magnitude > Max_Neg_Mag then
+            return Integer_32_Failure (Invalid_Literal, "integer literal out of Integer_32 range");
+         end if;
+         if Magnitude = Max_Neg_Mag then
+            return (Ok => True, Value => Interfaces.Integer_32'First);
+         end if;
+         return (Ok => True, Value => -Interfaces.Integer_32 (Magnitude));
+      end if;
+
+      if Magnitude > Max_Pos then
+         return Integer_32_Failure (Invalid_Literal, "integer literal out of Integer_32 range");
+      end if;
+      return (Ok => True, Value => Interfaces.Integer_32 (Magnitude));
+   end To_Integer_32;
+
+   function To_Integer_32 (Lexeme : String) return Integer_32_Results.Result is
+      Interpreted : constant Integer_Literal_Results.Result := Interpret_Integer (Lexeme);
+   begin
+      case Interpreted.Ok is
+         when False =>
+            return (Ok => False, Error => Interpreted.Error);
+
+         when True  =>
+            return To_Integer_32 (Interpreted.Value);
+      end case;
+   end To_Integer_32;
 
 end Lovelace.Compiler.Literals;

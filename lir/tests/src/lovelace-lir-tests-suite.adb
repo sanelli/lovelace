@@ -53,6 +53,10 @@ package body Lovelace.Lir.Tests.Suite is
             Lovelace.Lir.Tests.Binary_Format.Test_Noop_Encoding'Access));
       Result.Add_Test
         (Binary_Caller.Create
+           ("binary .lir: const and call encoding",
+            Lovelace.Lir.Tests.Binary_Format.Test_Const_And_Call_Encoding'Access));
+      Result.Add_Test
+        (Binary_Caller.Create
            ("binary .lir: all value types",
             Lovelace.Lir.Tests.Binary_Format.Test_All_Value_Types'Access));
       Result.Add_Test

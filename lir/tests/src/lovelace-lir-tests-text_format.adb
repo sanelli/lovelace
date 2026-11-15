@@ -3,8 +3,11 @@ with Ada.Strings.Unbounded;
 with AUnit.Assertions;
 with GNAT.OS_Lib;
 
+with Interfaces;
+
 with Lovelace.Lir.Errors;
 with Lovelace.Lir.Modules;
+with Lovelace.Lir.Opcodes;
 with Lovelace.Lir.Subroutines;
 with Lovelace.Lir.Text;
 with Lovelace.Lir.Tests.Support;
@@ -77,6 +80,22 @@ package body Lovelace.Lir.Tests.Text_Format is
          Support.Assert_Contains (Flag_Text, "entrypoint", "entrypoint");
          Support.Assert_Contains (Flag_Text, "noop", "noop");
          Support.Assert_Contains (Flag_Text, "(body", "body");
+      end;
+
+      declare
+         Call_Module : Modules.Module := Modules.Create ("m");
+         Sink        : constant Subroutines.Subroutine := Support.Make_Subroutine ("Sink", Types.Unit);
+         Caller      : Subroutines.Subroutine := Support.Make_Subroutine ("Caller", Types.Unit);
+         Call_Text   : Ada.Strings.Unbounded.Unbounded_String;
+      begin
+         Subroutines.Append_Instruction
+           (Caller, (Operation => Opcodes.Constant_I32, Immediate_I32 => Interfaces.Integer_32'(42)));
+         Subroutines.Append_Instruction (Caller, (Operation => Opcodes.Call, Target_Index => 1));
+         Modules.Append_Subroutine (Call_Module, Sink);
+         Modules.Append_Subroutine (Call_Module, Caller);
+         Call_Text := Support.Must_To_Text (Call_Module, "call text");
+         Support.Assert_Contains (Ada.Strings.Unbounded.To_String (Call_Text), "i32.const 42", "i32.const");
+         Support.Assert_Contains (Ada.Strings.Unbounded.To_String (Call_Text), "call 1", "call index");
       end;
 
       for The_Type in Types.Value_Type loop

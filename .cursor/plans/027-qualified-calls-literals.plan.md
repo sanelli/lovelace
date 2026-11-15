@@ -13,19 +13,19 @@ todos:
     status: completed
   - id: "4"
     content: "4. LIR: Constant_I32 + Call opcodes, codecs, Validate call targets, AUnit, lir docs; gnatformat."
-    status: pending
+    status: completed
   - id: "5"
     content: "5. Literals: To_Integer_32 evaluate API + AUnit + literals.md; gnatformat."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. AST: Call_Statement + real Statement_Sequence; update Create_Subroutine call sites; gnatformat."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Parser: statements in Parse_Block; grammar/parser docs; gnatformat."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. Parser AUnit success/failure for qualified calls; suite registration; gnatformat."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. IR generator same-unit resolve + emit + LV00014/15 + Reporting/build spans; ir-generator/diagnostics docs; gnatformat."
     status: pending

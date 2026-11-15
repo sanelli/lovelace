@@ -7,15 +7,20 @@ Lexical tokens come from [token-grammar.md](token-grammar.md). Whitespace betwee
 ```ebnf
 compilation_unit     = { import_declaration } , ( program_unit | module_unit ) ;
 import_declaration   = "import" , qualified_identifier , ";" ;
-program_unit         = program_header , "begin" , "end" , "." ;
+program_unit         = program_header , block , "." ;
 program_header       = "program" , identifier , ";" ;
 module_unit          = module_header , { module_declaration } , "end" , "." ;
 module_header        = "module" , qualified_identifier , ";" ;
 module_declaration   = procedure_declaration | flavor_conditional ;
 qualified_identifier = identifier , { "." , identifier } ;
 
-procedure_declaration = procedure_header , "begin" , "end" , ";" ;
+procedure_declaration = procedure_header , block , ";" ;
 procedure_header      = [ "export" ] , "procedure" , identifier , "(" , [ parameter_list ] , ")" , ";" ;
+block                 = "begin" , { statement } , "end" ;
+statement             = call_statement ;
+call_statement        = callee_name , "(" , [ argument_list ] , ")" , ";" ;
+callee_name           = identifier , "." , identifier , { "." , identifier } ;
+argument_list         = integer_literal , { "," , integer_literal } ;
 parameter_list        = parameter_group , { ";" , parameter_group } ;
 parameter_group       = identifier , { "," , identifier } , ":" , type_name ;
 type_name             = integer_type | float_type ;
@@ -64,10 +69,11 @@ Examples (all valid when tokenized then parsed):
 | `module Foo.Bar; end.` | Dotted module name |
 | `module MyModule; procedure Whatever(x : integer; y, z : float<32>); begin end; end.` | Module procedure with Ada-style params |
 | `module Lib; export procedure Print(Value : integer); begin end; end.` | Exported module procedure (`Export_Flag`) |
+| `module Calls; procedure Sink(V : integer); begin end; procedure Run(); begin Calls.Sink(42); end; end.` | Qualified call with integer literal arg |
 | `module FlavorSelect; #if flavor = "wasi" procedure WasiOnly(); begin end; #end end.` | Flavor selection (see [samples](samples.md)) |
 
 Imports are **file-leading** only (before `program` / `module`). Duplicate import names and self-import (import name equals the unit name) are `Name_Clash` ([`LV00011`](diagnostics.md)). `import … as …` is reserved and not parsed.
 
-Not accepted in this slice: `import` after `program`/`module`, inside procedure bodies, or inside `#if` arms; `end;` after a program `end`, `module …; begin end.` (modules have no unit-level `begin`), procedures inside `program` units, `#if` in `program` units or inside procedure bodies, `float<16>` / `integer<128>`, wrong keyword order, missing final `.`, trailing tokens after `.`, `Program` / `Module` as the unit keyword (identifiers, not keywords), trailing `.` in a qualified name (`module Foo.;`), duplicate parameter or procedure names among **surviving** declarations ([`LV00011`](diagnostics.md)).
+Not accepted in this slice: `import` after `program`/`module`, inside procedure bodies, or inside `#if` arms; `end;` after a program `end`, `module …; begin end.` (modules have no unit-level `begin`), procedures inside `program` units, `#if` in `program` units or inside procedure bodies, unqualified call targets (`Sink(42);` — need `MODULE.SUBROUTINE`), non-integer call arguments, `float<16>` / `integer<128>`, wrong keyword order, missing final `.`, trailing tokens after `.`, `Program` / `Module` as the unit keyword (identifiers, not keywords), trailing `.` in a qualified name (`module Foo.;`), duplicate parameter or procedure names among **surviving** declarations ([`LV00011`](diagnostics.md)). Cross-module call **resolution** is a later step; such calls may still parse.
 
 The `.love` basename (excluding the extension) must equal the program or module name, including dots for modules (`Foo.Bar.love` ↔ `module Foo.Bar;`). See [cli.md](cli.md) and [`LV00009`](diagnostics.md).

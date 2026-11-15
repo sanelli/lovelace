@@ -1,5 +1,6 @@
 with Ada.Characters.Handling;
 with Ada.Strings.Unbounded;
+with Interfaces;
 
 with Lovelace.Lir.Errors;
 with Lovelace.Lir.Instructions;
@@ -16,6 +17,7 @@ package body Lovelace.Compiler.Backend.Lowering is
    package Subroutines renames Lovelace.Lir.Subroutines;
    package Types renames Lovelace.Lir.Types;
 
+   use type Interfaces.Unsigned_32;
    use type Types.Value_Type;
 
    function Failure (Code : Backend_Error_Code; Detail : String) return Lower_Result;
@@ -212,6 +214,16 @@ package body Lovelace.Compiler.Backend.Lowering is
             case Item.Operation is
                when Opcodes.No_Operation =>
                   null;
+
+               when Opcodes.Constant_I32 =>
+                  Model.Append (Body_Out, (Kind => Model.I32_Constant, Value => Item.Immediate_I32));
+
+               when Opcodes.Call         =>
+                  if Item.Target_Index = 0 then
+                     Outcome := Failure (Internal_Error, "Call Target_Index is zero");
+                     return;
+                  end if;
+                  Model.Append (Body_Out, (Kind => Model.Call_Function, Target_Index => Positive (Item.Target_Index)));
             end case;
          end;
       end loop;

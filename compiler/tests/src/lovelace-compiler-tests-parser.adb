@@ -509,6 +509,76 @@ package body Lovelace.Compiler.Tests.Parser is
       Assert_Empty_Module (Spaced_Module, "Foo.Bar", "spaced module");
    end Test_Module_Whitespace;
 
+   procedure Test_Qualified_Calls (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Module_Source : constant String :=
+        "module Calls;"
+        & ASCII.LF
+        & "procedure Sink(Value : integer); begin end;"
+        & ASCII.LF
+        & "procedure Run();"
+        & ASCII.LF
+        & "begin"
+        & ASCII.LF
+        & "   Calls.Sink(42);"
+        & ASCII.LF
+        & "   Calls.Sink();"
+        & ASCII.LF
+        & "   Calls.Sink(1, 2);"
+        & ASCII.LF
+        & "end;"
+        & ASCII.LF
+        & "end.";
+      Program_Source : constant String :=
+        "program Hello;" & ASCII.LF & "begin" & ASCII.LF & "   augusta.std.io.print(42);" & ASCII.LF & "end.";
+      The_Module     : constant Ast.Module := Support.Must_Parse (Module_Source, "module calls");
+      The_Program    : constant Ast.Module := Support.Must_Parse (Program_Source, "program call");
+      Unqualified    : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module Calls; procedure Run(); begin Sink(42); end; end.", "unqualified call");
+      Float_Arg      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module Calls; procedure Run(); begin Calls.Sink(1.5); end; end.", "float arg");
+      Missing_Semi   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module Calls; procedure Run(); begin Calls.Sink(42) end; end.", "missing semicolon");
+   begin
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 2, "two procedures");
+      declare
+         Run_Body : constant Ast.Statement_Sequence := Ast.Get_Body (Ast.Get_Subroutine (The_Module, 2));
+      begin
+         AUnit.Assertions.Assert (Ast.Length (Run_Body) = 3, "three statements");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String (Ast.Element (Run_Body, 1).The_Call.Callee_Name) = "Calls.Sink",
+            "callee name");
+         AUnit.Assertions.Assert (Ast.Length (Ast.Element (Run_Body, 1).The_Call.Arguments) = 1, "one arg");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String (Ast.Element (Ast.Element (Run_Body, 1).The_Call.Arguments, 1).Lexeme)
+            = "42",
+            "arg lexeme");
+         AUnit.Assertions.Assert (Ast.Length (Ast.Element (Run_Body, 2).The_Call.Arguments) = 0, "nullary");
+         AUnit.Assertions.Assert (Ast.Length (Ast.Element (Run_Body, 3).The_Call.Arguments) = 2, "two args");
+      end;
+
+      declare
+         Program_Body : constant Ast.Statement_Sequence := Ast.Get_Body (Ast.Get_Subroutine (The_Program, 1));
+      begin
+         AUnit.Assertions.Assert (Ast.Length (Program_Body) = 1, "program one statement");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String (Ast.Element (Program_Body, 1).The_Call.Callee_Name)
+            = "augusta.std.io.print",
+            "program callee");
+      end;
+
+      Support.Assert_Parser_Error_Count (Unqualified, 1, "unqualified");
+      Support.Assert_Parser_Error_Code (Unqualified, 1, Lovelace.Compiler.Parser.Unexpected_Token, "unqualified code");
+      Support.Assert_Parser_Error_Count (Float_Arg, 1, "float arg");
+      Support.Assert_Parser_Error_Code (Float_Arg, 1, Lovelace.Compiler.Parser.Unexpected_Token, "float arg code");
+      Support.Assert_Parser_Error_Count (Missing_Semi, 1, "missing semicolon");
+      Support.Assert_Parser_Error_Code
+        (Missing_Semi, 1, Lovelace.Compiler.Parser.Unexpected_Token, "missing semicolon code");
+   end Test_Qualified_Calls;
+
    procedure Test_Trailing_And_Keyword_Case (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Trailing   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=

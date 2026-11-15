@@ -3,8 +3,11 @@ with Ada.Strings.Unbounded;
 with AUnit.Assertions;
 with GNAT.OS_Lib;
 
+with Interfaces;
+
 with Lovelace.Lir.Binary;
 with Lovelace.Lir.Errors;
+with Lovelace.Lir.Instructions;
 with Lovelace.Lir.Modules;
 with Lovelace.Lir.Opcodes;
 with Lovelace.Lir.Subroutines;
@@ -14,6 +17,9 @@ with Lovelace.Lir.Types;
 package body Lovelace.Lir.Tests.Binary_Format is
 
    use type Ada.Streams.Stream_Element_Offset;
+   use type Interfaces.Integer_32;
+   use type Interfaces.Unsigned_32;
+   use type Opcodes.Opcode;
    use type Subroutines.Subroutine_Flags;
 
    procedure Test_All_Value_Types (The_Test : in out Fixture) is
@@ -35,6 +41,37 @@ package body Lovelace.Lir.Tests.Binary_Format is
          end;
       end loop;
    end Test_All_Value_Types;
+
+   procedure Test_Const_And_Call_Encoding (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      The_Module : Modules.Module := Modules.Create ("m");
+      Sink       : constant Subroutines.Subroutine := Support.Make_Subroutine ("Sink", Types.Unit);
+      Caller     : Subroutines.Subroutine := Support.Make_Subroutine ("Caller", Types.Unit);
+   begin
+      Subroutines.Append_Instruction
+        (Caller, (Operation => Opcodes.Constant_I32, Immediate_I32 => Interfaces.Integer_32'(-42)));
+      Subroutines.Append_Instruction (Caller, (Operation => Opcodes.Call, Target_Index => 1));
+      Modules.Append_Subroutine (The_Module, Sink);
+      Modules.Append_Subroutine (The_Module, Caller);
+      Support.Assert_Binary_Round_Trip (The_Module, "const and call");
+
+      declare
+         Decoded     : constant Modules.Module :=
+           Support.Must_Decode (Support.Must_Encode (The_Module, "encode"), "decode");
+         Body_Instrs : constant Instructions.Instruction_Sequence :=
+           Subroutines.Get_Instructions (Modules.Get_Subroutine (Decoded, 2));
+      begin
+         AUnit.Assertions.Assert (Instructions.Length (Body_Instrs) = 2, "body length");
+         AUnit.Assertions.Assert
+           (Instructions.Element (Body_Instrs, 1).Operation = Opcodes.Constant_I32, "const opcode");
+         AUnit.Assertions.Assert
+           (Instructions.Element (Body_Instrs, 1).Immediate_I32 = Interfaces.Integer_32'(-42), "const value");
+         AUnit.Assertions.Assert
+           (Instructions.Element (Body_Instrs, 2).Operation = Opcodes.Call, "call opcode");
+         AUnit.Assertions.Assert
+           (Instructions.Element (Body_Instrs, 2).Target_Index = 1, "call target");
+      end;
+   end Test_Const_And_Call_Encoding;
 
    procedure Test_Decode_Failures (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -58,7 +95,7 @@ package body Lovelace.Lir.Tests.Binary_Format is
          Support.Assert_Decode_Error (Support.Append_Byte (Base, 16#FF#), Errors.Trailing_Bytes, "trailing");
 
          Support.Assert_Decode_Error
-           (Support.Replace_Byte (Noop_Bytes, Noop_Bytes'Last - 1, 16#01#), Errors.Unknown_Opcode, "unknown opcode");
+           (Support.Replace_Byte (Noop_Bytes, Noop_Bytes'Last - 1, 16#FF#), Errors.Unknown_Opcode, "unknown opcode");
       end;
 
       declare

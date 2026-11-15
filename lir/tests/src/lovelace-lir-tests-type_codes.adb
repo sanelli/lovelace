@@ -13,9 +13,17 @@ package body Lovelace.Lir.Tests.Type_Codes is
       pragma Unreferenced (The_Test);
    begin
       AUnit.Assertions.Assert
-        (Opcodes.Immediate_Length (Opcodes.No_Operation) = 0, "immediate");
+        (Opcodes.Immediate_Length (Opcodes.No_Operation) = 0, "noop immediate");
       AUnit.Assertions.Assert
-        (Opcodes.Encoded_Length (Opcodes.No_Operation) = 2, "encoded");
+        (Opcodes.Encoded_Length (Opcodes.No_Operation) = 2, "noop encoded");
+      AUnit.Assertions.Assert
+        (Opcodes.Immediate_Length (Opcodes.Constant_I32) = 4, "const immediate");
+      AUnit.Assertions.Assert
+        (Opcodes.Encoded_Length (Opcodes.Constant_I32) = 6, "const encoded");
+      AUnit.Assertions.Assert
+        (Opcodes.Immediate_Length (Opcodes.Call) = 4, "call immediate");
+      AUnit.Assertions.Assert
+        (Opcodes.Encoded_Length (Opcodes.Call) = 6, "call encoded");
    end Test_Encoded_Length;
 
    procedure Test_Type_Codes (The_Test : in out Fixture) is
