@@ -47,6 +47,10 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  @param The_Test Unused fixture.
    procedure Test_Module_Procedure_Parameters (The_Test : in out Fixture);
 
+   --  native("wasi", "native-print-integer") lowers to LIR Native_Flag + binding; unknown keys fail.
+   --  @param The_Test Unused fixture.
+   procedure Test_Native_Binding (The_Test : in out Fixture);
+
    --  Every supported integer and float size/signedness maps to the matching LIR Value_Type.
    --  @param The_Test Unused fixture.
    procedure Test_Parameter_Type_Mapping (The_Test : in out Fixture);

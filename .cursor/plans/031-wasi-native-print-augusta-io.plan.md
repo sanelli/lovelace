@@ -19,7 +19,7 @@ todos:
     status: completed
   - id: "6"
     content: "6. IR generator lowers native decls; reject unknown target/key / flavor mismatch; diagnostics LV00021+; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Backend model imports + synthesize native-print-integer core body (WASI 0.3 stdout); Wasm/Wat/Wit emit; AUnit; codegen docs; gnatformat."
     status: pending
@@ -208,6 +208,8 @@ Write [`.cursor/plans/031-wasi-native-print-augusta-io.plan.md`](031-wasi-native
 - Calls to native procedures resolve like any other procedure (step 5 rules); arguments still integer literals only at call sites.
 - Wire `Reporting` / docs [`diagnostics.md`](../../docs/diagnostics.md).
 - AUnit: native lowers; unknown key fails; normal bodies unchanged.
+
+**Done:** IR lowers `Native_Flag` + binding; closed set `wasi`/`native-print-integer`; `Unknown_Native_Binding` → `LV00021`; AUnit + docs.
 
 ### 7. Backend: WASI imports + intrinsic synthesis (macro-step 7)
 

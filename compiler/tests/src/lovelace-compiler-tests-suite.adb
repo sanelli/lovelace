@@ -409,6 +409,10 @@ package body Lovelace.Compiler.Tests.Suite is
               .Test_Module_Procedure_Parameters'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
+           ("ir generator: native binding",
+            Lovelace.Compiler.Tests.Ir_Generator.Test_Native_Binding'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
            ("ir generator: parameter type mapping",
             Lovelace
               .Compiler

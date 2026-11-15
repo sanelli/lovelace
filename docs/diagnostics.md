@@ -72,6 +72,7 @@ When there is no useful source span (or for CLI usage errors):
 | `LV00018` | Not_Exported | IR Generator (imported procedure exists but lacks `Export_Flag`) |
 | `LV00019` | Circular_Import | Unit graph (import cycle among compilation units) |
 | `LV00020` | Ambiguous_Module_Path | Unit graph (two or more distinct `.love` files match one import) |
+| `LV00021` | Unknown_Native_Binding | IR Generator (`native(target, key)` not in the closed wasi intrinsic set) |
 
 Stage-local enums (tokenizer, parser, IR generator, unit graph, …) map to these labels at report time via `Lovelace.Compiler.Reporting` (unit-graph failures also expose `Unit_Graph.Surface_Error_Code`).
 

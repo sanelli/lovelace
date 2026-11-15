@@ -74,6 +74,9 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert
         (Error_Codes.Label (Error_Codes.Ambiguous_Module_Path) = "LV00020",
          "LV00020");
+      AUnit.Assertions.Assert
+        (Error_Codes.Label (Error_Codes.Unknown_Native_Binding) = "LV00021",
+         "LV00021");
    end Test_Error_Code_Labels;
 
    procedure Test_Format_Shape (The_Test : in out Fixture) is
@@ -158,6 +161,10 @@ package body Lovelace.Compiler.Tests.Diagnostics is
         (Reporting.To_Error_Code (Ir_Generator.Not_Exported)
          = Error_Codes.Not_Exported,
          "not exported map");
+      AUnit.Assertions.Assert
+        (Reporting.To_Error_Code (Ir_Generator.Unknown_Native_Binding)
+         = Error_Codes.Unknown_Native_Binding,
+         "unknown native binding map");
    end Test_Stage_Mappings;
 
    procedure Test_Unit_Kind_Label (The_Test : in out Fixture) is

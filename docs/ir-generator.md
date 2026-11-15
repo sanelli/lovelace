@@ -67,9 +67,14 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | Return type `Unit` | `Lir.Types.Unit` |
 | Parameters (name + type) | named LIR parameters (same order) |
 | `Integer` / `Float` type expressions | LIR `I8`…`I64` / `U8`…`U64` / `F32` / `F64` (see table below) |
-| `Export_Flag` / `Entrypoint_Flag` | same-named LIR flag bits (via `Has_Export` / `Has_Entrypoint`) |
+| `Export_Flag` / `Entrypoint_Flag` / `Native_Flag` | same-named LIR flag bits |
+| `native("target", "key")` binding | LIR `Set_Native_Binding` (empty instruction body; no statement lower) |
 | Empty statement body | empty instruction sequence (no `noop`) |
 | Same-unit `MODULE.SUBROUTINE(…)` | `Constant_I32` × N then `Call` (1-based local index) |
+
+### Native bindings (this slice)
+
+Closed set only: `native("wasi", "native-print-integer")`. Any other target/key → `Unknown_Native_Binding` (`LV00021`). Backend synthesis of the intrinsic body is a later step; IR stores the empty native subroutine.
 
 ### Call resolution (this slice)
 
@@ -105,11 +110,13 @@ Origins use [`Lovelace.Common.Source`](source-locations.md). They are copied ont
 | `Invalid_Arguments` | `LV00015` | Wrong arity, out-of-range literal, or unsupported formal |
 | `Call_Without_Import` | `LV00017` | Callee module prefix is not imported by the caller |
 | `Not_Exported` | `LV00018` | Imported procedure exists but lacks `Export_Flag` |
+| `Unknown_Native_Binding` | `LV00021` | `native(target, key)` is not the closed wasi intrinsic |
 
 ## Out of scope
 
 - Emitting `No_Operation` for empty bodies
 - Locals, assignment, non-literal arguments
 - Analysis and optimization
+- Synthesizing WASM bodies for native intrinsics (backend)
 
 WASM / WAT / WIT emission from LIR is implemented separately; see [codegen.md](codegen.md).

@@ -69,6 +69,9 @@ package body Lovelace.Compiler.Ir_Generator is
      (The_Type : Lovelace.Compiler.Types.Type_Expression)
       return Lovelace.Lir.Types.Value_Type;
 
+   function Native_Binding_Allowed (Target : String; Key : String) return Boolean;
+   --  True when (Target, Key) is in the closed wasi intrinsic set for this slice.
+
    function Resolve_Callee
      (Caller_Unit  : Ast.Module;
       Callee_Name  : String;
@@ -217,25 +220,71 @@ package body Lovelace.Compiler.Ir_Generator is
                  Flags         =>
                    Map_Flags (Ast.Get_Flags (Symbol.The_Subroutine)));
             Body_Result    : Generate_Result;
+            Ast_Native     : constant Ast.Native_Binding_Option :=
+              Ast.Native (Symbol.The_Subroutine);
          begin
             Lovelace.Lir.Subroutines.Set_Origin
               (Lir_Subroutine,
                (Name_Span => Ast.Name_Span (Symbol.The_Subroutine),
                 Filename  => Ast.Filename (Symbol.The_Subroutine)));
 
-            Body_Result :=
-              Lower_Statement_Body
-                (Caller_Unit    => Caller_Unit,
-                 The_Body       => Ast.Get_Body (Symbol.The_Subroutine),
-                 Symbols        => Symbols,
-                 Lir_Subroutine => Lir_Subroutine);
-            case Body_Result.Ok is
-               when False =>
-                  return Body_Result;
+            if Ast.Has_Native (Ast.Get_Flags (Symbol.The_Subroutine)) then
+               if not Ast_Native.Present then
+                  return
+                    Failure
+                      (Internal_Error,
+                       Ast.Name_Span (Symbol.The_Subroutine),
+                       "native flag without binding on procedure '"
+                       & Ada.Strings.Unbounded.To_String (Symbol.Procedure_Name)
+                       & "'");
+               end if;
 
-               when True  =>
-                  null;
-            end case;
+               declare
+                  Target : constant String :=
+                    Ada.Strings.Unbounded.To_String (Ast_Native.Value.Target);
+                  Key    : constant String :=
+                    Ada.Strings.Unbounded.To_String (Ast_Native.Value.Key);
+               begin
+                  if not Native_Binding_Allowed (Target, Key) then
+                     return
+                       Failure
+                         (Unknown_Native_Binding,
+                          Ast.Name_Span (Symbol.The_Subroutine),
+                          "unknown native binding native("""
+                          & Target
+                          & """, """
+                          & Key
+                          & """)");
+                  end if;
+
+                  Lovelace.Lir.Subroutines.Set_Native_Binding
+                    (Lir_Subroutine, Target, Key);
+               end;
+            else
+               if Ast_Native.Present then
+                  return
+                    Failure
+                      (Internal_Error,
+                       Ast.Name_Span (Symbol.The_Subroutine),
+                       "native binding without flag on procedure '"
+                       & Ada.Strings.Unbounded.To_String (Symbol.Procedure_Name)
+                       & "'");
+               end if;
+
+               Body_Result :=
+                 Lower_Statement_Body
+                   (Caller_Unit    => Caller_Unit,
+                    The_Body       => Ast.Get_Body (Symbol.The_Subroutine),
+                    Symbols        => Symbols,
+                    Lir_Subroutine => Lir_Subroutine);
+               case Body_Result.Ok is
+                  when False =>
+                     return Body_Result;
+
+                  when True  =>
+                     null;
+               end case;
+            end if;
 
             Lovelace.Lir.Modules.Append_Subroutine
               (Lir_Module, Lir_Subroutine);
@@ -434,6 +483,10 @@ package body Lovelace.Compiler.Ir_Generator is
          Result := Result or Lovelace.Lir.Subroutines.Entrypoint_Flag;
       end if;
 
+      if Ast.Has_Native (Flags) then
+         Result := Result or Lovelace.Lir.Subroutines.Native_Flag;
+      end if;
+
       return Result;
    end Map_Flags;
 
@@ -512,6 +565,11 @@ package body Lovelace.Compiler.Ir_Generator is
             end case;
       end case;
    end Map_Value_Type;
+
+   function Native_Binding_Allowed (Target : String; Key : String) return Boolean is
+   begin
+      return Target = "wasi" and then Key = "native-print-integer";
+   end Native_Binding_Allowed;
 
    function Resolve_Callee
      (Caller_Unit  : Ast.Module;
