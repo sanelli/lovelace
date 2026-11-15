@@ -44,6 +44,19 @@ package Lovelace.Compiler.Ast is
    --  Ordered list of subroutines in a module.
    type Subroutine_Sequence is private;
 
+   --  One unit-level import declaration (module name only; no alias yet).
+   --  @field Module_Name UTF-8 dotted module name.
+   --  @field Name_Span Source span of the whole qualified name.
+   --  @field Filename Optional shared filename from the name token.
+   type Import_Declaration is record
+      Module_Name : Ada.Strings.Unbounded.Unbounded_String;
+      Name_Span   : Source.Source_Span;
+      Filename    : Source.Filename_Option;
+   end record;
+
+   --  Ordered list of import declarations on a compilation unit.
+   type Import_Sequence is private;
+
    --  One compilation-unit module in the AST.
    type Module is private;
 
@@ -172,12 +185,33 @@ package Lovelace.Compiler.Ast is
    --  @return Subroutine at Index.
    function Element (Sequence : Subroutine_Sequence; Index : Positive) return Subroutine;
 
-   --  Build a module with Name, Kind, and Subroutines (may be empty).
+   --  Empty import sequence.
+   --  @return Sequence with no elements.
+   function Empty_Import_Sequence return Import_Sequence;
+
+   --  Append The_Import to the end of Sequence.
+   --  @param Sequence Sequence to extend.
+   --  @param The_Import Import declaration to append.
+   procedure Append (Sequence : in out Import_Sequence; The_Import : Import_Declaration);
+
+   --  Number of imports in Sequence.
+   --  @param Sequence Import list.
+   --  @return Element count.
+   function Length (Sequence : Import_Sequence) return Natural;
+
+   --  Import at Index (1 .. Length (Sequence)).
+   --  @param Sequence Import list.
+   --  @param Index 1-based index.
+   --  @return Import at Index.
+   function Element (Sequence : Import_Sequence; Index : Positive) return Import_Declaration;
+
+   --  Build a module with Name, Kind, Imports, and Subroutines (may be empty).
    --  @param Name UTF-8 module name (may be dotted for Module_Unit).
    --  @param Name_Span Source span of the name (whole qualified name).
    --  @param Filename Optional shared filename from the name token.
    --  @param Span Source span covering the whole compilation unit.
    --  @param Kind Program_Unit or Module_Unit.
+   --  @param Imports Ordered unit-level import list (may be empty).
    --  @param Subroutines Ordered subroutine list (empty for empty modules).
    --  @return Module value.
    function Create_Module
@@ -186,6 +220,7 @@ package Lovelace.Compiler.Ast is
       Filename    : Source.Filename_Option;
       Span        : Source.Source_Span;
       Kind        : Unit_Kind;
+      Imports     : Import_Sequence;
       Subroutines : Subroutine_Sequence) return Module;
 
    --  UTF-8 name of The_Module.
@@ -212,6 +247,17 @@ package Lovelace.Compiler.Ast is
    --  @param The_Module Module to query.
    --  @return Unit span.
    function Span (The_Module : Module) return Source.Source_Span;
+
+   --  Number of imports in The_Module.
+   --  @param The_Module Module to query.
+   --  @return Import count.
+   function Import_Count (The_Module : Module) return Natural;
+
+   --  Import at Index (1 .. Import_Count (The_Module)).
+   --  @param The_Module Module to query.
+   --  @param Index 1-based index.
+   --  @return Import at Index.
+   function Get_Import (The_Module : Module; Index : Positive) return Import_Declaration;
 
    --  Number of subroutines in The_Module.
    --  @param The_Module Module to query.
@@ -255,12 +301,19 @@ private
       Items : Subroutine_Vectors.Vector;
    end record;
 
+   package Import_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Import_Declaration);
+
+   type Import_Sequence is record
+      Items : Import_Vectors.Vector;
+   end record;
+
    type Module is record
       Module_Name     : Ada.Strings.Unbounded.Unbounded_String;
       Name_Span_Value : Source.Source_Span;
       Filename_Value  : Source.Filename_Option;
       Span_Value      : Source.Source_Span;
       Kind_Value      : Unit_Kind := Program_Unit;
+      Imports         : Import_Sequence;
       Subroutines     : Subroutine_Sequence;
    end record;
 

@@ -6,7 +6,7 @@ Macro implementation steps for the first end-to-end I/O milestone:
 - Print of **signed integer** (not strings yet)
 - **WASI** flavor first (stock `wasmtime run`; no `lovelace_jit` / `love:` / `libaugusta` yet)
 - Unit-level `import IDENTIFIER(.IDENTIFIER)*;` with calls only as `MODULE.SUBROUTINE`
-- Imports allowed in `module` and `program` units only (not inside subroutines)
+- Leading imports before the `program` / `module` declaration (not after the unit header; not inside subroutines)
 - Later: build all three flavors into separate output folders when those bodies exist
 
 Related project rules: Augusta flavors (`native` / `wasi` / `web`), component codegen (`wasi:cli/run`), directives as real language syntax (not a separate preprocessor).
@@ -32,8 +32,8 @@ import_declaration = "import" , identifier , { "." , identifier } , ";" ;
 Example:
 
 ```love
-program Hello;
 import augusta.std.io;
+program Hello;
 begin
    augusta.std.io.print(42);
 end.
@@ -45,7 +45,10 @@ Reserved for later:
 
 ```love
 import augusta.std.io as stdio;
-(* stdio.print(42); *)
+program Hello;
+begin
+   (* stdio.print(42); *)
+end.
 ```
 
 ### Augusta shape (single file, `#if`)
@@ -107,11 +110,13 @@ Steps 1–3 are mostly frontend. Steps 4–5 make the language callable across m
 
 **Goal:** Parse and persist imports; no resolution yet.
 
-- Grammar as above; only in `program` and `module` unit headers (before procedures / before `begin`).
+- Grammar as above; file-leading imports before the `program` / `module` declaration.
 - AST: list of imported module names (keep shape open for a future optional `as` alias).
 - Lower to LIR `Dependencies` (module names only).
 - Docs: reserve `import … as …` without implementing it.
-- Tests: parse success/failure; imports rejected inside subroutine bodies.
+- Tests: parse success/failure; imports rejected after the unit header / inside subroutine bodies.
+
+**Status (issue [#25](https://github.com/sanelli/lovelace/issues/25)):** Done for this slice — keyword `import`, leading `{ import_declaration }` before `program`/`module`, AST `Import_Sequence`, IR `Append_Dependency`, sample [`ImportDecl.love`](../../samples/import/ImportDecl.love); `import … as …` reserved.
 
 ### 4. Statements: qualified calls + integer literal arguments
 

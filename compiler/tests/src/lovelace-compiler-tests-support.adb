@@ -265,6 +265,7 @@ package body Lovelace.Compiler.Tests.Support is
                  Filename    => Source.Absent_Filename,
                  Span        => Origin,
                  Kind        => Ast.Program_Unit,
+                 Imports     => Ast.Empty_Import_Sequence,
                  Subroutines => Ast.Empty_Subroutine_Sequence);
       end case;
    end Must_Parse;
@@ -292,6 +293,7 @@ package body Lovelace.Compiler.Tests.Support is
                  Filename    => Source.Absent_Filename,
                  Span        => Origin,
                  Kind        => Ast.Program_Unit,
+                 Imports     => Ast.Empty_Import_Sequence,
                  Subroutines => Ast.Empty_Subroutine_Sequence);
       end case;
    end Must_Parse;

@@ -75,6 +75,10 @@ package Lovelace.Compiler.Tests.Parser is
    --  @param The_Test Unused fixture.
    procedure Test_Identifier_Names (The_Test : in out Fixture);
 
+   --  Leading imports before program/module; placement and clash failures.
+   --  @param The_Test Unused fixture.
+   procedure Test_Import_Declarations (The_Test : in out Fixture);
+
    --  module with begin is Unexpected_Token (no begin in module_unit).
    --  @param The_Test Unused fixture.
    procedure Test_Module_Begin_Rejected (The_Test : in out Fixture);

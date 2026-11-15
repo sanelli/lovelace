@@ -47,6 +47,10 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Export_Keyword (The_Test : in out Fixture);
 
+   --  import alone and import Foo.Bar; Import / importer are identifiers.
+   --  @param The_Test Unused fixture.
+   procedure Test_Import_Keyword (The_Test : in out Fixture);
+
    --  Integer and float literal forms tokenize successfully.
    --  @param The_Test Unused fixture.
    procedure Test_Numeric_Literals (The_Test : in out Fixture);

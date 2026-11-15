@@ -47,6 +47,7 @@ package body Lovelace.Compiler.Parser is
       Filename    : Source.Filename_Option := Source.Absent_Filename;
       Kind        : Ast.Unit_Kind := Ast.Program_Unit;
       Stop_Span   : Source.Source_Span := Origin_Span;
+      Imports     : Ast.Import_Sequence := Ast.Empty_Import_Sequence;
       Subroutines : Ast.Subroutine_Sequence := Ast.Empty_Subroutine_Sequence;
    end record;
 
@@ -74,6 +75,7 @@ package body Lovelace.Compiler.Parser is
      (The_Cursor : in out Cursor; Source_Text : String; Expected : Tokens.Punctuation_Subtype; Label : String)
       return Step_Result;
    function Failure_From_Step (Step : Step_Result) return Parse_Result;
+   function Import_Name_Exists (Imports : Ast.Import_Sequence; Name : String) return Boolean;
    function Is_Directive (The_Token : Tokens.Token; Expected : Tokens.Directive_Subtype) return Boolean;
    function Is_Keyword (The_Token : Tokens.Token; Expected : Tokens.Keyword_Subtype) return Boolean;
    function Is_Punctuation (The_Token : Tokens.Token; Expected : Tokens.Punctuation_Subtype) return Boolean;
@@ -91,6 +93,10 @@ package body Lovelace.Compiler.Parser is
       return Step_Result;
    function Parse_Float_Type
      (The_Cursor : in out Cursor; Source_Text : String; The_Type : out Types.Type_Expression) return Step_Result;
+   function Parse_Import_Declaration
+     (The_Cursor : in out Cursor; Source_Text : String; Imports : in out Ast.Import_Sequence) return Step_Result;
+   function Parse_Import_List
+     (The_Cursor : in out Cursor; Source_Text : String; Imports : out Ast.Import_Sequence) return Step_Result;
    function Parse_Integer_Type
      (The_Cursor : in out Cursor; Source_Text : String; The_Type : out Types.Type_Expression) return Step_Result;
    function Parse_Module_Declaration
@@ -121,7 +127,6 @@ package body Lovelace.Compiler.Parser is
    function Parse_Procedure_Declaration
      (The_Cursor : in out Cursor; Source_Text : String; The_Unit : in out Unit_Parse; Keep_Declarations : Boolean)
       return Step_Result;
-   function String_Literal_Content (Source_Text : String; The_Token : Tokens.Token) return String;
    function Parse_Program_Unit
      (The_Cursor : in out Cursor; Source_Text : String; The_Unit : out Unit_Parse) return Step_Result;
    function Parse_Qualified_Identifier
@@ -133,7 +138,9 @@ package body Lovelace.Compiler.Parser is
    function Parse_Type_Name
      (The_Cursor : in out Cursor; Source_Text : String; The_Type : out Types.Type_Expression) return Step_Result;
    function Peek (The_Cursor : Cursor) return Tokens.Token;
+   function Reject_Self_Imports (The_Unit : Unit_Parse) return Step_Result;
    function Step_End_Of_Input (The_Cursor : Cursor; Detail : String) return Step_Result;
+   function String_Literal_Content (Source_Text : String; The_Token : Tokens.Token) return String;
    function Subroutine_Name_Exists (Subroutines : Ast.Subroutine_Sequence; Name : String) return Boolean;
    function To_Parse_Result (First_Span : Source.Source_Span; The_Unit : Unit_Parse) return Parse_Result;
 
@@ -173,6 +180,9 @@ package body Lovelace.Compiler.Parser is
 
                when Tokens.Export_Keyword    =>
                   return "keyword ""export""";
+
+               when Tokens.Import_Keyword    =>
+                  return "keyword ""import""";
 
                when Tokens.Procedure_Keyword =>
                   return "keyword ""procedure""";
@@ -382,6 +392,17 @@ package body Lovelace.Compiler.Parser is
       end case;
    end Failure_From_Step;
 
+   function Import_Name_Exists (Imports : Ast.Import_Sequence; Name : String) return Boolean is
+   begin
+      for Index in 1 .. Ast.Length (Imports) loop
+         if Ada.Strings.Unbounded.To_String (Ast.Element (Imports, Index).Module_Name) = Name then
+            return True;
+         end if;
+      end loop;
+
+      return False;
+   end Import_Name_Exists;
+
    function Is_Directive (The_Token : Tokens.Token; Expected : Tokens.Directive_Subtype) return Boolean is
    begin
       return The_Token.Kind = Tokens.Directive and then The_Token.Directive_Value = Expected;
@@ -488,7 +509,10 @@ package body Lovelace.Compiler.Parser is
    end Parse_Block;
 
    function Parse_Compilation_Unit
-     (The_Cursor : in out Cursor; Source_Text : String; The_Unit : out Unit_Parse) return Step_Result is
+     (The_Cursor : in out Cursor; Source_Text : String; The_Unit : out Unit_Parse) return Step_Result
+   is
+      Imports : Ast.Import_Sequence;
+      Step    : Step_Result;
    begin
       The_Unit :=
         (Module_Name => Ada.Strings.Unbounded.Null_Unbounded_String,
@@ -496,7 +520,17 @@ package body Lovelace.Compiler.Parser is
          Filename    => Source.Absent_Filename,
          Kind        => Ast.Program_Unit,
          Stop_Span   => Origin_Span,
+         Imports     => Ast.Empty_Import_Sequence,
          Subroutines => Ast.Empty_Subroutine_Sequence);
+
+      Step := Parse_Import_List (The_Cursor => The_Cursor, Source_Text => Source_Text, Imports => Imports);
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            null;
+      end case;
 
       if At_End (The_Cursor) then
          return Step_End_Of_Input (The_Cursor, "expected keyword ""program"" or ""module"", found end of input");
@@ -517,14 +551,15 @@ package body Lovelace.Compiler.Parser is
 
          case Current.Keyword_Value is
             when Tokens.Program_Keyword  =>
-               return Parse_Program_Unit (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Unit => The_Unit);
+               Step := Parse_Program_Unit (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Unit => The_Unit);
 
             when Tokens.Module_Keyword   =>
-               return Parse_Module_Unit (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Unit => The_Unit);
+               Step := Parse_Module_Unit (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Unit => The_Unit);
 
             when Tokens.Begin_Keyword
                | Tokens.End_Keyword
                | Tokens.Export_Keyword
+               | Tokens.Import_Keyword
                | Tokens.Procedure_Keyword
                | Tokens.Integer_Keyword
                | Tokens.Float_Keyword
@@ -539,6 +574,15 @@ package body Lovelace.Compiler.Parser is
                       "expected keyword ""program"" or ""module"", found " & Describe_Token (Source_Text, Current));
          end case;
       end;
+
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            The_Unit.Imports := Imports;
+            return Reject_Self_Imports (The_Unit);
+      end case;
    end Parse_Compilation_Unit;
 
    function Parse_Flavor_Condition
@@ -817,6 +861,90 @@ package body Lovelace.Compiler.Parser is
       end case;
    end Parse_Float_Type;
 
+   function Parse_Import_Declaration
+     (The_Cursor : in out Cursor; Source_Text : String; Imports : in out Ast.Import_Sequence) return Step_Result
+   is
+      Step        : Step_Result;
+      Module_Name : Ada.Strings.Unbounded.Unbounded_String;
+      Name_Span   : Source.Source_Span := Origin_Span;
+      Filename    : Source.Filename_Option := Source.Absent_Filename;
+   begin
+      --  import_declaration = "import" , qualified_identifier , ";"
+      Step :=
+        Expect_Keyword
+          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Import_Keyword, Label => "import");
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            null;
+      end case;
+
+      Step :=
+        Parse_Qualified_Identifier
+          (The_Cursor  => The_Cursor,
+           Source_Text => Source_Text,
+           Module_Name => Module_Name,
+           Name_Span   => Name_Span,
+           Filename    => Filename);
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            null;
+      end case;
+
+      declare
+         Name_Text : constant String := Ada.Strings.Unbounded.To_String (Module_Name);
+      begin
+         if Import_Name_Exists (Imports, Name_Text) then
+            return
+              Make_Failure
+                (Code     => Name_Clash,
+                 Span     => Name_Span,
+                 Filename => Filename,
+                 Detail   => "duplicate import """ & Name_Text & '"');
+         end if;
+      end;
+
+      Step :=
+        Expect_Punctuation
+          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Semicolon, Label => ";");
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            Ast.Append
+              (Sequence   => Imports,
+               The_Import => (Module_Name => Module_Name, Name_Span => Name_Span, Filename => Filename));
+            return (Ok => True);
+      end case;
+   end Parse_Import_Declaration;
+
+   function Parse_Import_List
+     (The_Cursor : in out Cursor; Source_Text : String; Imports : out Ast.Import_Sequence) return Step_Result
+   is
+      Step : Step_Result;
+   begin
+      Imports := Ast.Empty_Import_Sequence;
+
+      while not At_End (The_Cursor) and then Is_Keyword (Peek (The_Cursor), Tokens.Import_Keyword) loop
+         Step := Parse_Import_Declaration (The_Cursor => The_Cursor, Source_Text => Source_Text, Imports => Imports);
+         case Step.Ok is
+            when False =>
+               return Step;
+
+            when True  =>
+               null;
+         end case;
+      end loop;
+
+      return (Ok => True);
+   end Parse_Import_List;
+
    function Parse_Integer_Type
      (The_Cursor : in out Cursor; Source_Text : String; The_Type : out Types.Type_Expression) return Step_Result
    is
@@ -1020,6 +1148,7 @@ package body Lovelace.Compiler.Parser is
          Filename    => Source.Absent_Filename,
          Kind        => Ast.Module_Unit,
          Stop_Span   => Origin_Span,
+         Imports     => Ast.Empty_Import_Sequence,
          Subroutines => Ast.Empty_Subroutine_Sequence);
 
       --  module_unit = "module" , qualified_identifier , ";" , { module_declaration } , "end" , "."
@@ -1470,6 +1599,7 @@ package body Lovelace.Compiler.Parser is
          Filename    => Source.Absent_Filename,
          Kind        => Ast.Program_Unit,
          Stop_Span   => Origin_Span,
+         Imports     => Ast.Empty_Import_Sequence,
          Subroutines => Ast.Empty_Subroutine_Sequence);
 
       --  program_unit = "program" , identifier , ";" , "begin" , "end" , "."
@@ -1632,6 +1762,28 @@ package body Lovelace.Compiler.Parser is
       return Tokens.Element (The_Cursor.Token_List, The_Cursor.Next_Index);
    end Peek;
 
+   function Reject_Self_Imports (The_Unit : Unit_Parse) return Step_Result is
+      Unit_Name : constant String := Ada.Strings.Unbounded.To_String (The_Unit.Module_Name);
+   begin
+      for Index in 1 .. Ast.Length (The_Unit.Imports) loop
+         declare
+            The_Import  : constant Ast.Import_Declaration := Ast.Element (The_Unit.Imports, Index);
+            Import_Name : constant String := Ada.Strings.Unbounded.To_String (The_Import.Module_Name);
+         begin
+            if Import_Name = Unit_Name then
+               return
+                 Make_Failure
+                   (Code     => Name_Clash,
+                    Span     => The_Import.Name_Span,
+                    Filename => The_Import.Filename,
+                    Detail   => "module cannot import itself """ & Import_Name & '"');
+            end if;
+         end;
+      end loop;
+
+      return (Ok => True);
+   end Reject_Self_Imports;
+
    function Step_End_Of_Input (The_Cursor : Cursor; Detail : String) return Step_Result is
    begin
       if The_Cursor.Has_Consumed then
@@ -1697,6 +1849,7 @@ package body Lovelace.Compiler.Parser is
                     Filename    => The_Unit.Filename,
                     Span        => Unit_Span,
                     Kind        => Ast.Program_Unit,
+                    Imports     => The_Unit.Imports,
                     Subroutines => Subroutines);
                return (Ok => True, The_Module => The_Module);
             end;
@@ -1711,6 +1864,7 @@ package body Lovelace.Compiler.Parser is
                     Filename    => The_Unit.Filename,
                     Span        => Unit_Span,
                     Kind        => Ast.Module_Unit,
+                    Imports     => The_Unit.Imports,
                     Subroutines => The_Unit.Subroutines));
       end case;
    end To_Parse_Result;

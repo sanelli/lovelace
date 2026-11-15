@@ -177,6 +177,31 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Support.Assert_Punctuation (Spaced_Tokens, 2, Tokens.Semicolon, "end ; semicolon");
    end Test_Glued_Punctuation;
 
+   procedure Test_Import_Keyword (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Alone            : constant String := "import";
+      Qualified        : constant String := "import Foo.Bar;";
+      Import_Case      : constant String := "Import";
+      Importer         : constant String := "importer";
+      Alone_Tokens     : constant Tokens.Token_Sequence := Support.Must_Succeed (Alone, "import");
+      Qualified_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Qualified, "import Foo.Bar;");
+      Case_Tokens      : constant Tokens.Token_Sequence := Support.Must_Succeed (Import_Case, "Import");
+      Importer_Tokens  : constant Tokens.Token_Sequence := Support.Must_Succeed (Importer, "importer");
+   begin
+      Support.Assert_Token_Count (Alone_Tokens, 1, "import");
+      Support.Assert_Keyword (Alone, Alone_Tokens, 1, Tokens.Import_Keyword, "import keyword");
+      Support.Assert_Token_Count (Qualified_Tokens, 5, "import Foo.Bar;");
+      Support.Assert_Keyword (Qualified, Qualified_Tokens, 1, Tokens.Import_Keyword, "import before name");
+      Support.Assert_Identifier (Qualified, Qualified_Tokens, 2, "Foo", "Foo");
+      Support.Assert_Punctuation (Qualified_Tokens, 3, Tokens.Full_Stop, "dot");
+      Support.Assert_Identifier (Qualified, Qualified_Tokens, 4, "Bar", "Bar");
+      Support.Assert_Punctuation (Qualified_Tokens, 5, Tokens.Semicolon, "semicolon");
+      Support.Assert_Token_Count (Case_Tokens, 1, "Import");
+      Support.Assert_Identifier (Import_Case, Case_Tokens, 1, "Import", "Import");
+      Support.Assert_Token_Count (Importer_Tokens, 1, "importer");
+      Support.Assert_Identifier (Importer, Importer_Tokens, 1, "importer", "importer");
+   end Test_Import_Keyword;
+
    procedure Test_Invalid_Utf_8 (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Broken : constant String := Character'Val (16#FF#) & "+";

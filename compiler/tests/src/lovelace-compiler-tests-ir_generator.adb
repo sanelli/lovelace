@@ -36,6 +36,7 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       Ast_Subroutine : constant Ast.Subroutine := Ast.Get_Subroutine (Ast_Module, 1);
    begin
       AUnit.Assertions.Assert (Modules.Name (Lir_Module) = Expected_Name, Message & ": module name");
+      AUnit.Assertions.Assert (Modules.Dependency_Count (Lir_Module) = 0, Message & ": no dependencies");
       AUnit.Assertions.Assert (Modules.Subroutine_Count (Lir_Module) = 1, Message & ": one subroutine");
       AUnit.Assertions.Assert
         (Ada.Strings.Unbounded.To_String (The_Signature.Name) = Expected_Name, Message & ": subroutine name");
@@ -149,6 +150,7 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
            Filename    => Source.Absent_Filename,
            Span        => Unit_Span,
            Kind        => Ast.Program_Unit,
+           Imports     => Ast.Empty_Import_Sequence,
            Subroutines => Ast_Subroutines);
       Lir_Module := Support.Must_Generate (Ast_Module, "export only");
       Lir_Sub := Modules.Get_Subroutine (Lir_Module, 1);
@@ -224,6 +226,39 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       Assert_Entrypoint_Lir (Cafe_Lir, Cafe_Name, Cafe_Ast, "unicode name");
       Assert_Entrypoint_Lir (At_Lir, "@foo", At_Ast, "@foo name");
    end Test_Identifier_Names;
+
+   procedure Test_Import_Dependencies (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Program_Source : constant String :=
+        "import augusta.std.io;"
+        & ASCII.LF
+        & "import Other;"
+        & ASCII.LF
+        & "program Hello;"
+        & ASCII.LF
+        & "begin"
+        & ASCII.LF
+        & "end.";
+      Module_Source  : constant String := "import Lib.A;" & ASCII.LF & "module Host; end.";
+      Empty_Source   : constant String := "program EmptyImports; begin end.";
+      Program_Ast    : constant Ast.Module := Support.Must_Parse (Program_Source, "program imports");
+      Module_Ast     : constant Ast.Module := Support.Must_Parse (Module_Source, "module imports");
+      Empty_Ast      : constant Ast.Module := Support.Must_Parse (Empty_Source, "empty imports");
+      Program_Lir    : constant Modules.Module := Support.Must_Generate (Program_Ast, "program imports");
+      Module_Lir     : constant Modules.Module := Support.Must_Generate (Module_Ast, "module imports");
+      Empty_Lir      : constant Modules.Module := Support.Must_Generate (Empty_Ast, "empty imports");
+   begin
+      AUnit.Assertions.Assert (Modules.Dependency_Count (Program_Lir) = 2, "program imports: count");
+      AUnit.Assertions.Assert (Modules.Dependency_Name (Program_Lir, 1) = "augusta.std.io", "program imports: first");
+      AUnit.Assertions.Assert (Modules.Dependency_Name (Program_Lir, 2) = "Other", "program imports: second");
+      AUnit.Assertions.Assert (Modules.Subroutine_Count (Program_Lir) = 1, "program imports: entrypoint");
+
+      AUnit.Assertions.Assert (Modules.Dependency_Count (Module_Lir) = 1, "module imports: count");
+      AUnit.Assertions.Assert (Modules.Dependency_Name (Module_Lir, 1) = "Lib.A", "module imports: first");
+      AUnit.Assertions.Assert (Modules.Subroutine_Count (Module_Lir) = 0, "module imports: no subs");
+
+      AUnit.Assertions.Assert (Modules.Dependency_Count (Empty_Lir) = 0, "empty imports: count");
+   end Test_Import_Dependencies;
 
    procedure Test_Module_Procedure_Parameters (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);

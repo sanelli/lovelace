@@ -48,7 +48,7 @@ Empty source and whitespace-only source succeed with an empty token sequence.
 
 | `Token_Kind` | Subtype | This slice |
 | --- | --- | --- |
-| `Keyword` | `Keyword_Subtype` | `program`, `module`, `begin`, `end`, `export`, `procedure`, `integer`, `float`, `signed`, `unsigned` |
+| `Keyword` | `Keyword_Subtype` | `program`, `module`, `begin`, `end`, `export`, `import`, `procedure`, `integer`, `float`, `signed`, `unsigned` |
 | `Identifier` | (none) | Names, including `@foo`, `café`, emoji |
 | `Punctuation` | `Punctuation_Subtype` | `;` `.` `(` `)` `,` `:` `<` `>` `=` |
 | `Integer_Literal` | (none) | Optional sign/base/suffix forms (see [token-grammar.md](token-grammar.md)) |

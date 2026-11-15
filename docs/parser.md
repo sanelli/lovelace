@@ -5,11 +5,11 @@
 This slice accepts:
 
 ```text
-program IDENTIFIER; begin end.
-module QUALIFIED_NAME; { module_declaration } end.
+{ import QUALIFIED_NAME; } program IDENTIFIER; begin end.
+{ import QUALIFIED_NAME; } module QUALIFIED_NAME; { module_declaration } end.
 ```
 
-A `module_declaration` is either a `procedure` or a **flavor conditional** (`#if` … `#end`). Procedures appear only in `module` units (not `program`). Parameter lists are Ada-style (commas within a typed group; semicolons between groups). Flavor selection: [directives.md](directives.md). Lowering AST to LIR is documented in [ir-generator.md](ir-generator.md). Frontend AST and types remain distinct from LIR packages. The CLI wires Tokenize → Parse → Generate → backends; see [cli.md](cli.md).
+Leading `import` declarations (if any) come **before** `program` / `module`. A `module_declaration` is either a `procedure` or a **flavor conditional** (`#if` … `#end`). Procedures appear only in `module` units (not `program`). Parameter lists are Ada-style (commas within a typed group; semicolons between groups). Flavor selection: [directives.md](directives.md). Lowering AST to LIR is documented in [ir-generator.md](ir-generator.md). Frontend AST and types remain distinct from LIR packages. The CLI wires Tokenize → Parse → Generate → backends; see [cli.md](cli.md).
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). Lexical tokens come from [tokenizer.md](tokenizer.md). Source spans and filenames: [source-locations.md](source-locations.md).
 
@@ -27,7 +27,7 @@ Callers tokenize first. `Parse` does not call `Tokenize`. Callers that need LIR 
 | --- | --- |
 | `Lovelace.Compiler.Flavor` | `Wasi` / `Native` / `Web`, `Default`, `Name`, `Try_Parse_Name` |
 | `Lovelace.Compiler.Types` | Frontend `Type_Expression` (`Unit`, `Integer`, `Float`) |
-| `Lovelace.Compiler.Ast` | Module, `Unit_Kind`, subroutine, parameters, `Full_Name`, flags, empty body |
+| `Lovelace.Compiler.Ast` | Module, `Unit_Kind`, imports, subroutine, parameters, `Full_Name`, flags, empty body |
 | `Lovelace.Compiler.Parser` | `Parse`, `Parse_Result`, `Parser_Error` |
 | `Lovelace.Compiler.Ir_Generator` | AST → LIR (see [ir-generator.md](ir-generator.md)) |
 
@@ -53,6 +53,7 @@ Handle both discriminants. Do not read `The_Module` when `Ok` is `False`.
 
 See [compilation-unit-grammar.md](compilation-unit-grammar.md) for the full EBNF. Summary:
 
+- Leading imports: zero or more `import` qualified-name `;` before the unit keyword.
 - Programs: `program` name `;` `begin` `end` `.` (no procedures, no `#if`).
 - Modules: `module` qualified name `;` zero or more `module_declaration`s, then `end` `.`.
 - `module_declaration`: `procedure` **or** flavor conditional (`#if flavor = "…" … `#end`).
@@ -60,13 +61,14 @@ See [compilation-unit-grammar.md](compilation-unit-grammar.md) for the full EBNF
 - Procedure: `procedure` name `(` [parameter list] `)` `;` `begin` `end` `;` — **no** `;` after `begin`.
 - Types: `integer` / `signed integer` / `unsigned integer` with optional `<8|16|32|64>`; `float` with optional `<32|64>`.
 
-Keywords are case-sensitive. The unit terminator after a unit-level `end` is only `.` (`Full_Stop`). Procedure bodies end with `end;`. Modules have **no** unit-level `begin`. Extra tokens after a complete unit are `Unexpected_Trailing`. `#if` is **not** allowed inside procedure bodies in this slice.
+Keywords are case-sensitive. The unit terminator after a unit-level `end` is only `.` (`Full_Stop`). Procedure bodies end with `end;`. Modules have **no** unit-level `begin`. Extra tokens after a complete unit are `Unexpected_Trailing`. `#if` is **not** allowed inside procedure bodies in this slice. `import` is **not** allowed after `program`/`module`, inside bodies, or inside `#if` arms. `import … as …` is reserved and not parsed.
 
 ## AST shape
 
 **Program** (`Unit_Kind = Program_Unit`):
 
 - A module named `IDENTIFIER`
+- Ordered `Import_Declaration` list (may be empty)
 - One subroutine with the same name
 - Empty body; return type **unit**; no parameters
 - Flags: both `Export_Flag` and `Entrypoint_Flag`
@@ -74,12 +76,14 @@ Keywords are case-sensitive. The unit terminator after a unit-level `end` is onl
 **Module** (`Unit_Kind = Module_Unit`):
 
 - A module named the qualified identifier (UTF-8 with `.` separators, e.g. `Foo.Bar`)
+- Ordered `Import_Declaration` list (may be empty)
 - Zero or more procedures from **active** declarations only. Optional `export` sets `Export_Flag` (not `Entrypoint_Flag`); plain procedures keep flags `0`. Inactive `#if` arms do not appear in the AST.
 - Each procedure has unqualified `Name`, `Full_Name` = `ModuleName.ProcedureName`, ordered parameters, Unit return, empty body
 - `Name_Span` on the module covers the whole qualified name
 
 ### Name rules
 
+- Import module names unique; import name ≠ unit module name (self-import)
 - Parameter names unique within a procedure
 - Parameter name ≠ module name; ≠ any procedure name in the module
 - Procedure name ≠ module name; procedure names unique in the module
@@ -96,7 +100,7 @@ Spans cover names and the whole unit (first token through the final `.`). Option
 | `Unexpected_End_Of_Input` | A token was required but the cursor was at end |
 | `Unexpected_Token` | Wrong kind/subtype at the cursor (including bad type sizes such as `float<16>`, or `#if` / `#elsif` / `#else` / `#end` misplaced) |
 | `Unexpected_Trailing` | Tokens remain after a complete unit |
-| `Name_Clash` | Duplicate or conflicting procedure/parameter name (selected set only) |
+| `Name_Clash` | Duplicate or conflicting procedure/parameter/import name (selected set only; includes self-import) |
 | `Invalid_Flavor_Condition` | Flavor string is not exactly `wasi` / `native` / `web` ([`LV00012`](diagnostics.md)) |
 
 Empty input / empty token list reports `Unexpected_End_Of_Input` at a synthetic span `(1,1,1)` when nothing was consumed.

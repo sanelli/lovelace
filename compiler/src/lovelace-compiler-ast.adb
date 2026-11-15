@@ -10,12 +10,18 @@ package body Lovelace.Compiler.Ast is
       Sequence.Items.Append (The_Subroutine);
    end Append;
 
+   procedure Append (Sequence : in out Import_Sequence; The_Import : Import_Declaration) is
+   begin
+      Sequence.Items.Append (The_Import);
+   end Append;
+
    function Create_Module
      (Name        : String;
       Name_Span   : Source.Source_Span;
       Filename    : Source.Filename_Option;
       Span        : Source.Source_Span;
       Kind        : Unit_Kind;
+      Imports     : Import_Sequence;
       Subroutines : Subroutine_Sequence) return Module is
    begin
       return
@@ -24,6 +30,7 @@ package body Lovelace.Compiler.Ast is
          Filename_Value  => Filename,
          Span_Value      => Span,
          Kind_Value      => Kind,
+         Imports         => Imports,
          Subroutines     => Subroutines);
    end Create_Module;
 
@@ -58,10 +65,20 @@ package body Lovelace.Compiler.Ast is
       return Sequence.Items.Element (Index);
    end Element;
 
+   function Element (Sequence : Import_Sequence; Index : Positive) return Import_Declaration is
+   begin
+      return Sequence.Items.Element (Index);
+   end Element;
+
    function Empty_Body return Statement_Sequence is
    begin
       return (Count => 0);
    end Empty_Body;
+
+   function Empty_Import_Sequence return Import_Sequence is
+   begin
+      return (Items => Import_Vectors.Empty_Vector);
+   end Empty_Import_Sequence;
 
    function Empty_Parameter_Sequence return Parameter_Sequence is
    begin
@@ -98,6 +115,11 @@ package body Lovelace.Compiler.Ast is
       return The_Subroutine.Flags_Value;
    end Get_Flags;
 
+   function Get_Import (The_Module : Module; Index : Positive) return Import_Declaration is
+   begin
+      return Element (The_Module.Imports, Index);
+   end Get_Import;
+
    function Get_Subroutine (The_Module : Module; Index : Positive) return Subroutine is
    begin
       return Element (The_Module.Subroutines, Index);
@@ -112,6 +134,11 @@ package body Lovelace.Compiler.Ast is
    begin
       return (Flags and Export_Flag) /= 0;
    end Has_Export;
+
+   function Import_Count (The_Module : Module) return Natural is
+   begin
+      return Length (The_Module.Imports);
+   end Import_Count;
 
    function Kind (The_Module : Module) return Unit_Kind is
    begin
@@ -129,6 +156,11 @@ package body Lovelace.Compiler.Ast is
    end Length;
 
    function Length (Sequence : Subroutine_Sequence) return Natural is
+   begin
+      return Natural (Sequence.Items.Length);
+   end Length;
+
+   function Length (Sequence : Import_Sequence) return Natural is
    begin
       return Natural (Sequence.Items.Length);
    end Length;

@@ -35,6 +35,10 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  @param The_Test Unused fixture.
    procedure Test_Identifier_Names (The_Test : in out Fixture);
 
+   --  Leading imports lower to LIR Dependencies in source order; empty imports stay zero.
+   --  @param The_Test Unused fixture.
+   procedure Test_Import_Dependencies (The_Test : in out Fixture);
+
    --  Module procedure parameters lower to named LIR signature entries with mapped types.
    --  @param The_Test Unused fixture.
    procedure Test_Module_Procedure_Parameters (The_Test : in out Fixture);

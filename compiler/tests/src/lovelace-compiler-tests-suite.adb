@@ -45,6 +45,9 @@ package body Lovelace.Compiler.Tests.Suite is
            ("tokenizer: export keyword", Lovelace.Compiler.Tests.Tokenizer.Test_Export_Keyword'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
+           ("tokenizer: import keyword", Lovelace.Compiler.Tests.Tokenizer.Test_Import_Keyword'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
            ("tokenizer: ascii identifiers", Lovelace.Compiler.Tests.Tokenizer.Test_Ascii_Identifiers'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
@@ -141,6 +144,9 @@ package body Lovelace.Compiler.Tests.Suite is
            ("parser: identifier names", Lovelace.Compiler.Tests.Parser.Test_Identifier_Names'Access));
       Result.Add_Test
         (Parser_Caller.Create
+           ("parser: import declarations", Lovelace.Compiler.Tests.Parser.Test_Import_Declarations'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
            ("parser: module begin rejected", Lovelace.Compiler.Tests.Parser.Test_Module_Begin_Rejected'Access));
       Result.Add_Test
         (Parser_Caller.Create
@@ -204,6 +210,9 @@ package body Lovelace.Compiler.Tests.Suite is
       Result.Add_Test
         (Ir_Generator_Caller.Create
            ("ir generator: identifier names", Lovelace.Compiler.Tests.Ir_Generator.Test_Identifier_Names'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
+           ("ir generator: import dependencies", Lovelace.Compiler.Tests.Ir_Generator.Test_Import_Dependencies'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
            ("ir generator: module procedure parameters",

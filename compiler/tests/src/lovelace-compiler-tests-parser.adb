@@ -26,6 +26,7 @@ package body Lovelace.Compiler.Tests.Parser is
    begin
       AUnit.Assertions.Assert (Ast.Kind (The_Module) = Ast.Module_Unit, Message & ": module unit");
       AUnit.Assertions.Assert (Ast.Name (The_Module) = Expected_Name, Message & ": module name");
+      AUnit.Assertions.Assert (Ast.Import_Count (The_Module) = 0, Message & ": no imports");
       AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 0, Message & ": no subroutines");
       AUnit.Assertions.Assert
         (Ast.Span (The_Module).Last.Byte_Index >= Ast.Span (The_Module).First.Byte_Index,
@@ -36,6 +37,7 @@ package body Lovelace.Compiler.Tests.Parser is
    begin
       AUnit.Assertions.Assert (Ast.Kind (The_Module) = Ast.Program_Unit, Message & ": program unit");
       AUnit.Assertions.Assert (Ast.Name (The_Module) = Expected_Name, Message & ": module name");
+      AUnit.Assertions.Assert (Ast.Import_Count (The_Module) = 0, Message & ": no imports");
       AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 1, Message & ": one subroutine");
       declare
          The_Subroutine : constant Ast.Subroutine := Ast.Get_Subroutine (The_Module, 1);
@@ -360,6 +362,87 @@ package body Lovelace.Compiler.Tests.Parser is
       Assert_Entrypoint_Module (Cafe_Module, Cafe_Name, "unicode name");
       Assert_Entrypoint_Module (At_Module, "@foo", "@foo name");
    end Test_Identifier_Names;
+
+   procedure Test_Import_Declarations (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Program_Source : constant String :=
+        "import augusta.std.io;"
+        & ASCII.LF
+        & "import Other;"
+        & ASCII.LF
+        & "program Hello;"
+        & ASCII.LF
+        & "begin"
+        & ASCII.LF
+        & "end.";
+      Module_Source  : constant String :=
+        "import Lib.A;" & ASCII.LF & "module Host;" & ASCII.LF & "procedure P(); begin end;" & ASCII.LF & "end.";
+      Program_Module : constant Ast.Module := Support.Must_Parse (Program_Source, "program imports");
+      Module_Module  : constant Ast.Module := Support.Must_Parse (Module_Source, "module imports");
+      After_Program  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("program P; import X; begin end.", "import after program");
+      After_Module   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("module M; procedure P(); begin end; import X; end.", "import after procedure");
+      In_Body        : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("module M; procedure P(); begin import X; end; end.", "import in body");
+      In_Flavor      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module M; #if flavor = ""wasi"" import X; #end end.", "import in flavor", Flavor.Wasi);
+      Duplicate      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("import A; import A; program P; begin end.", "duplicate import");
+      Self_Import    : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("import Hello; program Hello; begin end.", "self import");
+      Only_Import    : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("import Foo;", "import only");
+      Missing_Semi   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("import Foo.Bar program P; begin end.", "import missing semicolon");
+      Trailing_Dot   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("import Foo.; program P; begin end.", "import trailing dot");
+   begin
+      AUnit.Assertions.Assert (Ast.Kind (Program_Module) = Ast.Program_Unit, "program imports: kind");
+      AUnit.Assertions.Assert (Ast.Name (Program_Module) = "Hello", "program imports: name");
+      AUnit.Assertions.Assert (Ast.Import_Count (Program_Module) = 2, "program imports: count");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Ast.Get_Import (Program_Module, 1).Module_Name) = "augusta.std.io",
+         "program imports: first");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Ast.Get_Import (Program_Module, 2).Module_Name) = "Other",
+         "program imports: second");
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (Program_Module) = 1, "program imports: entrypoint");
+
+      AUnit.Assertions.Assert (Ast.Kind (Module_Module) = Ast.Module_Unit, "module imports: kind");
+      AUnit.Assertions.Assert (Ast.Name (Module_Module) = "Host", "module imports: name");
+      AUnit.Assertions.Assert (Ast.Import_Count (Module_Module) = 1, "module imports: count");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Ast.Get_Import (Module_Module, 1).Module_Name) = "Lib.A",
+         "module imports: first");
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (Module_Module) = 1, "module imports: procedure");
+
+      Support.Assert_Parser_Error_Count (After_Program, 1, "import after program");
+      Support.Assert_Parser_Error_Code
+        (After_Program, 1, Lovelace.Compiler.Parser.Unexpected_Token, "import after program code");
+      Support.Assert_Parser_Error_Count (After_Module, 1, "import after procedure");
+      Support.Assert_Parser_Error_Code
+        (After_Module, 1, Lovelace.Compiler.Parser.Unexpected_Token, "import after procedure code");
+      Support.Assert_Parser_Error_Count (In_Body, 1, "import in body");
+      Support.Assert_Parser_Error_Code (In_Body, 1, Lovelace.Compiler.Parser.Unexpected_Token, "import in body code");
+      Support.Assert_Parser_Error_Count (In_Flavor, 1, "import in flavor");
+      Support.Assert_Parser_Error_Code
+        (In_Flavor, 1, Lovelace.Compiler.Parser.Unexpected_Token, "import in flavor code");
+      Support.Assert_Parser_Error_Count (Duplicate, 1, "duplicate import");
+      Support.Assert_Parser_Error_Code (Duplicate, 1, Lovelace.Compiler.Parser.Name_Clash, "duplicate import code");
+      Support.Assert_Parser_Error_Count (Self_Import, 1, "self import");
+      Support.Assert_Parser_Error_Code (Self_Import, 1, Lovelace.Compiler.Parser.Name_Clash, "self import code");
+      Support.Assert_Parser_Error_Count (Only_Import, 1, "import only");
+      Support.Assert_Parser_Error_Code
+        (Only_Import, 1, Lovelace.Compiler.Parser.Unexpected_End_Of_Input, "import only code");
+      Support.Assert_Parser_Error_Count (Missing_Semi, 1, "import missing semicolon");
+      Support.Assert_Parser_Error_Code
+        (Missing_Semi, 1, Lovelace.Compiler.Parser.Unexpected_Token, "import missing semicolon code");
+      Support.Assert_Parser_Error_Count (Trailing_Dot, 1, "import trailing dot");
+      Support.Assert_Parser_Error_Code
+        (Trailing_Dot, 1, Lovelace.Compiler.Parser.Unexpected_Token, "import trailing dot code");
+   end Test_Import_Declarations;
 
    procedure Test_Module_Begin_Rejected (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
