@@ -5,7 +5,8 @@ Syntactic grammar recognized by [`Lovelace.Compiler.Parser`](parser.md) for one 
 Lexical tokens come from [token-grammar.md](token-grammar.md). Whitespace between tokens is ignored by the tokenizer and does not appear in the token stream. Flavor directives: [directives.md](directives.md).
 
 ```ebnf
-compilation_unit     = program_unit | module_unit ;
+compilation_unit     = { import_declaration } , ( program_unit | module_unit ) ;
+import_declaration   = "import" , qualified_identifier , ";" ;
 program_unit         = program_header , "begin" , "end" , "." ;
 program_header       = "program" , identifier , ";" ;
 module_unit          = module_header , { module_declaration } , "end" , "." ;
@@ -38,6 +39,7 @@ Defaults: omitted signedness → signed; omitted integer size → 32; omitted fl
 | --- | --- |
 | `"program"` | keyword `program` |
 | `"module"` | keyword `module` |
+| `"import"` | keyword `import` |
 | `"export"` | keyword `export` |
 | `"procedure"` | keyword `procedure` |
 | `"integer"` / `"float"` / `"signed"` / `"unsigned"` | matching keywords |
@@ -54,14 +56,18 @@ Examples (all valid when tokenized then parsed):
 | Source | Notes |
 | --- | --- |
 | `program Hello; begin end.` | Canonical program |
+| `import augusta.std.io; program Hello; begin end.` | Leading import before program |
 | `program IDENTIFIER;begin end.` | No space after `;` |
 | `    program   X ; begin end .  ` | Arbitrary spaces |
 | `module Empty; end.` | Canonical empty module |
+| `import Lib.A; module Host; end.` | Leading import before module |
 | `module Foo.Bar; end.` | Dotted module name |
 | `module MyModule; procedure Whatever(x : integer; y, z : float<32>); begin end; end.` | Module procedure with Ada-style params |
 | `module Lib; export procedure Print(Value : integer); begin end; end.` | Exported module procedure (`Export_Flag`) |
 | `module FlavorSelect; #if flavor = "wasi" procedure WasiOnly(); begin end; #end end.` | Flavor selection (see [samples](samples.md)) |
 
-Not accepted in this slice: `end;` after a program `end`, `module …; begin end.` (modules have no unit-level `begin`), procedures inside `program` units, `#if` in `program` units or inside procedure bodies, `float<16>` / `integer<128>`, wrong keyword order, missing final `.`, trailing tokens after `.`, `Program` / `Module` as the first keyword (identifiers, not keywords), trailing `.` in a qualified name (`module Foo.;`), duplicate parameter or procedure names among **surviving** declarations ([`LV00011`](diagnostics.md)).
+Imports are **file-leading** only (before `program` / `module`). Duplicate import names and self-import (import name equals the unit name) are `Name_Clash` ([`LV00011`](diagnostics.md)). `import … as …` is reserved and not parsed.
+
+Not accepted in this slice: `import` after `program`/`module`, inside procedure bodies, or inside `#if` arms; `end;` after a program `end`, `module …; begin end.` (modules have no unit-level `begin`), procedures inside `program` units, `#if` in `program` units or inside procedure bodies, `float<16>` / `integer<128>`, wrong keyword order, missing final `.`, trailing tokens after `.`, `Program` / `Module` as the unit keyword (identifiers, not keywords), trailing `.` in a qualified name (`module Foo.;`), duplicate parameter or procedure names among **surviving** declarations ([`LV00011`](diagnostics.md)).
 
 The `.love` basename (excluding the extension) must equal the program or module name, including dots for modules (`Foo.Bar.love` ↔ `module Foo.Bar;`). See [cli.md](cli.md) and [`LV00009`](diagnostics.md).

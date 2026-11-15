@@ -62,7 +62,7 @@ When there is no useful source span (or for CLI usage errors):
 | `LV00008` | Invalid_Module | Backend / LIR validate surfaced to the user |
 | `LV00009` | Program_Name_Filename_Mismatch | Build (program/module id vs `.love` stem) |
 | `LV00010` | Source_File_Io | Build (missing or unreadable source) |
-| `LV00011` | Name_Clash | Parser (duplicate or conflicting procedure/parameter name) |
+| `LV00011` | Name_Clash | Parser (duplicate or conflicting procedure/parameter/import name; self-import) |
 | `LV00012` | Invalid_Flavor_Condition | Parser (`#if`/`#elsif` flavor string not wasi/native/web) |
 | `LV00013` | Unterminated_String_Literal | Tokenizer (opening `"` without a matching closer) |
 

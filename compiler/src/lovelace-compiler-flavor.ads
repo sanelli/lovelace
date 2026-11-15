@@ -2,7 +2,7 @@
 
 package Lovelace.Compiler.Flavor is
 
-   --  Active compilation flavor for `#if flavor = "Ã¢ÂÂ¦"`.
+   --  Active compilation flavor for `#if flavor = "..."`.
    --  @enum Wasi WASI guest capabilities (default for now).
    --  @enum Native Host native Augusta / love: path.
    --  @enum Web Browser / web flavor (no Wasmtime component host).

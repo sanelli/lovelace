@@ -105,6 +105,7 @@ package body Lovelace.Compiler.Tokenizer is
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("begin"), Value => Tokens.Begin_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("end"), Value => Tokens.End_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("export"), Value => Tokens.Export_Keyword),
+      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("import"), Value => Tokens.Import_Keyword),
       Keyword_Entry'
         (Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("procedure"), Value => Tokens.Procedure_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("integer"), Value => Tokens.Integer_Keyword),
@@ -492,7 +493,7 @@ package body Lovelace.Compiler.Tokenizer is
          return Class_Errors;
       end if;
 
-      --  Directives before identifiers so #if is not unrecognized; exact forms avoid #16#ÃÂ¢ÃÂÃÂ¦ bases.
+      --  Directives before identifiers so #if is not unrecognized; exact forms avoid based-integer bases.
       Class_Errors := Register_Scan_Class (Directive_Pattern, Tokens.Directive, Filename);
       if Length (Class_Errors) > 0 then
          return Class_Errors;

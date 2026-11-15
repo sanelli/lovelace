@@ -13,16 +13,16 @@ todos:
     status: completed
   - id: "4"
     content: "4. Tokenizer: add import keyword + AUnit + token-grammar/tokenizer docs; gnatformat."
-    status: pending
+    status: completed
   - id: "5"
     content: "5. AST: Import_Declaration sequence on Module; extend Create_Module; update call sites; gnatformat."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Parser: file-leading import region before program/module; dup/self Name_Clash; update grammar/parser/diagnostics docs; gnatformat."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Parser AUnit success/failure cases for imports; suite registration; gnatformat."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. IR generator Append_Dependency + AUnit + ir-generator.md; gnatformat."
     status: pending

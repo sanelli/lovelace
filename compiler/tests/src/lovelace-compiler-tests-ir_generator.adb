@@ -149,6 +149,7 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
            Filename    => Source.Absent_Filename,
            Span        => Unit_Span,
            Kind        => Ast.Program_Unit,
+           Imports     => Ast.Empty_Import_Sequence,
            Subroutines => Ast_Subroutines);
       Lir_Module := Support.Must_Generate (Ast_Module, "export only");
       Lir_Sub := Modules.Get_Subroutine (Lir_Module, 1);
