@@ -13,13 +13,13 @@ todos:
     status: completed
   - id: "4"
     content: "4. Module_Path helpers (mixed slash/dot candidates; ambiguous if ≥2; -I; Augusta slot: AUGUSTA_HOME else LOVELACE_HOME/lib/augusta else ~/.lovelace/lib/augusta) + AUnit + docs; gnatformat."
-    status: pending
+    status: completed
   - id: "5"
     content: "5. Unit_Graph loader (closure, cycles, module-only deps, flavor) + Unknown_Module/Ambiguous_Module_Path/Circular_Import; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Add LV00016–LV00020 (+ IR/loader enums, Reporting maps, diagnostics.md); AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. IR generator multi-unit resolve + flatten (mangle dep procs, export/import gates) + AUnit + ir-generator.md; gnatformat."
     status: pending
@@ -142,6 +142,8 @@ Write [`.cursor/plans/029-multi-unit-import-resolve.plan.md`](029-multi-unit-imp
 
 ### 4. Module path + include-path helpers
 
+**Done:** `Lovelace.Compiler.Module_Path` + AUnit + cli/ir-generator docs.
+
 New compiler package (e.g. `Lovelace.Compiler.Module_Path`):
 
 - `Module_To_Relative_Candidates (Name) →` all `2^(n-1)` mixed slash/dot relatives + `.love` (stable enumeration order for tests/diagnostics)
@@ -151,6 +153,8 @@ New compiler package (e.g. `Lovelace.Compiler.Module_Path`):
 - Docs note in [`docs/cli.md`](../../docs/cli.md) / a short section in [`docs/ir-generator.md`](../../docs/ir-generator.md) (path convention + env vars)
 
 ### 5. Unit graph loader
+
+**Done:** `Lovelace.Compiler.Unit_Graph.Load` + AUnit (dependency / unknown / ambiguous / cycle / program-as-dep).
 
 New package (e.g. `Lovelace.Compiler.Unit_Graph`):
 
@@ -163,6 +167,8 @@ New package (e.g. `Lovelace.Compiler.Unit_Graph`):
 Wire stage errors through `Reporting` / new LV codes (`LV00016`, `LV00019`, `LV00020`). AUnit: diamond import, cycle, missing module, ambiguous path, program-as-dependency rejected.
 
 ### 6. Diagnostics enums
+
+**Done:** `LV00016`–`LV00020`; IR `Call_Without_Import` / `Not_Exported`; `Unit_Graph.Surface_Error_Code`; diagnostics docs + AUnit.
 
 Extend `Error_Codes`, `Ir_Generator_Error_Code` (and any loader-local enum), `Reporting.To_Error_Code`, [`docs/diagnostics.md`](../../docs/diagnostics.md) for `LV00016`–`LV00020`. AUnit label/mapping checks.
 

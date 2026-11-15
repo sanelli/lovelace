@@ -12,9 +12,16 @@ package Lovelace.Compiler.Ir_Generator is
 
    --  Why Generate failed.
    --  @enum Internal_Error Compiler bug such as Validate failing on frontend AST.
-   --  @enum Unresolved_Call Call target is not a same-unit procedure.
+   --  @enum Unresolved_Call Call target is not a same-unit / imported procedure.
    --  @enum Invalid_Arguments Call arity or argument/formal types are not supported.
-   type Ir_Generator_Error_Code is (Internal_Error, Unresolved_Call, Invalid_Arguments);
+   --  @enum Call_Without_Import Callee module prefix is neither self nor an import of the caller.
+   --  @enum Not_Exported Imported procedure exists but lacks Export_Flag.
+   type Ir_Generator_Error_Code is
+     (Internal_Error,
+      Unresolved_Call,
+      Invalid_Arguments,
+      Call_Without_Import,
+      Not_Exported);
 
    --  One IR Generator failure.
    --  @field Code Predefined error code.

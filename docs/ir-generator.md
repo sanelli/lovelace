@@ -6,6 +6,17 @@ The CLI (`lovelace build`) calls Tokenize → Parse → `Generate` → `Lir.Bina
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). AST input comes from [parser.md](parser.md). LIR shapes and codecs: [lir.md](lir.md). Source locations: [source-locations.md](source-locations.md).
 
+## Module path and unit graph
+
+Multi-unit loading (roadmap step 5) uses:
+
+| Package | Role |
+| --- | --- |
+| `Lovelace.Compiler.Module_Path` | Dotted name → mixed slash/dot `.love` candidates; search roots; Augusta slot |
+| `Lovelace.Compiler.Unit_Graph` | Transitive import closure (`Load`); cycles / unknown / ambiguous diagnostics |
+
+Path candidates for `a.b.c`: `a/b/c.love`, `a/b.c.love`, `a.b/c.love`, `a.b.c.love` (stable mask order). Search roots and Augusta env vars are documented in [cli.md](cli.md). Cross-module call lowering still lands in a later step of the same milestone; same-unit resolve below remains the current `Generate` behavior.
+
 ## Pipeline
 
 ```text

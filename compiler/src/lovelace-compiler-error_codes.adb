@@ -47,6 +47,21 @@ package body Lovelace.Compiler.Error_Codes is
 
          when Invalid_Arguments              =>
             return "LV00015";
+
+         when Unknown_Module                 =>
+            return "LV00016";
+
+         when Call_Without_Import            =>
+            return "LV00017";
+
+         when Not_Exported                   =>
+            return "LV00018";
+
+         when Circular_Import                =>
+            return "LV00019";
+
+         when Ambiguous_Module_Path          =>
+            return "LV00020";
       end case;
    end Label;
 
