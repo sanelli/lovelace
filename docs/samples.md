@@ -18,6 +18,7 @@ For **every** new user-facing feature, add at least one `.love` file under `samp
 | Path | Feature |
 | --- | --- |
 | [`samples/program/Hello.love`](../samples/program/Hello.love) | Minimal empty-body program for `lovelace build` and wasmtime integration |
+| [`samples/import/ImportDecl.love`](../samples/import/ImportDecl.love) | File-leading `import` before an empty-body program (no resolution yet) |
 | [`samples/module/Empty.love`](../samples/module/Empty.love) | Minimal empty module (`module Empty; end.`) |
 | [`samples/module/Foo.Bar.love`](../samples/module/Foo.Bar.love) | Dotted module name (`module Foo.Bar; end.`) |
 | [`samples/module/Procedures.love`](../samples/module/Procedures.love) | Module procedures with Ada-style typed parameters |

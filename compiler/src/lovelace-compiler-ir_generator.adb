@@ -34,6 +34,15 @@ package body Lovelace.Compiler.Ir_Generator is
           Span      => Ast.Span (The_Module),
           Filename  => Ast.Filename (The_Module)));
 
+      for Index in 1 .. Ast.Import_Count (The_Module) loop
+         declare
+            The_Import : constant Ast.Import_Declaration := Ast.Get_Import (The_Module, Index);
+         begin
+            Lovelace.Lir.Modules.Append_Dependency
+              (Lir_Module, Ada.Strings.Unbounded.To_String (The_Import.Module_Name));
+         end;
+      end loop;
+
       for Index in 1 .. Ast.Subroutine_Count (The_Module) loop
          declare
             Ast_Subroutine : constant Ast.Subroutine := Ast.Get_Subroutine (The_Module, Index);

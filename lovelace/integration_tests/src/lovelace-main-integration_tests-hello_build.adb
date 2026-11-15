@@ -11,41 +11,27 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
 
    procedure Test_Build_Validate_And_Run (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Test_Name       : constant String :=
-        "build: validate and run program Hello";
+      Test_Name       : constant String := "build: validate and run program Hello";
       Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
-      Sample_Path     : constant String :=
-        Helpers.Locate_Sample ("program", "Hello.love");
+      Sample_Path     : constant String := Helpers.Locate_Sample ("program", "Hello.love");
       Output_Root     : constant String := Helpers.Locate_Output_Root;
       Validate_Status : Helpers.Tool_Status;
       Run_Status      : Helpers.Tool_Status;
       Outcome         : Helpers.Test_Outcome := Helpers.Ok;
    begin
-      AUnit.Assertions.Assert
-        (Lovelace_Path'Length > 0, "lovelace executable present");
+      AUnit.Assertions.Assert (Lovelace_Path'Length > 0, "lovelace executable present");
 
       Helpers.Reset_Output_Root (Output_Root);
       Helpers.Build_Sample
-        (Lovelace_Path => Lovelace_Path,
-         Sample_Path   => Sample_Path,
-         Output_Root   => Output_Root,
-         Message       => "Hello");
-      Helpers.Assert_Build_Artifacts
-        (Output_Root => Output_Root, Unit_Name => "Hello", Message => "Hello");
+        (Lovelace_Path => Lovelace_Path, Sample_Path => Sample_Path, Output_Root => Output_Root, Message => "Hello");
+      Helpers.Assert_Build_Artifacts (Output_Root => Output_Root, Unit_Name => "Hello", Message => "Hello");
 
       Helpers.Validate_Unit_Artifacts
-        (Output_Root => Output_Root,
-         Unit_Name   => "Hello",
-         Message     => "Hello",
-         Status      => Validate_Status);
+        (Output_Root => Output_Root, Unit_Name => "Hello", Message => "Hello", Status => Validate_Status);
       Helpers.Run_Unit_Entrypoint
-        (Output_Root => Output_Root,
-         Unit_Name   => "Hello",
-         Message     => "Hello",
-         Status      => Run_Status);
+        (Output_Root => Output_Root, Unit_Name => "Hello", Message => "Hello", Status => Run_Status);
 
-      if Validate_Status = Helpers.Missing or else Run_Status = Helpers.Missing
-      then
+      if Validate_Status = Helpers.Missing or else Run_Status = Helpers.Missing then
          Outcome := Helpers.Inconclusive;
       end if;
 
@@ -55,5 +41,41 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
          Helpers.Report_Test_Result (Test_Name, Helpers.Fail);
          Ada.Exceptions.Reraise_Occurrence (Error);
    end Test_Build_Validate_And_Run;
+
+   procedure Test_Import_Decl_Build_Validate_And_Run (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Test_Name       : constant String := "build: validate and run program ImportDecl";
+      Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
+      Sample_Path     : constant String := Helpers.Locate_Sample ("import", "ImportDecl.love");
+      Output_Root     : constant String := Helpers.Locate_Output_Root ("import");
+      Validate_Status : Helpers.Tool_Status;
+      Run_Status      : Helpers.Tool_Status;
+      Outcome         : Helpers.Test_Outcome := Helpers.Ok;
+   begin
+      AUnit.Assertions.Assert (Lovelace_Path'Length > 0, "lovelace executable present");
+
+      Helpers.Reset_Output_Root (Output_Root);
+      Helpers.Build_Sample
+        (Lovelace_Path => Lovelace_Path,
+         Sample_Path   => Sample_Path,
+         Output_Root   => Output_Root,
+         Message       => "ImportDecl");
+      Helpers.Assert_Build_Artifacts (Output_Root => Output_Root, Unit_Name => "ImportDecl", Message => "ImportDecl");
+
+      Helpers.Validate_Unit_Artifacts
+        (Output_Root => Output_Root, Unit_Name => "ImportDecl", Message => "ImportDecl", Status => Validate_Status);
+      Helpers.Run_Unit_Entrypoint
+        (Output_Root => Output_Root, Unit_Name => "ImportDecl", Message => "ImportDecl", Status => Run_Status);
+
+      if Validate_Status = Helpers.Missing or else Run_Status = Helpers.Missing then
+         Outcome := Helpers.Inconclusive;
+      end if;
+
+      Helpers.Report_Test_Result (Test_Name, Outcome);
+   exception
+      when Error : others =>
+         Helpers.Report_Test_Result (Test_Name, Helpers.Fail);
+         Ada.Exceptions.Reraise_Occurrence (Error);
+   end Test_Import_Decl_Build_Validate_And_Run;
 
 end Lovelace.Main.Integration_Tests.Hello_Build;

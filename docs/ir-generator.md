@@ -45,7 +45,8 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | Module name span, unit span, filename | `Modules.Set_Origin` (`Module_Origin`) |
 | `Unit_Kind` | not stored in LIR (frontend only) |
 | `Full_Name` | not stored in LIR (frontend only; LIR keeps the unqualified procedure name) |
-| Module flags / depends | flags `0`; no dependencies |
+| Module flags | flags `0` |
+| Ordered `Import_Declaration` list | `Append_Dependency` for each imported module name (source order) |
 | Each subroutine | `Subroutines.Create` + `Append_Subroutine` |
 | Subroutine name | `Signature.Name` (unqualified) |
 | Subroutine name span, filename | `Subroutines.Set_Origin` (`Subroutine_Origin`) |
@@ -70,7 +71,7 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | `float` / `float<32>` | `F32` |
 | `float<64>` | `F64` |
 
-Empty Lovelace modules (`module Name; end.`) lower to LIR modules with **zero** subroutines. Module procedures with parameters lower to LIR signatures with those named types (flags remain `0`).
+Empty Lovelace modules (`module Name; end.`) lower to LIR modules with **zero** subroutines. Module procedures with parameters lower to LIR signatures with those named types (flags remain `0`). Leading `import` names become LIR `Dependencies` (backend still ignores them; resolution is a later step). `import … as …` is reserved and not parsed.
 
 Origins use [`Lovelace.Common.Source`](source-locations.md). They are copied onto LIR modules and subroutines and **persisted** in `.lir` / `.tlir` (format version numbers remain **1.0**; see [lir.md](lir.md)).
 

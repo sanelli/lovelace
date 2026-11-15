@@ -212,6 +212,9 @@ package body Lovelace.Compiler.Tests.Suite is
            ("ir generator: identifier names", Lovelace.Compiler.Tests.Ir_Generator.Test_Identifier_Names'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
+           ("ir generator: import dependencies", Lovelace.Compiler.Tests.Ir_Generator.Test_Import_Dependencies'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
            ("ir generator: module procedure parameters",
             Lovelace.Compiler.Tests.Ir_Generator.Test_Module_Procedure_Parameters'Access));
       Result.Add_Test

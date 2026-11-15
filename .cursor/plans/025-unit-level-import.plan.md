@@ -25,13 +25,13 @@ todos:
     status: completed
   - id: "8"
     content: "8. IR generator Append_Dependency + AUnit + ir-generator.md; gnatformat."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Sample samples/import/ImportDecl.love; docs/samples.md; sync roadmap placement/examples + step-3 status; integration list if needed."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Run all existing tests (nested AUnit crates / workspace / scripts/run-tests.ps1)."
-    status: pending
+    status: completed
   - id: "11"
     content: "11. Push (proxy env cleared) and open a PR with gh pr create."
     status: pending
