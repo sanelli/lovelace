@@ -2,7 +2,7 @@
 
 `Lovelace.Compiler.Ir_Generator` lowers a frontend AST module into a LIR module. It lives in crate `lovelace_compiler`, which depends on `lovelace_lir`. Frontend AST and types stay separate from LIR; only this package (and tests) reference `Lovelace.Lir.*`.
 
-The CLI (`lovelace build`) calls Tokenize → Parse → `Generate` → `Lir.Binary.Write`, then the backends; see [cli.md](cli.md). This package itself has no statement lowering beyond empty bodies (no `noop`).
+The CLI (`lovelace build`) calls Tokenize → Parse → `Generate` → `Lir.Binary.Write`, then the backends; see [cli.md](cli.md).
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). AST input comes from [parser.md](parser.md). LIR shapes and codecs: [lir.md](lir.md). Source locations: [source-locations.md](source-locations.md).
 
@@ -31,11 +31,11 @@ function Generate (The_Module : Ast.Module) return Generate_Result;
 | `Ok` | Payload |
 | --- | --- |
 | `True` | `The_Module` — generated LIR module |
-| `False` | `Error` — `Internal_Error` with a UTF-8 detail string |
+| `False` | `Error` — code, span, UTF-8 detail |
 
 Handle both discriminants. Do not read `The_Module` when `Ok` is `False`.
 
-After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation failure is reported as `Internal_Error` (the frontend should only produce validatable shapes).
+After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation failure is reported as `Internal_Error`.
 
 ## Mapping (this slice)
 
@@ -47,14 +47,21 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | `Full_Name` | not stored in LIR (frontend only; LIR keeps the unqualified procedure name) |
 | Module flags | flags `0` |
 | Ordered `Import_Declaration` list | `Append_Dependency` for each imported module name (source order) |
-| Each subroutine | `Subroutines.Create` + `Append_Subroutine` |
+| Each subroutine | `Subroutines.Create` + body instructions + `Append_Subroutine` |
 | Subroutine name | `Signature.Name` (unqualified) |
 | Subroutine name span, filename | `Subroutines.Set_Origin` (`Subroutine_Origin`) |
 | Return type `Unit` | `Lir.Types.Unit` |
 | Parameters (name + type) | named LIR parameters (same order) |
 | `Integer` / `Float` type expressions | LIR `I8`…`I64` / `U8`…`U64` / `F32` / `F64` (see table below) |
 | `Export_Flag` / `Entrypoint_Flag` | same-named LIR flag bits (via `Has_Export` / `Has_Entrypoint`) |
-| Empty statement body | empty instruction sequence |
+| Empty statement body | empty instruction sequence (no `noop`) |
+| Same-unit `MODULE.SUBROUTINE(…)` | `Constant_I32` × N then `Call` (1-based local index) |
+
+### Call resolution (this slice)
+
+- Callee must be `UnitName.ProcedureName` where `UnitName` equals the compilation-unit module name and `ProcedureName` is a local procedure.
+- Cross-module / import-based resolution is deferred (roadmap step 5) → `Unresolved_Call` (`LV00014`).
+- Argument count must match formals; each formal must accept an `i32` constant (signed/unsigned integer size ≤ 32). Negative literals are rejected for unsigned formals. Failures → `Invalid_Arguments` (`LV00015`).
 
 ### Type map
 
@@ -71,21 +78,23 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | `float` / `float<32>` | `F32` |
 | `float<64>` | `F64` |
 
-Empty Lovelace modules (`module Name; end.`) lower to LIR modules with **zero** subroutines. Module procedures with parameters lower to LIR signatures with those named types (flags remain `0`). Leading `import` names become LIR `Dependencies` (backend still ignores them; resolution is a later step). `import … as …` is reserved and not parsed.
+Empty Lovelace modules (`module Name; end.`) lower to LIR modules with **zero** subroutines. Leading `import` names become LIR `Dependencies` (backend still ignores them).
 
 Origins use [`Lovelace.Common.Source`](source-locations.md). They are copied onto LIR modules and subroutines and **persisted** in `.lir` / `.tlir` (format version numbers remain **1.0**; see [lir.md](lir.md)).
 
 ## Errors
 
-| Code | Meaning |
-| --- | --- |
-| `Internal_Error` | Compiler bug (listed first): e.g. LIR `Validate` failed after lowering |
+| Code | LV | Meaning |
+| --- | --- | --- |
+| `Internal_Error` | `LV00001` | Compiler bug (e.g. LIR `Validate` failed after lowering) |
+| `Unresolved_Call` | `LV00014` | Call target is not a same-unit procedure |
+| `Invalid_Arguments` | `LV00015` | Wrong arity, out-of-range literal, or unsupported formal |
 
 ## Out of scope
 
-- Statement / expression lowering and instruction source maps
+- Multi-unit / import-gated call resolution
 - Emitting `No_Operation` for empty bodies
-- CLI / `lovelace build`
+- Locals, assignment, non-literal arguments
 - Analysis and optimization
 
 WASM / WAT / WIT emission from LIR is implemented separately; see [codegen.md](codegen.md).

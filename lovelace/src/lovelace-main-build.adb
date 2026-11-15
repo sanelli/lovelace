@@ -410,7 +410,7 @@ package body Lovelace.Main.Build is
                                  when False =>
                                     Report_Located
                                       (Filename    => Ada.Strings.Unbounded.To_String (Source_Path),
-                                       Span        => Ast.Name_Span (Parse_Result.The_Module),
+                                       Span        => Generate_Result.Error.Span,
                                        Source_Text => Ada.Strings.Unbounded.To_String (Source_Text),
                                        Code        => Reporting.To_Error_Code (Generate_Result.Error.Code),
                                        Description => Ada.Strings.Unbounded.To_String (Generate_Result.Error.Detail));

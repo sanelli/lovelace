@@ -15,6 +15,7 @@ package body Lovelace.Main.Integration_Tests.Support_Tests is
       Sample_Path : constant String := Helpers.Locate_Sample ("program", "Hello.love");
       Import_Path : constant String := Helpers.Locate_Sample ("import", "ImportDecl.love");
       Module_Path : constant String := Helpers.Locate_Sample ("module", "Empty.love");
+      Calls_Path  : constant String := Helpers.Locate_Sample ("calls", "SameModuleCall.love");
       Output_Root : constant String := Helpers.Locate_Output_Root;
       Modules_Out : constant String := Helpers.Locate_Output_Root ("modules");
       Nested      : constant String := Helpers.Compose_Under (Output_Root, "bin");
@@ -22,6 +23,7 @@ package body Lovelace.Main.Integration_Tests.Support_Tests is
       AUnit.Assertions.Assert (Ada.Directories.Exists (Sample_Path), "program Hello.love present");
       AUnit.Assertions.Assert (Ada.Directories.Exists (Import_Path), "import ImportDecl.love present");
       AUnit.Assertions.Assert (Ada.Directories.Exists (Module_Path), "module Empty.love present");
+      AUnit.Assertions.Assert (Ada.Directories.Exists (Calls_Path), "calls SameModuleCall.love present");
       AUnit.Assertions.Assert (Ada.Strings.Fixed.Index (Output_Root, "integration-tests") > 0, "output root segment");
       AUnit.Assertions.Assert (Ada.Strings.Fixed.Index (Modules_Out, "modules") > 0, "modules output subfolder");
       AUnit.Assertions.Assert (Ada.Strings.Fixed.Index (Nested, "bin") > 0, "compose under bin");

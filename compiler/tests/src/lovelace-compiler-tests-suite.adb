@@ -227,6 +227,10 @@ package body Lovelace.Compiler.Tests.Suite is
         (Ir_Generator_Caller.Create
            ("ir generator: parameter type mapping",
             Lovelace.Compiler.Tests.Ir_Generator.Test_Parameter_Type_Mapping'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
+           ("ir generator: same-unit calls",
+            Lovelace.Compiler.Tests.Ir_Generator.Test_Same_Unit_Calls'Access));
 
       Result.Add_Test
         (Backend_Caller.Create ("backend: export only", Lovelace.Compiler.Tests.Backend.Test_Export_Only'Access));
@@ -242,6 +246,9 @@ package body Lovelace.Compiler.Tests.Suite is
         (Backend_Caller.Create ("backend: two exports", Lovelace.Compiler.Tests.Backend.Test_Two_Exports'Access));
       Result.Add_Test
         (Backend_Caller.Create ("backend: noop body", Lovelace.Compiler.Tests.Backend.Test_Noop_Body'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: const and call body", Lovelace.Compiler.Tests.Backend.Test_Const_And_Call_Body'Access));
       Result.Add_Test
         (Backend_Caller.Create
            ("backend: typed parameters", Lovelace.Compiler.Tests.Backend.Test_Typed_Parameters'Access));

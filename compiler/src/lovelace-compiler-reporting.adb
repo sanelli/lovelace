@@ -43,8 +43,14 @@ package body Lovelace.Compiler.Reporting is
    function To_Error_Code (Code : Ir_Generator.Ir_Generator_Error_Code) return Error_Codes.Error_Code is
    begin
       case Code is
-         when Ir_Generator.Internal_Error =>
+         when Ir_Generator.Internal_Error    =>
             return Error_Codes.Internal_Error;
+
+         when Ir_Generator.Unresolved_Call   =>
+            return Error_Codes.Unresolved_Call;
+
+         when Ir_Generator.Invalid_Arguments =>
+            return Error_Codes.Invalid_Arguments;
       end case;
    end To_Error_Code;
 

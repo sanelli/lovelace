@@ -41,6 +41,12 @@ package body Lovelace.Compiler.Error_Codes is
 
          when Unterminated_String_Literal    =>
             return "LV00013";
+
+         when Unresolved_Call                =>
+            return "LV00014";
+
+         when Invalid_Arguments              =>
+            return "LV00015";
       end case;
    end Label;
 

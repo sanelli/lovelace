@@ -24,3 +24,4 @@ For **every** new user-facing feature, add at least one `.love` file under `samp
 | [`samples/module/Procedures.love`](../samples/module/Procedures.love) | Module procedures with Ada-style typed parameters |
 | [`samples/module/ExportProcedures.love`](../samples/module/ExportProcedures.love) | `export procedure` (Lovelace visibility) plus a non-exported helper |
 | [`samples/directives/FlavorSelect.love`](../samples/directives/FlavorSelect.love) | Flavor `#if` / `#elsif` / `#else` / `#end` (default `--flavor wasi` keeps `WasiOnly`) |
+| [`samples/calls/SameModuleCall.love`](../samples/calls/SameModuleCall.love) | Same-unit qualified call with integer literal (`SameModuleCall.Sink(42)`) |

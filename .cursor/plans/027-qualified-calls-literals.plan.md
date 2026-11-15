@@ -28,22 +28,22 @@ todos:
     status: completed
   - id: "9"
     content: "9. IR generator same-unit resolve + emit + LV00014/15 + Reporting/build spans; ir-generator/diagnostics docs; gnatformat."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. IR generator AUnit (resolve success/failure, empty body); gnatformat."
-    status: pending
+    status: completed
   - id: "11"
     content: "11. Backend Lower_Instruction_Body for Const/Call + AUnit + codegen.md; gnatformat."
-    status: pending
+    status: completed
   - id: "12"
     content: "12. Sample samples/calls/SameModuleCall.love; docs/samples.md; roadmap step-4 status."
-    status: pending
+    status: completed
   - id: "13"
     content: "13. Run all existing tests (nested AUnit crates / workspace / scripts/run-tests.ps1)."
-    status: pending
+    status: completed
   - id: "14"
     content: "14. Push (proxy env cleared) and open a PR with gh pr create."
-    status: pending
+    status: completed
 isProject: false
 ---
 

@@ -1,0 +1,9 @@
+module SameModuleCall;
+procedure Sink(Value : integer);
+begin
+end;
+procedure Run();
+begin
+   SameModuleCall.Sink(42);
+end;
+end.

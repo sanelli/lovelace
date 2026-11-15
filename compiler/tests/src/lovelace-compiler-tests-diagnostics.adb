@@ -4,6 +4,7 @@ with Lovelace.Common.Source;
 with Lovelace.Compiler.Ast;
 with Lovelace.Compiler.Diagnostics;
 with Lovelace.Compiler.Error_Codes;
+with Lovelace.Compiler.Ir_Generator;
 with Lovelace.Compiler.Parser;
 with Lovelace.Compiler.Reporting;
 with Lovelace.Compiler.Tests.Support;
@@ -27,6 +28,8 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Name_Clash) = "LV00011", "LV00011");
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Invalid_Flavor_Condition) = "LV00012", "LV00012");
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Unterminated_String_Literal) = "LV00013", "LV00013");
+      AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Unresolved_Call) = "LV00014", "LV00014");
+      AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Invalid_Arguments) = "LV00015", "LV00015");
    end Test_Error_Code_Labels;
 
    procedure Test_Format_Shape (The_Test : in out Fixture) is
@@ -80,6 +83,11 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert
         (Reporting.To_Error_Code (Parser.Invalid_Flavor_Condition) = Error_Codes.Invalid_Flavor_Condition,
          "invalid flavor map");
+      AUnit.Assertions.Assert
+        (Reporting.To_Error_Code (Ir_Generator.Unresolved_Call) = Error_Codes.Unresolved_Call, "unresolved call map");
+      AUnit.Assertions.Assert
+        (Reporting.To_Error_Code (Ir_Generator.Invalid_Arguments) = Error_Codes.Invalid_Arguments,
+         "invalid arguments map");
    end Test_Stage_Mappings;
 
    procedure Test_Unit_Kind_Label (The_Test : in out Fixture) is

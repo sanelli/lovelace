@@ -3,7 +3,6 @@ with AUnit.Assertions;
 
 with Lovelace.Common.Source;
 with Lovelace.Common.Utf_8;
-with Lovelace.Compiler.Ir_Generator;
 
 package body Lovelace.Compiler.Tests.Support is
 
@@ -210,6 +209,26 @@ package body Lovelace.Compiler.Tests.Support is
             return Tokenizer.Empty_Error_Sequence;
       end case;
    end Must_Fail;
+
+   function Must_Fail_Generate
+     (The_Module : Ast.Module; Message : String) return Ir_Generator.Ir_Generator_Error
+   is
+      Result : constant Ir_Generator.Generate_Result := Ir_Generator.Generate (The_Module);
+      Dummy  : constant Ir_Generator.Ir_Generator_Error :=
+        (Code   => Ir_Generator.Internal_Error,
+         Span   =>
+           (First => (Byte_Index => 1, Line => 1, Column => 1), Last => (Byte_Index => 1, Line => 1, Column => 1)),
+         Detail => Ada.Strings.Unbounded.To_Unbounded_String (""));
+   begin
+      case Result.Ok is
+         when False =>
+            return Result.Error;
+
+         when True  =>
+            AUnit.Assertions.Assert (False, Message & ": expected Generate to fail");
+            return Dummy;
+      end case;
+   end Must_Fail_Generate;
 
    function Must_Fail_Parse
      (Source_Text : String; Message : String; Active_Flavor : Flavor.Flavor := Flavor.Default)
