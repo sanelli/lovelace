@@ -21,6 +21,30 @@ package Lovelace.Compiler.Ast is
    --  Bit 1: subroutine is the module entrypoint.
    Entrypoint_Flag : constant Subroutine_Flags := 2**1;
 
+   --  Bit 2: subroutine is a native(...) binding (no Lovelace body).
+   Native_Flag : constant Subroutine_Flags := 2**2;
+
+   --  Target and intrinsic key from native("target", "key").
+   --  @field Target UTF-8 first string (e.g. wasi).
+   --  @field Key UTF-8 second string (e.g. native-print-integer).
+   type Native_Binding is record
+      Target : Ada.Strings.Unbounded.Unbounded_String;
+      Key    : Ada.Strings.Unbounded.Unbounded_String;
+   end record;
+
+   --  Optional native binding on a subroutine.
+   --  @disc Present True when Value is stored; False when absent.
+   --  @field Value Binding when Present is True.
+   type Native_Binding_Option (Present : Boolean := False) is record
+      case Present is
+         when True =>
+            Value : Native_Binding;
+
+         when False =>
+            null;
+      end case;
+   end record;
+
    --  One procedure parameter in the AST.
    --  @field Parameter_Name UTF-8 parameter name.
    --  @field Name_Span Source span of the parameter name.
@@ -115,6 +139,11 @@ package Lovelace.Compiler.Ast is
    --  @return True iff entrypoint bit is set.
    function Has_Entrypoint (Flags : Subroutine_Flags) return Boolean;
 
+   --  True when Flags includes Native_Flag.
+   --  @param Flags Flag bitset.
+   --  @return True iff native bit is set.
+   function Has_Native (Flags : Subroutine_Flags) return Boolean;
+
    --  Empty parameter sequence.
    --  @return Sequence with no elements.
    function Empty_Parameter_Sequence return Parameter_Sequence;
@@ -184,7 +213,8 @@ package Lovelace.Compiler.Ast is
    --  @param Flags Flag bits (export, entrypoint, and others).
    --  @param Return_Type Frontend return type expression.
    --  @param Parameters Ordered parameter list.
-   --  @param The_Body Statement list (may be empty).
+   --  @param The_Body Statement list (may be empty; must be empty when native).
+   --  @param Native Optional native("target", "key") binding.
    --  @return Subroutine value.
    function Create_Subroutine
      (Name        : String;
@@ -194,7 +224,8 @@ package Lovelace.Compiler.Ast is
       Flags       : Subroutine_Flags;
       Return_Type : Types.Type_Expression;
       Parameters  : Parameter_Sequence;
-      The_Body    : Statement_Sequence) return Subroutine;
+      The_Body    : Statement_Sequence;
+      Native      : Native_Binding_Option) return Subroutine;
 
    --  UTF-8 unqualified name of The_Subroutine.
    --  @param The_Subroutine Subroutine to query.
@@ -235,6 +266,11 @@ package Lovelace.Compiler.Ast is
    --  @param The_Subroutine Subroutine to query.
    --  @return Statement sequence.
    function Get_Body (The_Subroutine : Subroutine) return Statement_Sequence;
+
+   --  Optional native binding of The_Subroutine.
+   --  @param The_Subroutine Subroutine to query.
+   --  @return Present binding, or absent when not native.
+   function Native (The_Subroutine : Subroutine) return Native_Binding_Option;
 
    --  Empty subroutine sequence.
    --  @return Sequence with no elements.
@@ -371,6 +407,7 @@ private
       Return_Type_Value : Types.Type_Expression := Types.Unit_Type;
       Parameters_Value  : Parameter_Sequence;
       Body_Value        : Statement_Sequence;
+      Native_Value      : Native_Binding_Option := (Present => False);
    end record;
 
    package Subroutine_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Subroutine);

@@ -91,6 +91,10 @@ package Lovelace.Compiler.Tests.Parser is
    --  @param The_Test Unused fixture.
    procedure Test_Module_Procedure (The_Test : in out Fixture);
 
+   --  native("wasi", "…") procedure header modifier; reject native + begin / bad args.
+   --  @param The_Test Unused fixture.
+   procedure Test_Native_Procedure (The_Test : in out Fixture);
+
    --  Trailing dot in a qualified name is Unexpected_Token or end of input.
    --  @param The_Test Unused fixture.
    procedure Test_Module_Trailing_Dot (The_Test : in out Fixture);

@@ -1,0 +1,6 @@
+module NativePrint;
+
+(* native(...) procedure — no begin/end body. Backend synthesis comes in later steps. *)
+export native("wasi", "native-print-integer") procedure print(value : integer);
+
+end.

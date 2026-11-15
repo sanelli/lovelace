@@ -13,7 +13,7 @@ todos:
     status: completed
   - id: "4"
     content: "4. Tokenizer/parser/AST/grammar for export? native(...) procedure …; (no body); keyword native; AUnit + docs; gnatformat."
-    status: pending
+    status: completed
   - id: "5"
     content: "5. LIR Native_Flag + native binding metadata; binary/text codecs; Validate empty body; AUnit + lir docs; gnatformat."
     status: pending
@@ -189,6 +189,8 @@ Write [`.cursor/plans/031-wasi-native-print-augusta-io.plan.md`](031-wasi-native
 - Reject `native` … `begin`…`end` (native decls have no body).
 - Docs: [`compilation-unit-grammar.md`](../../docs/compilation-unit-grammar.md), [`tokenizer.md`](../../docs/tokenizer.md) / [`token-grammar.md`](../../docs/token-grammar.md), [`parser.md`](../../docs/parser.md).
 - AUnit: parse success for `export native("wasi", "native-print-integer") procedure print(…);`; reject missing comma/paren; reject native + `begin`; sample under `samples/native/` (decls only, may not fully lower until later steps).
+
+**Done:** keyword + AST `Native_Flag` / binding; parser header form; AUnit tokenizer/parser; sample [`samples/native/NativePrint.love`](../../samples/native/NativePrint.love); docs updated. (`gnatformat` not on PATH in this environment.)
 
 ### 5. LIR: `Native_Flag` + binding metadata (macro-step 6 — IR types)
 

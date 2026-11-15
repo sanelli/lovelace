@@ -78,6 +78,10 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Tokenizer.Test_Import_Keyword'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
+           ("tokenizer: native keyword",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Native_Keyword'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
            ("tokenizer: ascii identifiers",
             Lovelace.Compiler.Tests.Tokenizer.Test_Ascii_Identifiers'Access));
       Result.Add_Test
@@ -309,6 +313,10 @@ package body Lovelace.Compiler.Tests.Suite is
         (Parser_Caller.Create
            ("parser: export procedure",
             Lovelace.Compiler.Tests.Parser.Test_Export_Procedure'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: native procedure",
+            Lovelace.Compiler.Tests.Parser.Test_Native_Procedure'Access));
       Result.Add_Test
         (Parser_Caller.Create
            ("parser: duplicate parameter",

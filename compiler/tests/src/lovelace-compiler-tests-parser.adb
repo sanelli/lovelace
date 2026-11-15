@@ -509,6 +509,59 @@ package body Lovelace.Compiler.Tests.Parser is
       Assert_Empty_Module (Spaced_Module, "Foo.Bar", "spaced module");
    end Test_Module_Whitespace;
 
+   procedure Test_Native_Procedure (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      package U renames Ada.Strings.Unbounded;
+      Exported_Source : constant String :=
+        "module Lib; export native(""wasi"", ""native-print-integer"") procedure print(value : integer); end.";
+      Plain_Source    : constant String :=
+        "module Lib; native(""wasi"", ""native-print-integer"") procedure print(value : integer); end.";
+      With_Body       : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module Lib; native(""wasi"", ""native-print-integer"") procedure print(value : integer);"
+           & " begin end; end.",
+           "native with begin");
+      Missing_Comma   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module Lib; native(""wasi"" ""native-print-integer"") procedure print(value : integer); end.",
+           "native missing comma");
+      Missing_Paren   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module Lib; native ""wasi"", ""native-print-integer"" procedure print(value : integer); end.",
+           "native missing paren");
+      Exported_Module : constant Ast.Module := Support.Must_Parse (Exported_Source, "native export");
+      Plain_Module    : constant Ast.Module := Support.Must_Parse (Plain_Source, "native plain");
+      Exported_Sub    : constant Ast.Subroutine := Ast.Get_Subroutine (Exported_Module, 1);
+      Plain_Sub       : constant Ast.Subroutine := Ast.Get_Subroutine (Plain_Module, 1);
+      Exported_Native : constant Ast.Native_Binding_Option := Ast.Native (Exported_Sub);
+      Plain_Native    : constant Ast.Native_Binding_Option := Ast.Native (Plain_Sub);
+   begin
+      AUnit.Assertions.Assert (Ast.Has_Export (Ast.Get_Flags (Exported_Sub)), "exported has export");
+      AUnit.Assertions.Assert (Ast.Has_Native (Ast.Get_Flags (Exported_Sub)), "exported has native");
+      AUnit.Assertions.Assert (Ast.Name (Exported_Sub) = "print", "exported name");
+      AUnit.Assertions.Assert (Ast.Length (Ast.Get_Body (Exported_Sub)) = 0, "exported empty body");
+      AUnit.Assertions.Assert (Exported_Native.Present, "exported binding present");
+      AUnit.Assertions.Assert
+        (U.To_String (Exported_Native.Value.Target) = "wasi", "exported target");
+      AUnit.Assertions.Assert
+        (U.To_String (Exported_Native.Value.Key) = "native-print-integer", "exported key");
+      AUnit.Assertions.Assert (not Ast.Has_Export (Ast.Get_Flags (Plain_Sub)), "plain no export");
+      AUnit.Assertions.Assert (Ast.Has_Native (Ast.Get_Flags (Plain_Sub)), "plain has native");
+      AUnit.Assertions.Assert (Plain_Native.Present, "plain binding present");
+      AUnit.Assertions.Assert (U.To_String (Plain_Native.Value.Target) = "wasi", "plain target");
+      AUnit.Assertions.Assert
+        (U.To_String (Plain_Native.Value.Key) = "native-print-integer", "plain key");
+      Support.Assert_Parser_Error_Count (With_Body, 1, "native with begin");
+      Support.Assert_Parser_Error_Code
+        (With_Body, 1, Lovelace.Compiler.Parser.Unexpected_Token, "native with begin code");
+      Support.Assert_Parser_Error_Count (Missing_Comma, 1, "native missing comma");
+      Support.Assert_Parser_Error_Code
+        (Missing_Comma, 1, Lovelace.Compiler.Parser.Unexpected_Token, "native missing comma code");
+      Support.Assert_Parser_Error_Count (Missing_Paren, 1, "native missing paren");
+      Support.Assert_Parser_Error_Code
+        (Missing_Paren, 1, Lovelace.Compiler.Parser.Unexpected_Token, "native missing paren code");
+   end Test_Native_Procedure;
+
    procedure Test_Qualified_Calls (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Module_Source : constant String :=
