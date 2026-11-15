@@ -172,6 +172,28 @@ package body Lovelace.Compiler.Tests.Backend is
       end case;
    end Must_Emit_Wat;
 
+   procedure Test_Const_And_Call_Body (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      The_Module : Modules.Module := Modules.Create ("Calls");
+      Params     : Types.Parameter_Sequence := Types.Empty_Sequence;
+      Sink       : Subroutines.Subroutine;
+      Caller     : Subroutines.Subroutine := Make_Unit_Subroutine ("Run", 0);
+      Emitted    : Lovelace.Compiler.Backend.Wat_Emit_Result;
+   begin
+      Types.Append (Params, "Value", Types.I32);
+      Sink := Make_Unit_Subroutine_With_Parameters ("Sink", 0, Params);
+      Subroutines.Append_Instruction
+        (Caller, (Operation => Lovelace.Lir.Opcodes.Constant_I32, Immediate_I32 => Interfaces.Integer_32'(42)));
+      Subroutines.Append_Instruction (Caller, (Operation => Lovelace.Lir.Opcodes.Call, Target_Index => 1));
+      Modules.Append_Subroutine (The_Module, Sink);
+      Modules.Append_Subroutine (The_Module, Caller);
+      Emitted := Must_Emit_Wat (The_Module, "const and call");
+
+      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "i32.const 42", "i32.const");
+      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "call $Sink", "call Sink");
+      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "(func $Run", "Run func");
+   end Test_Const_And_Call_Body;
+
    procedure Test_Entrypoint (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       The_Module   : Modules.Module := Modules.Create ("Hello");

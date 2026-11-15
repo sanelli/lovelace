@@ -128,6 +128,8 @@ Steps 1–3 are mostly frontend. Steps 4–5 make the language callable across m
 - Avoid inventing a second call syntax; unqualified same-module calls can wait or land in the same slice if cheap.
 - Backend: lower calls between functions in the same core module (still no WASI imports).
 
+**Status (issue [#27](https://github.com/sanelli/lovelace/issues/27)):** Done for this slice — LIR `Constant_I32`/`Call`, `To_Integer_32`, AST call statements, same-unit IR resolve (`LV00014`/`LV00015`), backend lower to `i32.const`/`call`, sample [`SameModuleCall.love`](../../samples/calls/SameModuleCall.love). Cross-module / import resolve deferred to step 5.
+
 ### 5. Multi-unit build + import resolution
 
 **Goal:** `import` actually finds Augusta (or other) modules.

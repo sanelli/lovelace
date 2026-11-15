@@ -99,6 +99,10 @@ package Lovelace.Compiler.Tests.Parser is
    --  @param The_Test Unused fixture.
    procedure Test_Module_Whitespace (The_Test : in out Fixture);
 
+   --  Qualified calls with integer literal args in program/module bodies; failures.
+   --  @param The_Test Unused fixture.
+   procedure Test_Qualified_Calls (The_Test : in out Fixture);
+
    --  Trailing tokens and Program (identifier) as keyword fail.
    --  @param The_Test Unused fixture.
    procedure Test_Trailing_And_Keyword_Case (The_Test : in out Fixture);

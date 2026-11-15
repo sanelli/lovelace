@@ -31,6 +31,10 @@ package Lovelace.Compiler.Tests.Backend is
    --  @param The_Test Unused fixture.
    procedure Test_Noop_Body (The_Test : in out Fixture);
 
+   --  Constant_I32 + Call lower to i32.const and call in WAT.
+   --  @param The_Test Unused fixture.
+   procedure Test_Const_And_Call_Body (The_Test : in out Fixture);
+
    --  Non-exported Unit procedure parameters widen into core WAT/WASM functypes.
    --  @param The_Test Unused fixture.
    procedure Test_Typed_Parameters (The_Test : in out Fixture);

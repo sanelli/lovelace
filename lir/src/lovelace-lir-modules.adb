@@ -1,9 +1,15 @@
+with Interfaces;
+
 with Lovelace.Common.Utf_8;
+with Lovelace.Lir.Instructions;
+with Lovelace.Lir.Opcodes;
 with Lovelace.Lir.Types;
 
 package body Lovelace.Lir.Modules is
 
    package Types renames Lovelace.Lir.Types;
+
+   use type Interfaces.Unsigned_32;
 
    procedure Append_Dependency (The_Module : in out Module; Dependency_Name : String) is
    begin
@@ -191,6 +197,28 @@ package body Lovelace.Lir.Modules is
             if Subroutines.Has_Entrypoint (Subroutines.Get_Flags (The_Subroutine)) then
                Entrypoint_Count := Entrypoint_Count + 1;
             end if;
+
+            declare
+               Body_Instrs : constant Instructions.Instruction_Sequence :=
+                 Subroutines.Get_Instructions (The_Subroutine);
+            begin
+               for Instruction_Index in 1 .. Instructions.Length (Body_Instrs) loop
+                  declare
+                     Item : constant Instructions.Instruction := Instructions.Element (Body_Instrs, Instruction_Index);
+                  begin
+                     case Item.Operation is
+                        when Opcodes.No_Operation | Opcodes.Constant_I32 =>
+                           null;
+
+                        when Opcodes.Call                                =>
+                           if Item.Target_Index = 0 or else Natural (Item.Target_Index) > Subroutine_Count (The_Module)
+                           then
+                              return Errors.Validation_Results.From_Failure (Errors.Invalid_Call_Target);
+                           end if;
+                     end case;
+                  end;
+               end loop;
+            end;
          end;
       end loop;
 

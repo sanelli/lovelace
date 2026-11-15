@@ -16,6 +16,8 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Name_Clash Parser: duplicate or conflicting procedure/parameter name (LV00011).
    --  @enum Invalid_Flavor_Condition Parser: `#if`/`#elsif` flavor string is not wasi/native/web (LV00012).
    --  @enum Unterminated_String_Literal Tokenizer: opening `"` without a matching closer (LV00013).
+   --  @enum Unresolved_Call IR Generator: call target is not a same-unit procedure (LV00014).
+   --  @enum Invalid_Arguments IR Generator: call arity or argument/formal mismatch (LV00015).
    type Error_Code is
      (Internal_Error,
       Unrecognized_Symbol,
@@ -29,7 +31,9 @@ package Lovelace.Compiler.Error_Codes is
       Source_File_Io,
       Name_Clash,
       Invalid_Flavor_Condition,
-      Unterminated_String_Literal);
+      Unterminated_String_Literal,
+      Unresolved_Call,
+      Invalid_Arguments);
 
    --  Canonical LV##### label for Code.
    --  @param Code Diagnostic kind.

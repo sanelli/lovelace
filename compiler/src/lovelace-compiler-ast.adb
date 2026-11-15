@@ -5,6 +5,16 @@ package body Lovelace.Compiler.Ast is
       Sequence.Items.Append (The_Parameter);
    end Append;
 
+   procedure Append (Sequence : in out Argument_Sequence; The_Argument : Call_Argument) is
+   begin
+      Sequence.Items.Append (The_Argument);
+   end Append;
+
+   procedure Append (Sequence : in out Statement_Sequence; The_Statement : Statement) is
+   begin
+      Sequence.Items.Append (The_Statement);
+   end Append;
+
    procedure Append (Sequence : in out Subroutine_Sequence; The_Subroutine : Subroutine) is
    begin
       Sequence.Items.Append (The_Subroutine);
@@ -60,6 +70,16 @@ package body Lovelace.Compiler.Ast is
       return Sequence.Items.Element (Index);
    end Element;
 
+   function Element (Sequence : Argument_Sequence; Index : Positive) return Call_Argument is
+   begin
+      return Sequence.Items.Element (Index);
+   end Element;
+
+   function Element (The_Body : Statement_Sequence; Index : Positive) return Statement is
+   begin
+      return The_Body.Items.Element (Index);
+   end Element;
+
    function Element (Sequence : Subroutine_Sequence; Index : Positive) return Subroutine is
    begin
       return Sequence.Items.Element (Index);
@@ -70,9 +90,14 @@ package body Lovelace.Compiler.Ast is
       return Sequence.Items.Element (Index);
    end Element;
 
+   function Empty_Argument_Sequence return Argument_Sequence is
+   begin
+      return (Items => Argument_Vectors.Empty_Vector);
+   end Empty_Argument_Sequence;
+
    function Empty_Body return Statement_Sequence is
    begin
-      return (Count => 0);
+      return (Items => Statement_Vectors.Empty_Vector);
    end Empty_Body;
 
    function Empty_Import_Sequence return Import_Sequence is
@@ -145,14 +170,19 @@ package body Lovelace.Compiler.Ast is
       return The_Module.Kind_Value;
    end Kind;
 
-   function Length (The_Body : Statement_Sequence) return Natural is
-   begin
-      return The_Body.Count;
-   end Length;
-
    function Length (Sequence : Parameter_Sequence) return Natural is
    begin
       return Natural (Sequence.Items.Length);
+   end Length;
+
+   function Length (Sequence : Argument_Sequence) return Natural is
+   begin
+      return Natural (Sequence.Items.Length);
+   end Length;
+
+   function Length (The_Body : Statement_Sequence) return Natural is
+   begin
+      return Natural (The_Body.Items.Length);
    end Length;
 
    function Length (Sequence : Subroutine_Sequence) return Natural is

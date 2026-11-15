@@ -110,6 +110,8 @@ In the component type section, bare `(result)` is a separate `defvaltype`; the `
 | --- | --- |
 | Empty body | Empty core body + `end` |
 | `No_Operation` | Skipped (not emitted) |
+| `Constant_I32` | `i32.const` (core) |
+| `Call` | `call` to the 1-based core function with the same index |
 
 ## Companion WIT
 
@@ -168,10 +170,10 @@ Each failure carries a UTF-8 `Detail` string.
 - `cabi_realloc` / linear memory (not required for empty Unit ABI)
 - Alexandria doc embedding in artifacts
 - Linking LIR `Dependencies`
-- Statement-rich instruction sets beyond `No_Operation`
+- Locals / `local.get` (literal args use `i32.const` only)
 
 ## Tests
 
-Nested crate `lovelace_compiler_tests` covers export-only, entrypoint, both flags, two exports, noop bodies, typed core parameters, unsupported types, invalid modules, component preamble bytes, and Wasm/Wat WIT equality. Run with `alr -C compiler/tests run`.
+Nested crate `lovelace_compiler_tests` covers export-only, entrypoint, both flags, two exports, noop bodies, const+call bodies, typed core parameters, unsupported types, invalid modules, component preamble bytes, and Wasm/Wat WIT equality. Run with `alr -C compiler/tests run`.
 
 End-to-end CLI checks live in `lovelace/integration_tests`: build samples, optionally `wasm-tools validate` every `.wasm`/`.wat`, and run entrypoint programs with `wasmtime` when present.

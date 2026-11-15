@@ -1,4 +1,5 @@
 with Ada.Strings.Unbounded;
+with Interfaces;
 
 with Lovelace.Common.Result;
 with Lovelace.Compiler.Types;
@@ -52,6 +53,9 @@ package Lovelace.Compiler.Literals is
    package Float_Literal_Results is new
      Lovelace.Common.Result (Success_Type => Float_Literal_Value, Error_Type => Literal_Error);
 
+   package Integer_32_Results is new
+     Lovelace.Common.Result (Success_Type => Interfaces.Integer_32, Error_Type => Literal_Error);
+
    --  Interpret an Integer_Literal token lexeme.
    --  @param Lexeme UTF-8 integer literal spelling from the tokenizer.
    --  @return Structured value, or Invalid_Literal / Internal_Error.
@@ -61,5 +65,15 @@ package Lovelace.Compiler.Literals is
    --  @param Lexeme UTF-8 float literal spelling from the tokenizer.
    --  @return Structured value, or Invalid_Literal / Internal_Error.
    function Interpret_Float (Lexeme : String) return Float_Literal_Results.Result;
+
+   --  Evaluate The_Value as a signed 32-bit integer (range-checked).
+   --  @param The_Value Interpreted integer literal (digits + sign + base).
+   --  @return Integer_32, or Invalid_Literal when out of range / bad digits.
+   function To_Integer_32 (The_Value : Integer_Literal_Value) return Integer_32_Results.Result;
+
+   --  Interpret Lexeme then evaluate as Integer_32.
+   --  @param Lexeme UTF-8 integer literal spelling from the tokenizer.
+   --  @return Integer_32, or Invalid_Literal / Internal_Error.
+   function To_Integer_32 (Lexeme : String) return Integer_32_Results.Result;
 
 end Lovelace.Compiler.Literals;

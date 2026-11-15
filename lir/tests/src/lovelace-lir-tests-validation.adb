@@ -1,5 +1,6 @@
 with Lovelace.Lir.Errors;
 with Lovelace.Lir.Modules;
+with Lovelace.Lir.Opcodes;
 with Lovelace.Lir.Subroutines;
 with Lovelace.Lir.Tests.Support;
 with Lovelace.Lir.Types;
@@ -33,6 +34,8 @@ package body Lovelace.Lir.Tests.Validation is
          Dup_Param    : Modules.Module := Modules.Create ("m");
          Empty_Params : Types.Parameter_Sequence := Types.Empty_Sequence;
          Dup_Params   : Types.Parameter_Sequence := Types.Empty_Sequence;
+         Bad_Call     : Modules.Module := Modules.Create ("m");
+         Caller       : Subroutines.Subroutine := Support.Make_Subroutine ("Caller", Types.Unit);
       begin
          Types.Append (Empty_Params, "", Types.I32);
          Modules.Append_Subroutine (Empty_Param, Support.Make_Subroutine ("P", Types.Unit, Parameters => Empty_Params));
@@ -42,6 +45,10 @@ package body Lovelace.Lir.Tests.Validation is
          Types.Append (Dup_Params, "x", Types.F32);
          Modules.Append_Subroutine (Dup_Param, Support.Make_Subroutine ("P", Types.Unit, Parameters => Dup_Params));
          Support.Assert_Validate_Error (Dup_Param, Errors.Duplicate_Name, "duplicate parameter name");
+
+         Subroutines.Append_Instruction (Caller, (Operation => Opcodes.Call, Target_Index => 0));
+         Modules.Append_Subroutine (Bad_Call, Caller);
+         Support.Assert_Validate_Error (Bad_Call, Errors.Invalid_Call_Target, "call target zero");
       end;
    end Test_Validate_Failures;
 

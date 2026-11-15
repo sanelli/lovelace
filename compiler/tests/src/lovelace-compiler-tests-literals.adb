@@ -1,5 +1,6 @@
 with Ada.Strings.Unbounded;
 with AUnit.Assertions;
+with Interfaces;
 
 with Lovelace.Compiler.Literals;
 with Lovelace.Compiler.Types;
@@ -9,6 +10,7 @@ package body Lovelace.Compiler.Tests.Literals is
    package Compiler_Literals renames Lovelace.Compiler.Literals;
 
    use type Compiler_Literals.Literal_Error_Code;
+   use type Interfaces.Integer_32;
    use type Lovelace.Compiler.Types.Integer_Size;
    use type Lovelace.Compiler.Types.Signedness;
 
@@ -110,5 +112,65 @@ package body Lovelace.Compiler.Tests.Literals is
             AUnit.Assertions.Assert (Bad_Size.Error.Code = Compiler_Literals.Invalid_Literal, "8u3 code");
       end case;
    end Test_Invalid_Integer;
+
+   procedure Test_To_Integer_32 (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Plain    : constant Compiler_Literals.Integer_32_Results.Result := Compiler_Literals.To_Integer_32 ("42");
+      Based    : constant Compiler_Literals.Integer_32_Results.Result := Compiler_Literals.To_Integer_32 ("#16#FF");
+      Negative : constant Compiler_Literals.Integer_32_Results.Result := Compiler_Literals.To_Integer_32 ("-3");
+      Sized    : constant Compiler_Literals.Integer_32_Results.Result := Compiler_Literals.To_Integer_32 ("42s32");
+      Overflow : constant Compiler_Literals.Integer_32_Results.Result :=
+        Compiler_Literals.To_Integer_32 ("2147483648");
+      Min_Ok   : constant Compiler_Literals.Integer_32_Results.Result :=
+        Compiler_Literals.To_Integer_32 ("-2147483648");
+   begin
+      case Plain.Ok is
+         when False =>
+            AUnit.Assertions.Assert (False, "42 should evaluate");
+
+         when True  =>
+            AUnit.Assertions.Assert (Plain.Value = 42, "42 value");
+      end case;
+
+      case Based.Ok is
+         when False =>
+            AUnit.Assertions.Assert (False, "#16#FF should evaluate");
+
+         when True  =>
+            AUnit.Assertions.Assert (Based.Value = 255, "#16#FF value");
+      end case;
+
+      case Negative.Ok is
+         when False =>
+            AUnit.Assertions.Assert (False, "-3 should evaluate");
+
+         when True  =>
+            AUnit.Assertions.Assert (Negative.Value = -3, "-3 value");
+      end case;
+
+      case Sized.Ok is
+         when False =>
+            AUnit.Assertions.Assert (False, "42s32 should evaluate");
+
+         when True  =>
+            AUnit.Assertions.Assert (Sized.Value = 42, "42s32 value");
+      end case;
+
+      case Overflow.Ok is
+         when True  =>
+            AUnit.Assertions.Assert (False, "2147483648 should overflow");
+
+         when False =>
+            AUnit.Assertions.Assert (Overflow.Error.Code = Compiler_Literals.Invalid_Literal, "overflow code");
+      end case;
+
+      case Min_Ok.Ok is
+         when False =>
+            AUnit.Assertions.Assert (False, "Integer_32'First should evaluate");
+
+         when True  =>
+            AUnit.Assertions.Assert (Min_Ok.Value = Interfaces.Integer_32'First, "min value");
+      end case;
+   end Test_To_Integer_32;
 
 end Lovelace.Compiler.Tests.Literals;

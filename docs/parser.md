@@ -54,11 +54,12 @@ Handle both discriminants. Do not read `The_Module` when `Ok` is `False`.
 See [compilation-unit-grammar.md](compilation-unit-grammar.md) for the full EBNF. Summary:
 
 - Leading imports: zero or more `import` qualified-name `;` before the unit keyword.
-- Programs: `program` name `;` `begin` `end` `.` (no procedures, no `#if`).
+- Programs: `program` name `;` `begin` { statement } `end` `.` (no procedures, no `#if`).
 - Modules: `module` qualified name `;` zero or more `module_declaration`s, then `end` `.`.
 - `module_declaration`: `procedure` **or** flavor conditional (`#if flavor = "…" … `#end`).
 - Flavor conditional: parse **all** arms; keep only the active arm’s declarations; discard the rest (no AST for inactive arms). Conditions are only `flavor = "wasi"|"native"|"web"`. See [directives.md](directives.md).
-- Procedure: `procedure` name `(` [parameter list] `)` `;` `begin` `end` `;` — **no** `;` after `begin`.
+- Procedure: `procedure` name `(` [parameter list] `)` `;` `begin` { statement } `end` `;` — **no** `;` after `begin`.
+- Statements (this slice): qualified call `MODULE.SUBROUTINE(` [integer literals] `);` — callee must contain at least one `.`; args are integer literals only.
 - Types: `integer` / `signed integer` / `unsigned integer` with optional `<8|16|32|64>`; `float` with optional `<32|64>`.
 
 Keywords are case-sensitive. The unit terminator after a unit-level `end` is only `.` (`Full_Stop`). Procedure bodies end with `end;`. Modules have **no** unit-level `begin`. Extra tokens after a complete unit are `Unexpected_Trailing`. `#if` is **not** allowed inside procedure bodies in this slice. `import` is **not** allowed after `program`/`module`, inside bodies, or inside `#if` arms. `import … as …` is reserved and not parsed.
@@ -70,7 +71,7 @@ Keywords are case-sensitive. The unit terminator after a unit-level `end` is onl
 - A module named `IDENTIFIER`
 - Ordered `Import_Declaration` list (may be empty)
 - One subroutine with the same name
-- Empty body; return type **unit**; no parameters
+- Body may contain call statements; return type **unit**; no parameters
 - Flags: both `Export_Flag` and `Entrypoint_Flag`
 
 **Module** (`Unit_Kind = Module_Unit`):
@@ -78,8 +79,10 @@ Keywords are case-sensitive. The unit terminator after a unit-level `end` is onl
 - A module named the qualified identifier (UTF-8 with `.` separators, e.g. `Foo.Bar`)
 - Ordered `Import_Declaration` list (may be empty)
 - Zero or more procedures from **active** declarations only. Optional `export` sets `Export_Flag` (not `Entrypoint_Flag`); plain procedures keep flags `0`. Inactive `#if` arms do not appear in the AST.
-- Each procedure has unqualified `Name`, `Full_Name` = `ModuleName.ProcedureName`, ordered parameters, Unit return, empty body
+- Each procedure has unqualified `Name`, `Full_Name` = `ModuleName.ProcedureName`, ordered parameters, Unit return, optional call-statement body
 - `Name_Span` on the module covers the whole qualified name
+
+**Call statement:** `Callee_Name` (dotted), `Name_Span`, ordered `Call_Argument` values (lexeme + span). Resolution of the callee is not done in the parser.
 
 ### Name rules
 

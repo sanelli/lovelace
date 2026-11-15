@@ -49,13 +49,15 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
 
    procedure Test_Build_And_Validate (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Test_Name         : constant String := "build: validate modules Empty, Foo.Bar, Procedures, ExportProcedures";
+      Test_Name         : constant String :=
+        "build: validate modules Empty, Foo.Bar, Procedures, ExportProcedures, SameModuleCall";
       Lovelace_Path     : constant String := Helpers.Locate_Lovelace;
       Output_Root       : constant String := Helpers.Locate_Output_Root ("modules");
       Empty_Sample      : constant String := Helpers.Locate_Sample ("module", "Empty.love");
       Dotted_Sample     : constant String := Helpers.Locate_Sample ("module", "Foo.Bar.love");
       Procedures_Sample : constant String := Helpers.Locate_Sample ("module", "Procedures.love");
       Export_Sample     : constant String := Helpers.Locate_Sample ("module", "ExportProcedures.love");
+      Calls_Sample      : constant String := Helpers.Locate_Sample ("calls", "SameModuleCall.love");
       Aggregate_Status  : Helpers.Tool_Status := Helpers.Succeeded;
       Outcome           : Helpers.Test_Outcome := Helpers.Ok;
    begin
@@ -114,6 +116,24 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
          Unit_Name   => "ExportProcedures",
          Fragment    => "(func $InternalHelper (param i32)",
          Message     => "ExportProcedures InternalHelper");
+
+      Build_Validate_Unit
+        (Lovelace_Path => Lovelace_Path,
+         Sample_Path   => Calls_Sample,
+         Output_Root   => Output_Root,
+         Unit_Name     => "SameModuleCall",
+         Message       => "SameModuleCall",
+         Status        => Aggregate_Status);
+      Helpers.Assert_Wat_Contains
+        (Output_Root => Output_Root,
+         Unit_Name   => "SameModuleCall",
+         Fragment    => "i32.const 42",
+         Message     => "SameModuleCall const");
+      Helpers.Assert_Wat_Contains
+        (Output_Root => Output_Root,
+         Unit_Name   => "SameModuleCall",
+         Fragment    => "call $Sink",
+         Message     => "SameModuleCall call");
 
       if Aggregate_Status = Helpers.Missing then
          Outcome := Helpers.Inconclusive;

@@ -31,6 +31,10 @@ package Lovelace.Lir.Tests.Binary_Format is
    --  @param The_Test Unused fixture.
    procedure Test_Noop_Encoding (The_Test : in out Fixture);
 
+   --  Constant_I32 and Call round-trip; encoding sizes and words match.
+   --  @param The_Test Unused fixture.
+   procedure Test_Const_And_Call_Encoding (The_Test : in out Fixture);
+
    --  Each Value_Type as lone parameter and lone result round-trips.
    --  @param The_Test Unused fixture.
    procedure Test_All_Value_Types (The_Test : in out Fixture);

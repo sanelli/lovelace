@@ -1,3 +1,4 @@
+with Ada.Containers.Indefinite_Vectors;
 with Ada.Containers.Vectors;
 with Ada.Strings.Unbounded;
 
@@ -35,7 +36,46 @@ package Lovelace.Compiler.Ast is
    --  Ordered list of parameters on a subroutine.
    type Parameter_Sequence is private;
 
-   --  Ordered list of statements in a subroutine body (empty in this slice).
+   --  One integer literal argument to a call.
+   --  @field Lexeme UTF-8 integer literal spelling from the tokenizer.
+   --  @field Span Source span of the literal token.
+   --  @field Filename Optional shared filename from the literal token.
+   type Call_Argument is record
+      Lexeme   : Ada.Strings.Unbounded.Unbounded_String;
+      Span     : Source.Source_Span;
+      Filename : Source.Filename_Option;
+   end record;
+
+   --  Ordered list of call arguments.
+   type Argument_Sequence is private;
+
+   --  One qualified call statement (MODULE.SUBROUTINE with literal args).
+   --  @field Callee_Name UTF-8 dotted callee (at least one '.').
+   --  @field Name_Span Source span of the whole callee name.
+   --  @field Filename Optional shared filename from the callee name.
+   --  @field Arguments Ordered integer-literal arguments.
+   type Call_Statement is record
+      Callee_Name : Ada.Strings.Unbounded.Unbounded_String;
+      Name_Span   : Source.Source_Span;
+      Filename    : Source.Filename_Option;
+      Arguments   : Argument_Sequence;
+   end record;
+
+   --  Statement kind in a subroutine body.
+   --  @enum Call Qualified call with optional integer literal arguments.
+   type Statement_Kind is (Call);
+
+   --  One statement in a subroutine body.
+   --  @disc Kind Selects the statement variant.
+   --  @field The_Call Call_Statement when Kind is Call.
+   type Statement (Kind : Statement_Kind := Call) is record
+      case Kind is
+         when Call =>
+            The_Call : Call_Statement;
+      end case;
+   end record;
+
+   --  Ordered list of statements in a subroutine body.
    type Statement_Sequence is private;
 
    --  One subroutine declaration in the AST.
@@ -61,7 +101,7 @@ package Lovelace.Compiler.Ast is
    type Module is private;
 
    --  Which surface form produced this compilation-unit AST.
-   --  @enum Program_Unit Source used program IDENTIFIER; begin end.
+   --  @enum Program_Unit Source used program IDENTIFIER; begin â¦ end.
    --  @enum Module_Unit Source used module qualified_identifier; end.
    type Unit_Kind is (Program_Unit, Module_Unit);
 
@@ -95,14 +135,45 @@ package Lovelace.Compiler.Ast is
    --  @return Parameter at Index.
    function Element (Sequence : Parameter_Sequence; Index : Positive) return Parameter;
 
+   --  Empty argument sequence.
+   --  @return Sequence with no elements.
+   function Empty_Argument_Sequence return Argument_Sequence;
+
+   --  Append The_Argument to the end of Sequence.
+   --  @param Sequence Sequence to extend.
+   --  @param The_Argument Argument to append.
+   procedure Append (Sequence : in out Argument_Sequence; The_Argument : Call_Argument);
+
+   --  Number of arguments in Sequence.
+   --  @param Sequence Argument list.
+   --  @return Element count.
+   function Length (Sequence : Argument_Sequence) return Natural;
+
+   --  Argument at Index (1 .. Length (Sequence)).
+   --  @param Sequence Argument list.
+   --  @param Index 1-based index.
+   --  @return Argument at Index.
+   function Element (Sequence : Argument_Sequence; Index : Positive) return Call_Argument;
+
    --  Empty statement sequence (no statements).
    --  @return Sequence with length 0.
    function Empty_Body return Statement_Sequence;
+
+   --  Append The_Statement to the end of Sequence.
+   --  @param Sequence Sequence to extend.
+   --  @param The_Statement Statement to append.
+   procedure Append (Sequence : in out Statement_Sequence; The_Statement : Statement);
 
    --  Number of statements in The_Body.
    --  @param The_Body Statement list.
    --  @return Element count.
    function Length (The_Body : Statement_Sequence) return Natural;
+
+   --  Statement at Index (1 .. Length (The_Body)).
+   --  @param The_Body Statement list.
+   --  @param Index 1-based index.
+   --  @return Statement at Index.
+   function Element (The_Body : Statement_Sequence; Index : Positive) return Statement;
 
    --  Build a subroutine with the given metadata, parameters, and body.
    --  Full_Name is Module_Name & "." & Name.
@@ -113,7 +184,7 @@ package Lovelace.Compiler.Ast is
    --  @param Flags Flag bits (export, entrypoint, and others).
    --  @param Return_Type Frontend return type expression.
    --  @param Parameters Ordered parameter list.
-   --  @param The_Body Statement list (empty in this slice).
+   --  @param The_Body Statement list (may be empty).
    --  @return Subroutine value.
    function Create_Subroutine
      (Name        : String;
@@ -278,10 +349,17 @@ private
       Items : Parameter_Vectors.Vector;
    end record;
 
-   --  Empty body representation for this slice; replaced by a statement
-   --  vector when statement nodes exist.
+   package Argument_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Call_Argument);
+
+   type Argument_Sequence is record
+      Items : Argument_Vectors.Vector;
+   end record;
+
+   package Statement_Vectors is new
+     Ada.Containers.Indefinite_Vectors (Index_Type => Positive, Element_Type => Statement);
+
    type Statement_Sequence is record
-      Count : Natural := 0;
+      Items : Statement_Vectors.Vector;
    end record;
 
    type Subroutine is record

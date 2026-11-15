@@ -1,5 +1,6 @@
 with Lovelace.Compiler.Ast;
 with Lovelace.Compiler.Flavor;
+with Lovelace.Compiler.Ir_Generator;
 with Lovelace.Compiler.Parser;
 with Lovelace.Compiler.Tokens;
 with Lovelace.Compiler.Tokenizer;
@@ -192,6 +193,13 @@ package Lovelace.Compiler.Tests.Support is
    function Must_Parse
      (Source_Text : String; Filename : String; Message : String; Active_Flavor : Flavor.Flavor := Flavor.Default)
       return Ast.Module;
+
+   --  Require Generate failure and return the error.
+   --  @param The_Module Frontend AST module.
+   --  @param Message Assertion message on unexpected success.
+   --  @return IR Generator error payload.
+   function Must_Fail_Generate
+     (The_Module : Ast.Module; Message : String) return Ir_Generator.Ir_Generator_Error;
 
    --  Tokenize then Parse Source_Text; require parse failure and return errors.
    --  @param Source_Text UTF-8 Lovelace source (must tokenize successfully).

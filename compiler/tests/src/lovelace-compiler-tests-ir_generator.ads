@@ -47,4 +47,8 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  @param The_Test Unused fixture.
    procedure Test_Parameter_Type_Mapping (The_Test : in out Fixture);
 
+   --  Same-unit qualified calls emit Constant_I32 + Call; unresolved/invalid args fail.
+   --  @param The_Test Unused fixture.
+   procedure Test_Same_Unit_Calls (The_Test : in out Fixture);
+
 end Lovelace.Compiler.Tests.Ir_Generator;

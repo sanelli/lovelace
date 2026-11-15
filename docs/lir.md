@@ -55,7 +55,15 @@ A **subroutine** has:
 
 Origins support diagnostics and frontend lowering. Codecs round-trip them when present (`origin_present = 0` / omit text form when absent). `Validate` does not require origins. Shared position types live in [`Lovelace.Common.Source`](source-locations.md); the compiler copies them via the [IR Generator](ir-generator.md). The format **version fields remain 1.0**; layout includes origin fields and named parameters. The CLI writes `.lir` under the build output `obj/` folder ([cli.md](cli.md)); user diagnostics use `LV#####` codes ([diagnostics.md](diagnostics.md)).
 
-The only opcode in this slice is `No_Operation` (`noop` in text).
+Opcodes in this slice:
+
+| Opcode | Word | Text | Immediates |
+| --- | ---: | --- | --- |
+| `No_Operation` | `0` | `noop` | none |
+| `Constant_I32` | `1` | `i32.const <n>` | little-endian `i32` (4 bytes) |
+| `Call` | `2` | `call <index>` | little-endian `u32` **1-based** subroutine index (4 bytes) |
+
+`Validate` rejects `Call` when `Target_Index` is `0` or greater than `Subroutine_Count` (`Invalid_Call_Target`).
 
 ## Ada packages
 
@@ -78,6 +86,7 @@ Builders allow temporarily invalid modules (for example two entrypoints while ap
 - duplicate dependency, subroutine, or parameter names (parameters unique within a signature)
 - self-dependency (a depend name equals the module name)
 - more than one `Entrypoint` flag
+- `Call` with `Target_Index` outside `1 .. Subroutine_Count`
 
 Decode applies the same checks plus format errors (bad magic, truncated input, unknown type code, and so on). Handle both success and failure on every `Result`-shaped return (see the Result rule).
 
