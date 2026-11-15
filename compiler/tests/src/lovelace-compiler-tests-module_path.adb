@@ -33,6 +33,9 @@ package body Lovelace.Compiler.Tests.Module_Path is
         Ada.Directories.Compose
           (Ada.Directories.Compose (".tests", "module_path"), Leaf);
    begin
+      if Ada.Directories.Exists (Base) then
+         Ada.Directories.Delete_Tree (Base);
+      end if;
       Ada.Directories.Create_Path (Base);
       return Ada.Directories.Full_Name (Base);
    end Temp_Dir;
@@ -151,11 +154,11 @@ package body Lovelace.Compiler.Tests.Module_Path is
 
       Write_Text_File (Slash_Path, "module a.b.c; end.");
       Unique := Paths.Resolve_Module_File ("a.b.c", Roots);
-      AUnit.Assertions.Assert (Unique.Status = Paths.Unique, "unique status");
       AUnit.Assertions.Assert
-        (Ada.Directories.Full_Name
-           (Ada.Strings.Unbounded.To_String (Unique.Path))
-         = Ada.Directories.Full_Name (Slash_Path),
+        (Unique.Status = Paths.Unique,
+         "unique status got " & Paths.Resolve_Status'Image (Unique.Status));
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Unique.Path) = Slash_Path,
          "unique path");
 
       Write_Text_File (Dot_Path, "module a.b.c; end.");

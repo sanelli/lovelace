@@ -58,7 +58,7 @@ A `.love` path is **required** for now. Future builds may accept `.pjlove` / `.s
 | `--output-format <fmt>` | `wasm` (default), `wat`, `wasm,wat`, or `wat,wasm` |
 | `--output-folder <path>` | Output root (default `.output` in the current working directory) |
 | `--flavor <name>` | Active compile-time flavor for `#if` selection: `wasi` (default), `native`, or `web`. See [directives.md](directives.md). |
-| `--include-path <dir>` / `-I <dir>` | Extra module search root (repeatable; wired in the multi-unit resolve work). See module search below. |
+| `--include-path <dir>` / `-I <dir>` | Extra module search root (repeatable; `-Idir` glued form also accepted). See module search below. |
 
 #### Unit name vs filename
 

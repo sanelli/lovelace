@@ -1,0 +1,8 @@
+import Lib;
+import pkg.Util;
+
+program Caller;
+begin
+   Lib.Sink(1);
+   pkg.Util.Sink(2);
+end.

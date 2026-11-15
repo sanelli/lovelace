@@ -11,6 +11,10 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  @param The_Test Unused fixture.
    procedure Test_Canonical_Multiline (The_Test : in out Fixture);
 
+   --  Multi-unit flatten: import-gated exported calls succeed; missing import / not exported fail.
+   --  @param The_Test Unused fixture.
+   procedure Test_Cross_Module_Calls (The_Test : in out Fixture);
+
    --  Dotted module name is preserved on the LIR module with zero subroutines.
    --  @param The_Test Unused fixture.
    procedure Test_Dotted_Module_Name (The_Test : in out Fixture);

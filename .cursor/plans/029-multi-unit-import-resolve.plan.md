@@ -22,22 +22,22 @@ todos:
     status: completed
   - id: "7"
     content: "7. IR generator multi-unit resolve + flatten (mangle dep procs, export/import gates) + AUnit + ir-generator.md; gnatformat."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. CLI build: --include-path/-I, mutually exclusive Augusta slot, load closure, combined Generate, multi-file stale check; cli/help docs; gnatformat."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. samples/resolve/* multi-file sample; fix ImportDecl.love; docs/samples.md + integration lists."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Roadmap step-5 status + lock Augusta path convention (mixed slash/dot; ambiguity error) in open-choices table."
-    status: pending
+    status: completed
   - id: "11"
     content: "11. Run all existing tests (nested AUnit crates / workspace / scripts/run-tests.ps1)."
-    status: pending
+    status: completed
   - id: "12"
     content: "12. Push (proxy env cleared) and open a PR with gh pr create."
-    status: pending
+    status: completed
 isProject: false
 ---
 

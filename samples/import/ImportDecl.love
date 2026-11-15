@@ -1,4 +1,4 @@
-import augusta.std.io;
+import ImportLib;
 program ImportDecl;
 begin
 end.

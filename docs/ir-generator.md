@@ -35,7 +35,10 @@ Callers parse first. `Generate` does not call `Tokenize` or `Parse`. Codegen fro
 
 ```ada
 function Generate (The_Module : Ast.Module) return Generate_Result;
+function Generate (Units : Unit_Graph.Compilation_Set) return Generate_Result;
 ```
+
+The single-module overload wraps `The_Module` as a one-element compilation set. The multi-unit overload flattens root-first units into **one** LIR module (dependency procedures mangled as `Module.Proc`).
 
 `Generate_Result` is a LIR module **or** an error, not both:
 
@@ -70,8 +73,8 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 
 ### Call resolution (this slice)
 
-- Callee must be `UnitName.ProcedureName` where `UnitName` equals the compilation-unit module name and `ProcedureName` is a local procedure.
-- Cross-module / import-based resolution is deferred (roadmap step 5) → `Unresolved_Call` (`LV00014`).
+- Same-unit: `UnitName.ProcedureName` where `UnitName` equals the calling unit; export not required.
+- Cross-module: `import M;` required on the caller; callee must exist on `M` with `Export_Flag`. Failures → `Call_Without_Import` (`LV00017`), `Not_Exported` (`LV00018`), or `Unresolved_Call` (`LV00014`).
 - Argument count must match formals; each formal must accept an `i32` constant (signed/unsigned integer size ≤ 32). Negative literals are rejected for unsigned formals. Failures → `Invalid_Arguments` (`LV00015`).
 
 ### Type map
@@ -98,12 +101,13 @@ Origins use [`Lovelace.Common.Source`](source-locations.md). They are copied ont
 | Code | LV | Meaning |
 | --- | --- | --- |
 | `Internal_Error` | `LV00001` | Compiler bug (e.g. LIR `Validate` failed after lowering) |
-| `Unresolved_Call` | `LV00014` | Call target is not a same-unit procedure |
+| `Unresolved_Call` | `LV00014` | Call target is not a same-unit / imported procedure |
 | `Invalid_Arguments` | `LV00015` | Wrong arity, out-of-range literal, or unsupported formal |
+| `Call_Without_Import` | `LV00017` | Callee module prefix is not imported by the caller |
+| `Not_Exported` | `LV00018` | Imported procedure exists but lacks `Export_Flag` |
 
 ## Out of scope
 
-- Multi-unit / import-gated call resolution
 - Emitting `No_Operation` for empty bodies
 - Locals, assignment, non-literal arguments
 - Analysis and optimization

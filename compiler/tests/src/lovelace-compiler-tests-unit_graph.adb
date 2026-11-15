@@ -26,6 +26,9 @@ package body Lovelace.Compiler.Tests.Unit_Graph is
         Ada.Directories.Compose
           (Ada.Directories.Compose (".tests", "unit_graph"), Leaf);
    begin
+      if Ada.Directories.Exists (Base) then
+         Ada.Directories.Delete_Tree (Base);
+      end if;
       Ada.Directories.Create_Path (Base);
       return Ada.Directories.Full_Name (Base);
    end Temp_Dir;

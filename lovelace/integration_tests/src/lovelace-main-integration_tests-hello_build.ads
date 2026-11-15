@@ -11,8 +11,16 @@ package Lovelace.Main.Integration_Tests.Hello_Build is
    --  @param The_Test Unused fixture.
    procedure Test_Build_Validate_And_Run (The_Test : in out Fixture);
 
-   --  Build ImportDecl.love (leading import); validate and run like Hello.
+   --  Build ImportDecl.love (resolves same-folder ImportLib); validate and run like Hello.
    --  @param The_Test Unused fixture.
-   procedure Test_Import_Decl_Build_Validate_And_Run (The_Test : in out Fixture);
+   procedure Test_Import_Decl_Build_Validate_And_Run
+     (The_Test : in out Fixture);
+
+   --  Build resolve/Caller.love (multi-unit imports). File-dir search root finds
+   --  Lib.love and pkg/Util.love beside Caller; -I may be needed once CLI exposes
+   --  include paths for builds from other working directories.
+   --  @param The_Test Unused fixture.
+   procedure Test_Resolve_Caller_Build_Validate_And_Run
+     (The_Test : in out Fixture);
 
 end Lovelace.Main.Integration_Tests.Hello_Build;

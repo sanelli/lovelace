@@ -409,6 +409,14 @@ package body Lovelace.Compiler.Tests.Suite is
               .Test_Parameter_Type_Mapping'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
+           ("ir generator: cross-module calls",
+            Lovelace
+              .Compiler
+              .Tests
+              .Ir_Generator
+              .Test_Cross_Module_Calls'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
            ("ir generator: same-unit calls",
             Lovelace.Compiler.Tests.Ir_Generator.Test_Same_Unit_Calls'Access));
 

@@ -7,6 +7,7 @@ with Lovelace.Compiler.Ast;
 with Lovelace.Compiler.Ir_Generator;
 with Lovelace.Compiler.Tests.Support;
 with Lovelace.Compiler.Types;
+with Lovelace.Compiler.Unit_Graph;
 with Lovelace.Lir.Instructions;
 with Lovelace.Lir.Modules;
 with Lovelace.Lir.Opcodes;
@@ -28,112 +29,259 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
    use type Source.Source_Span;
 
    procedure Assert_Entrypoint_Lir
-     (Lir_Module : Modules.Module; Expected_Name : String; Ast_Module : Ast.Module; Message : String);
+     (Lir_Module    : Modules.Module;
+      Expected_Name : String;
+      Ast_Module    : Ast.Module;
+      Message       : String);
    --  Assert LIR module/subroutine shape and origins match Expected_Name and Ast_Module.
 
    procedure Assert_Entrypoint_Lir
-     (Lir_Module : Modules.Module; Expected_Name : String; Ast_Module : Ast.Module; Message : String)
+     (Lir_Module    : Modules.Module;
+      Expected_Name : String;
+      Ast_Module    : Ast.Module;
+      Message       : String)
    is
-      Lir_Subroutine : constant Subroutines.Subroutine := Modules.Get_Subroutine (Lir_Module, 1);
-      The_Signature  : constant Subroutines.Signature := Subroutines.Get_Signature (Lir_Subroutine);
-      Flags          : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (Lir_Subroutine);
-      Instructions   : constant Lovelace.Lir.Instructions.Instruction_Sequence :=
-        Subroutines.Get_Instructions (Lir_Subroutine);
-      Module_Origin  : constant Modules.Origin_Option := Modules.Origin (Lir_Module);
-      Sub_Origin     : constant Subroutines.Origin_Option := Subroutines.Origin (Lir_Subroutine);
-      Ast_Subroutine : constant Ast.Subroutine := Ast.Get_Subroutine (Ast_Module, 1);
+      Lir_Subroutine : constant Subroutines.Subroutine :=
+        Modules.Get_Subroutine (Lir_Module, 1);
+      The_Signature  : constant Subroutines.Signature :=
+        Subroutines.Get_Signature (Lir_Subroutine);
+      Flags          : constant Subroutines.Subroutine_Flags :=
+        Subroutines.Get_Flags (Lir_Subroutine);
+      Instructions   :
+        constant Lovelace.Lir.Instructions.Instruction_Sequence :=
+          Subroutines.Get_Instructions (Lir_Subroutine);
+      Module_Origin  : constant Modules.Origin_Option :=
+        Modules.Origin (Lir_Module);
+      Sub_Origin     : constant Subroutines.Origin_Option :=
+        Subroutines.Origin (Lir_Subroutine);
+      Ast_Subroutine : constant Ast.Subroutine :=
+        Ast.Get_Subroutine (Ast_Module, 1);
    begin
-      AUnit.Assertions.Assert (Modules.Name (Lir_Module) = Expected_Name, Message & ": module name");
-      AUnit.Assertions.Assert (Modules.Dependency_Count (Lir_Module) = 0, Message & ": no dependencies");
-      AUnit.Assertions.Assert (Modules.Subroutine_Count (Lir_Module) = 1, Message & ": one subroutine");
       AUnit.Assertions.Assert
-        (Ada.Strings.Unbounded.To_String (The_Signature.Name) = Expected_Name, Message & ": subroutine name");
-      AUnit.Assertions.Assert (The_Signature.Return_Type = Lovelace.Lir.Types.Unit, Message & ": return Unit");
-      AUnit.Assertions.Assert (Lovelace.Lir.Types.Length (The_Signature.Parameters) = 0, Message & ": no params");
-      AUnit.Assertions.Assert (Subroutines.Has_Export (Flags), Message & ": export");
-      AUnit.Assertions.Assert (Subroutines.Has_Entrypoint (Flags), Message & ": entrypoint");
-      AUnit.Assertions.Assert (Lovelace.Lir.Instructions.Length (Instructions) = 0, Message & ": empty instructions");
+        (Modules.Name (Lir_Module) = Expected_Name, Message & ": module name");
+      AUnit.Assertions.Assert
+        (Modules.Dependency_Count (Lir_Module) = 0,
+         Message & ": no dependencies");
+      AUnit.Assertions.Assert
+        (Modules.Subroutine_Count (Lir_Module) = 1,
+         Message & ": one subroutine");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (The_Signature.Name) = Expected_Name,
+         Message & ": subroutine name");
+      AUnit.Assertions.Assert
+        (The_Signature.Return_Type = Lovelace.Lir.Types.Unit,
+         Message & ": return Unit");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Types.Length (The_Signature.Parameters) = 0,
+         Message & ": no params");
+      AUnit.Assertions.Assert
+        (Subroutines.Has_Export (Flags), Message & ": export");
+      AUnit.Assertions.Assert
+        (Subroutines.Has_Entrypoint (Flags), Message & ": entrypoint");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Instructions.Length (Instructions) = 0,
+         Message & ": empty instructions");
 
       case Module_Origin.Present is
          when False =>
-            AUnit.Assertions.Assert (False, Message & ": module origin present");
+            AUnit.Assertions.Assert
+              (False, Message & ": module origin present");
 
          when True  =>
             AUnit.Assertions.Assert
-              (Module_Origin.Value.Name_Span = Ast.Name_Span (Ast_Module), Message & ": module name span");
-            AUnit.Assertions.Assert (Module_Origin.Value.Span = Ast.Span (Ast_Module), Message & ": module unit span");
+              (Module_Origin.Value.Name_Span = Ast.Name_Span (Ast_Module),
+               Message & ": module name span");
             AUnit.Assertions.Assert
-              (Source.Same_Storage (Module_Origin.Value.Filename, Ast.Filename (Ast_Module)),
+              (Module_Origin.Value.Span = Ast.Span (Ast_Module),
+               Message & ": module unit span");
+            AUnit.Assertions.Assert
+              (Source.Same_Storage
+                 (Module_Origin.Value.Filename, Ast.Filename (Ast_Module)),
                Message & ": module filename");
       end case;
 
       case Sub_Origin.Present is
          when False =>
-            AUnit.Assertions.Assert (False, Message & ": subroutine origin present");
+            AUnit.Assertions.Assert
+              (False, Message & ": subroutine origin present");
 
          when True  =>
             AUnit.Assertions.Assert
-              (Sub_Origin.Value.Name_Span = Ast.Name_Span (Ast_Subroutine), Message & ": subroutine name span");
+              (Sub_Origin.Value.Name_Span = Ast.Name_Span (Ast_Subroutine),
+               Message & ": subroutine name span");
             AUnit.Assertions.Assert
-              (Source.Same_Storage (Sub_Origin.Value.Filename, Ast.Filename (Ast_Subroutine)),
+              (Source.Same_Storage
+                 (Sub_Origin.Value.Filename, Ast.Filename (Ast_Subroutine)),
                Message & ": subroutine filename");
       end case;
    end Assert_Entrypoint_Lir;
 
    procedure Test_Canonical_Multiline (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Source_Text : constant String := "program Hello;" & ASCII.LF & "begin" & ASCII.LF & "end.";
-      Ast_Module  : constant Ast.Module := Support.Must_Parse (Source_Text, "canonical");
-      Lir_Module  : constant Modules.Module := Support.Must_Generate (Ast_Module, "canonical");
+      Source_Text : constant String :=
+        "program Hello;" & ASCII.LF & "begin" & ASCII.LF & "end.";
+      Ast_Module  : constant Ast.Module :=
+        Support.Must_Parse (Source_Text, "canonical");
+      Lir_Module  : constant Modules.Module :=
+        Support.Must_Generate (Ast_Module, "canonical");
    begin
       Assert_Entrypoint_Lir (Lir_Module, "Hello", Ast_Module, "canonical");
    end Test_Canonical_Multiline;
 
+   procedure Test_Cross_Module_Calls (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Lib_Ast    : constant Ast.Module :=
+        Support.Must_Parse
+          ("module Lib; export procedure Sink(Value : integer); begin end; end.",
+           "lib");
+      Hidden_Ast : constant Ast.Module :=
+        Support.Must_Parse
+          ("module Lib; procedure Sink(Value : integer); begin end; end.",
+           "hidden lib");
+      Caller_Ast : constant Ast.Module :=
+        Support.Must_Parse
+          ("import Lib; program Caller; begin Lib.Sink(7); end.", "caller");
+      No_Imp_Ast : constant Ast.Module :=
+        Support.Must_Parse
+          ("program Caller; begin Lib.Sink(7); end.", "no import");
+      Units      : Unit_Graph.Compilation_Set;
+      Hidden     : Unit_Graph.Compilation_Set;
+      No_Import  : Unit_Graph.Compilation_Set;
+      Ok_Result  : Ir_Gen.Generate_Result;
+      Hidden_Err : Ir_Gen.Generate_Result;
+      No_Imp_Err : Ir_Gen.Generate_Result;
+   begin
+      Units.Append
+        (Unit_Graph.Loaded_Unit'
+           (The_Module  => Caller_Ast,
+            Source_Path =>
+              Ada.Strings.Unbounded.To_Unbounded_String ("Caller.love"),
+            Source_Text => Ada.Strings.Unbounded.To_Unbounded_String ("")));
+      Units.Append
+        (Unit_Graph.Loaded_Unit'
+           (The_Module  => Lib_Ast,
+            Source_Path =>
+              Ada.Strings.Unbounded.To_Unbounded_String ("Lib.love"),
+            Source_Text => Ada.Strings.Unbounded.To_Unbounded_String ("")));
+      Ok_Result := Ir_Gen.Generate (Units);
+      AUnit.Assertions.Assert (Ok_Result.Ok, "cross ok");
+      declare
+         Caller_Body :
+           constant Lovelace.Lir.Instructions.Instruction_Sequence :=
+             Subroutines.Get_Instructions
+               (Modules.Get_Subroutine (Ok_Result.The_Module, 1));
+      begin
+         AUnit.Assertions.Assert
+           (Modules.Subroutine_Count (Ok_Result.The_Module) = 2,
+            "flattened count");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String
+              (Subroutines.Get_Signature
+                 (Modules.Get_Subroutine (Ok_Result.The_Module, 2))
+                 .Name)
+            = "Lib.Sink",
+            "mangled name");
+         AUnit.Assertions.Assert
+           (Lovelace.Lir.Instructions.Element (Caller_Body, 2).Target_Index
+            = 2,
+            "call Lib.Sink");
+      end;
+
+      Hidden.Append
+        (Unit_Graph.Loaded_Unit'
+           (The_Module  => Caller_Ast,
+            Source_Path => Ada.Strings.Unbounded.Null_Unbounded_String,
+            Source_Text => Ada.Strings.Unbounded.Null_Unbounded_String));
+      Hidden.Append
+        (Unit_Graph.Loaded_Unit'
+           (The_Module  => Hidden_Ast,
+            Source_Path => Ada.Strings.Unbounded.Null_Unbounded_String,
+            Source_Text => Ada.Strings.Unbounded.Null_Unbounded_String));
+      Hidden_Err := Ir_Gen.Generate (Hidden);
+      AUnit.Assertions.Assert (not Hidden_Err.Ok, "hidden fails");
+      AUnit.Assertions.Assert
+        (Hidden_Err.Error.Code = Ir_Gen.Not_Exported, "not exported");
+
+      No_Import.Append
+        (Unit_Graph.Loaded_Unit'
+           (The_Module  => No_Imp_Ast,
+            Source_Path => Ada.Strings.Unbounded.Null_Unbounded_String,
+            Source_Text => Ada.Strings.Unbounded.Null_Unbounded_String));
+      No_Import.Append
+        (Unit_Graph.Loaded_Unit'
+           (The_Module  => Lib_Ast,
+            Source_Path => Ada.Strings.Unbounded.Null_Unbounded_String,
+            Source_Text => Ada.Strings.Unbounded.Null_Unbounded_String));
+      No_Imp_Err := Ir_Gen.Generate (No_Import);
+      AUnit.Assertions.Assert (not No_Imp_Err.Ok, "no import fails");
+      AUnit.Assertions.Assert
+        (No_Imp_Err.Error.Code = Ir_Gen.Call_Without_Import,
+         "call without import");
+   end Test_Cross_Module_Calls;
+
    procedure Test_Dotted_Module_Name (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Source_Text   : constant String := "module Foo.Bar; end.";
-      Ast_Module    : constant Ast.Module := Support.Must_Parse (Source_Text, "dotted module");
-      Lir_Module    : constant Modules.Module := Support.Must_Generate (Ast_Module, "dotted module");
-      Module_Origin : constant Modules.Origin_Option := Modules.Origin (Lir_Module);
+      Ast_Module    : constant Ast.Module :=
+        Support.Must_Parse (Source_Text, "dotted module");
+      Lir_Module    : constant Modules.Module :=
+        Support.Must_Generate (Ast_Module, "dotted module");
+      Module_Origin : constant Modules.Origin_Option :=
+        Modules.Origin (Lir_Module);
    begin
-      AUnit.Assertions.Assert (Modules.Name (Lir_Module) = "Foo.Bar", "dotted module: name");
-      AUnit.Assertions.Assert (Modules.Subroutine_Count (Lir_Module) = 0, "dotted module: no subroutines");
+      AUnit.Assertions.Assert
+        (Modules.Name (Lir_Module) = "Foo.Bar", "dotted module: name");
+      AUnit.Assertions.Assert
+        (Modules.Subroutine_Count (Lir_Module) = 0,
+         "dotted module: no subroutines");
       case Module_Origin.Present is
          when False =>
             AUnit.Assertions.Assert (False, "dotted module: origin present");
 
          when True  =>
             AUnit.Assertions.Assert
-              (Module_Origin.Value.Name_Span = Ast.Name_Span (Ast_Module), "dotted module: name span");
-            AUnit.Assertions.Assert (Module_Origin.Value.Span = Ast.Span (Ast_Module), "dotted module: unit span");
+              (Module_Origin.Value.Name_Span = Ast.Name_Span (Ast_Module),
+               "dotted module: name span");
+            AUnit.Assertions.Assert
+              (Module_Origin.Value.Span = Ast.Span (Ast_Module),
+               "dotted module: unit span");
       end case;
    end Test_Dotted_Module_Name;
 
    procedure Test_Empty_Module (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Source_Text   : constant String := "module Empty; end.";
-      Ast_Module    : constant Ast.Module := Support.Must_Parse (Source_Text, "empty module");
-      Lir_Module    : constant Modules.Module := Support.Must_Generate (Ast_Module, "empty module");
-      Module_Origin : constant Modules.Origin_Option := Modules.Origin (Lir_Module);
+      Ast_Module    : constant Ast.Module :=
+        Support.Must_Parse (Source_Text, "empty module");
+      Lir_Module    : constant Modules.Module :=
+        Support.Must_Generate (Ast_Module, "empty module");
+      Module_Origin : constant Modules.Origin_Option :=
+        Modules.Origin (Lir_Module);
    begin
-      AUnit.Assertions.Assert (Modules.Name (Lir_Module) = "Empty", "empty module: name");
-      AUnit.Assertions.Assert (Modules.Subroutine_Count (Lir_Module) = 0, "empty module: no subroutines");
+      AUnit.Assertions.Assert
+        (Modules.Name (Lir_Module) = "Empty", "empty module: name");
+      AUnit.Assertions.Assert
+        (Modules.Subroutine_Count (Lir_Module) = 0,
+         "empty module: no subroutines");
       case Module_Origin.Present is
          when False =>
             AUnit.Assertions.Assert (False, "empty module: origin present");
 
          when True  =>
             AUnit.Assertions.Assert
-              (Module_Origin.Value.Name_Span = Ast.Name_Span (Ast_Module), "empty module: name span");
+              (Module_Origin.Value.Name_Span = Ast.Name_Span (Ast_Module),
+               "empty module: name span");
       end case;
    end Test_Empty_Module;
 
    procedure Test_Export_Only_Flags (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Name_Span       : constant Source.Source_Span :=
-        (First => (Byte_Index => 9, Line => 1, Column => 9), Last => (Byte_Index => 11, Line => 1, Column => 11));
+        (First => (Byte_Index => 9, Line => 1, Column => 9),
+         Last  => (Byte_Index => 11, Line => 1, Column => 11));
       Unit_Span       : constant Source.Source_Span :=
-        (First => (Byte_Index => 1, Line => 1, Column => 1), Last => (Byte_Index => 20, Line => 1, Column => 20));
+        (First => (Byte_Index => 1, Line => 1, Column => 1),
+         Last  => (Byte_Index => 20, Line => 1, Column => 20));
       Ast_Sub         : constant Ast.Subroutine :=
         Ast.Create_Subroutine
           (Name        => "Lib",
@@ -144,7 +292,8 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
            Return_Type => Types.Unit_Type,
            Parameters  => Ast.Empty_Parameter_Sequence,
            The_Body    => Ast.Empty_Body);
-      Ast_Subroutines : Ast.Subroutine_Sequence := Ast.Empty_Subroutine_Sequence;
+      Ast_Subroutines : Ast.Subroutine_Sequence :=
+        Ast.Empty_Subroutine_Sequence;
       Ast_Module      : Ast.Module;
       Lir_Module      : Modules.Module;
       Lir_Sub         : Subroutines.Subroutine;
@@ -163,59 +312,92 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       Lir_Module := Support.Must_Generate (Ast_Module, "export only");
       Lir_Sub := Modules.Get_Subroutine (Lir_Module, 1);
       Flags := Subroutines.Get_Flags (Lir_Sub);
-      AUnit.Assertions.Assert (Subroutines.Has_Export (Flags), "export only: export");
-      AUnit.Assertions.Assert (not Subroutines.Has_Entrypoint (Flags), "export only: no entrypoint");
-      AUnit.Assertions.Assert (Modules.Origin (Lir_Module).Present, "export only: module origin");
-      AUnit.Assertions.Assert (Subroutines.Origin (Lir_Sub).Present, "export only: subroutine origin");
+      AUnit.Assertions.Assert
+        (Subroutines.Has_Export (Flags), "export only: export");
+      AUnit.Assertions.Assert
+        (not Subroutines.Has_Entrypoint (Flags), "export only: no entrypoint");
+      AUnit.Assertions.Assert
+        (Modules.Origin (Lir_Module).Present, "export only: module origin");
+      AUnit.Assertions.Assert
+        (Subroutines.Origin (Lir_Sub).Present,
+         "export only: subroutine origin");
    end Test_Export_Only_Flags;
 
    procedure Test_Export_Procedure_Parameters (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Source_Text    : constant String := "module Lib; export procedure Print(Value : integer); begin end; end.";
-      Ast_Module     : constant Ast.Module := Support.Must_Parse (Source_Text, "export procedure params");
-      Lir_Module     : constant Modules.Module := Support.Must_Generate (Ast_Module, "export procedure params");
-      Lir_Subroutine : constant Subroutines.Subroutine := Modules.Get_Subroutine (Lir_Module, 1);
-      The_Signature  : constant Subroutines.Signature := Subroutines.Get_Signature (Lir_Subroutine);
-      Flags          : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (Lir_Subroutine);
-      Parameters     : constant Lovelace.Lir.Types.Parameter_Sequence := The_Signature.Parameters;
+      Source_Text    : constant String :=
+        "module Lib; export procedure Print(Value : integer); begin end; end.";
+      Ast_Module     : constant Ast.Module :=
+        Support.Must_Parse (Source_Text, "export procedure params");
+      Lir_Module     : constant Modules.Module :=
+        Support.Must_Generate (Ast_Module, "export procedure params");
+      Lir_Subroutine : constant Subroutines.Subroutine :=
+        Modules.Get_Subroutine (Lir_Module, 1);
+      The_Signature  : constant Subroutines.Signature :=
+        Subroutines.Get_Signature (Lir_Subroutine);
+      Flags          : constant Subroutines.Subroutine_Flags :=
+        Subroutines.Get_Flags (Lir_Subroutine);
+      Parameters     : constant Lovelace.Lir.Types.Parameter_Sequence :=
+        The_Signature.Parameters;
    begin
-      AUnit.Assertions.Assert (Modules.Name (Lir_Module) = "Lib", "export procedure params: module");
       AUnit.Assertions.Assert
-        (Ada.Strings.Unbounded.To_String (The_Signature.Name) = "Print", "export procedure params: name");
-      AUnit.Assertions.Assert (Subroutines.Has_Export (Flags), "export procedure params: export");
-      AUnit.Assertions.Assert (not Subroutines.Has_Entrypoint (Flags), "export procedure params: no entry");
-      AUnit.Assertions.Assert (Lovelace.Lir.Types.Length (Parameters) = 1, "export procedure params: one");
+        (Modules.Name (Lir_Module) = "Lib", "export procedure params: module");
       AUnit.Assertions.Assert
-        (Ada.Strings.Unbounded.To_String (Lovelace.Lir.Types.Element (Parameters, 1).Name) = "Value",
+        (Ada.Strings.Unbounded.To_String (The_Signature.Name) = "Print",
+         "export procedure params: name");
+      AUnit.Assertions.Assert
+        (Subroutines.Has_Export (Flags), "export procedure params: export");
+      AUnit.Assertions.Assert
+        (not Subroutines.Has_Entrypoint (Flags),
+         "export procedure params: no entry");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Types.Length (Parameters) = 1,
+         "export procedure params: one");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String
+           (Lovelace.Lir.Types.Element (Parameters, 1).Name)
+         = "Value",
          "export procedure params: Value");
       AUnit.Assertions.Assert
-        (Lovelace.Lir.Types.Element (Parameters, 1).The_Type = Lovelace.Lir.Types.I32, "export procedure params: I32");
+        (Lovelace.Lir.Types.Element (Parameters, 1).The_Type
+         = Lovelace.Lir.Types.I32,
+         "export procedure params: I32");
    end Test_Export_Procedure_Parameters;
 
    procedure Test_Filename_Shared (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Source_Text   : constant String := "program Hello; begin end.";
-      Ast_Module    : constant Ast.Module := Support.Must_Parse (Source_Text, "unit.love", "filename shared");
-      Lir_Module    : constant Modules.Module := Support.Must_Generate (Ast_Module, "filename shared");
-      Module_Origin : constant Modules.Origin_Option := Modules.Origin (Lir_Module);
-      Sub_Origin    : constant Subroutines.Origin_Option := Subroutines.Origin (Modules.Get_Subroutine (Lir_Module, 1));
+      Ast_Module    : constant Ast.Module :=
+        Support.Must_Parse (Source_Text, "unit.love", "filename shared");
+      Lir_Module    : constant Modules.Module :=
+        Support.Must_Generate (Ast_Module, "filename shared");
+      Module_Origin : constant Modules.Origin_Option :=
+        Modules.Origin (Lir_Module);
+      Sub_Origin    : constant Subroutines.Origin_Option :=
+        Subroutines.Origin (Modules.Get_Subroutine (Lir_Module, 1));
    begin
-      Assert_Entrypoint_Lir (Lir_Module, "Hello", Ast_Module, "filename shared");
+      Assert_Entrypoint_Lir
+        (Lir_Module, "Hello", Ast_Module, "filename shared");
 
       case Module_Origin.Present is
          when False =>
             AUnit.Assertions.Assert (False, "filename shared: module origin");
 
          when True  =>
-            AUnit.Assertions.Assert (Module_Origin.Value.Filename.Present, "filename shared: module has filename");
+            AUnit.Assertions.Assert
+              (Module_Origin.Value.Filename.Present,
+               "filename shared: module has filename");
 
             case Sub_Origin.Present is
                when False =>
-                  AUnit.Assertions.Assert (False, "filename shared: subroutine origin");
+                  AUnit.Assertions.Assert
+                    (False, "filename shared: subroutine origin");
 
                when True  =>
                   AUnit.Assertions.Assert
-                    (Source.Same_Storage (Module_Origin.Value.Filename, Sub_Origin.Value.Filename),
+                    (Source.Same_Storage
+                       (Module_Origin.Value.Filename,
+                        Sub_Origin.Value.Filename),
                      "filename shared: module and subroutine Same_Storage");
             end case;
       end case;
@@ -223,13 +405,18 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
 
    procedure Test_Identifier_Names (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Cafe_Name   : constant String := "caf" & Support.To_Utf_8 (Wide_Wide_Character'Val (16#00E9#));
+      Cafe_Name   : constant String :=
+        "caf" & Support.To_Utf_8 (Wide_Wide_Character'Val (16#00E9#));
       Cafe_Source : constant String := "program " & Cafe_Name & "; begin end.";
       At_Source   : constant String := "program @foo; begin end.";
-      Cafe_Ast    : constant Ast.Module := Support.Must_Parse (Cafe_Source, "unicode name");
-      At_Ast      : constant Ast.Module := Support.Must_Parse (At_Source, "@foo name");
-      Cafe_Lir    : constant Modules.Module := Support.Must_Generate (Cafe_Ast, "unicode name");
-      At_Lir      : constant Modules.Module := Support.Must_Generate (At_Ast, "@foo name");
+      Cafe_Ast    : constant Ast.Module :=
+        Support.Must_Parse (Cafe_Source, "unicode name");
+      At_Ast      : constant Ast.Module :=
+        Support.Must_Parse (At_Source, "@foo name");
+      Cafe_Lir    : constant Modules.Module :=
+        Support.Must_Generate (Cafe_Ast, "unicode name");
+      At_Lir      : constant Modules.Module :=
+        Support.Must_Generate (At_Ast, "@foo name");
    begin
       Assert_Entrypoint_Lir (Cafe_Lir, Cafe_Name, Cafe_Ast, "unicode name");
       Assert_Entrypoint_Lir (At_Lir, "@foo", At_Ast, "@foo name");
@@ -247,63 +434,110 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
         & "begin"
         & ASCII.LF
         & "end.";
-      Module_Source  : constant String := "import Lib.A;" & ASCII.LF & "module Host; end.";
+      Module_Source  : constant String :=
+        "import Lib.A;" & ASCII.LF & "module Host; end.";
       Empty_Source   : constant String := "program EmptyImports; begin end.";
-      Program_Ast    : constant Ast.Module := Support.Must_Parse (Program_Source, "program imports");
-      Module_Ast     : constant Ast.Module := Support.Must_Parse (Module_Source, "module imports");
-      Empty_Ast      : constant Ast.Module := Support.Must_Parse (Empty_Source, "empty imports");
-      Program_Lir    : constant Modules.Module := Support.Must_Generate (Program_Ast, "program imports");
-      Module_Lir     : constant Modules.Module := Support.Must_Generate (Module_Ast, "module imports");
-      Empty_Lir      : constant Modules.Module := Support.Must_Generate (Empty_Ast, "empty imports");
+      Program_Ast    : constant Ast.Module :=
+        Support.Must_Parse (Program_Source, "program imports");
+      Module_Ast     : constant Ast.Module :=
+        Support.Must_Parse (Module_Source, "module imports");
+      Empty_Ast      : constant Ast.Module :=
+        Support.Must_Parse (Empty_Source, "empty imports");
+      Program_Lir    : constant Modules.Module :=
+        Support.Must_Generate (Program_Ast, "program imports");
+      Module_Lir     : constant Modules.Module :=
+        Support.Must_Generate (Module_Ast, "module imports");
+      Empty_Lir      : constant Modules.Module :=
+        Support.Must_Generate (Empty_Ast, "empty imports");
    begin
-      AUnit.Assertions.Assert (Modules.Dependency_Count (Program_Lir) = 2, "program imports: count");
-      AUnit.Assertions.Assert (Modules.Dependency_Name (Program_Lir, 1) = "augusta.std.io", "program imports: first");
-      AUnit.Assertions.Assert (Modules.Dependency_Name (Program_Lir, 2) = "Other", "program imports: second");
-      AUnit.Assertions.Assert (Modules.Subroutine_Count (Program_Lir) = 1, "program imports: entrypoint");
+      AUnit.Assertions.Assert
+        (Modules.Dependency_Count (Program_Lir) = 2, "program imports: count");
+      AUnit.Assertions.Assert
+        (Modules.Dependency_Name (Program_Lir, 1) = "augusta.std.io",
+         "program imports: first");
+      AUnit.Assertions.Assert
+        (Modules.Dependency_Name (Program_Lir, 2) = "Other",
+         "program imports: second");
+      AUnit.Assertions.Assert
+        (Modules.Subroutine_Count (Program_Lir) = 1,
+         "program imports: entrypoint");
 
-      AUnit.Assertions.Assert (Modules.Dependency_Count (Module_Lir) = 1, "module imports: count");
-      AUnit.Assertions.Assert (Modules.Dependency_Name (Module_Lir, 1) = "Lib.A", "module imports: first");
-      AUnit.Assertions.Assert (Modules.Subroutine_Count (Module_Lir) = 0, "module imports: no subs");
+      AUnit.Assertions.Assert
+        (Modules.Dependency_Count (Module_Lir) = 1, "module imports: count");
+      AUnit.Assertions.Assert
+        (Modules.Dependency_Name (Module_Lir, 1) = "Lib.A",
+         "module imports: first");
+      AUnit.Assertions.Assert
+        (Modules.Subroutine_Count (Module_Lir) = 0, "module imports: no subs");
 
-      AUnit.Assertions.Assert (Modules.Dependency_Count (Empty_Lir) = 0, "empty imports: count");
+      AUnit.Assertions.Assert
+        (Modules.Dependency_Count (Empty_Lir) = 0, "empty imports: count");
    end Test_Import_Dependencies;
 
    procedure Test_Module_Procedure_Parameters (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Source_Text    : constant String :=
         "module MyModule; procedure Whatever(x : integer; y, z : float<32>); begin end; end.";
-      Ast_Module     : constant Ast.Module := Support.Must_Parse (Source_Text, "module procedure params");
-      Lir_Module     : constant Modules.Module := Support.Must_Generate (Ast_Module, "module procedure params");
-      Lir_Subroutine : constant Subroutines.Subroutine := Modules.Get_Subroutine (Lir_Module, 1);
-      The_Signature  : constant Subroutines.Signature := Subroutines.Get_Signature (Lir_Subroutine);
-      Flags          : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (Lir_Subroutine);
-      Parameters     : constant Lovelace.Lir.Types.Parameter_Sequence := The_Signature.Parameters;
+      Ast_Module     : constant Ast.Module :=
+        Support.Must_Parse (Source_Text, "module procedure params");
+      Lir_Module     : constant Modules.Module :=
+        Support.Must_Generate (Ast_Module, "module procedure params");
+      Lir_Subroutine : constant Subroutines.Subroutine :=
+        Modules.Get_Subroutine (Lir_Module, 1);
+      The_Signature  : constant Subroutines.Signature :=
+        Subroutines.Get_Signature (Lir_Subroutine);
+      Flags          : constant Subroutines.Subroutine_Flags :=
+        Subroutines.Get_Flags (Lir_Subroutine);
+      Parameters     : constant Lovelace.Lir.Types.Parameter_Sequence :=
+        The_Signature.Parameters;
    begin
-      AUnit.Assertions.Assert (Modules.Name (Lir_Module) = "MyModule", "module procedure params: module name");
-      AUnit.Assertions.Assert (Modules.Subroutine_Count (Lir_Module) = 1, "module procedure params: one sub");
       AUnit.Assertions.Assert
-        (Ada.Strings.Unbounded.To_String (The_Signature.Name) = "Whatever", "module procedure params: name");
-      AUnit.Assertions.Assert (The_Signature.Return_Type = Lovelace.Lir.Types.Unit, "module procedure params: Unit");
-      AUnit.Assertions.Assert (not Subroutines.Has_Export (Flags), "module procedure params: no export");
-      AUnit.Assertions.Assert (not Subroutines.Has_Entrypoint (Flags), "module procedure params: no entry");
-      AUnit.Assertions.Assert (Lovelace.Lir.Types.Length (Parameters) = 3, "module procedure params: three");
+        (Modules.Name (Lir_Module) = "MyModule",
+         "module procedure params: module name");
       AUnit.Assertions.Assert
-        (Ada.Strings.Unbounded.To_String (Lovelace.Lir.Types.Element (Parameters, 1).Name) = "x",
+        (Modules.Subroutine_Count (Lir_Module) = 1,
+         "module procedure params: one sub");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (The_Signature.Name) = "Whatever",
+         "module procedure params: name");
+      AUnit.Assertions.Assert
+        (The_Signature.Return_Type = Lovelace.Lir.Types.Unit,
+         "module procedure params: Unit");
+      AUnit.Assertions.Assert
+        (not Subroutines.Has_Export (Flags),
+         "module procedure params: no export");
+      AUnit.Assertions.Assert
+        (not Subroutines.Has_Entrypoint (Flags),
+         "module procedure params: no entry");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Types.Length (Parameters) = 3,
+         "module procedure params: three");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String
+           (Lovelace.Lir.Types.Element (Parameters, 1).Name)
+         = "x",
          "module procedure params: x name");
       AUnit.Assertions.Assert
-        (Lovelace.Lir.Types.Element (Parameters, 1).The_Type = Lovelace.Lir.Types.I32,
+        (Lovelace.Lir.Types.Element (Parameters, 1).The_Type
+         = Lovelace.Lir.Types.I32,
          "module procedure params: x I32");
       AUnit.Assertions.Assert
-        (Ada.Strings.Unbounded.To_String (Lovelace.Lir.Types.Element (Parameters, 2).Name) = "y",
+        (Ada.Strings.Unbounded.To_String
+           (Lovelace.Lir.Types.Element (Parameters, 2).Name)
+         = "y",
          "module procedure params: y name");
       AUnit.Assertions.Assert
-        (Lovelace.Lir.Types.Element (Parameters, 2).The_Type = Lovelace.Lir.Types.F32,
+        (Lovelace.Lir.Types.Element (Parameters, 2).The_Type
+         = Lovelace.Lir.Types.F32,
          "module procedure params: y F32");
       AUnit.Assertions.Assert
-        (Ada.Strings.Unbounded.To_String (Lovelace.Lir.Types.Element (Parameters, 3).Name) = "z",
+        (Ada.Strings.Unbounded.To_String
+           (Lovelace.Lir.Types.Element (Parameters, 3).Name)
+         = "z",
          "module procedure params: z name");
       AUnit.Assertions.Assert
-        (Lovelace.Lir.Types.Element (Parameters, 3).The_Type = Lovelace.Lir.Types.F32,
+        (Lovelace.Lir.Types.Element (Parameters, 3).The_Type
+         = Lovelace.Lir.Types.F32,
          "module procedure params: z F32");
    end Test_Module_Procedure_Parameters;
 
@@ -322,27 +556,41 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
         & "f32 : float; "
         & "f64 : float<64>"
         & "); begin end; end.";
-      Ast_Module    : constant Ast.Module := Support.Must_Parse (Source_Text, "param type mapping");
-      Lir_Module    : constant Modules.Module := Support.Must_Generate (Ast_Module, "param type mapping");
+      Ast_Module    : constant Ast.Module :=
+        Support.Must_Parse (Source_Text, "param type mapping");
+      Lir_Module    : constant Modules.Module :=
+        Support.Must_Generate (Ast_Module, "param type mapping");
       The_Signature : constant Subroutines.Signature :=
         Subroutines.Get_Signature (Modules.Get_Subroutine (Lir_Module, 1));
-      Parameters    : constant Lovelace.Lir.Types.Parameter_Sequence := The_Signature.Parameters;
+      Parameters    : constant Lovelace.Lir.Types.Parameter_Sequence :=
+        The_Signature.Parameters;
 
-      procedure Assert_Param (Index : Positive; Expected_Name : String; Expected_Type : Lovelace.Lir.Types.Value_Type);
+      procedure Assert_Param
+        (Index         : Positive;
+         Expected_Name : String;
+         Expected_Type : Lovelace.Lir.Types.Value_Type);
       --  Assert Parameters (Index) has Expected_Name and Expected_Type.
 
-      procedure Assert_Param (Index : Positive; Expected_Name : String; Expected_Type : Lovelace.Lir.Types.Value_Type)
+      procedure Assert_Param
+        (Index         : Positive;
+         Expected_Name : String;
+         Expected_Type : Lovelace.Lir.Types.Value_Type)
       is
-         The_Parameter : constant Lovelace.Lir.Types.Parameter := Lovelace.Lir.Types.Element (Parameters, Index);
+         The_Parameter : constant Lovelace.Lir.Types.Parameter :=
+           Lovelace.Lir.Types.Element (Parameters, Index);
       begin
          AUnit.Assertions.Assert
-           (Ada.Strings.Unbounded.To_String (The_Parameter.Name) = Expected_Name,
+           (Ada.Strings.Unbounded.To_String (The_Parameter.Name)
+            = Expected_Name,
             "param type mapping: " & Expected_Name & " name");
          AUnit.Assertions.Assert
-           (The_Parameter.The_Type = Expected_Type, "param type mapping: " & Expected_Name & " type");
+           (The_Parameter.The_Type = Expected_Type,
+            "param type mapping: " & Expected_Name & " type");
       end Assert_Param;
    begin
-      AUnit.Assertions.Assert (Lovelace.Lir.Types.Length (Parameters) = 10, "param type mapping: ten params");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Types.Length (Parameters) = 10,
+         "param type mapping: ten params");
       Assert_Param (1, "i8", Lovelace.Lir.Types.I8);
       Assert_Param (2, "i16", Lovelace.Lir.Types.I16);
       Assert_Param (3, "i32", Lovelace.Lir.Types.I32);
@@ -357,7 +605,7 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
 
    procedure Test_Same_Unit_Calls (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Success_Source : constant String :=
+      Success_Source  : constant String :=
         "module Calls;"
         & ASCII.LF
         & "procedure Sink(Value : integer); begin end;"
@@ -365,49 +613,69 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
         & "procedure Run(); begin Calls.Sink(42); end;"
         & ASCII.LF
         & "end.";
-      Ast_Ok         : constant Ast.Module := Support.Must_Parse (Success_Source, "same-unit call");
-      Lir_Ok         : constant Modules.Module := Support.Must_Generate (Ast_Ok, "same-unit call");
-      Run_Body       : constant Lovelace.Lir.Instructions.Instruction_Sequence :=
-        Subroutines.Get_Instructions (Modules.Get_Subroutine (Lir_Ok, 2));
-      Cross_Source   : constant String :=
+      Ast_Ok          : constant Ast.Module :=
+        Support.Must_Parse (Success_Source, "same-unit call");
+      Lir_Ok          : constant Modules.Module :=
+        Support.Must_Generate (Ast_Ok, "same-unit call");
+      Run_Body        :
+        constant Lovelace.Lir.Instructions.Instruction_Sequence :=
+          Subroutines.Get_Instructions (Modules.Get_Subroutine (Lir_Ok, 2));
+      Cross_Source    : constant String :=
         "module Calls; procedure Run(); begin Other.Sink(42); end; end.";
-      Unknown_Source : constant String :=
+      Unknown_Source  : constant String :=
         "module Calls; procedure Run(); begin Calls.Missing(42); end; end.";
-      Arity_Source   : constant String :=
+      Arity_Source    : constant String :=
         "module Calls; procedure Sink(Value : integer); begin end; "
         & "procedure Run(); begin Calls.Sink(1, 2); end; end.";
       Unsigned_Source : constant String :=
         "module Calls; procedure Sink(Value : unsigned integer); begin end; "
         & "procedure Run(); begin Calls.Sink(-1); end; end.";
-      Wide_Source    : constant String :=
+      Wide_Source     : constant String :=
         "module Calls; procedure Sink(Value : integer<64>); begin end; "
         & "procedure Run(); begin Calls.Sink(1); end; end.";
-      Cross_Error    : constant Ir_Gen.Ir_Generator_Error :=
-        Support.Must_Fail_Generate (Support.Must_Parse (Cross_Source, "cross"), "cross");
-      Unknown_Error  : constant Ir_Gen.Ir_Generator_Error :=
-        Support.Must_Fail_Generate (Support.Must_Parse (Unknown_Source, "unknown"), "unknown");
-      Arity_Error    : constant Ir_Gen.Ir_Generator_Error :=
-        Support.Must_Fail_Generate (Support.Must_Parse (Arity_Source, "arity"), "arity");
-      Unsigned_Error : constant Ir_Gen.Ir_Generator_Error :=
-        Support.Must_Fail_Generate (Support.Must_Parse (Unsigned_Source, "unsigned"), "unsigned");
-      Wide_Error     : constant Ir_Gen.Ir_Generator_Error :=
-        Support.Must_Fail_Generate (Support.Must_Parse (Wide_Source, "wide"), "wide");
+      Cross_Error     : constant Ir_Gen.Ir_Generator_Error :=
+        Support.Must_Fail_Generate
+          (Support.Must_Parse (Cross_Source, "cross"), "cross");
+      Unknown_Error   : constant Ir_Gen.Ir_Generator_Error :=
+        Support.Must_Fail_Generate
+          (Support.Must_Parse (Unknown_Source, "unknown"), "unknown");
+      Arity_Error     : constant Ir_Gen.Ir_Generator_Error :=
+        Support.Must_Fail_Generate
+          (Support.Must_Parse (Arity_Source, "arity"), "arity");
+      Unsigned_Error  : constant Ir_Gen.Ir_Generator_Error :=
+        Support.Must_Fail_Generate
+          (Support.Must_Parse (Unsigned_Source, "unsigned"), "unsigned");
+      Wide_Error      : constant Ir_Gen.Ir_Generator_Error :=
+        Support.Must_Fail_Generate
+          (Support.Must_Parse (Wide_Source, "wide"), "wide");
    begin
-      AUnit.Assertions.Assert (Lovelace.Lir.Instructions.Length (Run_Body) = 2, "two instructions");
       AUnit.Assertions.Assert
-        (Lovelace.Lir.Instructions.Element (Run_Body, 1).Operation = Lovelace.Lir.Opcodes.Constant_I32, "const");
+        (Lovelace.Lir.Instructions.Length (Run_Body) = 2, "two instructions");
       AUnit.Assertions.Assert
-        (Lovelace.Lir.Instructions.Element (Run_Body, 1).Immediate_I32 = 42, "const value");
+        (Lovelace.Lir.Instructions.Element (Run_Body, 1).Operation
+         = Lovelace.Lir.Opcodes.Constant_I32,
+         "const");
       AUnit.Assertions.Assert
-        (Lovelace.Lir.Instructions.Element (Run_Body, 2).Operation = Lovelace.Lir.Opcodes.Call, "call");
+        (Lovelace.Lir.Instructions.Element (Run_Body, 1).Immediate_I32 = 42,
+         "const value");
       AUnit.Assertions.Assert
-        (Lovelace.Lir.Instructions.Element (Run_Body, 2).Target_Index = 1, "call target Sink");
+        (Lovelace.Lir.Instructions.Element (Run_Body, 2).Operation
+         = Lovelace.Lir.Opcodes.Call,
+         "call");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Instructions.Element (Run_Body, 2).Target_Index = 1,
+         "call target Sink");
 
-      AUnit.Assertions.Assert (Cross_Error.Code = Ir_Gen.Unresolved_Call, "cross code");
-      AUnit.Assertions.Assert (Unknown_Error.Code = Ir_Gen.Unresolved_Call, "unknown code");
-      AUnit.Assertions.Assert (Arity_Error.Code = Ir_Gen.Invalid_Arguments, "arity code");
-      AUnit.Assertions.Assert (Unsigned_Error.Code = Ir_Gen.Invalid_Arguments, "unsigned code");
-      AUnit.Assertions.Assert (Wide_Error.Code = Ir_Gen.Invalid_Arguments, "wide code");
+      AUnit.Assertions.Assert
+        (Cross_Error.Code = Ir_Gen.Call_Without_Import, "cross code");
+      AUnit.Assertions.Assert
+        (Unknown_Error.Code = Ir_Gen.Unresolved_Call, "unknown code");
+      AUnit.Assertions.Assert
+        (Arity_Error.Code = Ir_Gen.Invalid_Arguments, "arity code");
+      AUnit.Assertions.Assert
+        (Unsigned_Error.Code = Ir_Gen.Invalid_Arguments, "unsigned code");
+      AUnit.Assertions.Assert
+        (Wide_Error.Code = Ir_Gen.Invalid_Arguments, "wide code");
    end Test_Same_Unit_Calls;
 
 end Lovelace.Compiler.Tests.Ir_Generator;
