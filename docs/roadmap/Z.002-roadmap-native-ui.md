@@ -13,7 +13,7 @@ Prerequisite: [1.004](1.004-roadmap-print-integer-native.md), [3.003](3.003-road
 ## Out of scope
 
 - Web DOM UI → [3.002](3.002-roadmap-web-libraries.md)
-- Design of the package manager → [X.001](X.001-roadmap-package-manager.md)
+- Design of the package manager → [Y.001](Y.001-roadmap-package-manager.md)
 
 ## Status
 

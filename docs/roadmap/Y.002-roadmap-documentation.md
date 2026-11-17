@@ -1,4 +1,4 @@
-# Roadmap X.002: Lovelace documentation
+# Roadmap Y.002: Lovelace documentation
 
 **Objective:** Deliver first-class **Lovelace documentation** — language reference, tutorials, Augusta API docs, and contributor guides — beyond the in-repo `docs/` sketches used during bootstrap.
 
@@ -12,7 +12,7 @@
 
 ## Out of scope
 
-- Package registry product work → [X.001](X.001-roadmap-package-manager.md) (docs may describe it)
+- Package registry product work → [Y.001](Y.001-roadmap-package-manager.md) (docs may describe it)
 
 ## Status
 

@@ -1,4 +1,4 @@
-# Roadmap X.001: Lovelace package manager
+# Roadmap Y.001: Lovelace package manager
 
 **Objective:** Ship a **Lovelace package manager** for distributing and consuming Lovelace/Augusta packages (resolution, versions, fetch, install layout — exact UX TBC).
 
@@ -11,8 +11,9 @@
 
 ## Out of scope
 
-- Full language reference docs → [X.002](X.002-roadmap-documentation.md)
+- Full language reference docs → [Y.002](Y.002-roadmap-documentation.md)
 - Implementing the libraries themselves → series 3
+- Compiler analyzers / optimizers / source generators → series [X](README.md)
 
 ## Status
 
