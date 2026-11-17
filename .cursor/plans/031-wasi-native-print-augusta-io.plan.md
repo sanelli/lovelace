@@ -46,7 +46,7 @@ Branch: `feature/31-wasi-native-print-augusta-io` (linked to #31; created from `
 
 Plan file: [`.cursor/plans/031-wasi-native-print-augusta-io.plan.md`](031-wasi-native-print-augusta-io.plan.md).
 
-Roadmap: [docs/roadmap/001-roadmap-print-integer-wasi.md](../../docs/roadmap/001-roadmap-print-integer-wasi.md) § Macro steps 6, 7, and 8.
+Roadmap: [docs/roadmap/1.001-roadmap-print-integer-wasi.md](../../docs/roadmap/1.001-roadmap-print-integer-wasi.md) § Macro steps 6, 7, and 8.
 
 Prerequisite: macro steps 1–5 done ([#21](https://github.com/sanelli/lovelace/issues/21), [#23](https://github.com/sanelli/lovelace/issues/23), [#25](https://github.com/sanelli/lovelace/issues/25), [#27](https://github.com/sanelli/lovelace/issues/27), [#29](https://github.com/sanelli/lovelace/issues/29)).
 
@@ -82,7 +82,7 @@ export native("wasi", "native-print-integer") procedure print(value : integer);
 - **Unknown target/key:** diagnose at IR or backend (prefer IR when the compile flavor is known): e.g. `Unknown_Native_Binding` → next free `LV00021`.
 - **Flavor gate:** `native("wasi", …)` is only valid when `--flavor wasi` (the surviving `#if` arm already implies this for Augusta). If somehow present under another flavor → same diagnostic. Do **not** implement `native("native", …)` / `native("web", …)` in this slice.
 - **Formatting fork (replaces roadmap path A for this milestone):** guest-visible API stays `print(integer)`; implementation is a **compiler-synthesized** WASM body marked `native("wasi", "native-print-integer")`, not a host `s32` formatter and not yet a hand-written Lovelace loop. Roadmap locked-decision row 4 and open-choices “Formatting” cell are updated accordingly. Path B (`list<u8>` write of a whole buffer from Augusta) stays deferred.
-- **Why synthesize `print`:** Lovelace still has no locals, assignment, loops, or arithmetic (roadmap step 10). Augusta `.love` therefore **cannot** format digits yet. Put an explicit comment on the `print` decl that it must become a normal Lovelace body once those features exist (and once a lower-level write primitive exists if still desired).
+- **Why synthesize `print`:** Lovelace still has no locals, assignment, loops, or arithmetic (roadmap 1.002). Augusta `.love` therefore **cannot** format digits yet. Put an explicit comment on the `print` decl that it must become a normal Lovelace body once those features exist (and once a lower-level write primitive exists if still desired).
 - **WASI I/O:** stock `wasmtime run -Sp3 -W component-model-async=y`. The intrinsic lowers to **WASI 0.3** stdout (`wasi:cli/stdout@0.3.0` / `write-via-stream` with `stream<u8>` + completion future). No `love:` namespace, no custom non-WASI host import.
 - **Synthesis site:** backend (`Lower` + Wasm/Wat emitters), not the IR generator. LIR stores the binding and an **empty** instruction body; calls to a native subroutine remain ordinary LIR `Call` to its index.
 - **Newline policy (this slice):** `print` writes the decimal digits only — **no** trailing newline (step 9 / sample can document or add later).
@@ -101,7 +101,7 @@ export native("wasi", "native-print-integer") procedure print(value : integer);
   - Binary `.lir` / text `.tlir` stay version **1.0** with an additive optional native field (same pattern as origins): after subroutine origin, `native_present` `u8` then two encoded strings when present; text form includes bare `native` flag identifier plus `(native "wasi" "native-print-integer")` (or fold key into one form — pick one and document; prefer emit flag bit in flags word **and** `(native "target" "key")` when present, with empty `(body)`).
 - **Component linking model unchanged:** one combined LIR module → one component (step 5). Lovelace `export` on `print` remains visibility for importers; **no** WIT export of parameterized `print`.
 - **Augusta path:** in-repo [`augusta/augusta.std.io.love`](../../augusta/augusta.std.io.love) (`module augusta.std.io;`). Tests/CLI resolve via `AUGUSTA_HOME` pointing at `{repo}/augusta/` (or `-I` that dir); nested `augusta/std/io.love` remains an equivalent candidate form.
-- **Out of scope (this plan):** `print-char` / other WASI intrinsics; roadmap step 9 full E2E sample/docs polish as its own issue (a **minimal** backend/integration smoke that prints `42` is allowed to prove step 7); step 10 language features; path B bulk `list<u8>`; `import … as …`; native/web real bodies; per-flavor output dirs; multi-component linking.
+- **Out of scope (this plan):** `print-char` / other WASI intrinsics; roadmap step 9 full E2E sample/docs polish as its own issue (a **minimal** backend/integration smoke that prints `42` is allowed to prove step 7); roadmap 1.002 language features; path B bulk `list<u8>`; `import … as …`; native/web real bodies; per-flavor output dirs; multi-component linking.
 
 ```mermaid
 flowchart TD
@@ -124,7 +124,7 @@ module augusta.std.io;
 
 (* TEMPORARY: print is native("wasi", "native-print-integer") so the backend can
    synthesize decimal formatting and WASI 0.3 stdout writes. Once Lovelace has
-   locals, assignment, loops, and integer arithmetic (roadmap step 10), replace
+   locals, assignment, loops, and integer arithmetic (roadmap 1.002), replace
    this with a normal Lovelace body — not a native. *)
 export native("wasi", "native-print-integer") procedure print(value : integer);
 
@@ -263,7 +263,7 @@ This is the largest slice.
 Mark macro-steps **6, 7, and 8** Done for this slice (issue link + summary bullets). Update locked decisions / open-choices:
 
 - External decl syntax → `native("wasi", "…")` as locked above.
-- Formatting → synthesized `native-print-integer` (temporary until step 10); no `print-char` in this milestone.
+- Formatting → synthesized `native-print-integer` (temporary until roadmap 1.002); no `print-char` in this milestone.
 
 **Done:** roadmap §6–8 status + locked formatting / `native(…)` open-choice rows (issue #31).
 

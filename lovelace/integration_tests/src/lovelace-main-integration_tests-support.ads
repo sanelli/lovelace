@@ -110,19 +110,25 @@ package Lovelace.Main.Integration_Tests.Support is
    --  Future: WASI -> wasmtime; native -> lovelace CLI; web -> headless Chrome/Node + JS glue.
    --  @param Path .wasm or .wat component with wasi:cli/run.
    --  @param Message Assertion prefix when the run fails.
-   --  @param Status Missing if wasmtime absent; Succeeded if exit 0.
+   --  @param Status Missing if wasmtime absent; Succeeded if exit 0 (and stdout matches when checked).
+   --  @param Expected_Stdout Exact guest stdout required when non-empty (no trimming).
    procedure Run_Entrypoint_Artifact
-     (Path : String; Message : String; Status : out Tool_Status);
+     (Path            : String;
+      Message         : String;
+      Status          : out Tool_Status;
+      Expected_Stdout : String := "");
 
    --  Run bin/Unit_Name.wasm and .wat when wasmtime is available (program/entrypoint only).
    --  @param Output_Root Build output folder.
    --  @param Unit_Name Unit stem.
    --  @param Message Assertion prefix.
-   --  @param Status Missing if wasmtime absent; Succeeded if both runs exit 0.
+   --  @param Status Missing if wasmtime absent; Succeeded if both runs exit 0 (and stdout matches).
+   --  @param Expected_Stdout Exact guest stdout required when non-empty (checked for wasm and wat).
    procedure Run_Unit_Entrypoint
-     (Output_Root : String;
-      Unit_Name   : String;
-      Message     : String;
-      Status      : out Tool_Status);
+     (Output_Root     : String;
+      Unit_Name       : String;
+      Message         : String;
+      Status          : out Tool_Status;
+      Expected_Stdout : String := "");
 
 end Lovelace.Main.Integration_Tests.Support;

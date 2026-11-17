@@ -43,7 +43,7 @@ Branch: `feature/23-export-module-procedures` (linked to #23; created from `main
 
 Plan file: [`.cursor/plans/023-export-module-procedures.plan.md`](023-export-module-procedures.plan.md).
 
-Roadmap: [docs/roadmap/001-roadmap-print-integer-wasi.md](../../docs/roadmap/001-roadmap-print-integer-wasi.md) § Macro step 2.
+Roadmap: [docs/roadmap/1.001-roadmap-print-integer-wasi.md](../../docs/roadmap/1.001-roadmap-print-integer-wasi.md) § Macro step 2.
 
 Prerequisite: macro step 1 done ([#21](https://github.com/sanelli/lovelace/issues/21)).
 
@@ -162,7 +162,7 @@ Update [docs/codegen.md](../../docs/codegen.md): table rows for export+params an
 - Add [`samples/module/ExportProcedures.love`](../../samples/module/ExportProcedures.love) (basename = module name): at least one `export procedure` with an integer parameter and one non-exported procedure.
 - Update [docs/samples.md](../../docs/samples.md).
 - Wire into module integration build if [lovelace/integration_tests](../../lovelace/integration_tests) lists module samples explicitly.
-- Mark roadmap macro step 2 status (issue link) in [docs/roadmap/001-roadmap-print-integer-wasi.md](../../docs/roadmap/001-roadmap-print-integer-wasi.md), same style as step 1 / #21.
+- Mark roadmap macro step 2 status (issue link) in [docs/roadmap/1.001-roadmap-print-integer-wasi.md](../../docs/roadmap/1.001-roadmap-print-integer-wasi.md), same style as step 1 / #21.
 - Brief note in [docs/directives.md](../../docs/directives.md) only if needed (export is not a directive).
 
 ### 9. Run all tests

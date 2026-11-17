@@ -99,10 +99,11 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
          Message     => "HelloPrint",
          Status      => Validate_Status);
       Helpers.Run_Unit_Entrypoint
-        (Output_Root => Output_Root,
-         Unit_Name   => "HelloPrint",
-         Message     => "HelloPrint",
-         Status      => Run_Status);
+        (Output_Root     => Output_Root,
+         Unit_Name       => "HelloPrint",
+         Message         => "HelloPrint",
+         Status          => Run_Status,
+         Expected_Stdout => "42");
 
       if Validate_Status = Helpers.Missing or else Run_Status = Helpers.Missing
       then

@@ -58,7 +58,7 @@ Branch: `feature/21-flavor-if-directives` (linked to #21; created from `main` vi
 
 Plan file: [`.cursor/plans/021-flavor-if-directives.plan.md`](021-flavor-if-directives.plan.md).
 
-Roadmap: [docs/roadmap/001-roadmap-print-integer-wasi.md](../../docs/roadmap/001-roadmap-print-integer-wasi.md) § Macro step 1.
+Roadmap: [docs/roadmap/1.001-roadmap-print-integer-wasi.md](../../docs/roadmap/1.001-roadmap-print-integer-wasi.md) § Macro step 1.
 
 Related rules: directives are real language syntax ([language-and-projects.mdc](../rules/language-and-projects.mdc)); they condition compilation and do not become LIR ([compiler-pipeline.mdc](../rules/compiler-pipeline.mdc)); recursive descent ([parser-recursive-descent.mdc](../rules/parser-recursive-descent.mdc)).
 
@@ -280,7 +280,7 @@ Update in the same change:
 - [`docs/compilation-unit-grammar.md`](../../docs/compilation-unit-grammar.md) — `module_declaration` / `flavor_conditional`
 - [`docs/tokenizer.md`](../../docs/tokenizer.md), [`docs/parser.md`](../../docs/parser.md), [`docs/cli.md`](../../docs/cli.md)
 - New [`docs/directives.md`](../../docs/directives.md) — flavor `#if` only; reserve future `#pragma` / general conditions
-- [`docs/roadmap/001-roadmap-print-integer-wasi.md`](../../docs/roadmap/001-roadmap-print-integer-wasi.md) — note macro step 1 implemented / link issue
+- [`docs/roadmap/1.001-roadmap-print-integer-wasi.md`](../../docs/roadmap/1.001-roadmap-print-integer-wasi.md) — note macro step 1 implemented / link issue
 - Ensure step 7’s diagnostics table is complete
 
 **Done when:** docs match locked syntax; no invented features beyond this slice.

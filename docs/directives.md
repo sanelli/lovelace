@@ -2,7 +2,7 @@
 
 Lovelace **directives** are part of the language grammar (not a separate preprocessor). They do not expand into statements. In this slice, the only directive form is **flavor selection** for Augusta / host flavors.
 
-Related: [compilation-unit-grammar.md](compilation-unit-grammar.md), [tokenizer.md](tokenizer.md), [parser.md](parser.md), [cli.md](cli.md), roadmap [001](roadmap/001-roadmap-print-integer-wasi.md).
+Related: [compilation-unit-grammar.md](compilation-unit-grammar.md), [tokenizer.md](tokenizer.md), [parser.md](parser.md), [cli.md](cli.md), roadmap [1.001](roadmap/1.001-roadmap-print-integer-wasi.md).
 
 ## Flavors
 
@@ -47,4 +47,4 @@ Example: [`samples/directives/FlavorSelect.love`](../samples/directives/FlavorSe
 - `import … as …` and other directives
 - `#pragma` warning control
 - General conditions beyond `flavor = "…"`
-- Per-flavor output folders (`bin/wasi/`, …) — roadmap macro step 11
+- Per-flavor output folders (`bin/wasi/`, …) — deferred to [1.003](roadmap/1.003-roadmap-print-integer-web.md) / [1.004](roadmap/1.004-roadmap-print-integer-native.md)
