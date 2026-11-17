@@ -41,6 +41,7 @@ package body Lovelace.Lir.Binary is
    procedure Append_Span (Buffer : in out Byte_Sequence; The_Span : Source.Source_Span);
    procedure Append_String (Buffer : in out Byte_Sequence; Text : String);
    procedure Append_Subroutine (Buffer : in out Byte_Sequence; The_Subroutine : Subroutines.Subroutine);
+   procedure Append_Subroutine_Native (Buffer : in out Byte_Sequence; The_Subroutine : Subroutines.Subroutine);
    procedure Append_Subroutine_Origin (Buffer : in out Byte_Sequence; The_Subroutine : Subroutines.Subroutine);
    procedure Append_U16 (Buffer : in out Byte_Sequence; Value : Interfaces.Unsigned_16);
    procedure Append_U32 (Buffer : in out Byte_Sequence; Value : Interfaces.Unsigned_32);
@@ -55,6 +56,11 @@ package body Lovelace.Lir.Binary is
      (Bytes          : Byte_Sequence;
       Cursor         : in out Natural;
       The_Subroutine : out Subroutines.Subroutine;
+      Code           : out Errors.Error_Code) return Boolean;
+   function Parse_Subroutine_Native
+     (Bytes          : Byte_Sequence;
+      Cursor         : in out Natural;
+      The_Subroutine : in out Subroutines.Subroutine;
       Code           : out Errors.Error_Code) return Boolean;
    function Parse_Subroutine_Origin
      (Bytes          : Byte_Sequence;
@@ -146,11 +152,26 @@ package body Lovelace.Lir.Binary is
       end loop;
       Append_U32 (Buffer, Interfaces.Unsigned_32 (Subroutines.Get_Flags (The_Subroutine)));
       Append_Subroutine_Origin (Buffer, The_Subroutine);
+      Append_Subroutine_Native (Buffer, The_Subroutine);
       Append_U32 (Buffer, Interfaces.Unsigned_32 (Instructions.Length (Body_Instrs)));
       for Instruction_Index in 1 .. Instructions.Length (Body_Instrs) loop
          Append_Instruction (Buffer, Instructions.Element (Body_Instrs, Instruction_Index));
       end loop;
    end Append_Subroutine;
+
+   procedure Append_Subroutine_Native (Buffer : in out Byte_Sequence; The_Subroutine : Subroutines.Subroutine) is
+      The_Native : constant Subroutines.Native_Binding_Option := Subroutines.Native (The_Subroutine);
+   begin
+      case The_Native.Present is
+         when False =>
+            Append_Byte (Buffer, Origin_Absent);
+
+         when True  =>
+            Append_Byte (Buffer, Origin_Present);
+            Append_String (Buffer, Ada.Strings.Unbounded.To_String (The_Native.Value.Target));
+            Append_String (Buffer, Ada.Strings.Unbounded.To_String (The_Native.Value.Key));
+      end case;
+   end Append_Subroutine_Native;
 
    procedure Append_Subroutine_Origin (Buffer : in out Byte_Sequence; The_Subroutine : Subroutines.Subroutine) is
       The_Origin : constant Subroutines.Origin_Option := Subroutines.Origin (The_Subroutine);
@@ -555,6 +576,10 @@ package body Lovelace.Lir.Binary is
          return False;
       end if;
 
+      if not Parse_Subroutine_Native (Bytes, Cursor, The_Subroutine, Code) then
+         return False;
+      end if;
+
       if not Read_U32 (Bytes, Cursor, Instruction_Count) then
          Code := Errors.Truncated;
          return False;
@@ -611,6 +636,43 @@ package body Lovelace.Lir.Binary is
 
       return True;
    end Parse_Subroutine;
+
+   function Parse_Subroutine_Native
+     (Bytes          : Byte_Sequence;
+      Cursor         : in out Natural;
+      The_Subroutine : in out Subroutines.Subroutine;
+      Code           : out Errors.Error_Code) return Boolean
+   is
+      Presence    : Interfaces.Unsigned_8;
+      Target_Text : Ada.Strings.Unbounded.Unbounded_String;
+      Key_Text    : Ada.Strings.Unbounded.Unbounded_String;
+   begin
+      if not Read_Byte (Bytes, Cursor, Presence) then
+         Code := Errors.Truncated;
+         return False;
+      end if;
+      if Presence = Origin_Absent then
+         return True;
+      end if;
+      if Presence /= Origin_Present then
+         Code := Errors.Invalid_Presence;
+         return False;
+      end if;
+      if not Read_String (Bytes, Cursor, Target_Text) then
+         Code := Errors.Truncated;
+         return False;
+      end if;
+      if not Read_String (Bytes, Cursor, Key_Text) then
+         Code := Errors.Truncated;
+         return False;
+      end if;
+
+      Subroutines.Set_Native_Binding
+        (The_Subroutine,
+         Ada.Strings.Unbounded.To_String (Target_Text),
+         Ada.Strings.Unbounded.To_String (Key_Text));
+      return True;
+   end Parse_Subroutine_Native;
 
    function Parse_Subroutine_Origin
      (Bytes          : Byte_Sequence;

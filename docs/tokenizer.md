@@ -56,7 +56,7 @@ Empty source and whitespace-only source succeed with an empty token sequence.
 | `Directive` | `Directive_Subtype` | `#if`, `#elsif`, `#else`, `#end` |
 | `String_Literal` | (none) | `"…"` with no escapes; Lexeme includes both quotes |
 
-Keywords are **case-sensitive**. `Program`, `Module`, `BEGIN`, `Procedure`, `Export`, and `End` are identifiers. `#end` is a **directive**, distinct from keyword `end`.
+Keywords are **case-sensitive**. `Program`, `Module`, `BEGIN`, `Procedure`, `Export`, `Native`, and `End` are identifiers. `#end` is a **directive**, distinct from keyword `end`.
 
 The scanner matches a full identifier first, then classifies. `programmer` is one identifier, not `program` plus `mer`. `programbegin`, `modulex`, and `exporter` are identifiers.
 

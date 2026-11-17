@@ -21,6 +21,7 @@ package Lovelace.Lir.Errors is
    --  @enum Duplicate_Entrypoint More than one Entrypoint flag.
    --  @enum Self_Dependency A dependency name equals the module name.
    --  @enum Invalid_Call_Target Call Target_Index is 0 or past Subroutine_Count.
+   --  @enum Invalid_Native_Binding Native_Flag / binding / empty-body / entrypoint rules violated.
    type Error_Code is
      (Internal_Error,
       Io_Failure,
@@ -37,7 +38,8 @@ package Lovelace.Lir.Errors is
       Duplicate_Name,
       Duplicate_Entrypoint,
       Self_Dependency,
-      Invalid_Call_Target);
+      Invalid_Call_Target,
+      Invalid_Native_Binding);
 
    --  Empty success payload for validation Results.
    type Empty_Success is null record;

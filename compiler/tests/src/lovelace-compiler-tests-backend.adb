@@ -325,6 +325,53 @@ package body Lovelace.Compiler.Tests.Backend is
       end case;
    end Test_Invalid_Module;
 
+   procedure Test_Native_Print_Integer (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      The_Module   : Modules.Module := Modules.Create ("Lib");
+      Params       : Types.Parameter_Sequence := Types.Empty_Sequence;
+      Print_Sub    : Subroutines.Subroutine;
+      Wat_Emitted  : Lovelace.Compiler.Backend.Wat_Emit_Result;
+      Wasm_Emitted : Lovelace.Compiler.Backend.Wasm_Emit_Result;
+      Wat_Text     : Ada.Strings.Unbounded.Unbounded_String;
+      Wit_Text     : Ada.Strings.Unbounded.Unbounded_String;
+   begin
+      Types.Append (Params, "value", Types.I32);
+      Print_Sub :=
+        Make_Unit_Subroutine_With_Parameters ("print", Subroutines.Export_Flag, Params);
+      Subroutines.Set_Native_Binding (Print_Sub, "wasi", "native-print-integer");
+      Modules.Append_Subroutine (The_Module, Print_Sub);
+
+      Wat_Emitted := Must_Emit_Wat (The_Module, "native print wat");
+      Wasm_Emitted := Must_Emit_Wasm (The_Module, "native print wasm");
+      Wat_Text := Wat_Emitted.Wat_Text;
+      Wit_Text := Wat_Emitted.Wit_Text;
+
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Wit_Text),
+         "import wasi:cli/stdout@0.3.0;",
+         "wit stdout import");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Text),
+         "wasi:cli/stdout@0.3.0",
+         "wat stdout import");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Text),
+         "canon stream.new",
+         "wat stream.new");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Text),
+         "write-via-stream",
+         "wat write-via-stream");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Text),
+         "(func $print",
+         "wat print func");
+      Assert_Bytes_Contain (Wasm_Emitted.Wasm_Bytes, "wasi:cli/stdout@0.3.0", "wasm stdout");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded."=" (Wat_Emitted.Wit_Text, Wasm_Emitted.Wit_Text),
+         "native print wit equality");
+   end Test_Native_Print_Integer;
+
    procedure Test_Noop_Body (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       The_Module : Modules.Module := Modules.Create ("Lib");

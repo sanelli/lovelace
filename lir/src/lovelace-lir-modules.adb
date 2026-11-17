@@ -194,14 +194,43 @@ package body Lovelace.Lir.Modules is
                end;
             end loop;
 
-            if Subroutines.Has_Entrypoint (Subroutines.Get_Flags (The_Subroutine)) then
-               Entrypoint_Count := Entrypoint_Count + 1;
-            end if;
-
             declare
+               The_Flags   : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (The_Subroutine);
+               The_Native  : constant Subroutines.Native_Binding_Option := Subroutines.Native (The_Subroutine);
                Body_Instrs : constant Instructions.Instruction_Sequence :=
                  Subroutines.Get_Instructions (The_Subroutine);
             begin
+               if Subroutines.Has_Entrypoint (The_Flags) then
+                  Entrypoint_Count := Entrypoint_Count + 1;
+               end if;
+
+               if Subroutines.Has_Native (The_Flags) /= The_Native.Present then
+                  return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+               end if;
+
+               if The_Native.Present then
+                  declare
+                     Target_Text : constant String := Ada.Strings.Unbounded.To_String (The_Native.Value.Target);
+                     Key_Text    : constant String := Ada.Strings.Unbounded.To_String (The_Native.Value.Key);
+                  begin
+                     if Target_Text'Length = 0 or else Key_Text'Length = 0 then
+                        return Errors.Validation_Results.From_Failure (Errors.Empty_Name);
+                     end if;
+
+                     if not Is_Valid_Utf_8 (Target_Text) or else not Is_Valid_Utf_8 (Key_Text) then
+                        return Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
+                     end if;
+                  end;
+
+                  if Subroutines.Has_Entrypoint (The_Flags) then
+                     return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+                  end if;
+
+                  if Instructions.Length (Body_Instrs) /= 0 then
+                     return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+                  end if;
+               end if;
+
                for Instruction_Index in 1 .. Instructions.Length (Body_Instrs) loop
                   declare
                      Item : constant Instructions.Instruction := Instructions.Element (Body_Instrs, Instruction_Index);

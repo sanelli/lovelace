@@ -1,0 +1,5 @@
+module NativePrint;
+
+export native("wasi", "native-print-integer") procedure print(value : integer);
+
+end.

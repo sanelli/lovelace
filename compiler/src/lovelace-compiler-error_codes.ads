@@ -23,6 +23,7 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Not_Exported IR Generator: imported procedure exists but lacks Export_Flag (LV00018).
    --  @enum Circular_Import Unit graph: import cycle among compilation units (LV00019).
    --  @enum Ambiguous_Module_Path Unit graph: two or more distinct .love files match one import (LV00020).
+   --  @enum Unknown_Native_Binding IR Generator: native(target, key) not in the closed wasi set (LV00021).
    type Error_Code is
      (Internal_Error,
       Unrecognized_Symbol,
@@ -43,7 +44,8 @@ package Lovelace.Compiler.Error_Codes is
       Call_Without_Import,
       Not_Exported,
       Circular_Import,
-      Ambiguous_Module_Path);
+      Ambiguous_Module_Path,
+      Unknown_Native_Binding);
 
    --  Canonical LV##### label for Code.
    --  @param Code Diagnostic kind.

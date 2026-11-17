@@ -28,6 +28,9 @@ $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
 
+# In-tree Augusta sources live under <repo>/augusta/ (e.g. augusta.std.io.love).
+$env:AUGUSTA_HOME = Join-Path $RepoRoot 'augusta'
+
 function Invoke-QuietAlireBuild {
     param(
         [Parameter(Mandatory)]

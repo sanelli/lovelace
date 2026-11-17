@@ -6,7 +6,7 @@ Lexical grammar recognized by [`Lovelace.Compiler.Tokenizer`](tokenizer.md). Not
 tokens        = { whitespace | token | error } ;
 token         = keyword | identifier | punctuation | integer_literal
               | float_literal | directive | string_literal ;
-keyword       = "program" | "module" | "begin" | "end" | "export" | "import"
+keyword       = "program" | "module" | "begin" | "end" | "export" | "import" | "native"
               | "procedure" | "integer" | "float" | "signed" | "unsigned" ;
               (* case-sensitive *)
 punctuation   = ";" | "." | "(" | ")" | "," | ":" | "<" | ">" | "=" ;
@@ -48,6 +48,7 @@ Examples:
 | `module Foo.Bar; end.` | `module` `Foo` `.` `Bar` `;` `end` `.` |
 | `procedure P(x : integer);` | `procedure` `P` `(` `x` `:` `integer` `)` `;` |
 | `export procedure Print(Value : integer);` | `export` `procedure` `Print` `(` `Value` `:` `integer` `)` `;` |
+| `export native("wasi", "native-print-integer") procedure print(value : integer);` | `export` `native` `(` `"wasi"` `,` `"native-print-integer"` `)` `procedure` … |
 | `import Foo.Bar;` | `import` `Foo` `.` `Bar` `;` |
 | `42` `-3u16` `#16#FFs32` | integer literals |
 | `3.14` `7.` `1e-3` | float literals |

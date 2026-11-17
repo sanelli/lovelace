@@ -106,6 +106,7 @@ package body Lovelace.Compiler.Tokenizer is
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("end"), Value => Tokens.End_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("export"), Value => Tokens.Export_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("import"), Value => Tokens.Import_Keyword),
+      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("native"), Value => Tokens.Native_Keyword),
       Keyword_Entry'
         (Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("procedure"), Value => Tokens.Procedure_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("integer"), Value => Tokens.Integer_Keyword),

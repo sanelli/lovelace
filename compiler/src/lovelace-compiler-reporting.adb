@@ -59,8 +59,11 @@ package body Lovelace.Compiler.Reporting is
          when Ir_Generator.Call_Without_Import =>
             return Error_Codes.Call_Without_Import;
 
-         when Ir_Generator.Not_Exported        =>
+         when Ir_Generator.Not_Exported           =>
             return Error_Codes.Not_Exported;
+
+         when Ir_Generator.Unknown_Native_Binding =>
+            return Error_Codes.Unknown_Native_Binding;
       end case;
    end To_Error_Code;
 

@@ -52,7 +52,8 @@ package body Lovelace.Compiler.Ast is
       Flags       : Subroutine_Flags;
       Return_Type : Types.Type_Expression;
       Parameters  : Parameter_Sequence;
-      The_Body    : Statement_Sequence) return Subroutine is
+      The_Body    : Statement_Sequence;
+      Native      : Native_Binding_Option) return Subroutine is
    begin
       return
         (Subroutine_Name   => Ada.Strings.Unbounded.To_Unbounded_String (Name),
@@ -62,7 +63,8 @@ package body Lovelace.Compiler.Ast is
          Flags_Value       => Flags,
          Return_Type_Value => Return_Type,
          Parameters_Value  => Parameters,
-         Body_Value        => The_Body);
+         Body_Value        => The_Body,
+         Native_Value      => Native);
    end Create_Subroutine;
 
    function Element (Sequence : Parameter_Sequence; Index : Positive) return Parameter is
@@ -160,6 +162,11 @@ package body Lovelace.Compiler.Ast is
       return (Flags and Export_Flag) /= 0;
    end Has_Export;
 
+   function Has_Native (Flags : Subroutine_Flags) return Boolean is
+   begin
+      return (Flags and Native_Flag) /= 0;
+   end Has_Native;
+
    function Import_Count (The_Module : Module) return Natural is
    begin
       return Length (The_Module.Imports);
@@ -214,6 +221,11 @@ package body Lovelace.Compiler.Ast is
    begin
       return The_Subroutine.Name_Span_Value;
    end Name_Span;
+
+   function Native (The_Subroutine : Subroutine) return Native_Binding_Option is
+   begin
+      return The_Subroutine.Native_Value;
+   end Native;
 
    function Parameters (The_Subroutine : Subroutine) return Parameter_Sequence is
    begin

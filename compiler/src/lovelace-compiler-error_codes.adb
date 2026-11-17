@@ -62,6 +62,9 @@ package body Lovelace.Compiler.Error_Codes is
 
          when Ambiguous_Module_Path          =>
             return "LV00020";
+
+         when Unknown_Native_Binding         =>
+            return "LV00021";
       end case;
    end Label;
 

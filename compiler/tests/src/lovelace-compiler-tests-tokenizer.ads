@@ -51,6 +51,10 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Import_Keyword (The_Test : in out Fixture);
 
+   --  native alone and before procedure; Native / nativeness are identifiers.
+   --  @param The_Test Unused fixture.
+   procedure Test_Native_Keyword (The_Test : in out Fixture);
+
    --  Integer and float literal forms tokenize successfully.
    --  @param The_Test Unused fixture.
    procedure Test_Numeric_Literals (The_Test : in out Fixture);

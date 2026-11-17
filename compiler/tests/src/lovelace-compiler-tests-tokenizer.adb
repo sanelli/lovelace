@@ -283,6 +283,28 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Support.Assert_Error_Code (Errors, 2, Compiler_Tokenizer.Unrecognized_Symbol, "dollar");
    end Test_Multi_Error;
 
+   procedure Test_Native_Keyword (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Alone            : constant String := "native";
+      Before_Procedure : constant String := "native procedure";
+      Native_Case      : constant String := "Native";
+      Nativeness       : constant String := "nativeness";
+      Alone_Tokens     : constant Tokens.Token_Sequence := Support.Must_Succeed (Alone, "native");
+      Pair_Tokens      : constant Tokens.Token_Sequence := Support.Must_Succeed (Before_Procedure, "native procedure");
+      Case_Tokens      : constant Tokens.Token_Sequence := Support.Must_Succeed (Native_Case, "Native");
+      Long_Tokens      : constant Tokens.Token_Sequence := Support.Must_Succeed (Nativeness, "nativeness");
+   begin
+      Support.Assert_Token_Count (Alone_Tokens, 1, "native");
+      Support.Assert_Keyword (Alone, Alone_Tokens, 1, Tokens.Native_Keyword, "native keyword");
+      Support.Assert_Token_Count (Pair_Tokens, 2, "native procedure");
+      Support.Assert_Keyword (Before_Procedure, Pair_Tokens, 1, Tokens.Native_Keyword, "native before procedure");
+      Support.Assert_Keyword (Before_Procedure, Pair_Tokens, 2, Tokens.Procedure_Keyword, "procedure after native");
+      Support.Assert_Token_Count (Case_Tokens, 1, "Native");
+      Support.Assert_Identifier (Native_Case, Case_Tokens, 1, "Native", "Native");
+      Support.Assert_Token_Count (Long_Tokens, 1, "nativeness");
+      Support.Assert_Identifier (Nativeness, Long_Tokens, 1, "nativeness", "nativeness");
+   end Test_Native_Keyword;
+
    procedure Test_Newline_Line_Column (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Source_Text : constant String := "end" & ASCII.LF & "begin";

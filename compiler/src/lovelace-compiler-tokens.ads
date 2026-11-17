@@ -25,6 +25,7 @@ package Lovelace.Compiler.Tokens is
    --  @enum End_Keyword end
    --  @enum Export_Keyword export
    --  @enum Import_Keyword import
+   --  @enum Native_Keyword native
    --  @enum Procedure_Keyword procedure
    --  @enum Integer_Keyword integer
    --  @enum Float_Keyword float
@@ -37,6 +38,7 @@ package Lovelace.Compiler.Tokens is
       End_Keyword,
       Export_Keyword,
       Import_Keyword,
+      Native_Keyword,
       Procedure_Keyword,
       Integer_Keyword,
       Float_Keyword,

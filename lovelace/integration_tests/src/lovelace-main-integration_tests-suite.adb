@@ -35,6 +35,14 @@ package body Lovelace.Main.Integration_Tests.Suite is
               .Test_Build_Validate_And_Run'Access));
       Result.Add_Test
         (Hello_Caller.Create
+           ("build: validate and run program HelloPrint",
+            Lovelace
+              .Main
+              .Integration_Tests
+              .Hello_Build
+              .Test_Hello_Print_Build_Validate_And_Run'Access));
+      Result.Add_Test
+        (Hello_Caller.Create
            ("build: validate and run program ImportDecl",
             Lovelace
               .Main

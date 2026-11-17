@@ -1,0 +1,5 @@
+import augusta.std.io;
+program HelloPrint;
+begin
+   augusta.std.io.print(42);
+end.

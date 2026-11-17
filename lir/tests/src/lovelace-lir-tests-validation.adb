@@ -1,3 +1,5 @@
+with AUnit.Assertions;
+
 with Lovelace.Lir.Errors;
 with Lovelace.Lir.Modules;
 with Lovelace.Lir.Opcodes;
@@ -49,6 +51,44 @@ package body Lovelace.Lir.Tests.Validation is
          Subroutines.Append_Instruction (Caller, (Operation => Opcodes.Call, Target_Index => 0));
          Modules.Append_Subroutine (Bad_Call, Caller);
          Support.Assert_Validate_Error (Bad_Call, Errors.Invalid_Call_Target, "call target zero");
+      end;
+
+      declare
+         Flag_Only      : Modules.Module := Modules.Create ("m");
+         With_Body      : Modules.Module := Modules.Create ("m");
+         With_Entry     : Modules.Module := Modules.Create ("m");
+         Empty_Key      : Modules.Module := Modules.Create ("m");
+         Native_Ok      : Modules.Module := Modules.Create ("m");
+         Body_Sub       : Subroutines.Subroutine := Support.Make_Subroutine ("P", Types.Unit, Noop_Count => 1);
+         Entry_Sub      : Subroutines.Subroutine :=
+           Support.Make_Subroutine ("P", Types.Unit, Flags => Subroutines.Entrypoint_Flag);
+         Empty_Key_Sub  : Subroutines.Subroutine := Support.Make_Subroutine ("P", Types.Unit);
+         Ok_Sub         : Subroutines.Subroutine :=
+           Support.Make_Subroutine ("P", Types.Unit, Flags => Subroutines.Export_Flag);
+      begin
+         Modules.Append_Subroutine
+           (Flag_Only, Support.Make_Subroutine ("P", Types.Unit, Flags => Subroutines.Native_Flag));
+         Support.Assert_Validate_Error (Flag_Only, Errors.Invalid_Native_Binding, "native flag without binding");
+
+         Subroutines.Set_Native_Binding (Body_Sub, "wasi", "native-print-integer");
+         Modules.Append_Subroutine (With_Body, Body_Sub);
+         Support.Assert_Validate_Error (With_Body, Errors.Invalid_Native_Binding, "native with body");
+
+         Subroutines.Set_Native_Binding (Entry_Sub, "wasi", "native-print-integer");
+         Modules.Append_Subroutine (With_Entry, Entry_Sub);
+         Support.Assert_Validate_Error (With_Entry, Errors.Invalid_Native_Binding, "native entrypoint");
+
+         Subroutines.Set_Native_Binding (Empty_Key_Sub, "wasi", "");
+         Modules.Append_Subroutine (Empty_Key, Empty_Key_Sub);
+         Support.Assert_Validate_Error (Empty_Key, Errors.Empty_Name, "native empty key");
+
+         Subroutines.Set_Native_Binding (Ok_Sub, "wasi", "native-print-integer");
+         Modules.Append_Subroutine (Native_Ok, Ok_Sub);
+         declare
+            Outcome : constant Errors.Validation_Results.Result := Modules.Validate (Native_Ok);
+         begin
+            AUnit.Assertions.Assert (Outcome.Ok, "valid native subroutine");
+         end;
       end;
    end Test_Validate_Failures;
 

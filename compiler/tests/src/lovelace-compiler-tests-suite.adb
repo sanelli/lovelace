@@ -78,6 +78,10 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Tokenizer.Test_Import_Keyword'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
+           ("tokenizer: native keyword",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Native_Keyword'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
            ("tokenizer: ascii identifiers",
             Lovelace.Compiler.Tests.Tokenizer.Test_Ascii_Identifiers'Access));
       Result.Add_Test
@@ -311,6 +315,10 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Parser.Test_Export_Procedure'Access));
       Result.Add_Test
         (Parser_Caller.Create
+           ("parser: native procedure",
+            Lovelace.Compiler.Tests.Parser.Test_Native_Procedure'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
            ("parser: duplicate parameter",
             Lovelace.Compiler.Tests.Parser.Test_Duplicate_Parameter'Access));
       Result.Add_Test
@@ -401,6 +409,10 @@ package body Lovelace.Compiler.Tests.Suite is
               .Test_Module_Procedure_Parameters'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
+           ("ir generator: native binding",
+            Lovelace.Compiler.Tests.Ir_Generator.Test_Native_Binding'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
            ("ir generator: parameter type mapping",
             Lovelace
               .Compiler
@@ -480,6 +492,10 @@ package body Lovelace.Compiler.Tests.Suite is
         (Backend_Caller.Create
            ("backend: wasm wit equality",
             Lovelace.Compiler.Tests.Backend.Test_Wasm_Wit_Equality'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: native print integer",
+            Lovelace.Compiler.Tests.Backend.Test_Native_Print_Integer'Access));
 
       Result.Add_Test
         (Diagnostics_Caller.Create

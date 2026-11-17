@@ -52,17 +52,23 @@ package Lovelace.Main.Integration_Tests.Support is
    --  @param Output_Root Directory to recreate.
    procedure Reset_Output_Root (Output_Root : String);
 
+   --  Absolute path to the repository root (parent of samples/ and augusta/).
+   --  @return Repository root directory.
+   function Locate_Repository_Root return String;
+
    --  Run lovelace build --force for Sample_Path into Output_Root.
    --  Stdout ([info]) is discarded; stderr ([err]) still prints.
    --  @param Lovelace_Path Path to the lovelace executable.
    --  @param Sample_Path Path to the .love source.
    --  @param Output_Root Build output folder.
    --  @param Message Assertion prefix on failure.
+   --  @param Include_Path Optional -I search root (empty = omit).
    procedure Build_Sample
      (Lovelace_Path : String;
       Sample_Path   : String;
       Output_Root   : String;
-      Message       : String);
+      Message       : String;
+      Include_Path  : String := "");
 
    --  Assert obj/Unit_Name.lir and bin Unit_Name .wasm/.wat/.wit exist.
    --  @param Output_Root Build output folder.
