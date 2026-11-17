@@ -8,7 +8,7 @@ Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md
 
 ## Module path and unit graph
 
-Multi-unit loading (roadmap step 5) uses:
+Multi-unit loading (roadmap [1.001](roadmap/1.001-roadmap-print-integer-wasi.md) step 5) uses:
 
 | Package | Role |
 | --- | --- |

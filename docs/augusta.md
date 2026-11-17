@@ -38,7 +38,7 @@ export procedure print(value : integer);
 | `native` | Empty stub (compiles; does not print yet) |
 | `web` | Empty stub (compiles; does not print yet) |
 
-**TEMPORARY:** the wasi `print` is a `native(…)` binding so the backend can synthesize formatting and stdout writes. Once Lovelace has locals, assignment, loops, and integer arithmetic (roadmap step 10), replace it with a normal Lovelace body — not a native. (Source comments are not in the language yet; this note lives in docs.)
+**TEMPORARY:** the wasi `print` is a `native(…)` binding so the backend can synthesize formatting and stdout writes. Once Lovelace has locals, assignment, loops, and integer arithmetic ([roadmap 1.002](roadmap/1.002-roadmap-replace-synthesized-print.md)), replace it with a normal Lovelace body — not a native — leaving only a narrow `PrintUTF8Character` synthesis until full WASI async is in-language. (Source comments are not in the language yet; this note lives in docs.)
 
 Example:
 

@@ -46,7 +46,7 @@ Branch: `feature/25-unit-level-import` (linked to #25; created from `main` via `
 
 Plan file: [`.cursor/plans/025-unit-level-import.plan.md`](025-unit-level-import.plan.md).
 
-Roadmap: [docs/roadmap/001-roadmap-print-integer-wasi.md](../../docs/roadmap/001-roadmap-print-integer-wasi.md) § Macro step 3.
+Roadmap: [docs/roadmap/1.001-roadmap-print-integer-wasi.md](../../docs/roadmap/1.001-roadmap-print-integer-wasi.md) § Macro step 3.
 
 Prerequisite: macro steps 1–2 done ([#21](https://github.com/sanelli/lovelace/issues/21), [#23](https://github.com/sanelli/lovelace/issues/23)).
 
@@ -66,7 +66,7 @@ Prerequisite: macro steps 1–2 done ([#21](https://github.com/sanelli/lovelace/
 - **LIR:** IR generator `Append_Dependency` each import name in source order. LIR codecs/Validate already support depends; backend continues to **ignore** Dependencies (no codegen change).
 - **Resolution:** none — unknown modules are fine; no search path; no `MODULE.SUBROUTINE` calls.
 - **Sample:** [`samples/import/ImportDecl.love`](../../samples/import/ImportDecl.love) — leading dotted import, then empty-body program (buildable; wasmtime still runs empty `run`).
-- **Roadmap sync (required in this slice):** update [docs/roadmap/001-roadmap-print-integer-wasi.md](../../docs/roadmap/001-roadmap-print-integer-wasi.md) so placement/examples match file-leading imports (not after `program`/`module` headers). See step 9.
+- **Roadmap sync (required in this slice):** update [docs/roadmap/1.001-roadmap-print-integer-wasi.md](../../docs/roadmap/1.001-roadmap-print-integer-wasi.md) so placement/examples match file-leading imports (not after `program`/`module` headers). See step 9.
 - **Out of scope:** `import … as …`; multi-unit load; call syntax; Augusta; WASI/`native(`; statements; flavor output dirs; new diagnostic codes.
 
 ```mermaid
@@ -98,7 +98,7 @@ qualified_identifier = identifier , { "." , identifier } ;
 - `Parse_Compilation_Unit` today requires the first token to be `program` or `module` (~490–542). `Unit_Parse` / `To_Parse_Result` omit imports (~44–51, ~1672–1715). Programs go header → `Parse_Block` (~1514); modules go header → `Parse_Module_Declaration_List` (~1063).
 - IR generator never calls `Append_Dependency` — [compiler/src/lovelace-compiler-ir_generator.adb](../../compiler/src/lovelace-compiler-ir_generator.adb); docs say “no dependencies” ([docs/ir-generator.md](../../docs/ir-generator.md)).
 - LIR already has depend API + binary/text codecs + Validate (empty/dup/self) — [lir/src/lovelace-lir-modules.ads](../../lir/src/lovelace-lir-modules.ads).
-- Roadmap still shows imports **after** `program` / in “unit headers” — [docs/roadmap/001-roadmap-print-integer-wasi.md](../../docs/roadmap/001-roadmap-print-integer-wasi.md) (bullet list, Import grammar example, macro step 3 wording). Must be rewritten in this slice.
+- Roadmap still shows imports **after** `program` / in “unit headers” — [docs/roadmap/1.001-roadmap-print-integer-wasi.md](../../docs/roadmap/1.001-roadmap-print-integer-wasi.md) (bullet list, Import grammar example, macro step 3 wording). Must be rewritten in this slice.
 
 ## Implementation steps
 
@@ -176,7 +176,7 @@ end.
 ```
 
 - Update [docs/samples.md](../../docs/samples.md); wire into integration sample discovery/lists if they enumerate paths explicitly.
-- **Change the roadmap** [docs/roadmap/001-roadmap-print-integer-wasi.md](../../docs/roadmap/001-roadmap-print-integer-wasi.md) to match file-leading imports:
+- **Change the roadmap** [docs/roadmap/1.001-roadmap-print-integer-wasi.md](../../docs/roadmap/1.001-roadmap-print-integer-wasi.md) to match file-leading imports:
   - Top bullet / macro step 3 placement: imports are first in the file, before `program` / `module` (still unit-level only; not inside subroutines).
   - Import grammar example: move `import augusta.std.io;` above `program Hello;`.
   - Any “unit headers (before procedures / before begin)” wording → “leading imports before the `program` / `module` declaration”.

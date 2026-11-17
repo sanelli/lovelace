@@ -55,7 +55,7 @@ Branch: `feature/27-qualified-calls-literals` (linked to #27; created from `main
 
 Plan file: [`.cursor/plans/027-qualified-calls-literals.plan.md`](027-qualified-calls-literals.plan.md).
 
-Roadmap: [docs/roadmap/001-roadmap-print-integer-wasi.md](../../docs/roadmap/001-roadmap-print-integer-wasi.md) § Macro step 4.
+Roadmap: [docs/roadmap/1.001-roadmap-print-integer-wasi.md](../../docs/roadmap/1.001-roadmap-print-integer-wasi.md) § Macro step 4.
 
 Prerequisite: macro steps 1–3 done ([#21](https://github.com/sanelli/lovelace/issues/21), [#23](https://github.com/sanelli/lovelace/issues/23), [#25](https://github.com/sanelli/lovelace/issues/25)).
 
@@ -205,6 +205,6 @@ Clear proxy env, `git push -u origin HEAD`, `gh pr create` summarizing qualified
 
 - Loading imported Augusta / search path / `import` gating (step 5)
 - External WASI decls or component imports (steps 6–7)
-- Locals, assignment, expressions beyond integer literal args (step 10)
+- Locals, assignment, expressions beyond integer literal args (roadmap 1.002)
 - Unqualified same-module call sugar
 - `import … as …`; flavor output directories

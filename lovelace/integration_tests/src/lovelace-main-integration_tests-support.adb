@@ -1,4 +1,5 @@
 with Ada.Directories;
+with Ada.Streams.Stream_IO;
 with Ada.Strings.Fixed;
 with Ada.Strings.Unbounded;
 with Ada.Text_IO;
@@ -14,8 +15,17 @@ package body Lovelace.Main.Integration_Tests.Support is
    function Discard_Stdout_Path return String;
    --  OS null device for discarding child stdout.
 
+   function Read_Exact_File (Path : String) return String;
+   --  Read entire file bytes as a String (no newline rewriting).
+
    function Read_Text_File (Path : String) return String;
-   --  Read entire UTF-8 text file.
+   --  Read entire UTF-8 text file (Get_Line; appends LF per line).
+
+   function Spawn_Capturing_Stdout
+     (Program_Name : String;
+      Args         : GNAT.OS_Lib.Argument_List;
+      Output_Path  : String) return Integer;
+   --  Spawn with stdout written to Output_Path; stderr kept separate.
 
    function Spawn_Discarding_Stdout
      (Program_Name : String; Args : GNAT.OS_Lib.Argument_List) return Integer;
@@ -177,6 +187,27 @@ package body Lovelace.Main.Integration_Tests.Support is
       end;
    end Locate_Tool;
 
+   function Read_Exact_File (Path : String) return String is
+      Size : constant Natural := Natural (Ada.Directories.Size (Path));
+   begin
+      if Size = 0 then
+         return "";
+      end if;
+
+      declare
+         File   : Ada.Streams.Stream_IO.File_Type;
+         Stream : Ada.Streams.Stream_IO.Stream_Access;
+         Buffer : String (1 .. Size);
+      begin
+         Ada.Streams.Stream_IO.Open
+           (File, Ada.Streams.Stream_IO.In_File, Path);
+         Stream := Ada.Streams.Stream_IO.Stream (File);
+         String'Read (Stream, Buffer);
+         Ada.Streams.Stream_IO.Close (File);
+         return Buffer;
+      end;
+   end Read_Exact_File;
+
    function Read_Text_File (Path : String) return String is
       File   : Ada.Text_IO.File_Type;
       Buffer : Ada.Strings.Unbounded.Unbounded_String;
@@ -240,11 +271,15 @@ package body Lovelace.Main.Integration_Tests.Support is
    end Reset_Output_Root;
 
    procedure Run_Entrypoint_Artifact
-     (Path : String; Message : String; Status : out Tool_Status)
+     (Path            : String;
+      Message         : String;
+      Status          : out Tool_Status;
+      Expected_Stdout : String := "")
    is
       Wasmtime_Path : constant String := Locate_Tool ("wasmtime");
       Run_Args      : GNAT.OS_Lib.Argument_List_Access;
       Return_Code   : Integer;
+      Capture_Path  : constant String := Path & ".stdout";
    begin
       if Wasmtime_Path'Length = 0 then
          Status := Missing;
@@ -263,24 +298,49 @@ package body Lovelace.Main.Integration_Tests.Support is
            3 => new String'("-W"),
            4 => new String'("component-model-async=y"),
            5 => new String'(Path));
-      Return_Code := Spawn_Discarding_Stdout (Wasmtime_Path, Run_Args.all);
+
+      if Expected_Stdout'Length = 0 then
+         Return_Code := Spawn_Discarding_Stdout (Wasmtime_Path, Run_Args.all);
+      else
+         Return_Code :=
+           Spawn_Capturing_Stdout
+             (Wasmtime_Path, Run_Args.all, Capture_Path);
+      end if;
+
       GNAT.OS_Lib.Free (Run_Args);
 
-      if Return_Code = 0 then
-         Status := Succeeded;
-      else
+      if Return_Code /= 0 then
          Status := Failed;
          AUnit.Assertions.Assert
            (False,
             Message & ": wasmtime run exit" & Integer'Image (Return_Code));
+         return;
       end if;
+
+      if Expected_Stdout'Length > 0 then
+         declare
+            Actual : constant String := Read_Exact_File (Capture_Path);
+         begin
+            AUnit.Assertions.Assert
+              (Actual = Expected_Stdout,
+               Message
+               & ": stdout expected `"
+               & Expected_Stdout
+               & "` got `"
+               & Actual
+               & "`");
+         end;
+      end if;
+
+      Status := Succeeded;
    end Run_Entrypoint_Artifact;
 
    procedure Run_Unit_Entrypoint
-     (Output_Root : String;
-      Unit_Name   : String;
-      Message     : String;
-      Status      : out Tool_Status)
+     (Output_Root     : String;
+      Unit_Name       : String;
+      Message         : String;
+      Status          : out Tool_Status;
+      Expected_Stdout : String := "")
    is
       Bin_Dir     : constant String := Compose_Under (Output_Root, "bin");
       Wasm_Path   : constant String :=
@@ -295,8 +355,16 @@ package body Lovelace.Main.Integration_Tests.Support is
          return;
       end if;
 
-      Run_Entrypoint_Artifact (Wasm_Path, Message & " wasm", Wasm_Status);
-      Run_Entrypoint_Artifact (Wat_Path, Message & " wat", Wat_Status);
+      Run_Entrypoint_Artifact
+        (Path            => Wasm_Path,
+         Message         => Message & " wasm",
+         Status          => Wasm_Status,
+         Expected_Stdout => Expected_Stdout);
+      Run_Entrypoint_Artifact
+        (Path            => Wat_Path,
+         Message         => Message & " wat",
+         Status          => Wat_Status,
+         Expected_Stdout => Expected_Stdout);
 
       if Wasm_Status = Succeeded and then Wat_Status = Succeeded then
          Status := Succeeded;
@@ -304,6 +372,29 @@ package body Lovelace.Main.Integration_Tests.Support is
          Status := Failed;
       end if;
    end Run_Unit_Entrypoint;
+
+   function Spawn_Capturing_Stdout
+     (Program_Name : String;
+      Args         : GNAT.OS_Lib.Argument_List;
+      Output_Path  : String) return Integer
+   is
+      Success     : Boolean;
+      Return_Code : Integer;
+   begin
+      GNAT.OS_Lib.Spawn
+        (Program_Name => Program_Name,
+         Args         => Args,
+         Output_File  => Output_Path,
+         Success      => Success,
+         Return_Code  => Return_Code,
+         Err_To_Out   => False);
+
+      if not Success then
+         return 1;
+      end if;
+
+      return Return_Code;
+   end Spawn_Capturing_Stdout;
 
    function Spawn_Discarding_Stdout
      (Program_Name : String; Args : GNAT.OS_Lib.Argument_List) return Integer

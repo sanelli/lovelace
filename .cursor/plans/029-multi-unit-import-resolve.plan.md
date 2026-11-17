@@ -49,7 +49,7 @@ Branch: `feature/29-multi-unit-import-resolve` (linked to #29; created from `mai
 
 Plan file: [`.cursor/plans/029-multi-unit-import-resolve.plan.md`](029-multi-unit-import-resolve.plan.md).
 
-Roadmap: [docs/roadmap/001-roadmap-print-integer-wasi.md](../../docs/roadmap/001-roadmap-print-integer-wasi.md) § Macro step 5.
+Roadmap: [docs/roadmap/1.001-roadmap-print-integer-wasi.md](../../docs/roadmap/1.001-roadmap-print-integer-wasi.md) § Macro step 5.
 
 Prerequisite: macro steps 1–4 done ([#21](https://github.com/sanelli/lovelace/issues/21), [#23](https://github.com/sanelli/lovelace/issues/23), [#25](https://github.com/sanelli/lovelace/issues/25), [#27](https://github.com/sanelli/lovelace/issues/27)).
 
@@ -227,4 +227,4 @@ Clear proxy env, `git push -u origin HEAD`, `gh pr create` summarizing multi-uni
 - Augusta stdlib / WASI external decls / console E2E (steps 6–9)
 - `import … as …`, partial modules, unused-import warnings
 - Per-unit `.lir` cache, flavor output directories, multi-component linking
-- Unqualified call sugar; locals/expressions (step 10)
+- Unqualified call sugar; locals/expressions (roadmap 1.002)
