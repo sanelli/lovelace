@@ -2,6 +2,7 @@ with Ada.Characters.Handling;
 with Ada.Strings.Unbounded;
 with Interfaces;
 
+with Lovelace.Compiler.Backend.Native_Print;
 with Lovelace.Lir.Errors;
 with Lovelace.Lir.Instructions;
 with Lovelace.Lir.Opcodes;
@@ -18,6 +19,7 @@ package body Lovelace.Compiler.Backend.Lowering is
    package Types renames Lovelace.Lir.Types;
 
    use type Interfaces.Unsigned_32;
+   use type Model.Core_Value_Type;
    use type Types.Value_Type;
 
    function Failure (Code : Backend_Error_Code; Detail : String) return Lower_Result;
@@ -130,26 +132,64 @@ package body Lovelace.Compiler.Backend.Lowering is
                        & Ada.Strings.Unbounded.To_String (Parameter_Detail));
                end if;
 
-               Lower_Instruction_Body
-                 (The_Instructions => Subroutines.Get_Instructions (The_Subroutine),
-                  Body_Out         => Body_Out,
-                  Outcome          => Body_Outcome);
+               declare
+                  Local_Types : Model.Core_Local_Sequence := Model.Empty_Locals;
+               begin
+                  if Subroutines.Has_Native (The_Flags) then
+                     declare
+                        The_Native : constant Subroutines.Native_Binding_Option :=
+                          Subroutines.Native (The_Subroutine);
+                     begin
+                        if not The_Native.Present then
+                           return Failure (Internal_Error, "native flag without binding after Validate");
+                        end if;
 
-               case Body_Outcome.Ok is
-                  when False =>
-                     return Body_Outcome;
+                        if Ada.Strings.Unbounded.To_String (The_Native.Value.Target) /= "wasi"
+                          or else Ada.Strings.Unbounded.To_String (The_Native.Value.Key) /= "native-print-integer"
+                        then
+                           return
+                             Failure
+                               (Unsupported_Type,
+                                "backend cannot synthesize native binding for subroutine " & Source_Name);
+                        end if;
 
-                  when True  =>
-                     null;
-               end case;
+                        if Parameter_Count /= 1
+                          or else Model.Element (Parameter_Types, 1) /= Model.I32
+                        then
+                           return
+                             Failure
+                               (Unsupported_Type,
+                                "native-print-integer requires a single integer parameter; got subroutine "
+                                & Source_Name);
+                        end if;
 
-               Model.Append_Function
-                 (The_Model,
-                  (Name            => The_Signature.Name,
-                   Parameter_Types => Parameter_Types,
-                   Result_Is_I32   => False,
-                   Instructions    => Body_Out,
-                   Core_Exported   => Component_Export));
+                        Native_Print.Synthesize (Local_Types, Body_Out);
+                        Model.Enable_Wasi_Stdout (The_Model);
+                     end;
+                  else
+                     Lower_Instruction_Body
+                       (The_Instructions => Subroutines.Get_Instructions (The_Subroutine),
+                        Body_Out         => Body_Out,
+                        Outcome          => Body_Outcome);
+
+                     case Body_Outcome.Ok is
+                        when False =>
+                           return Body_Outcome;
+
+                        when True  =>
+                           null;
+                     end case;
+                  end if;
+
+                  Model.Append_Function
+                    (The_Model,
+                     (Name            => The_Signature.Name,
+                      Parameter_Types => Parameter_Types,
+                      Local_Types     => Local_Types,
+                      Result_Is_I32   => False,
+                      Instructions    => Body_Out,
+                      Core_Exported   => Component_Export));
+               end;
 
                if Component_Export then
                   Model.Append_Export
@@ -183,6 +223,7 @@ package body Lovelace.Compiler.Backend.Lowering is
                  (The_Model,
                   (Name            => Ada.Strings.Unbounded.To_Unbounded_String ("_start"),
                    Parameter_Types => Model.Empty_Parameters,
+                   Local_Types     => Model.Empty_Locals,
                    Result_Is_I32   => True,
                    Instructions    => Start_Body,
                    Core_Exported   => True));

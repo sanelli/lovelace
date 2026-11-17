@@ -5,6 +5,11 @@ package body Lovelace.Compiler.Backend.Model is
       Sequence.Items.Append (The_Type);
    end Append;
 
+   procedure Append (Sequence : in out Core_Local_Sequence; The_Type : Core_Value_Type) is
+   begin
+      Sequence.Items.Append (The_Type);
+   end Append;
+
    procedure Append (Sequence : in out Instruction_Sequence; Item : Core_Instruction) is
    begin
       Sequence.Items.Append (Item);
@@ -23,12 +28,18 @@ package body Lovelace.Compiler.Backend.Model is
    function Create (Name : String) return Component_Model is
    begin
       return
-        (Module_Name_Value => Ada.Strings.Unbounded.To_Unbounded_String (Name),
-         Functions         => Function_Vectors.Empty_Vector,
-         Exports           => Export_Vectors.Empty_Vector);
+        (Module_Name_Value   => Ada.Strings.Unbounded.To_Unbounded_String (Name),
+         Functions           => Function_Vectors.Empty_Vector,
+         Exports             => Export_Vectors.Empty_Vector,
+         Wasi_Stdout_Enabled => False);
    end Create;
 
    function Element (Sequence : Core_Parameter_Sequence; Index : Positive) return Core_Value_Type is
+   begin
+      return Sequence.Items.Element (Index);
+   end Element;
+
+   function Element (Sequence : Core_Local_Sequence; Index : Positive) return Core_Value_Type is
    begin
       return Sequence.Items.Element (Index);
    end Element;
@@ -43,10 +54,20 @@ package body Lovelace.Compiler.Backend.Model is
       return (Items => Instruction_Vectors.Empty_Vector);
    end Empty_Instructions;
 
+   function Empty_Locals return Core_Local_Sequence is
+   begin
+      return (Items => Core_Parameter_Vectors.Empty_Vector);
+   end Empty_Locals;
+
    function Empty_Parameters return Core_Parameter_Sequence is
    begin
       return (Items => Core_Parameter_Vectors.Empty_Vector);
    end Empty_Parameters;
+
+   procedure Enable_Wasi_Stdout (The_Model : in out Component_Model) is
+   begin
+      The_Model.Wasi_Stdout_Enabled := True;
+   end Enable_Wasi_Stdout;
 
    function Export_Count (The_Model : Component_Model) return Natural is
    begin
@@ -71,7 +92,7 @@ package body Lovelace.Compiler.Backend.Model is
    function Has_Run_Export (The_Model : Component_Model) return Boolean is
    begin
       for Index in 1 .. Export_Count (The_Model) loop
-         if Ada.Strings.Unbounded.To_String (Get_Export (The_Model, Index).Export_Name) = "run" then
+         if Get_Export (The_Model, Index).Returns_Result then
             return True;
          end if;
       end loop;
@@ -79,7 +100,17 @@ package body Lovelace.Compiler.Backend.Model is
       return False;
    end Has_Run_Export;
 
+   function Has_Wasi_Stdout (The_Model : Component_Model) return Boolean is
+   begin
+      return The_Model.Wasi_Stdout_Enabled;
+   end Has_Wasi_Stdout;
+
    function Length (Sequence : Core_Parameter_Sequence) return Natural is
+   begin
+      return Natural (Sequence.Items.Length);
+   end Length;
+
+   function Length (Sequence : Core_Local_Sequence) return Natural is
    begin
       return Natural (Sequence.Items.Length);
    end Length;

@@ -492,6 +492,10 @@ package body Lovelace.Compiler.Tests.Suite is
         (Backend_Caller.Create
            ("backend: wasm wit equality",
             Lovelace.Compiler.Tests.Backend.Test_Wasm_Wit_Equality'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: native print integer",
+            Lovelace.Compiler.Tests.Backend.Test_Native_Print_Integer'Access));
 
       Result.Add_Test
         (Diagnostics_Caller.Create

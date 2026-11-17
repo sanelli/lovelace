@@ -56,9 +56,16 @@ If any subroutine has `Entrypoint_Flag`:
 2. Canon-lift `_start` to a component function with type `func() -> result`.
 3. Wrap that function in a component **instance** that exports it as `"run"`, and export the instance as **`wasi:cli/run@0.3.0`** (the name `wasmtime run` looks up).
 
-This slice does **not** emit the full `wasi:cli/command` import graph. The artifact only exports the WASI CLI run instance (and Lovelace kebab-case exports). The package version `0.3.0` matches WASI 0.3 CLI run.
-
 If there is no entrypoint, no `_start` and no `wasi:cli/run` export are produced.
+
+### Native print integer (`native("wasi", "native-print-integer")`)
+
+When a LIR subroutine has `Native_Flag` with binding `wasi` / `native-print-integer`, lowering **replaces** the empty body with a synthesized core function that:
+
+1. Formats the `i32` parameter as decimal ASCII (optional `-`, no trailing newline; special-cases `Integer_32'First`).
+2. Creates a `stream<u8>`, calls imported `wasi:cli/stdout@0.3.0` `write-via-stream`, writes the bytes, drops the writable end, and awaits the completion future (trap on failure / `BLOCKED`).
+
+Emission then attaches the WASI 0.3 import graph (`wasi:cli/types@0.3.0` + `wasi:cli/stdout@0.3.0`), a tiny `$libc` core module (1-page `memory` + `cabi_realloc`), and canon builtins (`stream.new` / async `stream.write` / `stream.drop-writable` / async `future.read` / `future.drop-readable` / `canon lower` of `write-via-stream`). Guest functions live in a second core module that imports those builtins. Without a native print binding, emission stays export-only (no stdout imports / memory).
 
 ## Exports
 
@@ -112,6 +119,7 @@ In the component type section, bare `(result)` is a separate `defvaltype`; the `
 | `No_Operation` | Skipped (not emitted) |
 | `Constant_I32` | `i32.const` (core) |
 | `Call` | `call` to the 1-based core function with the same index |
+| `Native_Flag` + `wasi`/`native-print-integer` | Synthesized decimal format + WASI 0.3 stdout write (locals, stores, stream/future builtins) |
 
 ## Companion WIT
 
@@ -130,8 +138,8 @@ Rules:
 
 - Package name: `love:<sanitized-module-name>@0.1.0` (ASCII letters/digits lowercased; every other byte → `-`; empty → `module`).
 - `export wasi:cli/run@0.3.0;` only when an entrypoint exists.
-- One `export <kebab-name>: func();` per `Export_Flag` subroutine.
-- No `import` lines (Option 1).
+- One `export <kebab-name>: func();` per nullary `Export_Flag` subroutine.
+- `import wasi:cli/stdout@0.3.0;` when a `native-print-integer` intrinsic is present (component binary also imports `wasi:cli/types@0.3.0` for `error-code`).
 - `Emit_Wasm` and `Emit_Wat` produce the same WIT string for the same LIR module.
 
 ## Running with Wasmtime
@@ -165,15 +173,14 @@ Each failure carries a UTF-8 `Detail` string.
 
 ## Out of scope
 
-- Full WASI `command` world imports (beyond exporting `wasi:cli/run@0.3.0`)
+- Full WASI `command` world imports beyond stdout + `wasi:cli/run@0.3.0`
 - Browser / core-module-only default format
-- `cabi_realloc` / linear memory (not required for empty Unit ABI)
 - Alexandria doc embedding in artifacts
 - Linking LIR `Dependencies`
-- Locals / `local.get` (literal args use `i32.const` only)
+- General Lovelace locals / expressions (synthesized print uses core locals only)
 
 ## Tests
 
-Nested crate `lovelace_compiler_tests` covers export-only, entrypoint, both flags, two exports, noop bodies, const+call bodies, typed core parameters, unsupported types, invalid modules, component preamble bytes, and Wasm/Wat WIT equality. Run with `alr -C compiler/tests run`.
+Nested crate `lovelace_compiler_tests` covers export-only, entrypoint, both flags, two exports, noop bodies, const+call bodies, typed core parameters, native-print-integer stdout synthesis, unsupported types, invalid modules, component preamble bytes, and Wasm/Wat WIT equality. Run with `alr -C compiler/tests run`.
 
 End-to-end CLI checks live in `lovelace/integration_tests`: build samples, optionally `wasm-tools validate` every `.wasm`/`.wat`, and run entrypoint programs with `wasmtime` when present.

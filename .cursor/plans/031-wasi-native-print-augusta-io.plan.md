@@ -22,7 +22,7 @@ todos:
     status: completed
   - id: "7"
     content: "7. Backend model imports + synthesize native-print-integer core body (WASI 0.3 stdout); Wasm/Wat/Wit emit; AUnit; codegen docs; gnatformat."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. Ship augusta/std/io.love (#if arms, comments); wire AUGUSTA_HOME/tests; docs; gnatformat as needed."
     status: pending
@@ -246,6 +246,8 @@ This is the largest slice.
 
 - AUnit on lowered model / WAT fragments (contains import + synthesized func).
 - Integration smoke (allowed here even though step 9 is separate): small program that imports `augusta.std.io` and calls `print(42)` once Augusta exists (step 8); `wasm-tools validate`; `wasmtime run …` stdout is `42`.
+
+**Done:** Model imports + richer core ops; `Native_Print` synthesizes decimal + `write-via-stream`; Wat/Wasm/Wit emit stdout graph; AUnit `backend: native print integer`; codegen docs; smoke `print(42)` → `42` under wasmtime.
 
 ### 8. Augusta `augusta.std.io` (macro-step 8)
 

@@ -47,6 +47,10 @@ package Lovelace.Compiler.Tests.Backend is
    --  @param The_Test Unused fixture.
    procedure Test_Invalid_Module (The_Test : in out Fixture);
 
+   --  native-print-integer synthesizes stdout import + stream builtins in WAT/WIT.
+   --  @param The_Test Unused fixture.
+   procedure Test_Native_Print_Integer (The_Test : in out Fixture);
+
    --  Emit_Wasm and Emit_Wat produce identical companion WIT for the same module.
    --  @param The_Test Unused fixture.
    procedure Test_Wasm_Wit_Equality (The_Test : in out Fixture);

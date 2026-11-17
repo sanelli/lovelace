@@ -11,23 +11,109 @@ package Lovelace.Compiler.Backend.Model is
    --  wasmtime run looks up (must match the host's WASI 0.3 package version).
    Wasi_Cli_Run_Export_Name : constant String := "wasi:cli/run@0.3.0";
 
+   --  WASI 0.3 stdout import package name.
+   Wasi_Cli_Stdout_Import_Name : constant String := "wasi:cli/stdout@0.3.0";
+
+   --  WASI 0.3 CLI types import (error-code for stdout futures).
+   Wasi_Cli_Types_Import_Name : constant String := "wasi:cli/types@0.3.0";
+
+   --  Fixed core-import slots when Has_Wasi_Stdout (0-based WASM indices).
+   Stream_New_Import_Index            : constant := 0;
+   Stream_Write_Import_Index          : constant := 1;
+   Stream_Drop_Writable_Import_Index  : constant := 2;
+   Future_Read_Import_Index           : constant := 3;
+   Future_Drop_Readable_Import_Index  : constant := 4;
+   Write_Via_Stream_Import_Index      : constant := 5;
+   Wasi_Stdout_Import_Count           : constant := 6;
+
    --  One core WASM instruction in a lowered function body.
    --  @disc Kind Selects the instruction variant.
-   --  @field Target_Index 1-based core function index for Call_Function.
-   --  @field Value Immediate for I32_Constant.
-   type Core_Instruction_Kind is (Call_Function, I32_Constant);
+   type Core_Instruction_Kind is
+     (Call_Function,
+      Call_Import,
+      I32_Constant,
+      I64_Constant,
+      Local_Get,
+      Local_Set,
+      I32_Add,
+      I32_Sub,
+      I32_Mul,
+      I32_Div_S,
+      I32_Rem_S,
+      I32_Eqz,
+      I32_Eq,
+      I32_Ne,
+      I32_Lt_S,
+      I32_Gt_S,
+      I32_Le_S,
+      I32_Ge_S,
+      I32_Store8,
+      I32_Load8_U,
+      I32_Wrap_I64,
+      I64_Extend_I32_U,
+      I64_Shr_U,
+      Unreachable,
+      If_Empty,
+      Else_Op,
+      End_Op,
+      Loop_Empty,
+      Br,
+      Br_If);
 
+   --  @field Target_Index 1-based guest core function index for Call_Function.
+   --  @field Import_Index 0-based import slot for Call_Import.
+   --  @field Value Immediate for I32_Constant.
+   --  @field Value_I64 Immediate for I64_Constant.
+   --  @field Local_Index 0-based local index (params then locals).
+   --  @field Label_Depth Relative label depth for Br / Br_If.
    type Core_Instruction (Kind : Core_Instruction_Kind := Call_Function) is record
       case Kind is
          when Call_Function =>
             Target_Index : Positive;
 
+         when Call_Import =>
+            Import_Index : Natural;
+
          when I32_Constant =>
             Value : Interfaces.Integer_32;
+
+         when I64_Constant =>
+            Value_I64 : Interfaces.Integer_64;
+
+         when Local_Get | Local_Set =>
+            Local_Index : Natural;
+
+         when Br | Br_If =>
+            Label_Depth : Natural;
+
+         when I32_Add
+            | I32_Sub
+            | I32_Mul
+            | I32_Div_S
+            | I32_Rem_S
+            | I32_Eqz
+            | I32_Eq
+            | I32_Ne
+            | I32_Lt_S
+            | I32_Gt_S
+            | I32_Le_S
+            | I32_Ge_S
+            | I32_Store8
+            | I32_Load8_U
+            | I32_Wrap_I64
+            | I64_Extend_I32_U
+            | I64_Shr_U
+            | Unreachable
+            | If_Empty
+            | Else_Op
+            | End_Op
+            | Loop_Empty =>
+            null;
       end case;
    end record;
 
-   --  Ordered list of core instructions (end is implicit at emit time).
+   --  Ordered list of core instructions (end is implicit at emit time only when
+   --  the body does not already contain matching End_Op for structured blocks).
    type Instruction_Sequence is private;
 
    --  Empty instruction sequence.
@@ -80,15 +166,40 @@ package Lovelace.Compiler.Backend.Model is
    --  @return Core value type at Index.
    function Element (Sequence : Core_Parameter_Sequence; Index : Positive) return Core_Value_Type;
 
+   --  Ordered list of local types (after parameters) for a Core_Function.
+   type Core_Local_Sequence is private;
+
+   --  Empty local sequence.
+   --  @return Sequence with no elements.
+   function Empty_Locals return Core_Local_Sequence;
+
+   --  Append The_Type to Sequence.
+   --  @param Sequence Sequence to extend.
+   --  @param The_Type Local value type.
+   procedure Append (Sequence : in out Core_Local_Sequence; The_Type : Core_Value_Type);
+
+   --  Number of locals in Sequence.
+   --  @param Sequence Local list.
+   --  @return Element count.
+   function Length (Sequence : Core_Local_Sequence) return Natural;
+
+   --  Local type at Index (1 .. Length (Sequence)).
+   --  @param Sequence Local list.
+   --  @param Index 1-based index.
+   --  @return Core value type at Index.
+   function Element (Sequence : Core_Local_Sequence; Index : Positive) return Core_Value_Type;
+
    --  One core function in the nested core module.
    --  @field Name UTF-8 core function name (LIR name or "_start").
    --  @field Parameter_Types Core parameter types (widened from LIR); empty for `_start`.
+   --  @field Local_Types Extra locals after parameters.
    --  @field Result_Is_I32 True when the function returns i32 (_start); False for Unit [].
    --  @field Instructions Body instructions (noop already stripped).
    --  @field Core_Exported True when the core module must export this function for aliasing.
    type Core_Function is record
       Name            : Ada.Strings.Unbounded.Unbounded_String;
       Parameter_Types : Core_Parameter_Sequence;
+      Local_Types     : Core_Local_Sequence := Empty_Locals;
       Result_Is_I32   : Boolean;
       Instructions    : Instruction_Sequence;
       Core_Exported   : Boolean;
@@ -141,6 +252,11 @@ package Lovelace.Compiler.Backend.Model is
    --  @return True iff a run / _start pair was synthesized.
    function Has_Run_Export (The_Model : Component_Model) return Boolean;
 
+   --  True when the model imports wasi:cli/stdout and synthesizes stream builtins.
+   --  @param The_Model Model to query.
+   --  @return True iff native-print-integer wiring is present.
+   function Has_Wasi_Stdout (The_Model : Component_Model) return Boolean;
+
    --  Build an empty model with Module_Name and no functions or exports.
    --  @param Name UTF-8 LIR module name.
    --  @return Empty Component_Model.
@@ -155,6 +271,10 @@ package Lovelace.Compiler.Backend.Model is
    --  @param The_Model Model to extend.
    --  @param The_Export Lifted export to append.
    procedure Append_Export (The_Model : in out Component_Model; The_Export : Lifted_Export);
+
+   --  Mark The_Model as needing WASI 0.3 stdout imports + memory + stream builtins.
+   --  @param The_Model Model to update.
+   procedure Enable_Wasi_Stdout (The_Model : in out Component_Model);
 
 private
 
@@ -172,14 +292,19 @@ private
       Items : Core_Parameter_Vectors.Vector;
    end record;
 
+   type Core_Local_Sequence is record
+      Items : Core_Parameter_Vectors.Vector;
+   end record;
+
    package Function_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Core_Function);
 
    package Export_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Lifted_Export);
 
    type Component_Model is record
-      Module_Name_Value : Ada.Strings.Unbounded.Unbounded_String;
-      Functions         : Function_Vectors.Vector;
-      Exports           : Export_Vectors.Vector;
+      Module_Name_Value   : Ada.Strings.Unbounded.Unbounded_String;
+      Functions           : Function_Vectors.Vector;
+      Exports             : Export_Vectors.Vector;
+      Wasi_Stdout_Enabled : Boolean := False;
    end record;
 
 end Lovelace.Compiler.Backend.Model;

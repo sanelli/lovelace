@@ -74,7 +74,7 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 
 ### Native bindings (this slice)
 
-Closed set only: `native("wasi", "native-print-integer")`. Any other target/key → `Unknown_Native_Binding` (`LV00021`). Backend synthesis of the intrinsic body is a later step; IR stores the empty native subroutine.
+Closed set only: `native("wasi", "native-print-integer")`. Any other target/key → `Unknown_Native_Binding` (`LV00021`). IR stores the empty native subroutine; the backend synthesizes the WASI 0.3 stdout body (see [codegen.md](codegen.md)).
 
 ### Call resolution (this slice)
 
@@ -117,6 +117,5 @@ Origins use [`Lovelace.Common.Source`](source-locations.md). They are copied ont
 - Emitting `No_Operation` for empty bodies
 - Locals, assignment, non-literal arguments
 - Analysis and optimization
-- Synthesizing WASM bodies for native intrinsics (backend)
 
-WASM / WAT / WIT emission from LIR is implemented separately; see [codegen.md](codegen.md).
+WASM / WAT / WIT emission from LIR (including native intrinsic synthesis) is implemented separately; see [codegen.md](codegen.md).
