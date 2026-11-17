@@ -11,6 +11,12 @@ package Lovelace.Main.Integration_Tests.Hello_Build is
    --  @param The_Test Unused fixture.
    procedure Test_Build_Validate_And_Run (The_Test : in out Fixture);
 
+   --  Build samples/io/HelloPrint.love with -I <repo>/augusta so augusta.std.io
+   --  resolves; validate stdout import in WAT; run when wasmtime exists.
+   --  @param The_Test Unused fixture.
+   procedure Test_Hello_Print_Build_Validate_And_Run
+     (The_Test : in out Fixture);
+
    --  Build ImportDecl.love (resolves same-folder ImportLib); validate and run like Hello.
    --  @param The_Test Unused fixture.
    procedure Test_Import_Decl_Build_Validate_And_Run

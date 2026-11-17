@@ -76,6 +76,8 @@ Imported module names are resolved under an ordered list of search roots:
    - else `LOVELACE_HOME/lib/augusta` if `LOVELACE_HOME` is set
    - else `~/.lovelace/lib/augusta`
 
+That slot is a normal search root: `import augusta.std.io;` looks for `augusta.std.io.love` / `augusta/std/io.love` (and the other mixed forms) **under** the slot. For the in-tree sources, set `AUGUSTA_HOME` to [`augusta/`](../augusta/) (or pass `-I augusta`). Details: [augusta.md](augusta.md).
+
 For module `a.b.c`, every mixed slash/dot relative form is a candidate (`a/b/c.love`, `a/b.c.love`, `a.b/c.love`, `a.b.c.love`). Exactly one existing file must match; zero → [`LV00016`](diagnostics.md); two or more → [`LV00020`](diagnostics.md). See [ir-generator.md](ir-generator.md).
 
 #### Output layout

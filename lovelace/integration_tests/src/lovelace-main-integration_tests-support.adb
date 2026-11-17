@@ -60,7 +60,8 @@ package body Lovelace.Main.Integration_Tests.Support is
      (Lovelace_Path : String;
       Sample_Path   : String;
       Output_Root   : String;
-      Message       : String)
+      Message       : String;
+      Include_Path  : String := "")
    is
       Build_Args  : GNAT.OS_Lib.Argument_List_Access;
       Return_Code : Integer;
@@ -68,16 +69,31 @@ package body Lovelace.Main.Integration_Tests.Support is
       AUnit.Assertions.Assert
         (Ada.Directories.Exists (Sample_Path), Message & ": sample present");
 
-      Build_Args :=
-        new GNAT.OS_Lib.Argument_List'
-          (1 => new String'("--no-logo"),
-           2 => new String'("build"),
-           3 => new String'(Sample_Path),
-           4 => new String'("--output-format"),
-           5 => new String'("wasm,wat"),
-           6 => new String'("--output-folder"),
-           7 => new String'(Output_Root),
-           8 => new String'("--force"));
+      if Include_Path'Length = 0 then
+         Build_Args :=
+           new GNAT.OS_Lib.Argument_List'
+             (1 => new String'("--no-logo"),
+              2 => new String'("build"),
+              3 => new String'(Sample_Path),
+              4 => new String'("--output-format"),
+              5 => new String'("wasm,wat"),
+              6 => new String'("--output-folder"),
+              7 => new String'(Output_Root),
+              8 => new String'("--force"));
+      else
+         Build_Args :=
+           new GNAT.OS_Lib.Argument_List'
+             (1  => new String'("--no-logo"),
+              2  => new String'("build"),
+              3  => new String'(Sample_Path),
+              4  => new String'("--output-format"),
+              5  => new String'("wasm,wat"),
+              6  => new String'("--output-folder"),
+              7  => new String'(Output_Root),
+              8  => new String'("--force"),
+              9  => new String'("-I"),
+              10 => new String'(Include_Path));
+      end if;
 
       Return_Code := Spawn_Discarding_Stdout (Lovelace_Path, Build_Args.all);
       GNAT.OS_Lib.Free (Build_Args);
@@ -111,12 +127,7 @@ package body Lovelace.Main.Integration_Tests.Support is
    end Locate_Lovelace;
 
    function Locate_Output_Root (Subfolder : String := "") return String is
-      Repository_Root : constant String :=
-        Ada.Directories.Full_Name
-          (Ada.Directories.Compose
-             (Ada.Directories.Compose
-                (Ada.Directories.Current_Directory, ".."),
-              ".."));
+      Repository_Root : constant String := Locate_Repository_Root;
       Base            : constant String :=
         Ada.Directories.Compose
           (Ada.Directories.Compose (Repository_Root, ".tests"),
@@ -128,6 +139,16 @@ package body Lovelace.Main.Integration_Tests.Support is
 
       return Ada.Directories.Compose (Base, Subfolder);
    end Locate_Output_Root;
+
+   function Locate_Repository_Root return String is
+   begin
+      return
+        Ada.Directories.Full_Name
+          (Ada.Directories.Compose
+             (Ada.Directories.Compose
+                (Ada.Directories.Current_Directory, ".."),
+              ".."));
+   end Locate_Repository_Root;
 
    function Locate_Sample (Feature_Folder, File_Name : String) return String is
    begin

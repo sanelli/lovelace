@@ -1,0 +1,20 @@
+module augusta.std.io;
+
+#if flavor = "wasi"
+
+export native("wasi", "native-print-integer") procedure print(value : integer);
+
+#elsif flavor = "native"
+
+export procedure print(value : integer);
+begin
+end;
+
+#elsif flavor = "web"
+
+export procedure print(value : integer);
+begin
+end;
+
+#end
+end.

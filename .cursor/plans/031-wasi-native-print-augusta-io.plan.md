@@ -25,16 +25,16 @@ todos:
     status: completed
   - id: "8"
     content: "8. Ship augusta/std/io.love (#if arms, comments); wire AUGUSTA_HOME/tests; docs; gnatformat as needed."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Roadmap status for steps 6–8; lock native syntax + formatting fork in open-choices table."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Run all existing tests (nested AUnit crates / workspace / scripts/run-tests.ps1)."
-    status: pending
+    status: completed
   - id: "11"
     content: "11. Push (proxy env cleared) and open a PR with gh pr create."
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -100,7 +100,7 @@ export native("wasi", "native-print-integer") procedure print(value : integer);
   - Entrypoint must **not** be native in this slice.
   - Binary `.lir` / text `.tlir` stay version **1.0** with an additive optional native field (same pattern as origins): after subroutine origin, `native_present` `u8` then two encoded strings when present; text form includes bare `native` flag identifier plus `(native "wasi" "native-print-integer")` (or fold key into one form — pick one and document; prefer emit flag bit in flags word **and** `(native "target" "key")` when present, with empty `(body)`).
 - **Component linking model unchanged:** one combined LIR module → one component (step 5). Lovelace `export` on `print` remains visibility for importers; **no** WIT export of parameterized `print`.
-- **Augusta path:** in-repo [`augusta/std/io.love`](../../augusta/std/io.love) (`module augusta.std.io;`). Tests/CLI resolve via `AUGUSTA_HOME` pointing at repo `augusta/` (or `-I`), matching the existing Augusta slot rules from step 5.
+- **Augusta path:** in-repo [`augusta/augusta.std.io.love`](../../augusta/augusta.std.io.love) (`module augusta.std.io;`). Tests/CLI resolve via `AUGUSTA_HOME` pointing at `{repo}/augusta/` (or `-I` that dir); nested `augusta/std/io.love` remains an equivalent candidate form.
 - **Out of scope (this plan):** `print-char` / other WASI intrinsics; roadmap step 9 full E2E sample/docs polish as its own issue (a **minimal** backend/integration smoke that prints `42` is allowed to prove step 7); step 10 language features; path B bulk `list<u8>`; `import … as …`; native/web real bodies; per-flavor output dirs; multi-component linking.
 
 ```mermaid
@@ -256,6 +256,8 @@ This is the largest slice.
 - Point integration / compiler tests at repo `augusta/` via `AUGUSTA_HOME` (or `-I`); do not require users to install into `~/.lovelace` for CI.
 - Native/web stub arms compile under `--flavor native|web` but need not print.
 
+**Done:** [`augusta/augusta.std.io.love`](../../augusta/augusta.std.io.love) (TEMPORARY note in [`docs/augusta.md`](../../docs/augusta.md) — Lovelace has no source comments yet); sample [`samples/io/HelloPrint.love`](../../samples/io/HelloPrint.love); integration `-I` + `AUGUSTA_HOME=<repo>/augusta` in `scripts/run-tests.ps1`.
+
 ### 9. Roadmap status
 
 Mark macro-steps **6, 7, and 8** Done for this slice (issue link + summary bullets). Update locked decisions / open-choices:
@@ -263,13 +265,19 @@ Mark macro-steps **6, 7, and 8** Done for this slice (issue link + summary bulle
 - External decl syntax → `native("wasi", "…")` as locked above.
 - Formatting → synthesized `native-print-integer` (temporary until step 10); no `print-char` in this milestone.
 
+**Done:** roadmap §6–8 status + locked formatting / `native(…)` open-choice rows (issue #31).
+
 ### 10. Run all tests
 
 Nested AUnit crates / `scripts/run-tests.ps1` + integration. Fix regressions before PR.
 
+**Done:** `pwsh scripts/run-tests.ps1` green (unit + integration, including HelloPrint).
+
 ### 11. Push and PR
 
 Clear proxy env, `git push -u origin HEAD`, `gh pr create` summarizing steps 6–8. PR body references `#31` and the roadmap.
+
+**Done:** branch pushed; PR opened for #31 (roadmap macro-steps 6–8).
 
 ## Explicit non-goals (do not pull in)
 

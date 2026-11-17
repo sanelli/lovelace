@@ -15,11 +15,9 @@ Related project rules: Augusta flavors (`native` / `wasi` / `web`), component co
 
 1. **Linking model (v1):** multi-unit compile → **one** component (program + Augusta sources). Defer true component-to-component linking. LIR `Dependencies` may record module names; the emitted artifact is still one WASM/WAT/WIT set.
 2. **Import visibility vs WIT export:** Lovelace `import` is compile/link-time visibility of exported Lovelace symbols. A WIT/component export of `print` is separate and not required for the first console demo if everything lands in one component.
-3. **WASI binding (v1):** sync Augusta wrapper around the smallest stdout write path (e.g. blocking write/flush). Do not require Lovelace `async` / `future` / `stream` in the language yet.
-4. **Integer formatting (v1 fork):** prefer **A** then migrate to **B**:
-   - **A.** Host/WASI helper takes `s32` and formats (fastest path).
-   - **B.** Augusta formats to bytes and calls a `list<u8>` write (needs memory / Canonical ABI).
-5. **`#if` grammar (v1):** only flavor selection — `#if flavor = "wasi" | "native" | "web"` with `#elsif` / `#else` / `#end` (exact end-token TBD). No general macro language.
+3. **WASI binding (v1):** WASI 0.3 stdout via `write-via-stream` (`stream<u8>` + completion future). Lovelace source does not expose `async` / `future` / `stream` yet; the guest path is compiler-synthesized.
+4. **Integer formatting (v1):** temporary **compiler-synthesized** `native("wasi", "native-print-integer")` body (decimal ASCII in guest memory + WASI stdout write). Not host `s32` formatting and not yet a hand-written Lovelace digit loop. Path **B** (Augusta formats to `list<u8>` and writes) stays deferred until roadmap step 10 language features exist. No `print-char` in this milestone.
+5. **`#if` grammar (v1):** only flavor selection — `#if flavor = "wasi" | "native" | "web"` with `#elsif` / `#else` / `#end`. No general macro language.
 6. **CLI:** `--flavor wasi` (default `wasi` for now). Triple output folders are a later step.
 7. **Future (reserved, not in this milestone):** `import … as …`; partial modules; native JIT + `libaugusta`; web/JS glue; user-facing `string` / arrays / records; full WASI async in the language.
 
@@ -135,7 +133,7 @@ Steps 1–3 are mostly frontend. Steps 4–5 make the language callable across m
 **Goal:** `import` actually finds Augusta (or other) modules.
 
 - `lovelace build` loads the root program/module plus imports via a search path / implicit `augusta/` root.
-- Map dotted module name → file (`augusta.std.io` ↔ `augusta/std/io.love` or the path convention locked in this step).
+- Map dotted module name → file (`augusta.std.io` ↔ `augusta.std.io.love` / `augusta/std/io.love` or the path convention locked in this step).
 - Resolve `MODULE.SUBROUTINE` only when `import MODULE;` is present.
 - Merge/lower into one LIR module **or** keep multiple LIR modules and a link step that still emits **one** WASM component for v1.
 - Diagnostics: unknown module, unknown subroutine, call without import (unused-import warning optional later).
@@ -152,6 +150,8 @@ Steps 1–3 are mostly frontend. Steps 4–5 make the language callable across m
 - LIR: represent component/external imports (distinct from Lovelace module dependencies).
 - No `love:` namespace, no dynamic library loading.
 
+**Status (issue [#31](https://github.com/sanelli/lovelace/issues/31)):** Done — `native("target", "key")` header modifier; LIR `Native_Flag` + binding; closed set `wasi` / `native-print-integer`; unknown binding → `LV00021`.
+
 ### 7. Backend: emit WASI imports + lower calls to them
 
 **Goal:** Generated components import stdout/write and call them.
@@ -161,6 +161,8 @@ Steps 1–3 are mostly frontend. Steps 4–5 make the language callable across m
 - If path **A** (typed `s32` print helper): may avoid guest linear memory initially.
 - If path **B** (`list<u8>`): add minimal memory + `cabi_realloc` as required by Canonical ABI.
 - Validate with `wasm-tools` and `wasmtime run -Sp3` (async flags as required by the WASI preview in use).
+
+**Status (issue [#31](https://github.com/sanelli/lovelace/issues/31)):** Done — synthesize `native-print-integer` (decimal + WASI 0.3 `write-via-stream`); component imports `wasi:cli/types@0.3.0` + `wasi:cli/stdout@0.3.0`; memory + stream/future canon builtins; Wasm/Wat/Wit + AUnit.
 
 ### 8. Augusta `augusta.std.io` (WASI body live; others stubbed)
 
@@ -172,6 +174,8 @@ Steps 1–3 are mostly frontend. Steps 4–5 make the language callable across m
   - **native** / **web:** stub or clear “unimplemented for this flavor” failure until those milestones
 - Public API: `export procedure print(value : integer);`
 - Document module path and flavor behavior under `docs/`.
+
+**Status (issue [#31](https://github.com/sanelli/lovelace/issues/31)):** Done — [`augusta/augusta.std.io.love`](../../augusta/augusta.std.io.love), [`docs/augusta.md`](../augusta.md), sample [`samples/io/HelloPrint.love`](../../samples/io/HelloPrint.love); CI uses `AUGUSTA_HOME=<repo>/augusta` / `-I`.
 
 ### 9. End-to-end sample + tests
 
@@ -228,8 +232,8 @@ Then do **10**, then native/web + **11** as separate milestones.
 
 | Topic | Options | Recommendation |
 |---|---|---|
-| Formatting | A: host/`s32` · B: bytes in Augusta | A, then B |
-| External decl syntax | `native("wasi", …)` vs dedicated WASI import form | Pick one in issue #1 of this work |
+| Formatting | A: host/`s32` · B: bytes in Augusta · synthesized native | **Locked (issue [#31](https://github.com/sanelli/lovelace/issues/31)):** synthesized `native-print-integer` (temporary until step 10); path B deferred; no `print-char` |
+| External decl syntax | `native("wasi", …)` vs dedicated WASI import form | **Locked (issue [#31](https://github.com/sanelli/lovelace/issues/31)):** `native("wasi", "…")` header modifier |
 | `#end` token | `#end` / `#endif` / … | **Locked:** `#end` (issue [#21](https://github.com/sanelli/lovelace/issues/21)) |
 | Augusta path | `augusta/std/io.love` vs `augusta.std.io.love` | **Locked:** all mixed slash/dot forms accepted; error if more than one file matches |
 | One LIR vs many before emit | Merge early vs link LIR then emit | Either fine if one component results |

@@ -25,6 +25,7 @@ For **every** new user-facing feature, add at least one `.love` file under `samp
 | [`samples/module/Procedures.love`](../samples/module/Procedures.love) | Module procedures with Ada-style typed parameters |
 | [`samples/module/ExportProcedures.love`](../samples/module/ExportProcedures.love) | `export procedure` (Lovelace visibility) plus a non-exported helper |
 | [`samples/native/NativePrint.love`](../samples/native/NativePrint.love) | `export native("wasi", "native-print-integer") procedure print(…);` (backend synthesizes WASI 0.3 stdout write) |
+| [`samples/io/HelloPrint.love`](../samples/io/HelloPrint.love) | `import augusta.std.io;` then `augusta.std.io.print(42);` (needs `AUGUSTA_HOME=augusta` or `-I augusta`) |
 | [`samples/directives/FlavorSelect.love`](../samples/directives/FlavorSelect.love) | Flavor `#if` / `#elsif` / `#else` / `#end` (default `--flavor wasi` keeps `WasiOnly`) |
 | [`samples/calls/SameModuleCall.love`](../samples/calls/SameModuleCall.love) | Same-unit qualified call with integer literal (`SameModuleCall.Sink(42)`) |
 | [`samples/resolve/Caller.love`](../samples/resolve/Caller.love) | Multi-unit program: `import Lib` / `import pkg.Util` and cross-module calls |
