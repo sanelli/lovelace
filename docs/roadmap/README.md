@@ -7,7 +7,7 @@ Ordered planning docs. Filenames use `{series}.{nnn}-roadmap-….md`.
 | Id | Doc | Summary |
 | --- | --- | --- |
 | 1.001 | [print integer (WASI)](1.001-roadmap-print-integer-wasi.md) | Flavor `#if`, import/export, multi-unit, synthesized WASI print, HelloPrint E2E |
-| 1.002 | [replace synthesized print](1.002-roadmap-replace-synthesized-print.md) | Locals, exprs, boolean, if, loops, `byte`, comments; Lovelace `print` + `PrintUTF8Character` |
+| 1.002 | [replace synthesized print](1.002-roadmap-replace-synthesized-print.md) | Comments, `0b`/`0o`/`0x`, float `f`, boolean, `:=`/exprs, ops, if, loop, `byte`, Lovelace `print` |
 | 1.003 | [web print integer](1.003-roadmap-print-integer-web.md) | `--flavor web` console integer print |
 | 1.004 | [native print + libaugusta](1.004-roadmap-print-integer-native.md) | wasmtime embed, freestanding `libaugusta` on Linux/Windows/macOS |
 
@@ -16,7 +16,7 @@ Ordered planning docs. Filenames use `{series}.{nnn}-roadmap-….md`.
 | Id | Doc | Summary |
 | --- | --- | --- |
 | 2.001 | [more language features](2.001-roadmap-more-language-features.md) | More loops, switch/case, expression blocks, import as / unqualified use, casts, … |
-| 2.002 | [arrays & type records](2.002-roadmap-arrays-type-records.md) | Arrays and type records |
+| 2.002 | [arrays & type records](2.002-roadmap-arrays-type-records.md) | Arrays, type records; `PrintUTF8String(byte[])` stream shim |
 | 2.003 | [allocation, pointers, modes](2.003-roadmap-allocation-pointers.md) | Alloc/free, pointers, `in`/`out`/`inout`, multi-return |
 | 2.004 | [floats & integer types](2.004-roadmap-floats-integer-types.md) | Floating point and remaining integer types |
 | 2.005 | [strings](2.005-roadmap-strings.md) | String type/library; number ↔ string conversion |
