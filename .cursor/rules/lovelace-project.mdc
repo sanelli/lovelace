@@ -44,7 +44,7 @@ Shared Ada under **`lovelace/`**: **`common/`** (`lovelace_common`), **`lir/`** 
 | `augusta/libaugusta/` | Freestanding Ada native Augusta (**the only dynamic** library; planned) |
 | `augusta/libaugusta-js/` | Web JS glue (planned) |
 | `ide/lsp/` | Language Server Protocol for Lovelace and LIR (planned) |
-| `ide/TextMate/` | Shared TextMate grammars for `.love` and LIR (planned) |
+| `ide/textmate/` | Shared TextMate grammars for `.love` and LIR (planned) |
 | `ide/vscode/` | VS Code extension (LSP + TextMate + build/run/debug; planned) |
 | `ide/jetbrains/` | JetBrains plugin (WebStorm primary; planned) |
 | `samples/` | `.love` samples under **feature subfolders** only (`samples/<feature>/…`; see samples rule) |
