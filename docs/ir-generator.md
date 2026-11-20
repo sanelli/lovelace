@@ -67,14 +67,15 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | Return type `Unit` | `Lir.Types.Unit` |
 | Parameters (name + type) | named LIR parameters (same order) |
 | `Integer` / `Float` type expressions | LIR `I8`…`I64` / `U8`…`U64` / `F32` / `F64` (see table below) |
-| `Export_Flag` / `Entrypoint_Flag` / `Native_Flag` | same-named LIR flag bits |
-| `native("target", "key")` binding | LIR `Set_Native_Binding` (empty instruction body; no statement lower) |
+| `Export_Flag` / `Entrypoint_Flag` / `Native_Flag` / `Intrinsic_Flag` | same-named LIR flag bits |
+| `@native("lib", "fn")` binding | LIR `Set_Native_Binding` (empty instruction body; no statement lower; no closed-set check) |
+| `@intrinsic` | LIR `Set_Intrinsic` after closed-table match (empty body; no statement lower) |
 | Empty statement body | empty instruction sequence (no `noop`) |
 | Same-unit `MODULE.SUBROUTINE(…)` | `Constant_I32` × N then `Call` (1-based local index) |
 
-### Native bindings (this slice)
+### Intrinsics (this slice)
 
-Closed set only: `native("wasi", "native-print-integer")`. Any other target/key → `Unknown_Native_Binding` (`LV00021`). IR stores the empty native subroutine; the backend synthesizes the WASI 0.3 stdout body (see [codegen.md](codegen.md)).
+Closed table (`Lovelace.Compiler.Intrinsics`): only `augusta.std.io` / `print` / one `integer` param / `Unit` → `Print_Integer_Stdout`. Unknown `@intrinsic` → `Unknown_Intrinsic` (`LV00025`). The backend synthesizes the WASI 0.3 stdout body for that kind (see [codegen.md](codegen.md)). `@native` stores library/function metadata only (FFI invoke later).
 
 ### Call resolution (this slice)
 
@@ -110,7 +111,7 @@ Origins use [`Lovelace.Common.Source`](source-locations.md). They are copied ont
 | `Invalid_Arguments` | `LV00015` | Wrong arity, out-of-range literal, or unsupported formal |
 | `Call_Without_Import` | `LV00017` | Callee module prefix is not imported by the caller |
 | `Not_Exported` | `LV00018` | Imported procedure exists but lacks `Export_Flag` |
-| `Unknown_Native_Binding` | `LV00021` | `native(target, key)` is not the closed wasi intrinsic |
+| `Unknown_Intrinsic` | `LV00025` | `@intrinsic` signature is not in the closed intrinsic table |
 
 ## Out of scope
 

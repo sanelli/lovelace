@@ -22,19 +22,19 @@ todos:
     status: completed
   - id: "7"
     content: "7. Intrinsics table + IR gen: match module+name+params+return; unknown @intrinsic → LV00025; lower @native binding; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. Backend: synthesize print-integer on Intrinsic_Flag + table hit (shared matcher); @native → empty noop body for now; update Test_Native_Print_Integer; gnatformat."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Augusta wasi print → @intrinsic; delete samples/native/NativePrint.love; update samples.md, augusta.md, grammar/parser/ir/codegen/lir docs; lock roadmap step 2."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Run all tests (scripts/run-tests.ps1); HelloPrint via Augusta is the intrinsic smoke."
-    status: pending
+    status: completed
   - id: "11"
     content: "11. Push (proxy env cleared) and open a PR with gh pr create."
-    status: pending
+    status: completed
 isProject: false
 ---
 

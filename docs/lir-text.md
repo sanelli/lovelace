@@ -37,9 +37,9 @@ Inside a subroutine, in order:
 2. Optional `(origin …)` when a subroutine origin is present
 3. Optional `(param "name1" t1 "name2" t2 …)` — alternating quoted parameter name and type token; omit the whole form when there are zero parameters
 4. **Required** `(result t)` — always present; use `unit` for procedures
-5. Optional bare identifiers `export` and/or `entrypoint` and/or `native` (flag bits, not strings)
-6. Optional `(native "target" "key")` when a native binding is present (same strings as the LIR binding; emit together with bare `native`)
-7. `(body …)` — may be empty (must be empty for native subroutines)
+5. Optional bare identifiers `export` and/or `entrypoint` and/or `native` and/or `intrinsic` (flag bits, not strings)
+6. Optional `(native "library" "function")` when a `@native` FFI binding is present (same strings as the LIR binding; emit together with bare `native`). `@intrinsic` emits bare `intrinsic` only — no `(native …)` form
+7. `(body …)` — may be empty (must be empty for native or intrinsic subroutines)
 
 ### Origin forms
 

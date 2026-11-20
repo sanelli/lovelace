@@ -53,7 +53,8 @@ Examples:
 | `module Foo.Bar; end.` | `module` `Foo` `.` `Bar` `;` `end` `.` |
 | `procedure P(x : integer);` | `procedure` `P` `(` `x` `:` `integer` `)` `;` |
 | `export procedure Print(Value : integer);` | `export` `procedure` `Print` `(` `Value` `:` `integer` `)` `;` |
-| `export native("wasi", "native-print-integer") procedure print(value : integer);` | `export` `native` `(` `"wasi"` `,` `"native-print-integer"` `)` `procedure` … |
+| `export @intrinsic procedure print(value : integer);` | `export` `@intrinsic` `procedure` … |
+| `export @native("libx", "print_fn") procedure print(value : integer);` | `export` `@native` `(` `"libx"` `,` `"print_fn"` `)` `procedure` … |
 | `import Foo.Bar;` | `import` `Foo` `.` `Bar` `;` |
 | `42` `-3u16` `#16#FFs32` | integer literals |
 | `3.14` `7.` `1e-3` | float literals |

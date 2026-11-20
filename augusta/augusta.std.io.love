@@ -2,9 +2,9 @@ module augusta.std.io;
 
 #if flavor = "wasi"
 
-{ TEMPORARY: print is native("wasi", "native-print-integer") until
-  Lovelace can format digits in-language (roadmap 1.002). }
-export native("wasi", "native-print-integer") procedure print(value : integer);
+{ TEMPORARY: print is @intrinsic until Lovelace can format digits
+  in-language (roadmap 1.002). }
+export @intrinsic procedure print(value : integer);
 
 #elsif flavor = "native"
 
