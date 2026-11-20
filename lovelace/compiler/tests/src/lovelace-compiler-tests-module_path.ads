@@ -7,7 +7,8 @@ package Lovelace.Compiler.Tests.Module_Path is
    --  Fixture for module path tests.
    type Fixture is new AUnit.Test_Fixtures.Test_Fixture with null record;
 
-   --  Augusta_Root prefers AUGUSTA_HOME, else LOVELACE_HOME/lib/augusta, else ~/.lovelace/lib/augusta.
+   --  Augusta_Root prefers AUGUSTA_HOME, else LOVELACE_HOME/lib/augusta/<version>,
+   --  else ~/.lovelace/lib/augusta/<version>.
    --  @param The_Test Unused fixture.
    procedure Test_Augusta_Root_Slot (The_Test : in out Fixture);
 

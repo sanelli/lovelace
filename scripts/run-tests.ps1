@@ -1,11 +1,11 @@
 # Quietly build, then run nested AUnit crates (status lines only).
 #
 # Unit crates (default on):
-#   common/tests, lir/tests, compiler/tests, lovelace/tests
+#   lovelace/common/tests, lovelace/lir/tests, lovelace/compiler/tests, lovelace/lovelace/tests
 #   — skip with -SkipUnit
 #
 # Integration (default on):
-#   lovelace/integration_tests
+#   lovelace/lovelace/integration_tests
 #   — skip with -SkipIntegration
 #
 # Usage (from repo root):
@@ -19,7 +19,7 @@ param(
     # When set, do not run nested unit-test crates.
     [switch] $SkipUnit,
 
-    # When set, do not build or run lovelace/integration_tests.
+    # When set, do not build or run lovelace/lovelace/integration_tests.
     [switch] $SkipIntegration
 )
 
@@ -28,8 +28,8 @@ $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
 
-# In-tree Augusta sources live under <repo>/augusta/ (e.g. augusta.std.io.love).
-$env:AUGUSTA_HOME = Join-Path $RepoRoot 'augusta'
+# In-tree Augusta .love sources live under <repo>/augusta/lovelace/.
+$env:AUGUSTA_HOME = Join-Path (Join-Path $RepoRoot 'augusta') 'lovelace'
 
 function Invoke-QuietAlireBuild {
     param(
@@ -88,10 +88,10 @@ function Invoke-TestExecutable {
 }
 
 $UnitTestCrates = @(
-    @{ Path = 'common/tests'; Executable = 'lovelace_common_tests' },
-    @{ Path = 'lir/tests'; Executable = 'lovelace_lir_tests' },
-    @{ Path = 'compiler/tests'; Executable = 'lovelace_compiler_tests' },
-    @{ Path = 'lovelace/tests'; Executable = 'lovelace_tests' }
+    @{ Path = 'lovelace/common/tests'; Executable = 'lovelace_common_tests' },
+    @{ Path = 'lovelace/lir/tests'; Executable = 'lovelace_lir_tests' },
+    @{ Path = 'lovelace/compiler/tests'; Executable = 'lovelace_compiler_tests' },
+    @{ Path = 'lovelace/lovelace/tests'; Executable = 'lovelace_tests' }
 )
 
 Invoke-QuietAlireBuild -Label 'workspace build' -Arguments @('build')
@@ -110,6 +110,6 @@ if ($SkipIntegration) {
 }
 else {
     Invoke-TestExecutable `
-        -CratePath 'lovelace/integration_tests' `
+        -CratePath 'lovelace/lovelace/integration_tests' `
         -ExecutableName 'lovelace_integration_tests'
 }

@@ -11,15 +11,15 @@ Do **not** list component GPRs in one `alire.toml` `project-files` array. Do **n
 
 ## When to create a crate
 
-Create an `alire.toml` / `.gpr` **only** when that component is required for the current task **or** the user explicitly asks. Do not scaffold the full crate graph, the workspace crate, test crates, or `shared/` ahead of time.
+Create an `alire.toml` / `.gpr` **only** when that component is required for the current task **or** the user explicitly asks. Do not scaffold the full crate graph, the workspace crate, test crates, or `lovelace/shared/` ahead of time.
 
-When you add a new **host** Alire crate with its own `.gpr` (not `lovelace_workspace`, not `shared/lovelace_host_switches.gpr`), append a `{ Name, ProjectFile }` entry to the `$Projects` array in [`scripts/gnatdoc.ps1`](scripts/gnatdoc.ps1) so GNATdoc HTML is generated under `docs/.code/<folder>/`.
+When you add a new **host** Alire crate with its own `.gpr` (not `lovelace_workspace`, not `lovelace/shared/lovelace_host_switches.gpr`), append a `{ Name, ProjectFile }` entry to the `$Projects` array in [`scripts/gnatdoc.ps1`](scripts/gnatdoc.ps1) so GNATdoc HTML is generated under `docs/.code/<folder>/`.
 
 ## Shared host switches
 
 All **host** crates (full GNAT RTS) must `with` one abstract GPR and must **not** duplicate the switch list:
 
-- Path: `shared/lovelace_host_switches.gpr` (a folder, **not** a crate)
+- Path: `lovelace/shared/lovelace_host_switches.gpr` (a folder, **not** a crate)
 - Create this file in the same change as the **first** host crate
 - Contents: Ada 2022 and the mandatory host switches from the Ada standards rule (`-gnatwae`, `-gnaty…`, line length, `-gnato`, `-fstack-check`, `-gnatW8`)
 
@@ -27,17 +27,17 @@ Augusta **native** must **not** `with` that file (ZFP / freestanding; see August
 
 ## Root workspace crate
 
-Thin aggregate at the **repository root** so `alr build` there builds everything that exists. Crate name **`lovelace_workspace`** (must not be `lovelace` — that name is the CLI crate in `lovelace/`). No Ada sources; only `[[depends-on]]` + path `[[pins]]` to crates that already exist. Create it only when asked, or when a root build is actually needed.
+Thin aggregate at the **repository root** so `alr build` there builds everything that exists. Crate name **`lovelace_workspace`** (must not be `lovelace` — that name is the CLI crate in `lovelace/lovelace/`). No Ada sources; only `[[depends-on]]` + path `[[pins]]` to crates that already exist. Create it only when asked, or when a root build is actually needed.
 
 ```toml
 [[depends-on]]
 lovelace_common = "*"
 
 [[pins]]
-lovelace_common = { path = "common" }
+lovelace_common = { path = "lovelace/common" }
 ```
 
-Pin paths are relative to that crate: `common` from the root, `../common` from `lovelace/`. Folder names are not crate names.
+Pin paths are relative to that crate: `lovelace/common` from the root, `../common` from `lovelace/compiler/`. Folder names are not crate names.
 
 ## Pins and layering
 
@@ -45,21 +45,21 @@ Local path pins, not separate repositories. Intended `depends-on` (do not add ed
 
 | Crate (folder) | Depends on (Lovelace siblings) |
 |---|---|
-| `lovelace_common` (`common/`) | — |
-| `lovelace_lir` (`lir/`) | `lovelace_common` |
-| `lovelace_compiler` (`compiler/`) | `lovelace_lir`, `lovelace_common` |
+| `lovelace_common` (`lovelace/common/`) | — |
+| `lovelace_lir` (`lovelace/lir/`) | `lovelace_common` |
+| `lovelace_compiler` (`lovelace/compiler/`) | `lovelace_lir`, `lovelace_common` |
 | `lovelace_tooling` (`tooling/`) | `lovelace_common` |
 | `lovelace_format` (`format/`) | `lovelace_common`, `lovelace_tooling` |
 | `lovelace_alexandria` (`alexandria/`) | `lovelace_common` |
 | `lovelace_hypatia` (`hypatia/`) | `lovelace_tooling` (libgit2 only here) |
 | `lovelace_jit` (`jit/`) | `lovelace_common` (Wasmtime C only here) |
-| `lovelace` (`lovelace/`) | `lovelace_compiler`, `lovelace_jit`, `lovelace_tooling`, `lovelace_hypatia`, `lovelace_alexandria`, `lovelace_format` |
-| `lovelace_augusta` (native, when created) | **none** of the host graph (JIT loads the `.so`/`.dll`/`.dylib` at run time) |
+| `lovelace` (`lovelace/lovelace/`) | `lovelace_compiler`, `lovelace_jit`, `lovelace_tooling`, `lovelace_hypatia`, `lovelace_alexandria`, `lovelace_format` |
+| `lovelace_augusta` (`augusta/libaugusta/`, when created) | **none** of the host graph (JIT loads the `.so`/`.dll`/`.dylib` at run time) |
 
 Do not `depends-on` a sibling just to share switches. Missing `depends-on` is how layering is enforced (`lovelace_compiler` must not see Hypatia/git; `lovelace_format` must not see Wasmtime).
 
 ## Tests and Augusta
 
-AUnit is declared only on **nested** test crates (`common/tests` → crate `lovelace_common_tests`, …): own `alire.toml`, pin `{ path = ".." }`, `depends-on` the parent and AUnit. Nested test crate names also start with `lovelace`. Do not add AUnit to library or `lovelace` crates.
+AUnit is declared only on **nested** test crates (`lovelace/common/tests` → crate `lovelace_common_tests`, …): own `alire.toml`, pin `{ path = ".." }`, `depends-on` the parent and AUnit. Nested test crate names also start with `lovelace`. Do not add AUnit to library or `lovelace` crates.
 
-Augusta **`.love`** is not an Alire product. Only the native Ada backing is a crate (`Library_Kind use "dynamic"`).
+Augusta **`.love`** under `augusta/lovelace/` is not an Alire product. Only the native Ada backing (`augusta/libaugusta/`) is a crate (`Library_Kind use "dynamic"`).

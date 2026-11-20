@@ -9,7 +9,7 @@ This page is for host Ada. Public Ada APIs remain documented on the package spec
 `Lovelace.Common.Regex` is a **host** library used by the toolchain. It is **not** the Lovelace language lexer:
 
 - No token stream and no source locations for `.love` files.
-- AUnit tests under `common/tests/` prove that a pattern can match each planned token *class*; that is not a lexer.
+- AUnit tests under `lovelace/common/tests/` prove that a pattern can match each planned token *class*; that is not a lexer.
 
 The compiler tokenizer (`Lovelace.Compiler.Tokenizer`) **does** call `Compile` / `Match_Prefix`. Token kinds, diagnostics, and the lexical grammar live in [tokenizer.md](tokenizer.md) and [token-grammar.md](token-grammar.md).
 
@@ -82,7 +82,7 @@ end;
 Run the nested AUnit crate:
 
 ```powershell
-alr -C common/tests run
+alr -C lovelace/common/tests run
 ```
 
-That suite exercises engine mechanics and one pattern per planned Lovelace token class (comments, strings, characters, operators, keywords, identifiers, and so on). The compiler tokenizer is documented in [tokenizer.md](tokenizer.md) and tested with `alr -C compiler/tests run`.
+That suite exercises engine mechanics and one pattern per planned Lovelace token class (comments, strings, characters, operators, keywords, identifiers, and so on). The compiler tokenizer is documented in [tokenizer.md](tokenizer.md) and tested with `alr -C lovelace/compiler/tests run`.

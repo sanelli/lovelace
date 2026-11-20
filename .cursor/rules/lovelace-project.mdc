@@ -9,20 +9,20 @@ Lovelace is a compiler (written in Ada) for a new Pascal/Ada/Delphi-like languag
 
 ## Products and link kinds
 
-**`lovelace/`** is the only host **executable** (crate `lovelace`). Every other host crate it uses is a **static** library (`Library_Kind use "static"` in the `.gpr`). Do **not** build `lovelace_compiler`, `lovelace_lir`, `lovelace_common`, `lovelace_jit`, `lovelace_tooling`, `lovelace_hypatia`, `lovelace_alexandria`, or `lovelace_format` as shared/dynamic libraries. Folder names stay as below; crate names start with `lovelace` (see utf8-and-naming).
+**`lovelace/lovelace/`** is the only host **executable** (crate `lovelace`). Every other host crate it uses is a **static** library (`Library_Kind use "static"` in the `.gpr`). Do **not** build `lovelace_compiler`, `lovelace_lir`, `lovelace_common`, `lovelace_jit`, `lovelace_tooling`, `lovelace_hypatia`, `lovelace_alexandria`, or `lovelace_format` as shared/dynamic libraries. Folder names stay as below; crate names start with `lovelace` (see utf8-and-naming).
 
-The **only dynamic library** in the whole project is Augusta’s native backing (`.so` / `.dll` / `.dylib`) under `augusta/` (crate `lovelace_augusta` when created).
+The **only dynamic library** in the whole project is Augusta’s native backing (`.so` / `.dll` / `.dylib`) under `augusta/libaugusta/` (crate `lovelace_augusta` when created).
 
-1. **`compiler/`** — crate `lovelace_compiler`; static library: compiler (frontend, analysis, codegen).
-2. **`jit/`** — crate `lovelace_jit`; static library: JIT runtime; **only** crate that links Wasmtime C.
-3. **`lovelace/`** — crate `lovelace`; CLI executable (`lovelace build`, `run`, `doc`, `format`, project/solution/package commands); statically links the host libraries.
-4. **`augusta/`** — standard library: `.love` plus optional native Ada (**dynamic** library). One codebase, flavors `native` / `wasi` / `web`.
-5. **`tooling/`** — crate `lovelace_tooling`; static library: `.pjlove`, `.slnlove`, `.pkglove` files and their behavior. No other crate owns these formats.
-6. **`hypatia/`** — crate `lovelace_hypatia`; static library: **Hypatia** package system (resolve, fetch, local and git dependencies).
-7. **`alexandria/`** — crate `lovelace_alexandria`; static library: parse Lovelace comments/doc-comments and generate documentation.
-8. **`format/`** — crate `lovelace_format`; static library: reformat `.love` to the effective style (`lovelace format`).
+1. **`lovelace/compiler/`** — crate `lovelace_compiler`; static library: compiler (frontend, analysis, codegen).
+2. **`jit/`** — crate `lovelace_jit`; static library: JIT runtime; **only** crate that links Wasmtime C (planned).
+3. **`lovelace/lovelace/`** — crate `lovelace`; CLI executable (`lovelace build`, `run`, `doc`, `format`, project/solution/package commands); statically links the host libraries.
+4. **`augusta/`** — standard library: `.love` under `augusta/lovelace/`, native Ada under `augusta/libaugusta/`, web glue under `augusta/libaugusta-js/`. Flavors `native` / `wasi` / `web`.
+5. **`tooling/`** — crate `lovelace_tooling`; static library: `.pjlove`, `.slnlove`, `.pkglove` files and their behavior (planned).
+6. **`hypatia/`** — crate `lovelace_hypatia`; static library: **Hypatia** package system (planned).
+7. **`alexandria/`** — crate `lovelace_alexandria`; static library: parse Lovelace comments/doc-comments and generate documentation (planned).
+8. **`format/`** — crate `lovelace_format`; static library: reformat `.love` to the effective style (planned).
 
-Shared Ada: **`common/`** (`lovelace_common`), **`lir/`** (`lovelace_lir`) — both static libraries. Crate `lovelace_lir` owns LIR in-memory types and the versioned `.lir` / `.tlir` formats (not only analysis).
+Shared Ada under **`lovelace/`**: **`common/`** (`lovelace_common`), **`lir/`** (`lovelace_lir`) — both static libraries. Crate `lovelace_lir` owns LIR in-memory types and the versioned `.lir` / `.tlir` formats (not only analysis).
 
 ## Repository layout
 
@@ -30,18 +30,20 @@ Shared Ada: **`common/`** (`lovelace_common`), **`lir/`** (`lovelace_lir`) — b
 |---|---|
 | `scripts/` | Compile and run samples |
 | `docs/` | Human documentation (CLI, grammar, HOW TOs, feature docs) |
-| `compiler/` | Compiler static library |
-| `jit/` | JIT static library (Wasmtime) |
-| `common/` | Shared host static library |
-| `lir/` | LIR static library (types, `.lir` / `.tlir`) |
-| `lovelace/` | CLI executable |
-| `tooling/` | Project / solution / package static library |
-| `hypatia/` | Hypatia package manager (static) |
-| `alexandria/` | Doc generation static library |
-| `format/` | Source formatter static library (`lovelace format`) |
-| `augusta/` | Stdlib (`.love` + **the only dynamic** native library) |
+| `lovelace/compiler/` | Compiler static library |
+| `lovelace/common/` | Shared host static library |
+| `lovelace/lir/` | LIR static library (types, `.lir` / `.tlir`) |
+| `lovelace/lovelace/` | CLI executable |
+| `lovelace/shared/` | Host GPR switch include + test helpers (not a crate) |
+| `jit/` | JIT static library (Wasmtime; planned) |
+| `tooling/` | Project / solution / package static library (planned) |
+| `hypatia/` | Hypatia package manager (static; planned) |
+| `alexandria/` | Doc generation static library (planned) |
+| `format/` | Source formatter static library (planned) |
+| `augusta/lovelace/` | Augusta `.love` modules (in-tree `AUGUSTA_HOME`) |
+| `augusta/libaugusta/` | Freestanding Ada native Augusta (**the only dynamic** library; planned) |
+| `augusta/libaugusta-js/` | Web JS glue (planned) |
 | `samples/` | `.love` samples under **feature subfolders** only (`samples/<feature>/…`; see samples rule) |
-| `shared/` | Host GPR switch include only (not a crate; create with the first host crate) |
 
 Build system is **Alire**: **one crate per Ada component**, plus a thin root crate `lovelace_workspace` that only `depends-on` + pins existing crates. See the Alire crates rule. Do not add further top-level **component** crates. Do not put several component GPRs in one `alire.toml`.
 

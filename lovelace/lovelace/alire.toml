@@ -20,4 +20,4 @@ lovelace_compiler = { path = "../compiler" }
 
 [[actions]]
 type = "pre-build"
-command = ["pwsh", "-NoProfile", "-File", "../scripts/embed-git-hash.ps1"]
+command = ["pwsh", "-NoProfile", "-File", "../../scripts/embed-git-hash.ps1"]

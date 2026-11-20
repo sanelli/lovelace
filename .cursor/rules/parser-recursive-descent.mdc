@@ -1,6 +1,6 @@
 ---
 description: Lovelace frontend parsers are recursive descent (LL(k)); no left recursion
-globs: compiler/**/*
+globs: lovelace/compiler/**/*
 alwaysApply: false
 ---
 

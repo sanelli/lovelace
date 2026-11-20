@@ -50,8 +50,10 @@ package Lovelace.Compiler.Module_Path is
    function Resolve_Module_File
      (Name : String; Roots : Path_Sequence) return Resolve_Result;
 
-   --  Mutually exclusive Augusta stdlib root: AUGUSTA_HOME, else LOVELACE_HOME/lib/augusta,
-   --  else ~/.lovelace/lib/augusta. Empty string when the chosen slot cannot be formed.
+   --  Mutually exclusive Augusta stdlib root: AUGUSTA_HOME, else
+   --  LOVELACE_HOME/lib/augusta/<product-version>, else
+   --  ~/.lovelace/lib/augusta/<product-version> (version without git hash).
+   --  Empty string when the chosen slot cannot be formed.
    --  @return Chosen Augusta root path (may not exist on disk).
    function Augusta_Root return String;
 

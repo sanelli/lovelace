@@ -5,7 +5,7 @@ alwaysApply: true
 
 # UTF-8 and naming
 
-Folder names stay as they are (`common/`, `compiler/`, …). **Crate** and **Ada package** names do not.
+Folder names stay as they are (`lovelace/common/`, `lovelace/compiler/`, …). **Crate** and **Ada package** names do not.
 
 ## Crate names
 
@@ -13,20 +13,20 @@ Every Alire crate name starts with `lovelace`, in any folder. The `.gpr` file na
 
 | Folder | Crate |
 |---|---|
-| `common/` | `lovelace_common` |
-| `common/tests` | `lovelace_common_tests` |
-| `lir/` | `lovelace_lir` |
-| `compiler/` | `lovelace_compiler` |
+| `lovelace/common/` | `lovelace_common` |
+| `lovelace/common/tests` | `lovelace_common_tests` |
+| `lovelace/lir/` | `lovelace_lir` |
+| `lovelace/compiler/` | `lovelace_compiler` |
 | `tooling/` | `lovelace_tooling` |
 | `format/` | `lovelace_format` |
 | `alexandria/` | `lovelace_alexandria` |
 | `hypatia/` | `lovelace_hypatia` |
 | `jit/` | `lovelace_jit` |
-| `augusta/` (native Ada, when created) | `lovelace_augusta` |
-| `lovelace/` | `lovelace` (CLI executable) |
+| `augusta/libaugusta/` (native Ada, when created) | `lovelace_augusta` |
+| `lovelace/lovelace/` | `lovelace` (CLI executable) |
 | repo root | `lovelace_workspace` |
 
-Pin paths stay folder-relative (`common`, `../common`). Nested tests: `lovelace_<component>_tests`.
+Pin paths stay folder-relative (`lovelace/common`, `../common`). Nested tests: `lovelace_<component>_tests`.
 
 ## Package names
 

@@ -1,6 +1,6 @@
 # Lovelace Intermediate Representation (LIR)
 
-Crate `lovelace_lir` (`lir/`) owns the in-memory LIR types, builders, validation, and the versioned **binary** (`.lir`) and **textual** (`.tlir`) formats. It is a **static** library and depends only on `lovelace_common`. It does not emit WASM, WIT, or WAT — those live in the compiler backends ([codegen.md](codegen.md)).
+Crate `lovelace_lir` (`lovelace/lir/`) owns the in-memory LIR types, builders, validation, and the versioned **binary** (`.lir`) and **textual** (`.tlir`) formats. It is a **static** library and depends only on `lovelace_common`. It does not emit WASM, WIT, or WAT — those live in the compiler backends ([codegen.md](codegen.md)).
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). Format layouts:
 
@@ -95,4 +95,4 @@ Decode applies the same checks plus format errors (bad magic, truncated input, u
 
 ## Tests
 
-Nested crate `lovelace_lir_tests` (`lir/tests`) covers types, binary round-trips and decode failures, text goldens, validation, and optional origins. Run with `alr -C lir/tests run`.
+Nested crate `lovelace_lir_tests` (`lovelace/lir/tests`) covers types, binary round-trips and decode failures, text goldens, validation, and optional origins. Run with `alr -C lovelace/lir/tests run`.

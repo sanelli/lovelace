@@ -5,6 +5,7 @@ with Ada.Text_IO;
 
 with AUnit.Assertions;
 
+with Lovelace.Common.Release;
 with Lovelace.Compiler.Module_Path;
 
 package body Lovelace.Compiler.Tests.Module_Path is
@@ -54,7 +55,9 @@ package body Lovelace.Compiler.Tests.Module_Path is
       Env.Clear ("AUGUSTA_HOME");
       AUnit.Assertions.Assert
         (Paths.Augusta_Root
-         = Paths.Join_Root (Paths.Join_Root (Lovelace_Home, "lib"), "augusta"),
+         = Paths.Join_Root
+             (Paths.Join_Root (Paths.Join_Root (Lovelace_Home, "lib"), "augusta"),
+              Lovelace.Common.Release.Version),
          "LOVELACE_HOME fallback");
 
       Env.Clear ("LOVELACE_HOME");
@@ -67,9 +70,11 @@ package body Lovelace.Compiler.Tests.Module_Path is
               (Paths.Augusta_Root
                = Paths.Join_Root
                    (Paths.Join_Root
-                      (Paths.Join_Root (Home, ".lovelace"), "lib"),
-                    "augusta"),
-               "default ~/.lovelace/lib/augusta");
+                      (Paths.Join_Root
+                         (Paths.Join_Root (Home, ".lovelace"), "lib"),
+                       "augusta"),
+                    Lovelace.Common.Release.Version),
+               "default ~/.lovelace/lib/augusta/<version>");
          end if;
       end;
    end Test_Augusta_Root_Slot;

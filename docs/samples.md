@@ -2,7 +2,7 @@
 
 The [`samples/`](../samples/) tree holds small `.love` programs and modules used to exercise features end-to-end (CLI builds, integration tests, and manual checks). Build them with [`lovelace build`](cli.md).
 
-Integration tests (`lovelace/integration_tests`) require `wasm-tools` and `wasmtime` on `PATH`, build these samples (suppressing `[info]` stdout), validate every `.wasm`/`.wat`, and **run** only program/entrypoint artifacts. See the integration-tests Cursor rule.
+Integration tests (`lovelace/lovelace/integration_tests`) require `wasm-tools` and `wasmtime` on `PATH`, build these samples (suppressing `[info]` stdout), validate every `.wasm`/`.wat`, and **run** only program/entrypoint artifacts. See the integration-tests Cursor rule.
 
 ## Policy
 
@@ -24,7 +24,7 @@ For **every** new user-facing feature, add at least one `.love` file under `samp
 | [`samples/module/Foo.Bar.love`](../samples/module/Foo.Bar.love) | Dotted module name (`module Foo.Bar; end.`) |
 | [`samples/module/Procedures.love`](../samples/module/Procedures.love) | Module procedures with Ada-style typed parameters |
 | [`samples/module/ExportProcedures.love`](../samples/module/ExportProcedures.love) | `export procedure` (Lovelace visibility) plus a non-exported helper |
-| [`samples/io/HelloPrint.love`](../samples/io/HelloPrint.love) | `import augusta.std.io;` then `augusta.std.io.print(42);` (needs `AUGUSTA_HOME=augusta` or `-I augusta`; wasi `print` is `@intrinsic`) |
+| [`samples/io/HelloPrint.love`](../samples/io/HelloPrint.love) | `import augusta.std.io;` then `augusta.std.io.print(42);` (needs `AUGUSTA_HOME=augusta/lovelace` or `-I augusta/lovelace`; wasi `print` is `@intrinsic`) |
 | [`samples/comments/Comments.love`](../samples/comments/Comments.love) | `{ … }` block comments (non-nesting; ignored like whitespace) |
 | [`samples/literals/Literals.love`](../samples/literals/Literals.love) | Integer literals with `0x` / `0b` / `0o` prefixes in call args |
 | [`samples/boolean/Boolean.love`](../samples/boolean/Boolean.love) | `boolean` params and `true`/`false` call args |

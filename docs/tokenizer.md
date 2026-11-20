@@ -140,5 +140,5 @@ This slice does **not** emit tokens for:
 ## Tests
 
 ```powershell
-alr -C compiler/tests run
+alr -C lovelace/compiler/tests run
 ```

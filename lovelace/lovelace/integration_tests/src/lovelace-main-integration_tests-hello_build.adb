@@ -68,7 +68,9 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
       Output_Root     : constant String :=
         Helpers.Locate_Output_Root ("io");
       Augusta_Root    : constant String :=
-        Helpers.Compose_Under (Helpers.Locate_Repository_Root, "augusta");
+        Helpers.Compose_Under
+          (Helpers.Compose_Under (Helpers.Locate_Repository_Root, "augusta"),
+           "lovelace");
       Validate_Status : Helpers.Tool_Status;
       Run_Status      : Helpers.Tool_Status;
       Outcome         : Helpers.Test_Outcome := Helpers.Ok;

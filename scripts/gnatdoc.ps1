@@ -10,10 +10,10 @@ $RepoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $RepoRoot
 
 $Projects = @(
-    @{ Name = 'common'; ProjectFile = 'common/lovelace_common.gpr' },
-    @{ Name = 'compiler'; ProjectFile = 'compiler/lovelace_compiler.gpr' },
-    @{ Name = 'lir'; ProjectFile = 'lir/lovelace_lir.gpr' },
-    @{ Name = 'lovelace'; ProjectFile = 'lovelace/lovelace.gpr' }
+    @{ Name = 'common'; ProjectFile = 'lovelace/common/lovelace_common.gpr' },
+    @{ Name = 'compiler'; ProjectFile = 'lovelace/compiler/lovelace_compiler.gpr' },
+    @{ Name = 'lir'; ProjectFile = 'lovelace/lir/lovelace_lir.gpr' },
+    @{ Name = 'lovelace'; ProjectFile = 'lovelace/lovelace/lovelace.gpr' }
 )
 
 foreach ($Project in $Projects) {

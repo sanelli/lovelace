@@ -13,7 +13,7 @@ lovelace_compiler = "*"
 lovelace_lir = "*"
 
 [[pins]]
-lovelace = { path = "lovelace" }
-lovelace_common = { path = "common" }
-lovelace_compiler = { path = "compiler" }
-lovelace_lir = { path = "lir" }
+lovelace = { path = "lovelace/lovelace" }
+lovelace_common = { path = "lovelace/common" }
+lovelace_compiler = { path = "lovelace/compiler" }
+lovelace_lir = { path = "lovelace/lir" }

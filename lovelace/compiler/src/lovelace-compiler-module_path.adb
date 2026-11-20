@@ -1,6 +1,8 @@
 with Ada.Directories;
 with Ada.Environment_Variables;
 
+with Lovelace.Common.Release;
+
 package body Lovelace.Compiler.Module_Path is
 
    package Env renames Ada.Environment_Variables;
@@ -39,7 +41,9 @@ package body Lovelace.Compiler.Module_Path is
       elsif Env_Nonempty ("LOVELACE_HOME") then
          return
            Join_Root
-             (Join_Root (Env.Value ("LOVELACE_HOME"), "lib"), "augusta");
+             (Join_Root
+                (Join_Root (Env.Value ("LOVELACE_HOME"), "lib"), "augusta"),
+              Lovelace.Common.Release.Version);
       else
          declare
             Home : constant String := Expand_User_Home;
@@ -49,7 +53,9 @@ package body Lovelace.Compiler.Module_Path is
             end if;
             return
               Join_Root
-                (Join_Root (Join_Root (Home, ".lovelace"), "lib"), "augusta");
+                (Join_Root
+                   (Join_Root (Join_Root (Home, ".lovelace"), "lib"), "augusta"),
+                 Lovelace.Common.Release.Version);
          end;
       end if;
    end Augusta_Root;

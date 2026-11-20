@@ -4,7 +4,7 @@
 $ErrorActionPreference = 'Stop'
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-$Output = Join-Path $RepoRoot 'lovelace/src/lovelace-main-git_hash.ads'
+$Output = Join-Path $RepoRoot 'lovelace/lovelace/src/lovelace-main-git_hash.ads'
 
 $GitHash = 'nogit'
 $PreviousPreference = $ErrorActionPreference

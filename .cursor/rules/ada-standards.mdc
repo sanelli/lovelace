@@ -6,12 +6,12 @@ alwaysApply: false
 
 # Ada Coding Standards (Host)
 
-Applies to host folders `compiler/`, `jit/`, `common/`, `lir/`, `lovelace/`, `tooling/`, `hypatia/`, `alexandria/`, `format/`, and host test crates (crate names `lovelace_*`; see utf8-and-naming). Native Augusta Ada has extra ZFP constraints (see Augusta rules).
+Applies to host folders `lovelace/compiler/`, `jit/`, `lovelace/common/`, `lovelace/lir/`, `lovelace/lovelace/`, `tooling/`, `hypatia/`, `alexandria/`, `format/`, and host test crates (crate names `lovelace_*`; see utf8-and-naming). Native Augusta Ada has extra ZFP constraints (see Augusta rules).
 
 ## Toolchain
 
 - Ada via GNAT + Alire. Use Ada 2022 (`-gnat2022`) unless the user specifies otherwise.
-- Every crate has one `.gpr` (name matches the crate) and `alire.toml`. Host compiler switches live in `shared/lovelace_host_switches.gpr`; each host crate and host test crate `with`s that file and must not copy the switch list. Do not pass these switches on ad-hoc command lines.
+- Every crate has one `.gpr` (name matches the crate) and `alire.toml`. Host compiler switches live in `lovelace/shared/lovelace_host_switches.gpr`; each host crate and host test crate `with`s that file and must not copy the switch list. Do not pass these switches on ad-hoc command lines.
 - Host library crates (`lovelace_common`, `lovelace_lir`, `lovelace_compiler`, `lovelace_jit`, `lovelace_tooling`, `lovelace_hypatia`, `lovelace_alexandria`, `lovelace_format`): `for Library_Kind use "static";`. **`lovelace`** is an executable, not a library. **`lovelace_augusta`** (native backing, when created) is the only `Library_Kind use "dynamic"` crate (it must not `with` the host switches GPR).
 - Every Ada package name starts with `Lovelace`. Library units use a crate second level (`Lovelace.Common.Utf_8`, not `Lovelace.Utf_8`; see utf8-and-naming). The CLI crate has only root `procedure Lovelace`.
 - Do not use Ada exceptions for host control flow. Do not write `raise` (including `Constraint_Error`) unless the user explicitly asks. Use `Lovelace.Common.Result` and `Lovelace.Common.Internal_Error`; always handle both success and failure (see result-and-internal-errors).
@@ -66,8 +66,8 @@ After **creating or editing** any host Ada source (`.ads`, `.adb`, `.adc`), run 
 alr exec -- gnatformat -w 120 -P path/to/crate.gpr path/to/edited-file.adb
 ```
 
-- `-w 120` matches `-gnatyM120` in `shared/lovelace_host_switches.gpr`.
-- `-P` is the owning crate’s `.gpr` (e.g. `common/lovelace_common.gpr` for `common/src/*`).
+- `-w 120` matches `-gnatyM120` in `lovelace/shared/lovelace_host_switches.gpr`.
+- `-P` is the owning crate’s `.gpr` (e.g. `lovelace/common/lovelace_common.gpr` for `lovelace/common/src/*`).
 - Multiple files in one crate may be passed in one invocation.
 - Requires `alr install libadalang_tools` and `~/.alire/bin` on `PATH` (see README).
 
@@ -76,7 +76,7 @@ Do not skip gnatformat on Ada edits unless the user explicitly asks not to forma
 Example:
 
 ```powershell
-alr exec -- gnatformat -w 120 -P common/lovelace_common.gpr common/src/lovelace-common-utf_8.adb common/src/lovelace-common-utf_8.ads
+alr exec -- gnatformat -w 120 -P lovelace/common/lovelace_common.gpr lovelace/common/src/lovelace-common-utf_8.adb lovelace/common/src/lovelace-common-utf_8.ads
 ```
 
 ## Public Ada documentation

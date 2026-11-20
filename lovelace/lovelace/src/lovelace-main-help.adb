@@ -50,7 +50,9 @@ package body Lovelace.Main.Help is
          "Imports resolve under: root-file dir, cwd, each -I, then one Augusta slot");
       Put_Line
         (File,
-         "(AUGUSTA_HOME, else LOVELACE_HOME/lib/augusta, else ~/.lovelace/lib/augusta).");
+         "(AUGUSTA_HOME, else LOVELACE_HOME/lib/augusta/<version>,");
+      Put_Line
+        (File, " else ~/.lovelace/lib/augusta/<version>; version has no git hash).");
       Put_Line (File, "");
       Put_Line (File, "Output layout under the output folder:");
       Put_Line (File, "  obj/<Unit>.lir");

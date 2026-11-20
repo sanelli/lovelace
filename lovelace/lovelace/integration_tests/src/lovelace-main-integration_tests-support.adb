@@ -152,11 +152,14 @@ package body Lovelace.Main.Integration_Tests.Support is
 
    function Locate_Repository_Root return String is
    begin
+      --  Crate cwd is lovelace/lovelace/integration_tests → repo root is ../../..
       return
         Ada.Directories.Full_Name
           (Ada.Directories.Compose
              (Ada.Directories.Compose
-                (Ada.Directories.Current_Directory, ".."),
+                (Ada.Directories.Compose
+                   (Ada.Directories.Current_Directory, ".."),
+                 ".."),
               ".."));
    end Locate_Repository_Root;
 
@@ -166,7 +169,9 @@ package body Lovelace.Main.Integration_Tests.Support is
         Ada.Directories.Compose
           (Ada.Directories.Compose
              (Ada.Directories.Compose
-                (Ada.Directories.Compose ("..", ".."), "samples"),
+                (Ada.Directories.Compose
+                   (Ada.Directories.Compose ("..", ".."), ".."),
+                 "samples"),
               Feature_Folder),
            File_Name);
    end Locate_Sample;
