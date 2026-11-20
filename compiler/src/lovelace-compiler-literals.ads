@@ -41,9 +41,11 @@ package Lovelace.Compiler.Literals is
 
    --  Interpreted float literal.
    --  @field Is_Negative True when the lexeme had a leading '-'.
+   --  @field The_Width Resolved float width (Bits_32 default when no f32/f64 suffix).
    --  @field Lexeme Full float spelling (for later evaluation).
    type Float_Literal_Value is record
       Is_Negative : Boolean := False;
+      The_Width   : Types.Float_Size := Types.Bits_32;
       Lexeme      : Ada.Strings.Unbounded.Unbounded_String;
    end record;
 

@@ -51,8 +51,8 @@ Empty source, whitespace-only source, and comment-only source succeed with an em
 | `Keyword` | `Keyword_Subtype` | `program`, `module`, `begin`, `end`, `export`, `import`, `procedure`, `integer`, `float`, `signed`, `unsigned` |
 | `Identifier` | (none) | Names, including `@foo`, `café`, emoji |
 | `Punctuation` | `Punctuation_Subtype` | `;` `.` `(` `)` `,` `:` `<` `>` `=` |
-| `Integer_Literal` | (none) | Optional sign/base/suffix forms (see [token-grammar.md](token-grammar.md)) |
-| `Float_Literal` | (none) | Decimal forms with `.` and optional exponent |
+| `Integer_Literal` | (none) | Optional sign, `0b`/`0o`/`0x` or decimal, optional `s`/`u` size (see [token-grammar.md](token-grammar.md)) |
+| `Float_Literal` | (none) | Decimal forms with `.`, exponent, and/or `f32`/`f64` width |
 | `Directive` | `Directive_Subtype` | `#if`, `#elsif`, `#else`, `#end` |
 | `String_Literal` | (none) | `"…"` with no escapes; Lexeme includes both quotes |
 
@@ -60,9 +60,9 @@ Keywords are **case-sensitive**. `Program`, `Module`, `BEGIN`, `Procedure`, `Exp
 
 The scanner matches a full identifier first, then classifies. `programmer` is one identifier, not `program` plus `mer`. `programbegin`, `modulex`, and `exporter` are identifiers.
 
-Longest-match scan order: float → integer → directive → string → identifier → punctuation. Exact directive forms do not steal based integers such as `#16#FF`.
+Longest-match scan order: float → integer → directive → string → identifier → punctuation. Exact directive forms (`#if`, …) still match; old `#BASE#` integer spellings fail tokenization.
 
-Float literal patterns are tried **before** integer patterns so `1.0` is a single `Float_Literal`.
+Float literal patterns are tried **before** integer patterns so `1.0`, `1e3`, and `7f32` are each a single `Float_Literal`.
 
 Lexeme text is not stored on the token. Recover it with `Lexeme (Source_Text, The_Token)`, which slices `Source_Text (First.Byte_Index .. Last.Byte_Index)`. `Last.Byte_Index` is the **last byte** of the last scalar (the span covers the full UTF-8 sequence). For strings, the Lexeme includes the surrounding `"` characters; the parser strips them when reading a flavor name.
 
@@ -116,7 +116,7 @@ Scan Unicode **scalars** via `Lovelace.Common.Utf_8`. Do not treat Ada `Characte
 | Code | Meaning |
 | --- | --- |
 | `Internal_Error` | Compiler bug, such as a hardcoded regex pattern failing to compile |
-| `Unrecognized_Symbol` | Valid scalar that does not start a token (`+` alone, `#` not starting a directive or based integer, …) |
+| `Unrecognized_Symbol` | Valid scalar that does not start a token (`+` alone, `#` not starting a directive, …) |
 | `Invalid_Utf_8` | Bytes that are not valid UTF-8 |
 | `Unterminated_String` | Opening `"` without a closing `"` before end of file |
 | `Unterminated_Comment` | Opening `{` without a closing `}` before end of file (`LV00022`) |

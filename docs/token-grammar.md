@@ -17,16 +17,24 @@ string_literal = '"' , { string_character } , '"' ;
 identifier    = [ "@" ] identifier_first { identifier_continue } ;
 (* "@" only after start, whitespace, punctuation, directive, or string *)
 
-integer_literal = [ "+" | "-" ] , based_or_decimal , [ signedness ] , [ size ] ;
-based_or_decimal = "#" , base , "#" , based_digits | digits ;
-base            = "2" | "8" | "10" | "16" ;
-based_digits    = hex_or_digit , { hex_or_digit } ;
+integer_literal = [ "+" | "-" ] , prefixed_or_decimal , [ signedness ] , [ size ] ;
+prefixed_or_decimal = "0b" , binary_digits | "0B" , binary_digits
+                    | "0o" , octal_digits | "0O" , octal_digits
+                    | "0x" , hex_digits | "0X" , hex_digits
+                    | digits ;
+binary_digits   = "0" | "1" , { "0" | "1" } ;
+octal_digits    = octal_digit , { octal_digit } ;
+hex_digits      = hex_or_digit , { hex_or_digit } ;
 signedness      = "s" | "u" ;
 size            = "8" | "16" | "32" | "64" ;
 
-float_literal   = [ "+" | "-" ] , digits , "." , [ fraction ] , [ exponent ] ;
+float_literal   = [ "+" | "-" ] ,
+                  ( digits , "." , [ fraction ] , [ exponent ] , [ float_width ]
+                  | digits , exponent , [ float_width ]
+                  | digits , float_width ) ;
 fraction        = digits ;
 exponent        = ( "e" | "E" ) , [ "+" | "-" ] , digits ;
+float_width     = "f32" | "F32" | "f64" | "F64" ;
 
 whitespace    = whitespace_scalar , { whitespace_scalar } ;
 (* ignored: not emitted, not part of the adjacent tokens *)
@@ -41,9 +49,9 @@ error         = unrecognized_symbol | invalid_utf_8 | unterminated_string_litera
 
 `identifier_first` / `identifier_continue` are Unicode-scalar predicates documented in [tokenizer.md](tokenizer.md). `_` is allowed; ASCII digits may continue an identifier but must not start one (except after `@`).
 
-Scan order (longest match): float → integer → directive → string → identifier → punctuation. Exact directive lexemes (`#if`, …) do not steal based integers such as `#16#FF`.
+Scan order (longest match): float → integer → directive → string → identifier → punctuation. Exact directive lexemes (`#if`, …) still match; old Ada-style `#BASE#` integer spellings are not tokens (ordinary tokenization failure).
 
-Float forms are tried before integer forms so `1.0` is one `Float_Literal`, not `1` plus punctuation.
+Float forms are tried before integer forms so `1.0`, `1e3`, and `7f32` are each one `Float_Literal`. Hex prefixes win over float suffixes (`0xf` / `0xF32` are integers).
 
 Examples:
 
@@ -56,8 +64,8 @@ Examples:
 | `export @intrinsic procedure print(value : integer);` | `export` `@intrinsic` `procedure` … |
 | `export @native("libx", "print_fn") procedure print(value : integer);` | `export` `@native` `(` `"libx"` `,` `"print_fn"` `)` `procedure` … |
 | `import Foo.Bar;` | `import` `Foo` `.` `Bar` `;` |
-| `42` `-3u16` `#16#FFs32` | integer literals |
-| `3.14` `7.` `1e-3` | float literals |
+| `42` `-3u16` `0xFFs32` `0b1010` `0o755` | integer literals |
+| `3.14` `7.` `1e3` `7f32` `2.3f64` | float literals |
 | `#if` `#elsif` `#else` `#end` | directive tokens |
 | `"wasi"` | string literal (lexeme includes quotes) |
 | `flavor = "web"` | identifier `flavor`, `=`, string `"web"` |

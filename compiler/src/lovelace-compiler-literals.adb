@@ -10,6 +10,10 @@ package body Lovelace.Compiler.Literals is
    function Is_Digit_For_Base (Byte : Character; Base : Positive) return Boolean;
    function Parse_Size_Suffix
      (Text : String; Index : in out Positive; The_Size : out Types.Integer_Size) return Boolean;
+   function Parse_Float_Width_Suffix
+     (Text : String; Last : in out Natural; The_Width : out Types.Float_Size; Found : out Boolean)
+      return Boolean;
+   function Is_Decimal_Digit (Byte : Character) return Boolean;
 
    function Digit_Value (Byte : Character; Base : Positive; Value : out Natural) return Boolean is
    begin
@@ -42,8 +46,14 @@ package body Lovelace.Compiler.Literals is
    end Integer_32_Failure;
 
    function Interpret_Float (Lexeme : String) return Float_Literal_Results.Result is
-      Index       : Positive := Lexeme'First;
-      Is_Negative : Boolean := False;
+      Index         : Positive := Lexeme'First;
+      Body_Last     : Natural;
+      Is_Negative   : Boolean := False;
+      The_Width     : Types.Float_Size := Types.Bits_32;
+      Has_Width     : Boolean := False;
+      Has_Dot       : Boolean := False;
+      Has_Exponent  : Boolean := False;
+      Saw_Digit     : Boolean := False;
    begin
       if Lexeme'Length = 0 then
          return Float_Failure (Invalid_Literal, "empty float literal");
@@ -60,9 +70,60 @@ package body Lovelace.Compiler.Literals is
          return Float_Failure (Invalid_Literal, "float literal missing digits");
       end if;
 
+      Body_Last := Lexeme'Last;
+      if not Parse_Float_Width_Suffix (Lexeme, Body_Last, The_Width, Has_Width) then
+         return Float_Failure (Invalid_Literal, "invalid float width suffix");
+      end if;
+
+      if Index > Body_Last then
+         return Float_Failure (Invalid_Literal, "float literal missing digits");
+      end if;
+
+      while Index <= Body_Last and then Is_Decimal_Digit (Lexeme (Index)) loop
+         Saw_Digit := True;
+         Index := Index + 1;
+      end loop;
+
+      if not Saw_Digit then
+         return Float_Failure (Invalid_Literal, "float literal missing digits");
+      end if;
+
+      if Index <= Body_Last and then Lexeme (Index) = '.' then
+         Has_Dot := True;
+         Index := Index + 1;
+         while Index <= Body_Last and then Is_Decimal_Digit (Lexeme (Index)) loop
+            Index := Index + 1;
+         end loop;
+      end if;
+
+      if Index <= Body_Last and then (Lexeme (Index) = 'e' or else Lexeme (Index) = 'E') then
+         Has_Exponent := True;
+         Index := Index + 1;
+         if Index <= Body_Last and then (Lexeme (Index) = '+' or else Lexeme (Index) = '-') then
+            Index := Index + 1;
+         end if;
+         if Index > Body_Last or else not Is_Decimal_Digit (Lexeme (Index)) then
+            return Float_Failure (Invalid_Literal, "float exponent missing digits");
+         end if;
+         while Index <= Body_Last and then Is_Decimal_Digit (Lexeme (Index)) loop
+            Index := Index + 1;
+         end loop;
+      end if;
+
+      if Index <= Body_Last then
+         return Float_Failure (Invalid_Literal, "trailing characters in float literal");
+      end if;
+
+      if not Has_Dot and then not Has_Exponent and then not Has_Width then
+         return Float_Failure (Invalid_Literal, "float literal requires '.' exponent or width suffix");
+      end if;
+
       return
         (Ok    => True,
-         Value => (Is_Negative => Is_Negative, Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (Lexeme)));
+         Value =>
+           (Is_Negative => Is_Negative,
+            The_Width   => The_Width,
+            Lexeme      => Ada.Strings.Unbounded.To_Unbounded_String (Lexeme)));
    end Interpret_Float;
 
    function Interpret_Integer (Lexeme : String) return Integer_Literal_Results.Result is
@@ -91,26 +152,21 @@ package body Lovelace.Compiler.Literals is
          return Failure (Invalid_Literal, "integer literal missing digits");
       end if;
 
-      if Lexeme (Index) = '#' then
-         if Index + 2 > Lexeme'Last then
-            return Failure (Invalid_Literal, "incomplete based integer literal");
-         end if;
-
-         if Lexeme (Index .. Index + 2) = "#2#" then
-            Base := 2;
-            Index := Index + 3;
-         elsif Lexeme (Index .. Index + 2) = "#8#" then
-            Base := 8;
-            Index := Index + 3;
-         elsif Index + 3 <= Lexeme'Last and then Lexeme (Index .. Index + 3) = "#10#" then
-            Base := 10;
-            Index := Index + 4;
-         elsif Index + 3 <= Lexeme'Last and then Lexeme (Index .. Index + 3) = "#16#" then
-            Base := 16;
-            Index := Index + 4;
-         else
-            return Failure (Invalid_Literal, "integer base must be 2, 8, 10, or 16");
-         end if;
+      if Index < Lexeme'Last and then Lexeme (Index) = '0' then
+         declare
+            Marker : constant Character := Lexeme (Index + 1);
+         begin
+            if Marker = 'b' or else Marker = 'B' then
+               Base := 2;
+               Index := Index + 2;
+            elsif Marker = 'o' or else Marker = 'O' then
+               Base := 8;
+               Index := Index + 2;
+            elsif Marker = 'x' or else Marker = 'X' then
+               Base := 16;
+               Index := Index + 2;
+            end if;
+         end;
       end if;
 
       if Index > Lexeme'Last then
@@ -160,6 +216,11 @@ package body Lovelace.Compiler.Literals is
             The_Size       => The_Size));
    end Interpret_Integer;
 
+   function Is_Decimal_Digit (Byte : Character) return Boolean is
+   begin
+      return Byte in '0' .. '9';
+   end Is_Decimal_Digit;
+
    function Is_Digit_For_Base (Byte : Character; Base : Positive) return Boolean is
    begin
       case Base is
@@ -179,6 +240,36 @@ package body Lovelace.Compiler.Literals is
             return False;
       end case;
    end Is_Digit_For_Base;
+
+   function Parse_Float_Width_Suffix
+     (Text : String; Last : in out Natural; The_Width : out Types.Float_Size; Found : out Boolean)
+      return Boolean
+   is
+   begin
+      Found := False;
+      The_Width := Types.Bits_32;
+      if Last < Text'First + 2 then
+         return True;
+      end if;
+
+      declare
+         Suffix : constant String := Text (Last - 2 .. Last);
+      begin
+         if Suffix = "f32" or else Suffix = "F32" then
+            The_Width := Types.Bits_32;
+            Found := True;
+            Last := Last - 3;
+            return True;
+         elsif Suffix = "f64" or else Suffix = "F64" then
+            The_Width := Types.Bits_64;
+            Found := True;
+            Last := Last - 3;
+            return True;
+         end if;
+      end;
+
+      return True;
+   end Parse_Float_Width_Suffix;
 
    function Parse_Size_Suffix (Text : String; Index : in out Positive; The_Size : out Types.Integer_Size) return Boolean
    is

@@ -55,7 +55,7 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Native_Keyword (The_Test : in out Fixture);
 
-   --  Integer and float literal forms tokenize successfully.
+   --  Integer (0b/0o/0x) and float (f32/f64, bare . / exp) forms; old #base# fails.
    --  @param The_Test Unused fixture.
    procedure Test_Numeric_Literals (The_Test : in out Fixture);
 
@@ -119,7 +119,7 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Directive_And_String_Errors (The_Test : in out Fixture);
 
-   --  #if #elsif #else #end, string literals, Equals; based integers unchanged.
+   --  #if #elsif #else #end, string literals, Equals; hex integer with 0x prefix.
    --  @param The_Test Unused fixture.
    procedure Test_Directives_And_Strings (The_Test : in out Fixture);
 

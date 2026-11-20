@@ -122,7 +122,7 @@ package body Lovelace.Compiler.Tests.Tokenizer is
 
    procedure Test_Directives_And_Strings (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Source_Text : constant String := "#if #elsif #else #end ""wasi"" = #16#FFs32";
+      Source_Text : constant String := "#if #elsif #else #end ""wasi"" = 0xFFs32";
       Token_List  : constant Tokens.Token_Sequence := Support.Must_Succeed (Source_Text, "directives strings");
    begin
       Support.Assert_Token_Count (Token_List, 7, "directives strings");
@@ -132,7 +132,7 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Support.Assert_Directive (Source_Text, Token_List, 4, Tokens.End_Directive, "#end");
       Support.Assert_String_Literal (Source_Text, Token_List, 5, """wasi""", "string");
       Support.Assert_Punctuation (Token_List, 6, Tokens.Equals, "equals");
-      Support.Assert_Integer_Literal (Source_Text, Token_List, 7, "#16#FFs32", "based integer");
+      Support.Assert_Integer_Literal (Source_Text, Token_List, 7, "0xFFs32", "hex integer");
    end Test_Directives_And_Strings;
 
    procedure Test_Empty_And_Whitespace (The_Test : in out Fixture) is
@@ -363,16 +363,25 @@ package body Lovelace.Compiler.Tests.Tokenizer is
 
    procedure Test_Numeric_Literals (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Mixed        : constant String := "10 -8u64 #16#FF 1.5 7. 3.4E3";
+      Mixed        : constant String := "10 -8u64 0xFF 0b1010 0o755 0xf 1.5 7. 3.4E3 1e3 7f32 2.3f64";
       Mixed_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Mixed, "mixed literals");
+      Obsolete     : constant Compiler_Tokenizer.Tokenizer_Error_Sequence :=
+        Support.Must_Fail ("#16#FF", "obsolete based");
    begin
-      Support.Assert_Token_Count (Mixed_Tokens, 6, "mixed literals");
+      Support.Assert_Token_Count (Mixed_Tokens, 12, "mixed literals");
       Support.Assert_Integer_Literal (Mixed, Mixed_Tokens, 1, "10", "10");
       Support.Assert_Integer_Literal (Mixed, Mixed_Tokens, 2, "-8u64", "-8u64");
-      Support.Assert_Integer_Literal (Mixed, Mixed_Tokens, 3, "#16#FF", "#16#FF");
-      Support.Assert_Float_Literal (Mixed, Mixed_Tokens, 4, "1.5", "1.5");
-      Support.Assert_Float_Literal (Mixed, Mixed_Tokens, 5, "7.", "7.");
-      Support.Assert_Float_Literal (Mixed, Mixed_Tokens, 6, "3.4E3", "3.4E3");
+      Support.Assert_Integer_Literal (Mixed, Mixed_Tokens, 3, "0xFF", "0xFF");
+      Support.Assert_Integer_Literal (Mixed, Mixed_Tokens, 4, "0b1010", "0b1010");
+      Support.Assert_Integer_Literal (Mixed, Mixed_Tokens, 5, "0o755", "0o755");
+      Support.Assert_Integer_Literal (Mixed, Mixed_Tokens, 6, "0xf", "0xf hex");
+      Support.Assert_Float_Literal (Mixed, Mixed_Tokens, 7, "1.5", "1.5");
+      Support.Assert_Float_Literal (Mixed, Mixed_Tokens, 8, "7.", "7.");
+      Support.Assert_Float_Literal (Mixed, Mixed_Tokens, 9, "3.4E3", "3.4E3");
+      Support.Assert_Float_Literal (Mixed, Mixed_Tokens, 10, "1e3", "1e3");
+      Support.Assert_Float_Literal (Mixed, Mixed_Tokens, 11, "7f32", "7f32");
+      Support.Assert_Float_Literal (Mixed, Mixed_Tokens, 12, "2.3f64", "2.3f64");
+      Support.Assert_Error_Code (Obsolete, 1, Compiler_Tokenizer.Unrecognized_Symbol, "obsolete based");
    end Test_Numeric_Literals;
 
    procedure Test_Procedure_Type_Tokens (The_Test : in out Fixture) is
