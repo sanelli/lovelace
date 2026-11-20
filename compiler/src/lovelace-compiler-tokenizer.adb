@@ -113,7 +113,10 @@ package body Lovelace.Compiler.Tokenizer is
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("float"), Value => Tokens.Float_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("signed"), Value => Tokens.Signed_Keyword),
       Keyword_Entry'
-        (Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("unsigned"), Value => Tokens.Unsigned_Keyword)];
+        (Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("unsigned"), Value => Tokens.Unsigned_Keyword),
+      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("boolean"), Value => Tokens.Boolean_Keyword),
+      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("true"), Value => Tokens.True_Keyword),
+      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("false"), Value => Tokens.False_Keyword)];
 
    --  Exact lexemes classified as punctuation tokens.
    Punctuation_Table : constant Punctuation_Entry_List :=

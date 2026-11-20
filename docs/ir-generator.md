@@ -66,7 +66,7 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | Subroutine name span, filename | `Subroutines.Set_Origin` (`Subroutine_Origin`) |
 | Return type `Unit` | `Lir.Types.Unit` |
 | Parameters (name + type) | named LIR parameters (same order) |
-| `Integer` / `Float` type expressions | LIR `I8`…`I64` / `U8`…`U64` / `F32` / `F64` (see table below) |
+| `Integer` / `Float` / `Boolean` type expressions | LIR `I8`…`I64` / `U8`…`U64` / `F32` / `F64` / `I32` for boolean (see table below) |
 | `Export_Flag` / `Entrypoint_Flag` / `Native_Flag` / `Intrinsic_Flag` | same-named LIR flag bits |
 | `@native("lib", "fn")` binding | LIR `Set_Native_Binding` (empty instruction body; no statement lower; no closed-set check) |
 | `@intrinsic` | LIR `Set_Intrinsic` after closed-table match (empty body; no statement lower) |
@@ -81,12 +81,13 @@ Closed table (`Lovelace.Compiler.Intrinsics`): only `augusta.std.io` / `print` /
 
 - Same-unit: `UnitName.ProcedureName` where `UnitName` equals the calling unit; export not required.
 - Cross-module: `import M;` required on the caller; callee must exist on `M` with `Export_Flag`. Failures → `Call_Without_Import` (`LV00017`), `Not_Exported` (`LV00018`), or `Unresolved_Call` (`LV00014`).
-- Argument count must match formals; each formal must accept an `i32` constant (signed/unsigned integer size ≤ 32). Negative literals are rejected for unsigned formals. Failures → `Invalid_Arguments` (`LV00015`).
+- Argument count must match formals. **Integer** formals (signed/unsigned size ≤ 32) take integer literals as `Constant_I32` (negative literals rejected for unsigned). **`boolean`** formals take only `true` / `false` → `Constant_I32` **1** / **0**. Cross-kind args (integer literal to `boolean`, or `true`/`false` to integer) fail. Failures → `Invalid_Arguments` (`LV00015`).
 
 ### Type map
 
 | Frontend | LIR |
 | --- | --- |
+| `boolean` | `I32` (language `false` ↔ 0; `true` ↔ nonzero; literals emit 0 / 1) |
 | `integer` / `signed integer` / `integer<32>` | `I32` |
 | `integer<8>` / `signed integer<8>` | `I8` |
 | `integer<16>` | `I16` |

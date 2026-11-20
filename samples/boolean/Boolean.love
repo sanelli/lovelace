@@ -1,0 +1,11 @@
+{ boolean parameters and true/false call arguments (LIR i32: false=0, true=1). }
+module Boolean;
+procedure Sink(Flag : boolean);
+begin
+end;
+procedure Run();
+begin
+   Boolean.Sink(true);
+   Boolean.Sink(false);
+end;
+end.

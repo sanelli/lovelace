@@ -386,21 +386,34 @@ package body Lovelace.Compiler.Tests.Tokenizer is
 
    procedure Test_Procedure_Type_Tokens (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Source_Text : constant String := "procedure integer float signed unsigned ( ) , : < >";
+      Source_Text : constant String :=
+        "procedure integer float signed unsigned boolean true false ( ) , : < >";
       Token_List  : constant Tokens.Token_Sequence := Support.Must_Succeed (Source_Text, "proc type tokens");
+      True_Ident  : constant String := "True";
+      Bool_Ident  : constant String := "Boolean";
+      Truehood    : constant String := "truehood";
+      True_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (True_Ident, "True");
+      Bool_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Bool_Ident, "Boolean");
+      Hood_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Truehood, "truehood");
    begin
-      Support.Assert_Token_Count (Token_List, 11, "proc type tokens");
+      Support.Assert_Token_Count (Token_List, 14, "proc type tokens");
       Support.Assert_Keyword (Source_Text, Token_List, 1, Tokens.Procedure_Keyword, "procedure");
       Support.Assert_Keyword (Source_Text, Token_List, 2, Tokens.Integer_Keyword, "integer");
       Support.Assert_Keyword (Source_Text, Token_List, 3, Tokens.Float_Keyword, "float");
       Support.Assert_Keyword (Source_Text, Token_List, 4, Tokens.Signed_Keyword, "signed");
       Support.Assert_Keyword (Source_Text, Token_List, 5, Tokens.Unsigned_Keyword, "unsigned");
-      Support.Assert_Punctuation (Token_List, 6, Tokens.Left_Parenthesis, "(");
-      Support.Assert_Punctuation (Token_List, 7, Tokens.Right_Parenthesis, ")");
-      Support.Assert_Punctuation (Token_List, 8, Tokens.Comma, ",");
-      Support.Assert_Punctuation (Token_List, 9, Tokens.Colon, ":");
-      Support.Assert_Punctuation (Token_List, 10, Tokens.Less_Than, "<");
-      Support.Assert_Punctuation (Token_List, 11, Tokens.Greater_Than, ">");
+      Support.Assert_Keyword (Source_Text, Token_List, 6, Tokens.Boolean_Keyword, "boolean");
+      Support.Assert_Keyword (Source_Text, Token_List, 7, Tokens.True_Keyword, "true");
+      Support.Assert_Keyword (Source_Text, Token_List, 8, Tokens.False_Keyword, "false");
+      Support.Assert_Punctuation (Token_List, 9, Tokens.Left_Parenthesis, "(");
+      Support.Assert_Punctuation (Token_List, 10, Tokens.Right_Parenthesis, ")");
+      Support.Assert_Punctuation (Token_List, 11, Tokens.Comma, ",");
+      Support.Assert_Punctuation (Token_List, 12, Tokens.Colon, ":");
+      Support.Assert_Punctuation (Token_List, 13, Tokens.Less_Than, "<");
+      Support.Assert_Punctuation (Token_List, 14, Tokens.Greater_Than, ">");
+      Support.Assert_Identifier (True_Ident, True_Tokens, 1, "True", "True");
+      Support.Assert_Identifier (Bool_Ident, Bool_Tokens, 1, "Boolean", "Boolean");
+      Support.Assert_Identifier (Truehood, Hood_Tokens, 1, "truehood", "truehood");
    end Test_Procedure_Type_Tokens;
 
    procedure Test_Program_Begin_End (The_Test : in out Fixture) is

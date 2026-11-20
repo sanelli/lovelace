@@ -59,7 +59,7 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Numeric_Literals (The_Test : in out Fixture);
 
-   --  New keywords and punctuation for procedures and types.
+   --  Procedure/type keywords including boolean/true/false; True/Boolean/truehood are identifiers.
    --  @param The_Test Unused fixture.
    procedure Test_Procedure_Type_Tokens (The_Test : in out Fixture);
 

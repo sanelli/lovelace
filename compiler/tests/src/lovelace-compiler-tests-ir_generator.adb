@@ -601,7 +601,8 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
         & "u32 : unsigned integer; "
         & "u64 : unsigned integer<64>; "
         & "f32 : float; "
-        & "f64 : float<64>"
+        & "f64 : float<64>; "
+        & "flag : boolean"
         & "); begin end; end.";
       Ast_Module    : constant Ast.Module :=
         Support.Must_Parse (Source_Text, "param type mapping");
@@ -636,8 +637,8 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       end Assert_Param;
    begin
       AUnit.Assertions.Assert
-        (Lovelace.Lir.Types.Length (Parameters) = 10,
-         "param type mapping: ten params");
+        (Lovelace.Lir.Types.Length (Parameters) = 11,
+         "param type mapping: eleven params");
       Assert_Param (1, "i8", Lovelace.Lir.Types.I8);
       Assert_Param (2, "i16", Lovelace.Lir.Types.I16);
       Assert_Param (3, "i32", Lovelace.Lir.Types.I32);
@@ -648,6 +649,7 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       Assert_Param (8, "u64", Lovelace.Lir.Types.U64);
       Assert_Param (9, "f32", Lovelace.Lir.Types.F32);
       Assert_Param (10, "f64", Lovelace.Lir.Types.F64);
+      Assert_Param (11, "flag", Lovelace.Lir.Types.I32);
    end Test_Parameter_Type_Mapping;
 
    procedure Test_Same_Unit_Calls (The_Test : in out Fixture) is
@@ -680,6 +682,20 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       Wide_Source     : constant String :=
         "module Calls; procedure Sink(Value : integer<64>); begin end; "
         & "procedure Run(); begin Calls.Sink(1); end; end.";
+      Bool_Source     : constant String :=
+        "module Calls;"
+        & ASCII.LF
+        & "procedure Sink(Flag : boolean); begin end;"
+        & ASCII.LF
+        & "procedure Run(); begin Calls.Sink(true); Calls.Sink(false); end;"
+        & ASCII.LF
+        & "end.";
+      Bool_Int_Source : constant String :=
+        "module Calls; procedure Sink(Flag : boolean); begin end; "
+        & "procedure Run(); begin Calls.Sink(1); end; end.";
+      Int_Bool_Source : constant String :=
+        "module Calls; procedure Sink(Value : integer); begin end; "
+        & "procedure Run(); begin Calls.Sink(true); end; end.";
       Cross_Error     : constant Ir_Gen.Ir_Generator_Error :=
         Support.Must_Fail_Generate
           (Support.Must_Parse (Cross_Source, "cross"), "cross");
@@ -695,6 +711,19 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       Wide_Error      : constant Ir_Gen.Ir_Generator_Error :=
         Support.Must_Fail_Generate
           (Support.Must_Parse (Wide_Source, "wide"), "wide");
+      Bool_Ast        : constant Ast.Module :=
+        Support.Must_Parse (Bool_Source, "boolean calls");
+      Bool_Lir        : constant Modules.Module :=
+        Support.Must_Generate (Bool_Ast, "boolean calls");
+      Bool_Body       :
+        constant Lovelace.Lir.Instructions.Instruction_Sequence :=
+          Subroutines.Get_Instructions (Modules.Get_Subroutine (Bool_Lir, 2));
+      Bool_Int_Error  : constant Ir_Gen.Ir_Generator_Error :=
+        Support.Must_Fail_Generate
+          (Support.Must_Parse (Bool_Int_Source, "bool int"), "bool int");
+      Int_Bool_Error  : constant Ir_Gen.Ir_Generator_Error :=
+        Support.Must_Fail_Generate
+          (Support.Must_Parse (Int_Bool_Source, "int bool"), "int bool");
    begin
       AUnit.Assertions.Assert
         (Lovelace.Lir.Instructions.Length (Run_Body) = 2, "two instructions");
@@ -714,6 +743,13 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
          "call target Sink");
 
       AUnit.Assertions.Assert
+        (Lovelace.Lir.Instructions.Length (Bool_Body) = 4, "boolean four instructions");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Instructions.Element (Bool_Body, 1).Immediate_I32 = 1, "true to 1");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Instructions.Element (Bool_Body, 3).Immediate_I32 = 0, "false to 0");
+
+      AUnit.Assertions.Assert
         (Cross_Error.Code = Ir_Gen.Call_Without_Import, "cross code");
       AUnit.Assertions.Assert
         (Unknown_Error.Code = Ir_Gen.Unresolved_Call, "unknown code");
@@ -723,6 +759,10 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
         (Unsigned_Error.Code = Ir_Gen.Invalid_Arguments, "unsigned code");
       AUnit.Assertions.Assert
         (Wide_Error.Code = Ir_Gen.Invalid_Arguments, "wide code");
+      AUnit.Assertions.Assert
+        (Bool_Int_Error.Code = Ir_Gen.Invalid_Arguments, "bool int code");
+      AUnit.Assertions.Assert
+        (Int_Bool_Error.Code = Ir_Gen.Invalid_Arguments, "int bool code");
    end Test_Same_Unit_Calls;
 
 end Lovelace.Compiler.Tests.Ir_Generator;

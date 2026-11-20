@@ -26,7 +26,7 @@ Callers tokenize first. `Parse` does not call `Tokenize`. Callers that need LIR 
 | Package | Role |
 | --- | --- |
 | `Lovelace.Compiler.Flavor` | `Wasi` / `Native` / `Web`, `Default`, `Name`, `Try_Parse_Name` |
-| `Lovelace.Compiler.Types` | Frontend `Type_Expression` (`Unit`, `Integer`, `Float`) |
+| `Lovelace.Compiler.Types` | Frontend `Type_Expression` (`Unit`, `Boolean`, `Integer`, `Float`) |
 | `Lovelace.Compiler.Ast` | Module, `Unit_Kind`, imports, subroutine, parameters, `Full_Name`, flags, empty body |
 | `Lovelace.Compiler.Parser` | `Parse`, `Parse_Result`, `Parser_Error` |
 | `Lovelace.Compiler.Ir_Generator` | AST → LIR (see [ir-generator.md](ir-generator.md)) |
