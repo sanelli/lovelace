@@ -21,15 +21,18 @@ package Lovelace.Compiler.Ast is
    --  Bit 1: subroutine is the module entrypoint.
    Entrypoint_Flag : constant Subroutine_Flags := 2**1;
 
-   --  Bit 2: subroutine is a native(...) binding (no Lovelace body).
+   --  Bit 2: subroutine is an `@native("lib", "fn")` FFI binding (no Lovelace body).
    Native_Flag : constant Subroutine_Flags := 2**2;
 
-   --  Target and intrinsic key from native("target", "key").
-   --  @field Target UTF-8 first string (e.g. wasi).
-   --  @field Key UTF-8 second string (e.g. native-print-integer).
+   --  Bit 3: subroutine is an `@intrinsic` (compiler-synthesized body; no Lovelace body).
+   Intrinsic_Flag : constant Subroutine_Flags := 2**3;
+
+   --  Shared-library FFI binding from `@native("library", "function")`.
+   --  @field Library UTF-8 shared-library name.
+   --  @field Function_Name UTF-8 native function name.
    type Native_Binding is record
-      Target : Ada.Strings.Unbounded.Unbounded_String;
-      Key    : Ada.Strings.Unbounded.Unbounded_String;
+      Library       : Ada.Strings.Unbounded.Unbounded_String;
+      Function_Name : Ada.Strings.Unbounded.Unbounded_String;
    end record;
 
    --  Optional native binding on a subroutine.
@@ -139,6 +142,11 @@ package Lovelace.Compiler.Ast is
    --  @return True iff entrypoint bit is set.
    function Has_Entrypoint (Flags : Subroutine_Flags) return Boolean;
 
+   --  True when Flags includes Intrinsic_Flag.
+   --  @param Flags Flag bitset.
+   --  @return True iff intrinsic bit is set.
+   function Has_Intrinsic (Flags : Subroutine_Flags) return Boolean;
+
    --  True when Flags includes Native_Flag.
    --  @param Flags Flag bitset.
    --  @return True iff native bit is set.
@@ -213,8 +221,8 @@ package Lovelace.Compiler.Ast is
    --  @param Flags Flag bits (export, entrypoint, and others).
    --  @param Return_Type Frontend return type expression.
    --  @param Parameters Ordered parameter list.
-   --  @param The_Body Statement list (may be empty; must be empty when native).
-   --  @param Native Optional native("target", "key") binding.
+   --  @param The_Body Statement list (may be empty; must be empty when intrinsic/native).
+   --  @param Native Optional `@native("library", "function")` binding.
    --  @return Subroutine value.
    function Create_Subroutine
      (Name        : String;

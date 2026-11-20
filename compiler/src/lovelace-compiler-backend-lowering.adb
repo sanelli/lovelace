@@ -144,8 +144,9 @@ package body Lovelace.Compiler.Backend.Lowering is
                            return Failure (Internal_Error, "native flag without binding after Validate");
                         end if;
 
-                        if Ada.Strings.Unbounded.To_String (The_Native.Value.Target) /= "wasi"
-                          or else Ada.Strings.Unbounded.To_String (The_Native.Value.Key) /= "native-print-integer"
+                        if Ada.Strings.Unbounded.To_String (The_Native.Value.Library) /= "wasi"
+                          or else Ada.Strings.Unbounded.To_String (The_Native.Value.Function_Name)
+                                  /= "native-print-integer"
                         then
                            return
                              Failure

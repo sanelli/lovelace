@@ -89,6 +89,39 @@ package body Lovelace.Lir.Tests.Validation is
          begin
             AUnit.Assertions.Assert (Outcome.Ok, "valid native subroutine");
          end;
+
+         declare
+            Intrinsic_Ok   : Modules.Module := Modules.Create ("m");
+            Intrinsic_Body : Modules.Module := Modules.Create ("m");
+            Both_Flags     : Modules.Module := Modules.Create ("m");
+            Ok_Intrinsic   : Subroutines.Subroutine :=
+              Support.Make_Subroutine ("P", Types.Unit, Flags => Subroutines.Export_Flag);
+            Body_Intrinsic : Subroutines.Subroutine :=
+              Support.Make_Subroutine ("P", Types.Unit, Noop_Count => 1);
+            Mixed          : Subroutines.Subroutine := Support.Make_Subroutine ("P", Types.Unit);
+         begin
+            Subroutines.Set_Intrinsic (Ok_Intrinsic);
+            Modules.Append_Subroutine (Intrinsic_Ok, Ok_Intrinsic);
+            declare
+               Outcome : constant Errors.Validation_Results.Result := Modules.Validate (Intrinsic_Ok);
+            begin
+               AUnit.Assertions.Assert (Outcome.Ok, "valid intrinsic subroutine");
+            end;
+
+            Subroutines.Set_Intrinsic (Body_Intrinsic);
+            Modules.Append_Subroutine (Intrinsic_Body, Body_Intrinsic);
+            Support.Assert_Validate_Error
+              (Intrinsic_Body, Errors.Invalid_Native_Binding, "intrinsic with body");
+
+            Subroutines.Set_Native_Binding (Mixed, "lib", "fn");
+            Subroutines.Set_Intrinsic (Mixed);
+            Modules.Append_Subroutine (Both_Flags, Mixed);
+            declare
+               Outcome : constant Errors.Validation_Results.Result := Modules.Validate (Both_Flags);
+            begin
+               AUnit.Assertions.Assert (Outcome.Ok, "Set_Intrinsic clears native");
+            end;
+         end;
       end;
    end Test_Validate_Failures;
 

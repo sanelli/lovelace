@@ -17,15 +17,18 @@ package Lovelace.Lir.Subroutines is
    --  Bit 1: subroutine is the module entrypoint.
    Entrypoint_Flag : constant Subroutine_Flags := 2**1;
 
-   --  Bit 2: subroutine is a native(target, key) binding (empty instruction body).
+   --  Bit 2: subroutine is an `@native("lib", "fn")` FFI binding (empty instruction body).
    Native_Flag : constant Subroutine_Flags := 2**2;
 
-   --  Target and intrinsic key from native("target", "key").
-   --  @field Target UTF-8 first string (e.g. wasi).
-   --  @field Key UTF-8 second string (e.g. native-print-integer).
+   --  Bit 3: subroutine is an `@intrinsic` (compiler-synthesized; empty instruction body).
+   Intrinsic_Flag : constant Subroutine_Flags := 2**3;
+
+   --  Shared-library FFI binding from `@native("library", "function")`.
+   --  @field Library UTF-8 shared-library name.
+   --  @field Function_Name UTF-8 native function name.
    type Native_Binding is record
-      Target : Ada.Strings.Unbounded.Unbounded_String;
-      Key    : Ada.Strings.Unbounded.Unbounded_String;
+      Library       : Ada.Strings.Unbounded.Unbounded_String;
+      Function_Name : Ada.Strings.Unbounded.Unbounded_String;
    end record;
 
    --  Optional native binding on a subroutine.
@@ -87,11 +90,16 @@ package Lovelace.Lir.Subroutines is
    --  @param The_Origin Source location metadata.
    procedure Set_Origin (The_Subroutine : in out Subroutine; The_Origin : Subroutine_Origin);
 
-   --  Store a native binding and set Native_Flag (replaces any previous binding).
+   --  Store a native FFI binding and set Native_Flag (replaces any previous binding; clears Intrinsic_Flag).
    --  @param The_Subroutine Subroutine to update.
-   --  @param Target UTF-8 native target (e.g. wasi).
-   --  @param Key UTF-8 intrinsic key (e.g. native-print-integer).
-   procedure Set_Native_Binding (The_Subroutine : in out Subroutine; Target : String; Key : String);
+   --  @param Library UTF-8 shared-library name.
+   --  @param Function_Name UTF-8 native function name.
+   procedure Set_Native_Binding
+     (The_Subroutine : in out Subroutine; Library : String; Function_Name : String);
+
+   --  Mark The_Subroutine as `@intrinsic` (sets Intrinsic_Flag; clears Native_Flag and binding).
+   --  @param The_Subroutine Subroutine to update.
+   procedure Set_Intrinsic (The_Subroutine : in out Subroutine);
 
    --  Append Item to the instruction body of The_Subroutine.
    --  @param The_Subroutine Subroutine to extend.
@@ -132,6 +140,11 @@ package Lovelace.Lir.Subroutines is
    --  @param Flags Flag bitset.
    --  @return True iff entrypoint bit is set.
    function Has_Entrypoint (Flags : Subroutine_Flags) return Boolean;
+
+   --  True when Flags includes Intrinsic_Flag.
+   --  @param Flags Flag bitset.
+   --  @return True iff intrinsic bit is set.
+   function Has_Intrinsic (Flags : Subroutine_Flags) return Boolean;
 
    --  True when Flags includes Native_Flag.
    --  @param Flags Flag bitset.

@@ -257,10 +257,10 @@ package body Lovelace.Lir.Tests.Binary_Format is
            (Subroutines.Has_Native (Subroutines.Get_Flags (Decoded_Sub)), "native flag");
          AUnit.Assertions.Assert (Decoded_Native.Present, "native present");
          AUnit.Assertions.Assert
-           (Ada.Strings.Unbounded.To_String (Decoded_Native.Value.Target) = "wasi", "native target");
+           (Ada.Strings.Unbounded.To_String (Decoded_Native.Value.Library) = "wasi", "native library");
          AUnit.Assertions.Assert
-           (Ada.Strings.Unbounded.To_String (Decoded_Native.Value.Key) = "native-print-integer",
-            "native key");
+           (Ada.Strings.Unbounded.To_String (Decoded_Native.Value.Function_Name) = "native-print-integer",
+            "native function");
          AUnit.Assertions.Assert
            (Instructions.Length (Subroutines.Get_Instructions (Decoded_Sub)) = 0, "native empty body");
       end;

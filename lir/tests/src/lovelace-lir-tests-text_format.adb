@@ -101,6 +101,23 @@ package body Lovelace.Lir.Tests.Text_Format is
       end;
 
       declare
+         Intrinsic_Module : Modules.Module := Modules.Create ("io");
+         Print_Sub        : Subroutines.Subroutine :=
+           Support.Make_Subroutine ("print", Types.Unit, Flags => Subroutines.Export_Flag);
+      begin
+         Subroutines.Set_Intrinsic (Print_Sub);
+         Modules.Append_Subroutine (Intrinsic_Module, Print_Sub);
+         declare
+            Text : constant String :=
+              Ada.Strings.Unbounded.To_String (Support.Must_To_Text (Intrinsic_Module, "intrinsic"));
+         begin
+            Support.Assert_Contains (Text, "export", "intrinsic export");
+            Support.Assert_Contains (Text, "intrinsic", "intrinsic flag word");
+            Support.Assert_Contains (Text, "(body))", "intrinsic empty body");
+         end;
+      end;
+
+      declare
          Call_Module : Modules.Module := Modules.Create ("m");
          Sink        : constant Subroutines.Subroutine := Support.Make_Subroutine ("Sink", Types.Unit);
          Caller      : Subroutines.Subroutine := Support.Make_Subroutine ("Caller", Types.Unit);

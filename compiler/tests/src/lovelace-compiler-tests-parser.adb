@@ -103,7 +103,7 @@ package body Lovelace.Compiler.Tests.Parser is
         & ASCII.LF
         & "{ TEMPORARY note }"
         & ASCII.LF
-        & "export native(""wasi"", ""native-print-integer"") procedure print(value : integer);"
+        & "export @native(""wasi"", ""native-print-integer"") procedure print(value : integer);"
         & ASCII.LF
         & "end.";
       Glued_Source   : constant String := "program{c}Hello;begin{}end.";
@@ -548,26 +548,38 @@ package body Lovelace.Compiler.Tests.Parser is
       pragma Unreferenced (The_Test);
       package U renames Ada.Strings.Unbounded;
       Exported_Source : constant String :=
-        "module Lib; export native(""wasi"", ""native-print-integer"") procedure print(value : integer); end.";
+        "module Lib; export @native(""libx"", ""print_fn"") procedure print(value : integer); end.";
       Plain_Source    : constant String :=
-        "module Lib; native(""wasi"", ""native-print-integer"") procedure print(value : integer); end.";
+        "module Lib; @native(""libx"", ""print_fn"") procedure print(value : integer); end.";
+      Intrinsic_Source : constant String :=
+        "module Lib; export @intrinsic procedure print(value : integer); end.";
+      Obsolete        : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module Lib; native(""wasi"", ""native-print-integer"") procedure print(value : integer); end.",
+           "obsolete native");
       With_Body       : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
         Support.Must_Fail_Parse
-          ("module Lib; native(""wasi"", ""native-print-integer"") procedure print(value : integer);"
+          ("module Lib; @native(""libx"", ""print_fn"") procedure print(value : integer);"
            & " begin end; end.",
            "native with begin");
+      Intrinsic_Body  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module Lib; @intrinsic procedure print(value : integer); begin end; end.",
+           "intrinsic with begin");
       Missing_Comma   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
         Support.Must_Fail_Parse
-          ("module Lib; native(""wasi"" ""native-print-integer"") procedure print(value : integer); end.",
+          ("module Lib; @native(""libx"" ""print_fn"") procedure print(value : integer); end.",
            "native missing comma");
       Missing_Paren   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
         Support.Must_Fail_Parse
-          ("module Lib; native ""wasi"", ""native-print-integer"" procedure print(value : integer); end.",
+          ("module Lib; @native ""libx"", ""print_fn"" procedure print(value : integer); end.",
            "native missing paren");
       Exported_Module : constant Ast.Module := Support.Must_Parse (Exported_Source, "native export");
       Plain_Module    : constant Ast.Module := Support.Must_Parse (Plain_Source, "native plain");
+      Intrinsic_Mod   : constant Ast.Module := Support.Must_Parse (Intrinsic_Source, "intrinsic");
       Exported_Sub    : constant Ast.Subroutine := Ast.Get_Subroutine (Exported_Module, 1);
       Plain_Sub       : constant Ast.Subroutine := Ast.Get_Subroutine (Plain_Module, 1);
+      Intrinsic_Sub   : constant Ast.Subroutine := Ast.Get_Subroutine (Intrinsic_Mod, 1);
       Exported_Native : constant Ast.Native_Binding_Option := Ast.Native (Exported_Sub);
       Plain_Native    : constant Ast.Native_Binding_Option := Ast.Native (Plain_Sub);
    begin
@@ -577,18 +589,28 @@ package body Lovelace.Compiler.Tests.Parser is
       AUnit.Assertions.Assert (Ast.Length (Ast.Get_Body (Exported_Sub)) = 0, "exported empty body");
       AUnit.Assertions.Assert (Exported_Native.Present, "exported binding present");
       AUnit.Assertions.Assert
-        (U.To_String (Exported_Native.Value.Target) = "wasi", "exported target");
+        (U.To_String (Exported_Native.Value.Library) = "libx", "exported library");
       AUnit.Assertions.Assert
-        (U.To_String (Exported_Native.Value.Key) = "native-print-integer", "exported key");
+        (U.To_String (Exported_Native.Value.Function_Name) = "print_fn", "exported function");
       AUnit.Assertions.Assert (not Ast.Has_Export (Ast.Get_Flags (Plain_Sub)), "plain no export");
       AUnit.Assertions.Assert (Ast.Has_Native (Ast.Get_Flags (Plain_Sub)), "plain has native");
       AUnit.Assertions.Assert (Plain_Native.Present, "plain binding present");
-      AUnit.Assertions.Assert (U.To_String (Plain_Native.Value.Target) = "wasi", "plain target");
+      AUnit.Assertions.Assert (U.To_String (Plain_Native.Value.Library) = "libx", "plain library");
       AUnit.Assertions.Assert
-        (U.To_String (Plain_Native.Value.Key) = "native-print-integer", "plain key");
+        (U.To_String (Plain_Native.Value.Function_Name) = "print_fn", "plain function");
+      AUnit.Assertions.Assert (Ast.Has_Export (Ast.Get_Flags (Intrinsic_Sub)), "intrinsic export");
+      AUnit.Assertions.Assert (Ast.Has_Intrinsic (Ast.Get_Flags (Intrinsic_Sub)), "intrinsic flag");
+      AUnit.Assertions.Assert (not Ast.Has_Native (Ast.Get_Flags (Intrinsic_Sub)), "intrinsic not native");
+      AUnit.Assertions.Assert (not Ast.Native (Intrinsic_Sub).Present, "intrinsic no binding");
+      Support.Assert_Parser_Error_Count (Obsolete, 1, "obsolete native");
+      Support.Assert_Parser_Error_Code
+        (Obsolete, 1, Lovelace.Compiler.Parser.Obsolete_Native_Modifier, "obsolete native code");
       Support.Assert_Parser_Error_Count (With_Body, 1, "native with begin");
       Support.Assert_Parser_Error_Code
         (With_Body, 1, Lovelace.Compiler.Parser.Unexpected_Token, "native with begin code");
+      Support.Assert_Parser_Error_Count (Intrinsic_Body, 1, "intrinsic with begin");
+      Support.Assert_Parser_Error_Code
+        (Intrinsic_Body, 1, Lovelace.Compiler.Parser.Unexpected_Token, "intrinsic with begin code");
       Support.Assert_Parser_Error_Count (Missing_Comma, 1, "native missing comma");
       Support.Assert_Parser_Error_Code
         (Missing_Comma, 1, Lovelace.Compiler.Parser.Unexpected_Token, "native missing comma code");

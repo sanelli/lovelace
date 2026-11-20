@@ -13,13 +13,13 @@ todos:
     status: completed
   - id: "4"
     content: "4. Diagnostics: Unknown_Intrinsic (LV00025) + Obsolete_Native_Modifier (LV00026); retire emitting LV00021; wire Reporting + diagnostics.md; gnatformat."
-    status: pending
+    status: completed
   - id: "5"
     content: "5. AST/LIR: Intrinsic_Flag; Native_Binding Library/Function for @native only; text/binary codecs + Validate; LIR AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Parser: [export] @intrinsic|@native(\"…\",\"…\") procedure; hard-reject keyword native(…); AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Intrinsics table + IR gen: match module+name+params+return; unknown @intrinsic → LV00025; lower @native binding; AUnit; gnatformat."
     status: pending

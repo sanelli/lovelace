@@ -64,6 +64,9 @@ package body Lovelace.Compiler.Reporting is
 
          when Ir_Generator.Unknown_Native_Binding =>
             return Error_Codes.Unknown_Native_Binding;
+
+         when Ir_Generator.Unknown_Intrinsic      =>
+            return Error_Codes.Unknown_Intrinsic;
       end case;
    end To_Error_Code;
 
@@ -88,6 +91,9 @@ package body Lovelace.Compiler.Reporting is
 
          when Parser.Invalid_Flavor_Condition =>
             return Error_Codes.Invalid_Flavor_Condition;
+
+         when Parser.Obsolete_Native_Modifier =>
+            return Error_Codes.Obsolete_Native_Modifier;
       end case;
    end To_Error_Code;
 

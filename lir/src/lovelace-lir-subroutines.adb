@@ -40,6 +40,11 @@ package body Lovelace.Lir.Subroutines is
       return (Flags and Export_Flag) /= 0;
    end Has_Export;
 
+   function Has_Intrinsic (Flags : Subroutine_Flags) return Boolean is
+   begin
+      return (Flags and Intrinsic_Flag) /= 0;
+   end Has_Intrinsic;
+
    function Has_Native (Flags : Subroutine_Flags) return Boolean is
    begin
       return (Flags and Native_Flag) /= 0;
@@ -55,14 +60,24 @@ package body Lovelace.Lir.Subroutines is
       return The_Subroutine.Origin_Value;
    end Origin;
 
-   procedure Set_Native_Binding (The_Subroutine : in out Subroutine; Target : String; Key : String) is
+   procedure Set_Intrinsic (The_Subroutine : in out Subroutine) is
    begin
-      The_Subroutine.Flags := The_Subroutine.Flags or Native_Flag;
+      The_Subroutine.Flags :=
+        (The_Subroutine.Flags or Intrinsic_Flag) and not Native_Flag;
+      The_Subroutine.Native_Value := (Present => False);
+   end Set_Intrinsic;
+
+   procedure Set_Native_Binding
+     (The_Subroutine : in out Subroutine; Library : String; Function_Name : String)
+   is
+   begin
+      The_Subroutine.Flags :=
+        (The_Subroutine.Flags or Native_Flag) and not Intrinsic_Flag;
       The_Subroutine.Native_Value :=
         (Present => True,
          Value   =>
-           (Target => Ada.Strings.Unbounded.To_Unbounded_String (Target),
-            Key    => Ada.Strings.Unbounded.To_Unbounded_String (Key)));
+           (Library       => Ada.Strings.Unbounded.To_Unbounded_String (Library),
+            Function_Name => Ada.Strings.Unbounded.To_Unbounded_String (Function_Name)));
    end Set_Native_Binding;
 
    procedure Set_Origin (The_Subroutine : in out Subroutine; The_Origin : Subroutine_Origin) is

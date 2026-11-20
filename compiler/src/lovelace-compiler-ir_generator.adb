@@ -240,25 +240,25 @@ package body Lovelace.Compiler.Ir_Generator is
                end if;
 
                declare
-                  Target : constant String :=
-                    Ada.Strings.Unbounded.To_String (Ast_Native.Value.Target);
-                  Key    : constant String :=
-                    Ada.Strings.Unbounded.To_String (Ast_Native.Value.Key);
+                  Library       : constant String :=
+                    Ada.Strings.Unbounded.To_String (Ast_Native.Value.Library);
+                  Function_Name : constant String :=
+                    Ada.Strings.Unbounded.To_String (Ast_Native.Value.Function_Name);
                begin
-                  if not Native_Binding_Allowed (Target, Key) then
+                  if not Native_Binding_Allowed (Library, Function_Name) then
                      return
                        Failure
                          (Unknown_Native_Binding,
                           Ast.Name_Span (Symbol.The_Subroutine),
-                          "unknown native binding native("""
-                          & Target
+                          "unknown native binding @native("""
+                          & Library
                           & """, """
-                          & Key
+                          & Function_Name
                           & """)");
                   end if;
 
                   Lovelace.Lir.Subroutines.Set_Native_Binding
-                    (Lir_Subroutine, Target, Key);
+                    (Lir_Subroutine, Library, Function_Name);
                end;
             else
                if Ast_Native.Present then
@@ -485,6 +485,10 @@ package body Lovelace.Compiler.Ir_Generator is
 
       if Ast.Has_Native (Flags) then
          Result := Result or Lovelace.Lir.Subroutines.Native_Flag;
+      end if;
+
+      if Ast.Has_Intrinsic (Flags) then
+         Result := Result or Lovelace.Lir.Subroutines.Intrinsic_Flag;
       end if;
 
       return Result;

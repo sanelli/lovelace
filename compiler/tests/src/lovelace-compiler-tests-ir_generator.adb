@@ -546,11 +546,11 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       pragma Unreferenced (The_Test);
       package U renames Ada.Strings.Unbounded;
       Ok_Source      : constant String :=
-        "module Lib; export native(""wasi"", ""native-print-integer"") procedure print(value : integer); end.";
+        "module Lib; export @native(""wasi"", ""native-print-integer"") procedure print(value : integer); end.";
       Bad_Key_Source : constant String :=
-        "module Lib; native(""wasi"", ""print-char"") procedure print(value : integer); end.";
+        "module Lib; @native(""wasi"", ""print-char"") procedure print(value : integer); end.";
       Bad_Target     : constant String :=
-        "module Lib; native(""web"", ""native-print-integer"") procedure print(value : integer); end.";
+        "module Lib; @native(""web"", ""native-print-integer"") procedure print(value : integer); end.";
       Ok_Module      : constant Ast.Module := Support.Must_Parse (Ok_Source, "native ok");
       Lir_Module     : constant Modules.Module := Support.Must_Generate (Ok_Module, "native ok");
       Lir_Sub        : constant Subroutines.Subroutine := Modules.Get_Subroutine (Lir_Module, 1);
@@ -568,9 +568,9 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
         (Lovelace.Lir.Instructions.Length (Subroutines.Get_Instructions (Lir_Sub)) = 0,
          "empty body");
       AUnit.Assertions.Assert (The_Native.Present, "binding present");
-      AUnit.Assertions.Assert (U.To_String (The_Native.Value.Target) = "wasi", "target");
+      AUnit.Assertions.Assert (U.To_String (The_Native.Value.Library) = "wasi", "library");
       AUnit.Assertions.Assert
-        (U.To_String (The_Native.Value.Key) = "native-print-integer", "key");
+        (U.To_String (The_Native.Value.Function_Name) = "native-print-integer", "function");
       AUnit.Assertions.Assert (Bad_Key_Error.Code = Ir_Gen.Unknown_Native_Binding, "bad key code");
       AUnit.Assertions.Assert (Bad_Target_Err.Code = Ir_Gen.Unknown_Native_Binding, "bad target code");
    end Test_Native_Binding;
