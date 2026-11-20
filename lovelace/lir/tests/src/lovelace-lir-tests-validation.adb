@@ -54,6 +54,25 @@ package body Lovelace.Lir.Tests.Validation is
       end;
 
       declare
+         Dup_Local_Mod : Modules.Module := Modules.Create ("m");
+         Dup_Local_Sub : Subroutines.Subroutine := Support.Make_Subroutine ("P", Types.Unit);
+         Clash_Mod     : Modules.Module := Modules.Create ("m");
+         Clash_Params  : Types.Parameter_Sequence := Types.Empty_Sequence;
+         Clash_Sub     : Subroutines.Subroutine;
+      begin
+         Subroutines.Append_Local (Dup_Local_Sub, "x", Types.I32);
+         Subroutines.Append_Local (Dup_Local_Sub, "x", Types.I32);
+         Modules.Append_Subroutine (Dup_Local_Mod, Dup_Local_Sub);
+         Support.Assert_Validate_Error (Dup_Local_Mod, Errors.Duplicate_Name, "duplicate local name");
+
+         Types.Append (Clash_Params, "x", Types.I32);
+         Clash_Sub := Support.Make_Subroutine ("P", Types.Unit, Parameters => Clash_Params);
+         Subroutines.Append_Local (Clash_Sub, "x", Types.I32);
+         Modules.Append_Subroutine (Clash_Mod, Clash_Sub);
+         Support.Assert_Validate_Error (Clash_Mod, Errors.Duplicate_Name, "local clashes with parameter");
+      end;
+
+      declare
          Flag_Only      : Modules.Module := Modules.Create ("m");
          With_Body      : Modules.Module := Modules.Create ("m");
          With_Entry     : Modules.Module := Modules.Create ("m");

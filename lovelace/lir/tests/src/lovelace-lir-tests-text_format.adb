@@ -76,10 +76,27 @@ package body Lovelace.Lir.Tests.Text_Format is
          Support.Assert_Contains (I32_Text, "(result i32)", "result i32");
          Support.Assert_Contains (Param_Text, "(param ""a"" i8 ""b"" u8 ""c"" f32)", "param list");
          Support.Assert_Contains (Param_Text, "(result unit)", "param result");
+         Support.Assert_Not_Contains (Param_Text, "(local", "no local form");
          Support.Assert_Contains (Flag_Text, "export", "export");
          Support.Assert_Contains (Flag_Text, "entrypoint", "entrypoint");
          Support.Assert_Contains (Flag_Text, "noop", "noop");
          Support.Assert_Contains (Flag_Text, "(body", "body");
+      end;
+
+      declare
+         Local_Mod : Modules.Module := Modules.Create ("m");
+         Local_Sub : Subroutines.Subroutine := Support.Make_Subroutine ("P", Types.Unit);
+         Local_Text : Ada.Strings.Unbounded.Unbounded_String;
+      begin
+         Subroutines.Append_Local (Local_Sub, "tmp", Types.I32);
+         Subroutines.Append_Local (Local_Sub, "flag", Types.I32);
+         Modules.Append_Subroutine (Local_Mod, Local_Sub);
+         Local_Text := Support.Must_To_Text (Local_Mod, "locals");
+         Support.Assert_Contains
+           (Ada.Strings.Unbounded.To_String (Local_Text),
+            "(local ""tmp"" i32 ""flag"" i32)",
+            "local list");
+         Support.Assert_Binary_Round_Trip (Local_Mod, "locals round-trip");
       end;
 
       declare

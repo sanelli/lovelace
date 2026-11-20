@@ -106,10 +106,22 @@ package Lovelace.Lir.Subroutines is
    --  @param Item Instruction to append.
    procedure Append_Instruction (The_Subroutine : in out Subroutine; Item : Instructions.Instruction);
 
+   --  Append a named local (flat list; nested scopes are frontend-only).
+   --  @param The_Subroutine Subroutine to extend.
+   --  @param Name UTF-8 local name.
+   --  @param The_Type Local value type.
+   procedure Append_Local
+     (The_Subroutine : in out Subroutine; Name : String; The_Type : Types.Value_Type);
+
    --  Signature of The_Subroutine.
    --  @param The_Subroutine Subroutine to query.
    --  @return Signature record.
    function Get_Signature (The_Subroutine : Subroutine) return Signature;
+
+   --  Flat local list of The_Subroutine (after parameters; empty for native/intrinsic).
+   --  @param The_Subroutine Subroutine to query.
+   --  @return Ordered named locals.
+   function Get_Locals (The_Subroutine : Subroutine) return Types.Parameter_Sequence;
 
    --  Flag bits of The_Subroutine.
    --  @param The_Subroutine Subroutine to query.
@@ -155,6 +167,7 @@ private
 
    type Subroutine is record
       The_Signature    : Signature;
+      Locals           : Types.Parameter_Sequence := Types.Empty_Sequence;
       Flags            : Subroutine_Flags := 0;
       Origin_Value     : Origin_Option := (Present => False);
       Native_Value     : Native_Binding_Option := (Present => False);

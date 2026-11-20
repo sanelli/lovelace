@@ -17,7 +17,7 @@ package Lovelace.Lir.Errors is
    --  @enum Invalid_Presence Origin presence byte is not 0 or 1.
    --  @enum Invalid_Offset Subroutine preamble offset is out of range or inconsistent.
    --  @enum Empty_Name Module, dependency, subroutine, or parameter name is empty.
-   --  @enum Duplicate_Name Duplicate dependency, subroutine, or parameter name.
+   --  @enum Duplicate_Name Duplicate dependency, subroutine, parameter, or local name.
    --  @enum Duplicate_Entrypoint More than one Entrypoint flag.
    --  @enum Self_Dependency A dependency name equals the module name.
    --  @enum Invalid_Call_Target Call Target_Index is 0 or past Subroutine_Count.

@@ -35,6 +35,10 @@ package Lovelace.Compiler.Tests.Backend is
    --  @param The_Test Unused fixture.
    procedure Test_Const_And_Call_Body (The_Test : in out Fixture);
 
+   --  LIR locals widen into WAT `(local …)` after parameters.
+   --  @param The_Test Unused fixture.
+   procedure Test_Typed_Locals (The_Test : in out Fixture);
+
    --  Non-exported Unit procedure parameters widen into core WAT/WASM functypes.
    --  @param The_Test Unused fixture.
    procedure Test_Typed_Parameters (The_Test : in out Fixture);

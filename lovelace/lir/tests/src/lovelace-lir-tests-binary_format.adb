@@ -38,6 +38,17 @@ package body Lovelace.Lir.Tests.Binary_Format is
               (As_Result_Module, Support.Make_Subroutine (Name => "R", Return_Type => The_Type));
             Support.Assert_Binary_Round_Trip (As_Param_Module, "param " & Types.Value_Type'Image (The_Type));
             Support.Assert_Binary_Round_Trip (As_Result_Module, "result " & Types.Value_Type'Image (The_Type));
+
+            declare
+               As_Local_Module : Modules.Module := Modules.Create ("m");
+               Local_Sub       : Subroutines.Subroutine :=
+                 Support.Make_Subroutine (Name => "L", Return_Type => Types.Unit);
+            begin
+               Subroutines.Append_Local (Local_Sub, "v", The_Type);
+               Modules.Append_Subroutine (As_Local_Module, Local_Sub);
+               Support.Assert_Binary_Round_Trip
+                 (As_Local_Module, "local " & Types.Value_Type'Image (The_Type));
+            end;
          end;
       end loop;
    end Test_All_Value_Types;
@@ -105,9 +116,10 @@ package body Lovelace.Lir.Tests.Binary_Format is
          declare
             Typed_Bytes : constant Ada.Streams.Stream_Element_Array := Support.Must_Encode (Typed, "typed");
          begin
-            --  Return type is 14 bytes before end: param_count+flags+origin+native+instr_count.
+            --  Return type is 18 bytes before end:
+            --  param_count + local_count + flags + origin + native + instr_count.
             Support.Assert_Decode_Error
-              (Support.Replace_Byte (Typed_Bytes, Typed_Bytes'Last - 14, 16#FF#), Errors.Unknown_Type, "unknown type");
+              (Support.Replace_Byte (Typed_Bytes, Typed_Bytes'Last - 18, 16#FF#), Errors.Unknown_Type, "unknown type");
          end;
       end;
 

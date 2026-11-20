@@ -22,13 +22,13 @@ todos:
     status: completed
   - id: "7"
     content: "7. LIR: local slots on subroutines (types + names); text/binary/Validate; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. IR generator: flatten nested block locals into subroutine slots; map types; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Backend: map LIR locals into existing Local_Types / wasm locals (no get/set yet if unused); AUnit as needed; gnatformat."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Docs: token-grammar, tokenizer, compilation-unit-grammar, parser, lir, ir-generator, codegen; lock roadmap 1.002 step 5."
     status: pending

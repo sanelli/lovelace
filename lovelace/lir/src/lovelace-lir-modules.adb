@@ -195,10 +195,51 @@ package body Lovelace.Lir.Modules is
             end loop;
 
             declare
+               Locals : constant Types.Parameter_Sequence := Subroutines.Get_Locals (The_Subroutine);
+            begin
+               for Local_Index in 1 .. Types.Length (Locals) loop
+                  declare
+                     The_Local       : constant Types.Parameter := Types.Element (Locals, Local_Index);
+                     Local_Name_Text : constant String := Ada.Strings.Unbounded.To_String (The_Local.Name);
+                  begin
+                     if Local_Name_Text'Length = 0 then
+                        return Errors.Validation_Results.From_Failure (Errors.Empty_Name);
+                     end if;
+
+                     if not Is_Valid_Utf_8 (Local_Name_Text) then
+                        return Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
+                     end if;
+
+                     for Prior_Local_Index in 1 .. Local_Index - 1 loop
+                        declare
+                           Prior_Local : constant Types.Parameter := Types.Element (Locals, Prior_Local_Index);
+                        begin
+                           if Ada.Strings.Unbounded.To_String (Prior_Local.Name) = Local_Name_Text then
+                              return Errors.Validation_Results.From_Failure (Errors.Duplicate_Name);
+                           end if;
+                        end;
+                     end loop;
+
+                     for Parameter_Index in 1 .. Types.Length (The_Signature.Parameters) loop
+                        declare
+                           The_Parameter : constant Types.Parameter :=
+                             Types.Element (The_Signature.Parameters, Parameter_Index);
+                        begin
+                           if Ada.Strings.Unbounded.To_String (The_Parameter.Name) = Local_Name_Text then
+                              return Errors.Validation_Results.From_Failure (Errors.Duplicate_Name);
+                           end if;
+                        end;
+                     end loop;
+                  end;
+               end loop;
+            end;
+
+            declare
                The_Flags   : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (The_Subroutine);
                The_Native  : constant Subroutines.Native_Binding_Option := Subroutines.Native (The_Subroutine);
                Body_Instrs : constant Instructions.Instruction_Sequence :=
                  Subroutines.Get_Instructions (The_Subroutine);
+               Local_Count : constant Natural := Types.Length (Subroutines.Get_Locals (The_Subroutine));
             begin
                if Subroutines.Has_Entrypoint (The_Flags) then
                   Entrypoint_Count := Entrypoint_Count + 1;
@@ -218,6 +259,10 @@ package body Lovelace.Lir.Modules is
                   end if;
 
                   if Instructions.Length (Body_Instrs) /= 0 then
+                     return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+                  end if;
+
+                  if Local_Count /= 0 then
                      return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
                   end if;
                end if;
@@ -243,6 +288,10 @@ package body Lovelace.Lir.Modules is
                   end if;
 
                   if Instructions.Length (Body_Instrs) /= 0 then
+                     return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+                  end if;
+
+                  if Local_Count /= 0 then
                      return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
                   end if;
                end if;

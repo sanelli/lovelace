@@ -35,6 +35,10 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  @param The_Test Unused fixture.
    procedure Test_Filename_Shared (The_Test : in out Fixture);
 
+   --  Nested declare locals flatten into ordered LIR local slots with mapped types.
+   --  @param The_Test Unused fixture.
+   procedure Test_Flattened_Locals (The_Test : in out Fixture);
+
    --  Unicode and @-prefixed identifiers preserve names into LIR.
    --  @param The_Test Unused fixture.
    procedure Test_Identifier_Names (The_Test : in out Fixture);

@@ -137,6 +137,7 @@ package body Lovelace.Lir.Binary is
    procedure Append_Subroutine (Buffer : in out Byte_Sequence; The_Subroutine : Subroutines.Subroutine) is
       The_Signature : constant Subroutines.Signature := Subroutines.Get_Signature (The_Subroutine);
       Params        : constant Types.Parameter_Sequence := The_Signature.Parameters;
+      Locals        : constant Types.Parameter_Sequence := Subroutines.Get_Locals (The_Subroutine);
       Body_Instrs   : constant Instructions.Instruction_Sequence := Subroutines.Get_Instructions (The_Subroutine);
    begin
       Append_String (Buffer, Ada.Strings.Unbounded.To_String (The_Signature.Name));
@@ -148,6 +149,15 @@ package body Lovelace.Lir.Binary is
          begin
             Append_String (Buffer, Ada.Strings.Unbounded.To_String (The_Parameter.Name));
             Append_Byte (Buffer, Types.To_Code (The_Parameter.The_Type));
+         end;
+      end loop;
+      Append_U32 (Buffer, Interfaces.Unsigned_32 (Types.Length (Locals)));
+      for Local_Index in 1 .. Types.Length (Locals) loop
+         declare
+            The_Local : constant Types.Parameter := Types.Element (Locals, Local_Index);
+         begin
+            Append_String (Buffer, Ada.Strings.Unbounded.To_String (The_Local.Name));
+            Append_Byte (Buffer, Types.To_Code (The_Local.The_Type));
          end;
       end loop;
       Append_U32 (Buffer, Interfaces.Unsigned_32 (Subroutines.Get_Flags (The_Subroutine)));
@@ -511,9 +521,11 @@ package body Lovelace.Lir.Binary is
       Name_Text         : Ada.Strings.Unbounded.Unbounded_String;
       Return_Code       : Interfaces.Unsigned_8;
       Parameter_Count   : Interfaces.Unsigned_32;
+      Local_Count       : Interfaces.Unsigned_32;
       Flags_Value       : Interfaces.Unsigned_32;
       Instruction_Count : Interfaces.Unsigned_32;
       Parameters        : Types.Parameter_Sequence := Types.Empty_Sequence;
+      Locals            : Types.Parameter_Sequence := Types.Empty_Sequence;
       Return_Option     : Types.Value_Type_Options.Option;
    begin
       if not Read_String (Bytes, Cursor, Name_Text) then
@@ -562,6 +574,35 @@ package body Lovelace.Lir.Binary is
             end case;
          end;
       end loop;
+      if not Read_U32 (Bytes, Cursor, Local_Count) then
+         Code := Errors.Truncated;
+         return False;
+      end if;
+      for Unused in 1 .. Natural (Local_Count) loop
+         declare
+            Local_Name  : Ada.Strings.Unbounded.Unbounded_String;
+            Type_Code   : Interfaces.Unsigned_8;
+            Type_Option : Types.Value_Type_Options.Option;
+         begin
+            if not Read_String (Bytes, Cursor, Local_Name) then
+               Code := Errors.Truncated;
+               return False;
+            end if;
+            if not Read_Byte (Bytes, Cursor, Type_Code) then
+               Code := Errors.Truncated;
+               return False;
+            end if;
+            Type_Option := Types.From_Code (Type_Code);
+            case Type_Option.Present is
+               when False =>
+                  Code := Errors.Unknown_Type;
+                  return False;
+
+               when True  =>
+                  Types.Append (Locals, Ada.Strings.Unbounded.To_String (Local_Name), Type_Option.Value);
+            end case;
+         end;
+      end loop;
       if not Read_U32 (Bytes, Cursor, Flags_Value) then
          Code := Errors.Truncated;
          return False;
@@ -571,6 +612,16 @@ package body Lovelace.Lir.Binary is
         Subroutines.Create
           (The_Signature => (Name => Name_Text, Return_Type => Return_Option.Value, Parameters => Parameters),
            Flags         => Subroutines.Subroutine_Flags (Flags_Value));
+      for Local_Index in 1 .. Types.Length (Locals) loop
+         declare
+            The_Local : constant Types.Parameter := Types.Element (Locals, Local_Index);
+         begin
+            Subroutines.Append_Local
+              (The_Subroutine,
+               Ada.Strings.Unbounded.To_String (The_Local.Name),
+               The_Local.The_Type);
+         end;
+      end loop;
 
       if not Parse_Subroutine_Origin (Bytes, Cursor, The_Subroutine, Code) then
          return False;

@@ -404,6 +404,24 @@ package body Lovelace.Compiler.Tests.Backend is
       Assert_Not_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "$_start", "two exports wat start");
    end Test_Two_Exports;
 
+   procedure Test_Typed_Locals (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      The_Module   : Modules.Module := Modules.Create ("Locals");
+      The_Sub      : Subroutines.Subroutine := Make_Unit_Subroutine ("Run", Subroutines.Entrypoint_Flag);
+      Wat_Emitted  : Lovelace.Compiler.Backend.Wat_Emit_Result;
+   begin
+      Subroutines.Append_Local (The_Sub, "a", Types.I32);
+      Subroutines.Append_Local (The_Sub, "b", Types.F64);
+      Subroutines.Append_Local (The_Sub, "c", Types.U8);
+      Modules.Append_Subroutine (The_Module, The_Sub);
+      Wat_Emitted := Must_Emit_Wat (The_Module, "typed locals wat");
+
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
+         "(local i32 f64 i32)",
+         "typed locals wat local section");
+   end Test_Typed_Locals;
+
    procedure Test_Typed_Parameters (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Parameters   : Types.Parameter_Sequence := Types.Empty_Sequence;

@@ -38,6 +38,12 @@ package body Lovelace.Compiler.Backend.Lowering is
    function Map_Core_Parameter_Type (The_Type : Types.Value_Type; Mapped : out Model.Core_Value_Type) return Boolean;
    --  Map a non-Unit LIR parameter type to a core WASM value type. False when unsupported.
 
+   function Map_Locals
+     (Locals : Types.Parameter_Sequence;
+      Mapped : out Model.Core_Local_Sequence;
+      Detail : out Ada.Strings.Unbounded.Unbounded_String) return Boolean;
+   --  Map LIR named locals to core local types. False when a local type is unsupported.
+
    function Map_Parameters
      (Parameters : Types.Parameter_Sequence;
       Mapped     : out Model.Core_Parameter_Sequence;
@@ -134,7 +140,10 @@ package body Lovelace.Compiler.Backend.Lowering is
                end if;
 
                declare
-                  Local_Types : Model.Core_Local_Sequence := Model.Empty_Locals;
+                  Local_Types   : Model.Core_Local_Sequence := Model.Empty_Locals;
+                  Local_Detail  : Ada.Strings.Unbounded.Unbounded_String;
+                  Lir_Locals    : constant Types.Parameter_Sequence :=
+                    Subroutines.Get_Locals (The_Subroutine);
                begin
                   if Subroutines.Has_Intrinsic (The_Flags) then
                      declare
@@ -181,6 +190,18 @@ package body Lovelace.Compiler.Backend.Lowering is
                      --  `@native` FFI is parse/LIR-only in this slice; emit an empty noop body.
                      null;
                   else
+                     if not Map_Locals
+                              (Locals => Lir_Locals, Mapped => Local_Types, Detail => Local_Detail)
+                     then
+                        return
+                          Failure
+                            (Unsupported_Type,
+                             "unsupported local type in subroutine "
+                             & Source_Name
+                             & ": "
+                             & Ada.Strings.Unbounded.To_String (Local_Detail));
+                     end if;
+
                      Lower_Instruction_Body
                        (The_Instructions => Subroutines.Get_Instructions (The_Subroutine),
                         Body_Out         => Body_Out,
@@ -307,6 +328,36 @@ package body Lovelace.Compiler.Backend.Lowering is
             return True;
       end case;
    end Map_Core_Parameter_Type;
+
+   function Map_Locals
+     (Locals : Types.Parameter_Sequence;
+      Mapped : out Model.Core_Local_Sequence;
+      Detail : out Ada.Strings.Unbounded.Unbounded_String) return Boolean
+   is
+   begin
+      Mapped := Model.Empty_Locals;
+      Detail := Ada.Strings.Unbounded.Null_Unbounded_String;
+
+      for Index in 1 .. Types.Length (Locals) loop
+         declare
+            The_Local : constant Types.Parameter := Types.Element (Locals, Index);
+            Core_Type : Model.Core_Value_Type;
+         begin
+            if not Map_Core_Parameter_Type (The_Local.The_Type, Core_Type) then
+               Detail :=
+                 Ada.Strings.Unbounded.To_Unbounded_String
+                   (Ada.Strings.Unbounded.To_String (The_Local.Name)
+                    & " has type "
+                    & Types.Value_Type'Image (The_Local.The_Type));
+               return False;
+            end if;
+
+            Model.Append (Sequence => Mapped, The_Type => Core_Type);
+         end;
+      end loop;
+
+      return True;
+   end Map_Locals;
 
    function Map_Parameters
      (Parameters : Types.Parameter_Sequence;

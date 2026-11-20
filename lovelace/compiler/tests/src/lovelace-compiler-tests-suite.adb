@@ -409,6 +409,10 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Ir_Generator.Test_Filename_Shared'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
+           ("ir generator: flattened locals",
+            Lovelace.Compiler.Tests.Ir_Generator.Test_Flattened_Locals'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
            ("ir generator: identifier names",
             Lovelace
               .Compiler
@@ -492,6 +496,10 @@ package body Lovelace.Compiler.Tests.Suite is
         (Backend_Caller.Create
            ("backend: const and call body",
             Lovelace.Compiler.Tests.Backend.Test_Const_And_Call_Body'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: typed locals",
+            Lovelace.Compiler.Tests.Backend.Test_Typed_Locals'Access));
       Result.Add_Test
         (Backend_Caller.Create
            ("backend: typed parameters",

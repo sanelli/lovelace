@@ -5,10 +5,18 @@ package body Lovelace.Lir.Subroutines is
       Instructions.Append (The_Subroutine.Instruction_Body, Item);
    end Append_Instruction;
 
+   procedure Append_Local
+     (The_Subroutine : in out Subroutine; Name : String; The_Type : Types.Value_Type)
+   is
+   begin
+      Types.Append (The_Subroutine.Locals, Name, The_Type);
+   end Append_Local;
+
    function Create (The_Signature : Signature; Flags : Subroutine_Flags := 0) return Subroutine is
    begin
       return
         (The_Signature    => The_Signature,
+         Locals           => Types.Empty_Sequence,
          Flags            => Flags,
          Origin_Value     => (Present => False),
          Native_Value     => (Present => False),
@@ -24,6 +32,11 @@ package body Lovelace.Lir.Subroutines is
    begin
       return The_Subroutine.Instruction_Body;
    end Get_Instructions;
+
+   function Get_Locals (The_Subroutine : Subroutine) return Types.Parameter_Sequence is
+   begin
+      return The_Subroutine.Locals;
+   end Get_Locals;
 
    function Get_Signature (The_Subroutine : Subroutine) return Signature is
    begin

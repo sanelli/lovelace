@@ -505,8 +505,20 @@ package body Lovelace.Compiler.Ir_Generator is
       Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine)
       return Generate_Result
    is
+      Locals     : constant Ast.Local_Sequence := Ast.Locals (The_Body);
       Statements : constant Ast.Statement_Sequence := Ast.Statements (The_Body);
    begin
+      for Local_Index in 1 .. Ast.Length (Locals) loop
+         declare
+            The_Local : constant Ast.Local_Variable := Ast.Element (Locals, Local_Index);
+         begin
+            Lovelace.Lir.Subroutines.Append_Local
+              (Lir_Subroutine,
+               Ada.Strings.Unbounded.To_String (The_Local.Parameter_Name),
+               Map_Value_Type (The_Local.Parameter_Type));
+         end;
+      end loop;
+
       for Index in 1 .. Ast.Length (Statements) loop
          declare
             The_Statement : constant Ast.Statement := Ast.Element (Statements, Index);

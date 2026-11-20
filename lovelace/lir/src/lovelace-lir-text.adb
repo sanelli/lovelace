@@ -254,6 +254,9 @@ package body Lovelace.Lir.Text is
                Body_Instrs     : constant Instructions.Instruction_Sequence :=
                  Subroutines.Get_Instructions (The_Subroutine);
                Parameter_Count : constant Natural := Types.Length (The_Signature.Parameters);
+               Locals          : constant Types.Parameter_Sequence :=
+                 Subroutines.Get_Locals (The_Subroutine);
+               Local_Count     : constant Natural := Types.Length (Locals);
             begin
                Append_Line (Buffer, Indent (1) & "(subroutine");
                Ada.Strings.Unbounded.Append (Buffer, Indent (2) & "(name ");
@@ -309,6 +312,20 @@ package body Lovelace.Lir.Text is
                   end case;
                end;
 
+               if Local_Count > 0 then
+                  Ada.Strings.Unbounded.Append (Buffer, Indent (2) & "(local");
+                  for Local_Index in 1 .. Local_Count loop
+                     declare
+                        The_Local : constant Types.Parameter := Types.Element (Locals, Local_Index);
+                     begin
+                        Ada.Strings.Unbounded.Append (Buffer, " ");
+                        Append_Quoted (Buffer, Ada.Strings.Unbounded.To_String (The_Local.Name));
+                        Ada.Strings.Unbounded.Append (Buffer, " " & Type_Token (The_Local.The_Type));
+                     end;
+                  end loop;
+                  Append_Line (Buffer, ")");
+               end if;
+
                if Instructions.Length (Body_Instrs) = 0 then
                   Append_Line (Buffer, Indent (2) & "(body))");
                else
@@ -316,7 +333,8 @@ package body Lovelace.Lir.Text is
                   for Instruction_Index in 1 .. Instructions.Length (Body_Instrs) loop
                      declare
                         Token : constant String :=
-                          Instruction_Token (Instructions.Element (Body_Instrs, Instruction_Index));
+                          Instruction_Token
+                            (Instructions.Element (Body_Instrs, Instruction_Index));
                      begin
                         if Instruction_Index < Instructions.Length (Body_Instrs) then
                            Append_Line (Buffer, Indent (3) & Token);

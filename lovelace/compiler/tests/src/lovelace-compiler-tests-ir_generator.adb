@@ -404,6 +404,59 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       end case;
    end Test_Filename_Shared;
 
+   procedure Test_Flattened_Locals (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String :=
+        "program Demo;"
+        & ASCII.LF
+        & "declare"
+        & ASCII.LF
+        & "   Outer : integer;"
+        & ASCII.LF
+        & "   Flag : boolean;"
+        & ASCII.LF
+        & "begin"
+        & ASCII.LF
+        & "   declare"
+        & ASCII.LF
+        & "      Inner : float<32>;"
+        & ASCII.LF
+        & "      Byte : unsigned integer<8>;"
+        & ASCII.LF
+        & "   begin"
+        & ASCII.LF
+        & "   end;"
+        & ASCII.LF
+        & "end.";
+      Ast_Module  : constant Ast.Module := Support.Must_Parse (Source_Text, "flattened locals");
+      Lir_Module  : constant Modules.Module := Support.Must_Generate (Ast_Module, "flattened locals");
+      Lir_Sub     : constant Subroutines.Subroutine := Modules.Get_Subroutine (Lir_Module, 1);
+      Locals      : constant Lovelace.Lir.Types.Parameter_Sequence := Subroutines.Get_Locals (Lir_Sub);
+   begin
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Types.Length (Locals) = 4, "four flattened locals");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Lovelace.Lir.Types.Element (Locals, 1).Name) = "Outer",
+         "Outer name");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Types.Element (Locals, 1).The_Type = Lovelace.Lir.Types.I32, "Outer i32");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Lovelace.Lir.Types.Element (Locals, 2).Name) = "Flag",
+         "Flag name");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Types.Element (Locals, 2).The_Type = Lovelace.Lir.Types.I32, "Flag boolean to i32");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Lovelace.Lir.Types.Element (Locals, 3).Name) = "Inner",
+         "Inner name");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Types.Element (Locals, 3).The_Type = Lovelace.Lir.Types.F32, "Inner f32");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Lovelace.Lir.Types.Element (Locals, 4).Name) = "Byte",
+         "Byte name");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Types.Element (Locals, 4).The_Type = Lovelace.Lir.Types.U8, "Byte u8");
+   end Test_Flattened_Locals;
+
    procedure Test_Identifier_Names (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Cafe_Name   : constant String :=
