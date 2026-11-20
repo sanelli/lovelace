@@ -42,6 +42,10 @@ The toolchain is one Ada **executable** (`lovelace`) plus **static** libraries i
 | **`augusta/lovelace/`** | Augusta `.love` modules (in-tree `AUGUSTA_HOME`) |
 | **`augusta/libaugusta/`** | Freestanding Ada native Augusta (planned) |
 | **`augusta/libaugusta-js/`** | Web JS glue for Augusta (planned) |
+| **`ide/lsp/`** | Language Server Protocol for Lovelace and LIR (planned) |
+| **`ide/TextMate/`** | Shared TextMate syntax grammars (planned) |
+| **`ide/vscode/`** | Visual Studio Code extension (planned) |
+| **`ide/jetbrains/`** | JetBrains plugin; WebStorm primary (planned) |
 | **`samples/`** | Lovelace samples used for testing |
 | **`docs/`** | Human documentation (CLI, grammar, HOW TOs) |
 | **`scripts/`** | Scripts to compile and run samples |

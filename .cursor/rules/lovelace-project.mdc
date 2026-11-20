@@ -43,6 +43,10 @@ Shared Ada under **`lovelace/`**: **`common/`** (`lovelace_common`), **`lir/`** 
 | `augusta/lovelace/` | Augusta `.love` modules (in-tree `AUGUSTA_HOME`) |
 | `augusta/libaugusta/` | Freestanding Ada native Augusta (**the only dynamic** library; planned) |
 | `augusta/libaugusta-js/` | Web JS glue (planned) |
+| `ide/lsp/` | Language Server Protocol for Lovelace and LIR (planned) |
+| `ide/TextMate/` | Shared TextMate grammars for `.love` and LIR (planned) |
+| `ide/vscode/` | VS Code extension (LSP + TextMate + build/run/debug; planned) |
+| `ide/jetbrains/` | JetBrains plugin (WebStorm primary; planned) |
 | `samples/` | `.love` samples under **feature subfolders** only (`samples/<feature>/…`; see samples rule) |
 
 Build system is **Alire**: **one crate per Ada component**, plus a thin root crate `lovelace_workspace` that only `depends-on` + pins existing crates. See the Alire crates rule. Do not add further top-level **component** crates. Do not put several component GPRs in one `alire.toml`.
