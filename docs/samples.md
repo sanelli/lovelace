@@ -27,6 +27,7 @@ For **every** new user-facing feature, add at least one `.love` file under `samp
 | [`samples/io/HelloPrint.love`](../samples/io/HelloPrint.love) | `import augusta.std.io;` then `augusta.std.io.print(42);` (needs `AUGUSTA_HOME=augusta` or `-I augusta`; wasi `print` is `@intrinsic`) |
 | [`samples/comments/Comments.love`](../samples/comments/Comments.love) | `{ … }` block comments (non-nesting; ignored like whitespace) |
 | [`samples/literals/Literals.love`](../samples/literals/Literals.love) | Integer literals with `0x` / `0b` / `0o` prefixes in call args |
+| [`samples/boolean/Boolean.love`](../samples/boolean/Boolean.love) | `boolean` params and `true`/`false` call args |
 | [`samples/directives/FlavorSelect.love`](../samples/directives/FlavorSelect.love) | Flavor `#if` / `#elsif` / `#else` / `#end` (default `--flavor wasi` keeps `WasiOnly`) |
 | [`samples/calls/SameModuleCall.love`](../samples/calls/SameModuleCall.love) | Same-unit qualified call with integer literal (`SameModuleCall.Sink(42)`) |
 | [`samples/resolve/Caller.love`](../samples/resolve/Caller.love) | Multi-unit program: `import Lib` / `import pkg.Util` and cross-module calls |

@@ -7,7 +7,8 @@ tokens        = { whitespace | comment | token | error } ;
 token         = keyword | identifier | punctuation | integer_literal
               | float_literal | directive | string_literal ;
 keyword       = "program" | "module" | "begin" | "end" | "export" | "import" | "native"
-              | "procedure" | "integer" | "float" | "signed" | "unsigned" ;
+              | "procedure" | "integer" | "float" | "signed" | "unsigned"
+              | "boolean" | "true" | "false" ;
               (* case-sensitive *)
 punctuation   = ";" | "." | "(" | ")" | "," | ":" | "<" | ">" | "=" ;
 directive     = "#if" | "#elsif" | "#else" | "#end" ;
@@ -66,6 +67,7 @@ Examples:
 | `import Foo.Bar;` | `import` `Foo` `.` `Bar` `;` |
 | `42` `-3u16` `0xFFs32` `0b1010` `0o755` | integer literals |
 | `3.14` `7.` `1e3` `7f32` `2.3f64` | float literals |
+| `boolean` `true` `false` | keywords |
 | `#if` `#elsif` `#else` `#end` | directive tokens |
 | `"wasi"` | string literal (lexeme includes quotes) |
 | `flavor = "web"` | identifier `flavor`, `=`, string `"web"` |

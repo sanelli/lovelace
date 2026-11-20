@@ -14,6 +14,7 @@ with Lovelace.Lir.Types;
 package body Lovelace.Compiler.Ir_Generator is
 
    use type Interfaces.Integer_32;
+   use type Lovelace.Compiler.Types.Type_Kind;
    use type Lovelace.Lir.Subroutines.Subroutine_Flags;
    use type Lovelace.Lir.Types.Value_Type;
 
@@ -403,49 +404,89 @@ package body Lovelace.Compiler.Ir_Generator is
               Map_Value_Type (Formal.Parameter_Type);
             Lexeme       : constant String :=
               Ada.Strings.Unbounded.To_String (The_Argument.Lexeme);
-            Evaluated    : constant Literals.Integer_32_Results.Result :=
-              Literals.To_Integer_32 (Lexeme);
          begin
-            if not Formal_Accepts_I32_Constant (Formal_Lir) then
-               return
-                 Failure
-                   (Invalid_Arguments,
-                    The_Argument.Span,
-                    "argument "
-                    & Natural'Image (Arg_Index)
-                    & " of '"
-                    & Callee_Text
-                    & "' has a formal type that cannot take an i32 constant in this slice");
-            end if;
-
-            case Evaluated.Ok is
-               when False =>
-                  return
-                    Failure
-                      (Invalid_Arguments,
-                       The_Argument.Span,
-                       "invalid integer literal argument: "
-                       & Ada.Strings.Unbounded.To_String
-                           (Evaluated.Error.Detail));
-
-               when True  =>
-                  if Formal_Lir
-                     in Lovelace.Lir.Types.U8
-                      | Lovelace.Lir.Types.U16
-                      | Lovelace.Lir.Types.U32
-                    and then Evaluated.Value < 0
-                  then
+            case Formal.Parameter_Type.Kind is
+               when Lovelace.Compiler.Types.Boolean =>
+                  if Lexeme = "true" then
+                     Lovelace.Lir.Subroutines.Append_Instruction
+                       (Lir_Subroutine,
+                        (Operation     => Lovelace.Lir.Opcodes.Constant_I32,
+                         Immediate_I32 => 1));
+                  elsif Lexeme = "false" then
+                     Lovelace.Lir.Subroutines.Append_Instruction
+                       (Lir_Subroutine,
+                        (Operation     => Lovelace.Lir.Opcodes.Constant_I32,
+                         Immediate_I32 => 0));
+                  else
                      return
                        Failure
                          (Invalid_Arguments,
                           The_Argument.Span,
-                          "negative literal cannot be passed to an unsigned parameter");
+                          "argument "
+                          & Natural'Image (Arg_Index)
+                          & " of '"
+                          & Callee_Text
+                          & "' expects true or false for a boolean parameter");
                   end if;
 
-                  Lovelace.Lir.Subroutines.Append_Instruction
-                    (Lir_Subroutine,
-                     (Operation     => Lovelace.Lir.Opcodes.Constant_I32,
-                      Immediate_I32 => Evaluated.Value));
+               when Lovelace.Compiler.Types.Integer =>
+                  declare
+                     Evaluated : constant Literals.Integer_32_Results.Result :=
+                       Literals.To_Integer_32 (Lexeme);
+                  begin
+                     if not Formal_Accepts_I32_Constant (Formal_Lir) then
+                        return
+                          Failure
+                            (Invalid_Arguments,
+                             The_Argument.Span,
+                             "argument "
+                             & Natural'Image (Arg_Index)
+                             & " of '"
+                             & Callee_Text
+                             & "' has a formal type that cannot take an i32 constant in this slice");
+                     end if;
+
+                     case Evaluated.Ok is
+                        when False =>
+                           return
+                             Failure
+                               (Invalid_Arguments,
+                                The_Argument.Span,
+                                "invalid integer literal argument: "
+                                & Ada.Strings.Unbounded.To_String
+                                    (Evaluated.Error.Detail));
+
+                        when True  =>
+                           if Formal_Lir
+                              in Lovelace.Lir.Types.U8
+                               | Lovelace.Lir.Types.U16
+                               | Lovelace.Lir.Types.U32
+                             and then Evaluated.Value < 0
+                           then
+                              return
+                                Failure
+                                  (Invalid_Arguments,
+                                   The_Argument.Span,
+                                   "negative literal cannot be passed to an unsigned parameter");
+                           end if;
+
+                           Lovelace.Lir.Subroutines.Append_Instruction
+                             (Lir_Subroutine,
+                              (Operation     => Lovelace.Lir.Opcodes.Constant_I32,
+                               Immediate_I32 => Evaluated.Value));
+                     end case;
+                  end;
+
+               when Lovelace.Compiler.Types.Unit | Lovelace.Compiler.Types.Float =>
+                  return
+                    Failure
+                      (Invalid_Arguments,
+                       The_Argument.Span,
+                       "argument "
+                       & Natural'Image (Arg_Index)
+                       & " of '"
+                       & Callee_Text
+                       & "' has a formal type that cannot take a literal argument in this slice");
             end case;
          end;
       end loop;

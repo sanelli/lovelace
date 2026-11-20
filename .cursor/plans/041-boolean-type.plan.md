@@ -22,19 +22,19 @@ todos:
     status: completed
   - id: "7"
     content: "7. IR: Map_Value_Type Boolean→I32; call-arg type check (boolean vs integer); lower true→1 / false→0 Constant_I32; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. Docs: token-grammar, tokenizer, compilation-unit-grammar, parser, ir-generator, samples; lock roadmap 1.002 step 4 + LIR mapping."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Sample samples/boolean/… + docs/samples.md."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Run all tests (scripts/run-tests.ps1)."
-    status: pending
+    status: completed
   - id: "11"
     content: "11. Push (proxy env cleared) and open a PR with gh pr create."
-    status: pending
+    status: completed
 isProject: false
 ---
 
