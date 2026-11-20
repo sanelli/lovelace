@@ -22,6 +22,7 @@ package body Lovelace.Main.Tests.Help is
           (Ada.Directories.Current_Directory, "help-build-out.txt");
       Discard_File : Ada.Text_IO.File_Type;
       Succeeded    : Boolean;
+      Contents     : Ada.Strings.Unbounded.Unbounded_String;
    begin
       Tokens.Append ("build");
 
@@ -31,11 +32,28 @@ package body Lovelace.Main.Tests.Help is
       Ada.Text_IO.Set_Output (Ada.Text_IO.Standard_Output.all);
       Ada.Text_IO.Close (Discard_File);
 
+      AUnit.Assertions.Assert (Succeeded, "help build");
+
+      declare
+         File : Ada.Text_IO.File_Type;
+      begin
+         Ada.Text_IO.Open (File, Ada.Text_IO.In_File, Discard_Path);
+         while not Ada.Text_IO.End_Of_File (File) loop
+            Ada.Strings.Unbounded.Append
+              (Contents, Ada.Text_IO.Get_Line (File) & ASCII.LF);
+         end loop;
+         Ada.Text_IO.Close (File);
+      end;
+
       if Ada.Directories.Exists (Discard_Path) then
          Ada.Directories.Delete_File (Discard_Path);
       end if;
 
-      AUnit.Assertions.Assert (Succeeded, "help build");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Fixed.Index
+           (Ada.Strings.Unbounded.To_String (Contents), "--generate-tlir")
+         > 0,
+         "help build mentions --generate-tlir");
    end Test_Help_Build_Topic;
 
    procedure Test_Help_Mentions_Build (The_Test : in out Fixture) is

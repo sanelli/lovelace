@@ -54,6 +54,7 @@ A `.love` path is **required** for now. Future builds may accept `.pjlove` / `.s
 | Option | Effect |
 | --- | --- |
 | `--force` | Rebuild every stage from the `.love` file; ignore incremental mtime skips |
+| `--generate-tlir` | Also write `obj/<Unit>.tlir` (textual LIR) next to the binary `.lir`. Not used for incremental mtime decisions. |
 | `--no-wit` | Do not write the companion `.wit` file (WIT may still be computed when emitting) |
 | `--output-format <fmt>` | `wasm` (default), `wat`, `wasm,wat`, or `wat,wasm` |
 | `--output-folder <path>` | Output root (default `.output` in the current working directory) |
@@ -86,12 +87,13 @@ Under the output root:
 
 ```text
 obj/<Unit>.lir
+obj/<Unit>.tlir    # only with --generate-tlir
 bin/<Unit>.wasm    # if format includes wasm
 bin/<Unit>.wat     # if format includes wat
 bin/<Unit>.wit     # unless --no-wit
 ```
 
-The `.lir` file is LIR **1.0** (origins included; see [lir-binary.md](lir-binary.md)). Backends: [codegen.md](codegen.md).
+The `.lir` file is LIR **1.0** (origins included; see [lir-binary.md](lir-binary.md)). With `--generate-tlir`, the CLI also writes the companion textual form ([lir-text.md](lir-text.md)). Backends: [codegen.md](codegen.md).
 
 #### Incremental builds
 
@@ -99,6 +101,8 @@ The `.lir` file is LIR **1.0** (origins included; see [lir-binary.md](lir-binary
 | --- | --- |
 | Frontend (tokenize / parse / IR / write `.lir`) | `mtime(.lir) >= mtime(.love)` |
 | Backend (wasm / wat / wit) | each artifact’s mtime is `>=` mtime of `.lir` |
+
+`.tlir` is **never** used for skip decisions (presence or mtime). When `--generate-tlir` is set, textual LIR is rewritten whenever the in-memory LIR module is available (including when the frontend was skipped and `.lir` was only re-read).
 
 Skipped stages log an `[info]` line (for example `LIR up to date, skipping frontend`).
 
@@ -117,6 +121,7 @@ lovelace build samples/module/Foo.Bar.love
 lovelace build samples/directives/FlavorSelect.love
 lovelace build samples/directives/FlavorSelect.love --flavor native
 lovelace --no-logo build samples/program/Hello.love --force
+lovelace build samples/program/Hello.love --generate-tlir
 lovelace build samples/program/Hello.love --output-format wasm,wat --output-folder /tmp/out
 lovelace build samples/program/Hello.love --no-wit --output-format wat
 ```

@@ -34,6 +34,9 @@ package body Lovelace.Main.Help is
         (File, "  --flavor <name>          wasi (default), native, or web");
       Put_Line
         (File,
+         "  --generate-tlir          Also write obj/<Unit>.tlir (textual LIR)");
+      Put_Line
+        (File,
          "  -I/--include-path <dir>  Extra module search root (repeatable)");
       Put_Line
         (File,
@@ -57,6 +60,8 @@ package body Lovelace.Main.Help is
       Put_Line (File, "Output layout under the output folder:");
       Put_Line (File, "  obj/<Unit>.lir");
       Put_Line
+        (File, "  obj/<Unit>.tlir           # only with --generate-tlir");
+      Put_Line
         (File, "  bin/<Unit>.wasm and/or .wat, plus .wit unless --no-wit");
       Put_Line (File, "");
       Put_Line
@@ -64,10 +69,14 @@ package body Lovelace.Main.Help is
          "Incremental builds skip IR/backend when outputs are newer than all");
       Put_Line
         (File, "loaded .love inputs. Pass --force to rebuild every stage.");
+      Put_Line
+        (File,
+         ".tlir is never consulted for mtime skips (even with --generate-tlir).");
       Put_Line (File, "");
       Put_Line (File, "Examples:");
       Put_Line (File, "  lovelace build foo.love");
       Put_Line (File, "  lovelace build foo.love --force");
+      Put_Line (File, "  lovelace build foo.love --generate-tlir");
       Put_Line (File, "  lovelace build foo.love -I libs --include-path more");
       Put_Line (File, "  lovelace build foo.love --no-wit");
       Put_Line

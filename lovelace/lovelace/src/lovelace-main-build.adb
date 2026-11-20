@@ -20,6 +20,7 @@ with Lovelace.Compiler.Tokenizer;
 with Lovelace.Compiler.Unit_Graph;
 with Lovelace.Lir.Binary;
 with Lovelace.Lir.Modules;
+with Lovelace.Lir.Text;
 with Lovelace.Main.Terminal;
 
 package body Lovelace.Main.Build is
@@ -42,6 +43,7 @@ package body Lovelace.Main.Build is
    package Tokenizer renames Lovelace.Compiler.Tokenizer;
    package Unit_Graph renames Lovelace.Compiler.Unit_Graph;
    package Lir_Binary renames Lovelace.Lir.Binary;
+   package Lir_Text renames Lovelace.Lir.Text;
    package Modules renames Lovelace.Lir.Modules;
 
    type Build_Options is record
@@ -50,6 +52,7 @@ package body Lovelace.Main.Build is
         Ada.Strings.Unbounded.To_Unbounded_String (".output");
       No_Wit        : Boolean := False;
       Force         : Boolean := False;
+      Generate_Tlir : Boolean := False;
       Output_Format : Output_Format_Set;
       The_Flavor    : Flavor.Flavor := Flavor.Default;
       Include_Paths : Module_Path.Path_Sequence;
@@ -114,6 +117,7 @@ package body Lovelace.Main.Build is
            Ada.Strings.Unbounded.To_Unbounded_String (".output"),
          No_Wit        => False,
          Force         => False,
+         Generate_Tlir => False,
          Output_Format => (Want_Wasm => True, Want_Wat => False),
          The_Flavor    => Flavor.Default,
          Include_Paths => Module_Path.Path_Vectors.Empty_Vector);
@@ -127,6 +131,9 @@ package body Lovelace.Main.Build is
                Index := Index + 1;
             elsif Token = "--force" then
                Options.Force := True;
+               Index := Index + 1;
+            elsif Token = "--generate-tlir" then
+               Options.Generate_Tlir := True;
                Index := Index + 1;
             elsif Token = "--flavor" then
                if Index >= Argument_Count then
@@ -305,6 +312,7 @@ package body Lovelace.Main.Build is
       Bin_Dir       : Ada.Strings.Unbounded.Unbounded_String;
       Program_Name  : Ada.Strings.Unbounded.Unbounded_String;
       Lir_Path      : Ada.Strings.Unbounded.Unbounded_String;
+      Tlir_Path     : Ada.Strings.Unbounded.Unbounded_String;
       Wasm_Path     : Ada.Strings.Unbounded.Unbounded_String;
       Wat_Path      : Ada.Strings.Unbounded.Unbounded_String;
       Wit_Path      : Ada.Strings.Unbounded.Unbounded_String;
@@ -344,6 +352,11 @@ package body Lovelace.Main.Build is
           (Compose_Path
              (Ada.Strings.Unbounded.To_String (Obj_Dir),
               Ada.Strings.Unbounded.To_String (Program_Name) & ".lir"));
+      Tlir_Path :=
+        Ada.Strings.Unbounded.To_Unbounded_String
+          (Compose_Path
+             (Ada.Strings.Unbounded.To_String (Obj_Dir),
+              Ada.Strings.Unbounded.To_String (Program_Name) & ".tlir"));
       Wasm_Path :=
         Ada.Strings.Unbounded.To_Unbounded_String
           (Compose_Path
@@ -484,6 +497,12 @@ package body Lovelace.Main.Build is
                                (Ada.Strings.Unbounded.To_String (Obj_Dir),
                                 Ada.Strings.Unbounded.To_String (Program_Name)
                                 & ".lir"));
+                        Tlir_Path :=
+                          Ada.Strings.Unbounded.To_Unbounded_String
+                            (Compose_Path
+                               (Ada.Strings.Unbounded.To_String (Obj_Dir),
+                                Ada.Strings.Unbounded.To_String (Program_Name)
+                                & ".tlir"));
                         Wasm_Path :=
                           Ada.Strings.Unbounded.To_Unbounded_String
                             (Compose_Path
@@ -668,6 +687,34 @@ package body Lovelace.Main.Build is
 
                                           when True  =>
                                              The_Module := Decoded.Value;
+                                       end case;
+                                    end;
+                                 end if;
+
+                                 if Options.Generate_Tlir then
+                                    Terminal.Put_Info
+                                      ("Writing "
+                                       & Ada.Strings.Unbounded.To_String
+                                           (Tlir_Path));
+                                    declare
+                                       Written :
+                                         constant Lir_Text.Write_Result :=
+                                           Lir_Text.Write
+                                             (The_Module,
+                                              Ada.Strings.Unbounded.To_String
+                                                (Tlir_Path));
+                                    begin
+                                       case Written.Ok is
+                                          when False =>
+                                             Report_Cli_Error
+                                               ("failed to write textual LIR file "
+                                                & Ada.Strings.Unbounded
+                                                    .To_String
+                                                       (Tlir_Path));
+                                             return False;
+
+                                          when True  =>
+                                             null;
                                        end case;
                                     end;
                                  end if;
