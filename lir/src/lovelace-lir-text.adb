@@ -288,6 +288,9 @@ package body Lovelace.Lir.Text is
                if Subroutines.Has_Native (Flags_Value) then
                   Append_Line (Buffer, Indent (2) & "native");
                end if;
+               if Subroutines.Has_Intrinsic (Flags_Value) then
+                  Append_Line (Buffer, Indent (2) & "intrinsic");
+               end if;
 
                declare
                   The_Native : constant Subroutines.Native_Binding_Option := Subroutines.Native (The_Subroutine);
@@ -298,9 +301,10 @@ package body Lovelace.Lir.Text is
 
                      when True  =>
                         Ada.Strings.Unbounded.Append (Buffer, Indent (2) & "(native ");
-                        Append_Quoted (Buffer, Ada.Strings.Unbounded.To_String (The_Native.Value.Target));
+                        Append_Quoted (Buffer, Ada.Strings.Unbounded.To_String (The_Native.Value.Library));
                         Ada.Strings.Unbounded.Append (Buffer, " ");
-                        Append_Quoted (Buffer, Ada.Strings.Unbounded.To_String (The_Native.Value.Key));
+                        Append_Quoted
+                          (Buffer, Ada.Strings.Unbounded.To_String (The_Native.Value.Function_Name));
                         Append_Line (Buffer, ")");
                   end case;
                end;

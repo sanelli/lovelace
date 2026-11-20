@@ -74,6 +74,12 @@ package body Lovelace.Compiler.Error_Codes is
 
          when Stray_Comment_Closer           =>
             return "LV00024";
+
+         when Unknown_Intrinsic              =>
+            return "LV00025";
+
+         when Obsolete_Native_Modifier        =>
+            return "LV00026";
       end case;
    end Label;
 

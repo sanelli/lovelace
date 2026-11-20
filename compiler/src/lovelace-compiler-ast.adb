@@ -162,6 +162,11 @@ package body Lovelace.Compiler.Ast is
       return (Flags and Export_Flag) /= 0;
    end Has_Export;
 
+   function Has_Intrinsic (Flags : Subroutine_Flags) return Boolean is
+   begin
+      return (Flags and Intrinsic_Flag) /= 0;
+   end Has_Intrinsic;
+
    function Has_Native (Flags : Subroutine_Flags) return Boolean is
    begin
       return (Flags and Native_Flag) /= 0;

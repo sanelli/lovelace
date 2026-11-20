@@ -95,7 +95,7 @@ package Lovelace.Compiler.Tests.Parser is
    --  @param The_Test Unused fixture.
    procedure Test_Module_Procedure (The_Test : in out Fixture);
 
-   --  native("wasi", "…") procedure header modifier; reject native + begin / bad args.
+   --  `@intrinsic` / `@native("…","…")` procedure headers; reject obsolete `native(…)` / bad forms.
    --  @param The_Test Unused fixture.
    procedure Test_Native_Procedure (The_Test : in out Fixture);
 

@@ -85,6 +85,12 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert
         (Error_Codes.Label (Error_Codes.Stray_Comment_Closer) = "LV00024",
          "LV00024");
+      AUnit.Assertions.Assert
+        (Error_Codes.Label (Error_Codes.Unknown_Intrinsic) = "LV00025",
+         "LV00025");
+      AUnit.Assertions.Assert
+        (Error_Codes.Label (Error_Codes.Obsolete_Native_Modifier) = "LV00026",
+         "LV00026");
    end Test_Error_Code_Labels;
 
    procedure Test_Format_Shape (The_Test : in out Fixture) is
@@ -185,6 +191,14 @@ package body Lovelace.Compiler.Tests.Diagnostics is
         (Reporting.To_Error_Code (Ir_Generator.Unknown_Native_Binding)
          = Error_Codes.Unknown_Native_Binding,
          "unknown native binding map");
+      AUnit.Assertions.Assert
+        (Reporting.To_Error_Code (Ir_Generator.Unknown_Intrinsic)
+         = Error_Codes.Unknown_Intrinsic,
+         "unknown intrinsic map");
+      AUnit.Assertions.Assert
+        (Reporting.To_Error_Code (Parser.Obsolete_Native_Modifier)
+         = Error_Codes.Obsolete_Native_Modifier,
+         "obsolete native modifier map");
    end Test_Stage_Mappings;
 
    procedure Test_Unit_Kind_Label (The_Test : in out Fixture) is

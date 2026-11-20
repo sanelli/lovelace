@@ -208,16 +208,32 @@ package body Lovelace.Lir.Modules is
                   return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
                end if;
 
+               if Subroutines.Has_Intrinsic (The_Flags) and then Subroutines.Has_Native (The_Flags) then
+                  return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+               end if;
+
+               if Subroutines.Has_Intrinsic (The_Flags) then
+                  if Subroutines.Has_Entrypoint (The_Flags) then
+                     return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+                  end if;
+
+                  if Instructions.Length (Body_Instrs) /= 0 then
+                     return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+                  end if;
+               end if;
+
                if The_Native.Present then
                   declare
-                     Target_Text : constant String := Ada.Strings.Unbounded.To_String (The_Native.Value.Target);
-                     Key_Text    : constant String := Ada.Strings.Unbounded.To_String (The_Native.Value.Key);
+                     Library_Text  : constant String :=
+                       Ada.Strings.Unbounded.To_String (The_Native.Value.Library);
+                     Function_Text : constant String :=
+                       Ada.Strings.Unbounded.To_String (The_Native.Value.Function_Name);
                   begin
-                     if Target_Text'Length = 0 or else Key_Text'Length = 0 then
+                     if Library_Text'Length = 0 or else Function_Text'Length = 0 then
                         return Errors.Validation_Results.From_Failure (Errors.Empty_Name);
                      end if;
 
-                     if not Is_Valid_Utf_8 (Target_Text) or else not Is_Valid_Utf_8 (Key_Text) then
+                     if not Is_Valid_Utf_8 (Library_Text) or else not Is_Valid_Utf_8 (Function_Text) then
                         return Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
                      end if;
                   end;

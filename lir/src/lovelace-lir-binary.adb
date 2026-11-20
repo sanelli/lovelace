@@ -168,8 +168,8 @@ package body Lovelace.Lir.Binary is
 
          when True  =>
             Append_Byte (Buffer, Origin_Present);
-            Append_String (Buffer, Ada.Strings.Unbounded.To_String (The_Native.Value.Target));
-            Append_String (Buffer, Ada.Strings.Unbounded.To_String (The_Native.Value.Key));
+            Append_String (Buffer, Ada.Strings.Unbounded.To_String (The_Native.Value.Library));
+            Append_String (Buffer, Ada.Strings.Unbounded.To_String (The_Native.Value.Function_Name));
       end case;
    end Append_Subroutine_Native;
 

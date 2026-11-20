@@ -23,10 +23,12 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Not_Exported IR Generator: imported procedure exists but lacks Export_Flag (LV00018).
    --  @enum Circular_Import Unit graph: import cycle among compilation units (LV00019).
    --  @enum Ambiguous_Module_Path Unit graph: two or more distinct .love files match one import (LV00020).
-   --  @enum Unknown_Native_Binding IR Generator: native(target, key) not in the closed wasi set (LV00021).
+   --  @enum Unknown_Native_Binding Retired: old native(target, key) closed wasi set (LV00021); no longer emitted.
    --  @enum Unterminated_Comment Tokenizer: opening `{` without a matching `}` (LV00022).
    --  @enum Nested_Comment Tokenizer: `{` inside an open `{` … `}` comment (LV00023).
    --  @enum Stray_Comment_Closer Tokenizer: `}` outside a comment (LV00024).
+   --  @enum Unknown_Intrinsic IR Generator: `@intrinsic` signature not in the closed intrinsic table (LV00025).
+   --  @enum Obsolete_Native_Modifier Parser: keyword `native(…)` header; use `@intrinsic` / `@native` (LV00026).
    type Error_Code is
      (Internal_Error,
       Unrecognized_Symbol,
@@ -51,7 +53,9 @@ package Lovelace.Compiler.Error_Codes is
       Unknown_Native_Binding,
       Unterminated_Comment,
       Nested_Comment,
-      Stray_Comment_Closer);
+      Stray_Comment_Closer,
+      Unknown_Intrinsic,
+      Obsolete_Native_Modifier);
 
    --  Canonical LV##### label for Code.
    --  @param Code Diagnostic kind.

@@ -3,6 +3,7 @@ with Ada.Strings.Unbounded;
 with Interfaces;
 
 with Lovelace.Compiler.Backend.Native_Print;
+with Lovelace.Compiler.Intrinsics;
 with Lovelace.Lir.Errors;
 with Lovelace.Lir.Instructions;
 with Lovelace.Lir.Opcodes;
@@ -135,37 +136,50 @@ package body Lovelace.Compiler.Backend.Lowering is
                declare
                   Local_Types : Model.Core_Local_Sequence := Model.Empty_Locals;
                begin
-                  if Subroutines.Has_Native (The_Flags) then
+                  if Subroutines.Has_Intrinsic (The_Flags) then
                      declare
-                        The_Native : constant Subroutines.Native_Binding_Option :=
-                          Subroutines.Native (The_Subroutine);
+                        Owner_Module : Ada.Strings.Unbounded.Unbounded_String;
+                        Proc_Name    : Ada.Strings.Unbounded.Unbounded_String;
+                        Matched      : Intrinsics.Intrinsic_Kind_Option;
                      begin
-                        if not The_Native.Present then
-                           return Failure (Internal_Error, "native flag without binding after Validate");
-                        end if;
+                        Intrinsics.Split_Lir_Subroutine_Name
+                          (Root_Module_Name => Modules.Name (The_Module),
+                           Lir_Name         => Source_Name,
+                           Module_Name      => Owner_Module,
+                           Subroutine_Name  => Proc_Name);
+                        Matched :=
+                          Intrinsics.Match_Intrinsic
+                            (Module_Name     => Ada.Strings.Unbounded.To_String (Owner_Module),
+                             Subroutine_Name => Ada.Strings.Unbounded.To_String (Proc_Name),
+                             Return_Type     => The_Signature.Return_Type,
+                             Parameters      => The_Signature.Parameters);
 
-                        if Ada.Strings.Unbounded.To_String (The_Native.Value.Target) /= "wasi"
-                          or else Ada.Strings.Unbounded.To_String (The_Native.Value.Key) /= "native-print-integer"
-                        then
+                        if not Matched.Present then
                            return
                              Failure
-                               (Unsupported_Type,
-                                "backend cannot synthesize native binding for subroutine " & Source_Name);
+                               (Internal_Error,
+                                "backend intrinsic table miss for subroutine " & Source_Name);
                         end if;
 
-                        if Parameter_Count /= 1
-                          or else Model.Element (Parameter_Types, 1) /= Model.I32
-                        then
-                           return
-                             Failure
-                               (Unsupported_Type,
-                                "native-print-integer requires a single integer parameter; got subroutine "
-                                & Source_Name);
-                        end if;
+                        case Matched.Kind is
+                           when Intrinsics.Print_Integer_Stdout =>
+                              if Parameter_Count /= 1
+                                or else Model.Element (Parameter_Types, 1) /= Model.I32
+                              then
+                                 return
+                                   Failure
+                                     (Unsupported_Type,
+                                      "print integer intrinsic requires a single integer parameter; got "
+                                      & Source_Name);
+                              end if;
 
-                        Native_Print.Synthesize (Local_Types, Body_Out);
-                        Model.Enable_Wasi_Stdout (The_Model);
+                              Native_Print.Synthesize (Local_Types, Body_Out);
+                              Model.Enable_Wasi_Stdout (The_Model);
+                        end case;
                      end;
+                  elsif Subroutines.Has_Native (The_Flags) then
+                     --  `@native` FFI is parse/LIR-only in this slice; emit an empty noop body.
+                     null;
                   else
                      Lower_Instruction_Body
                        (The_Instructions => Subroutines.Get_Instructions (The_Subroutine),

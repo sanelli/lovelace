@@ -545,34 +545,47 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
    procedure Test_Native_Binding (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       package U renames Ada.Strings.Unbounded;
-      Ok_Source      : constant String :=
-        "module Lib; export native(""wasi"", ""native-print-integer"") procedure print(value : integer); end.";
-      Bad_Key_Source : constant String :=
-        "module Lib; native(""wasi"", ""print-char"") procedure print(value : integer); end.";
-      Bad_Target     : constant String :=
-        "module Lib; native(""web"", ""native-print-integer"") procedure print(value : integer); end.";
-      Ok_Module      : constant Ast.Module := Support.Must_Parse (Ok_Source, "native ok");
-      Lir_Module     : constant Modules.Module := Support.Must_Generate (Ok_Module, "native ok");
-      Lir_Sub        : constant Subroutines.Subroutine := Modules.Get_Subroutine (Lir_Module, 1);
-      The_Native     : constant Subroutines.Native_Binding_Option := Subroutines.Native (Lir_Sub);
-      Bad_Key_Error  : constant Ir_Gen.Ir_Generator_Error :=
-        Support.Must_Fail_Generate (Support.Must_Parse (Bad_Key_Source, "bad key"), "bad key");
-      Bad_Target_Err : constant Ir_Gen.Ir_Generator_Error :=
-        Support.Must_Fail_Generate (Support.Must_Parse (Bad_Target, "bad target"), "bad target");
+      Native_Source     : constant String :=
+        "module Lib; export @native(""libx"", ""print_fn"") procedure print(value : integer); end.";
+      Intrinsic_Ok_Src  : constant String :=
+        "module augusta.std.io; export @intrinsic procedure print(value : integer); end.";
+      Intrinsic_Bad_Src : constant String :=
+        "module Lib; export @intrinsic procedure print(value : integer); end.";
+      Native_Module     : constant Ast.Module := Support.Must_Parse (Native_Source, "native ok");
+      Lir_Native        : constant Modules.Module := Support.Must_Generate (Native_Module, "native ok");
+      Native_Sub        : constant Subroutines.Subroutine := Modules.Get_Subroutine (Lir_Native, 1);
+      The_Native        : constant Subroutines.Native_Binding_Option := Subroutines.Native (Native_Sub);
+      Intrinsic_Module  : constant Ast.Module :=
+        Support.Must_Parse (Intrinsic_Ok_Src, "intrinsic ok");
+      Lir_Intrinsic     : constant Modules.Module :=
+        Support.Must_Generate (Intrinsic_Module, "intrinsic ok");
+      Intrinsic_Sub     : constant Subroutines.Subroutine :=
+        Modules.Get_Subroutine (Lir_Intrinsic, 1);
+      Unknown_Intrinsic : constant Ir_Gen.Ir_Generator_Error :=
+        Support.Must_Fail_Generate
+          (Support.Must_Parse (Intrinsic_Bad_Src, "intrinsic bad"), "intrinsic bad");
    begin
       AUnit.Assertions.Assert
-        (Subroutines.Has_Export (Subroutines.Get_Flags (Lir_Sub)), "export flag");
+        (Subroutines.Has_Export (Subroutines.Get_Flags (Native_Sub)), "native export");
       AUnit.Assertions.Assert
-        (Subroutines.Has_Native (Subroutines.Get_Flags (Lir_Sub)), "native flag");
+        (Subroutines.Has_Native (Subroutines.Get_Flags (Native_Sub)), "native flag");
       AUnit.Assertions.Assert
-        (Lovelace.Lir.Instructions.Length (Subroutines.Get_Instructions (Lir_Sub)) = 0,
-         "empty body");
+        (Lovelace.Lir.Instructions.Length (Subroutines.Get_Instructions (Native_Sub)) = 0,
+         "native empty body");
       AUnit.Assertions.Assert (The_Native.Present, "binding present");
-      AUnit.Assertions.Assert (U.To_String (The_Native.Value.Target) = "wasi", "target");
+      AUnit.Assertions.Assert (U.To_String (The_Native.Value.Library) = "libx", "library");
       AUnit.Assertions.Assert
-        (U.To_String (The_Native.Value.Key) = "native-print-integer", "key");
-      AUnit.Assertions.Assert (Bad_Key_Error.Code = Ir_Gen.Unknown_Native_Binding, "bad key code");
-      AUnit.Assertions.Assert (Bad_Target_Err.Code = Ir_Gen.Unknown_Native_Binding, "bad target code");
+        (U.To_String (The_Native.Value.Function_Name) = "print_fn", "function");
+      AUnit.Assertions.Assert
+        (Subroutines.Has_Intrinsic (Subroutines.Get_Flags (Intrinsic_Sub)), "intrinsic flag");
+      AUnit.Assertions.Assert
+        (not Subroutines.Has_Native (Subroutines.Get_Flags (Intrinsic_Sub)),
+         "intrinsic not native");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Instructions.Length (Subroutines.Get_Instructions (Intrinsic_Sub)) = 0,
+         "intrinsic empty body");
+      AUnit.Assertions.Assert
+        (Unknown_Intrinsic.Code = Ir_Gen.Unknown_Intrinsic, "unknown intrinsic code");
    end Test_Native_Binding;
 
    procedure Test_Parameter_Type_Mapping (The_Test : in out Fixture) is

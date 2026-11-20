@@ -58,14 +58,14 @@ If any subroutine has `Entrypoint_Flag`:
 
 If there is no entrypoint, no `_start` and no `wasi:cli/run` export are produced.
 
-### Native print integer (`native("wasi", "native-print-integer")`)
+### Print integer intrinsic (`@intrinsic` → `Print_Integer_Stdout`)
 
-When a LIR subroutine has `Native_Flag` with binding `wasi` / `native-print-integer`, lowering **replaces** the empty body with a synthesized core function that:
+When a LIR subroutine has `Intrinsic_Flag` and matches `augusta.std.io.print(integer)→Unit`, lowering **replaces** the empty body with a synthesized core function that:
 
 1. Formats the `i32` parameter as decimal ASCII (optional `-`, no trailing newline; special-cases `Integer_32'First`).
 2. Creates a `stream<u8>`, calls imported `wasi:cli/stdout@0.3.0` `write-via-stream`, writes the bytes, drops the writable end, and awaits the completion future (trap on failure / `BLOCKED`).
 
-Emission then attaches the WASI 0.3 import graph (`wasi:cli/types@0.3.0` + `wasi:cli/stdout@0.3.0`), a tiny `$libc` core module (1-page `memory` + `cabi_realloc`), and canon builtins (`stream.new` / async `stream.write` / `stream.drop-writable` / async `future.read` / `future.drop-readable` / `canon lower` of `write-via-stream`). Guest functions live in a second core module that imports those builtins. Without a native print binding, emission stays export-only (no stdout imports / memory).
+Emission then attaches the WASI 0.3 import graph (`wasi:cli/types@0.3.0` + `wasi:cli/stdout@0.3.0`), a tiny `$libc` core module (1-page `memory` + `cabi_realloc`), and canon builtins (`stream.new` / async `stream.write` / `stream.drop-writable` / async `future.read` / `future.drop-readable` / `canon lower` of `write-via-stream`). Guest functions live in a second core module that imports those builtins. Without that intrinsic, emission stays export-only (no stdout imports / memory). `@native` FFI bindings lower to an empty noop core body in this slice (no shared-library invoke yet).
 
 ## Exports
 
@@ -119,7 +119,8 @@ In the component type section, bare `(result)` is a separate `defvaltype`; the `
 | `No_Operation` | Skipped (not emitted) |
 | `Constant_I32` | `i32.const` (core) |
 | `Call` | `call` to the 1-based core function with the same index |
-| `Native_Flag` + `wasi`/`native-print-integer` | Synthesized decimal format + WASI 0.3 stdout write (locals, stores, stream/future builtins) |
+| `Intrinsic_Flag` + `Print_Integer_Stdout` | Synthesized decimal format + WASI 0.3 stdout write (locals, stores, stream/future builtins) |
+| `Native_Flag` (`@native`) | Empty noop core body (FFI not wired yet) |
 
 ## Companion WIT
 
@@ -139,7 +140,7 @@ Rules:
 - Package name: `love:<sanitized-module-name>@0.1.0` (ASCII letters/digits lowercased; every other byte → `-`; empty → `module`).
 - `export wasi:cli/run@0.3.0;` only when an entrypoint exists.
 - One `export <kebab-name>: func();` per nullary `Export_Flag` subroutine.
-- `import wasi:cli/stdout@0.3.0;` when a `native-print-integer` intrinsic is present (component binary also imports `wasi:cli/types@0.3.0` for `error-code`).
+- `import wasi:cli/stdout@0.3.0;` when a `Print_Integer_Stdout` intrinsic is present (component binary also imports `wasi:cli/types@0.3.0` for `error-code`).
 - `Emit_Wasm` and `Emit_Wat` produce the same WIT string for the same LIR module.
 
 ## Running with Wasmtime
@@ -181,6 +182,6 @@ Each failure carries a UTF-8 `Detail` string.
 
 ## Tests
 
-Nested crate `lovelace_compiler_tests` covers export-only, entrypoint, both flags, two exports, noop bodies, const+call bodies, typed core parameters, native-print-integer stdout synthesis, unsupported types, invalid modules, component preamble bytes, and Wasm/Wat WIT equality. Run with `alr -C compiler/tests run`.
+Nested crate `lovelace_compiler_tests` covers export-only, entrypoint, both flags, two exports, noop bodies, const+call bodies, typed core parameters, print-integer intrinsic stdout synthesis, unsupported types, invalid modules, component preamble bytes, and Wasm/Wat WIT equality. Run with `alr -C compiler/tests run`.
 
 End-to-end CLI checks live in `lovelace/integration_tests`: build samples, optionally `wasm-tools validate` every `.wasm`/`.wat`, and run entrypoint programs with `wasmtime` when present.

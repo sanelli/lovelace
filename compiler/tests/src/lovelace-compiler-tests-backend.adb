@@ -327,7 +327,7 @@ package body Lovelace.Compiler.Tests.Backend is
 
    procedure Test_Native_Print_Integer (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      The_Module   : Modules.Module := Modules.Create ("Lib");
+      The_Module   : Modules.Module := Modules.Create ("augusta.std.io");
       Params       : Types.Parameter_Sequence := Types.Empty_Sequence;
       Print_Sub    : Subroutines.Subroutine;
       Wat_Emitted  : Lovelace.Compiler.Backend.Wat_Emit_Result;
@@ -338,7 +338,7 @@ package body Lovelace.Compiler.Tests.Backend is
       Types.Append (Params, "value", Types.I32);
       Print_Sub :=
         Make_Unit_Subroutine_With_Parameters ("print", Subroutines.Export_Flag, Params);
-      Subroutines.Set_Native_Binding (Print_Sub, "wasi", "native-print-integer");
+      Subroutines.Set_Intrinsic (Print_Sub);
       Modules.Append_Subroutine (The_Module, Print_Sub);
 
       Wat_Emitted := Must_Emit_Wat (The_Module, "native print wat");

@@ -34,11 +34,11 @@ export procedure print(value : integer);
 
 | `--flavor` | Body |
 | --- | --- |
-| `wasi` (default) | `native("wasi", "native-print-integer")` — backend synthesizes decimal ASCII + WASI 0.3 `write-via-stream` (no trailing newline). See [codegen.md](codegen.md). |
+| `wasi` (default) | `export @intrinsic procedure print(…);` — matched by signature `augusta.std.io.print(integer)→Unit`; backend synthesizes decimal ASCII + WASI 0.3 `write-via-stream` (no trailing newline). See [codegen.md](codegen.md). |
 | `native` | Empty stub (compiles; does not print yet) |
 | `web` | Empty stub (compiles; does not print yet) |
 
-**TEMPORARY:** the wasi `print` is a `native(…)` binding so the backend can synthesize formatting and stdout writes. Once Lovelace has locals, assignment, loops, and integer arithmetic ([roadmap 1.002](roadmap/1.002-roadmap-replace-synthesized-print.md)), replace it with a normal Lovelace body — not a native — leaving only a narrow `PrintUTF8Character` synthesis until full WASI async is in-language. The same note lives as a `{ … }` comment above the wasi `print` declaration in [`augusta.std.io.love`](../augusta/augusta.std.io.love).
+**TEMPORARY:** the wasi `print` is an `@intrinsic` so the backend can synthesize formatting and stdout writes. Once Lovelace has locals, assignment, loops, and integer arithmetic ([roadmap 1.002](roadmap/1.002-roadmap-replace-synthesized-print.md)), replace it with a normal Lovelace body — not an intrinsic — leaving only a narrow `PrintUTF8Character` synthesis until full WASI async is in-language. The same note lives as a `{ … }` comment above the wasi `print` declaration in [`augusta.std.io.love`](../augusta/augusta.std.io.love).
 
 Example:
 

@@ -17,14 +17,16 @@ package Lovelace.Compiler.Ir_Generator is
    --  @enum Invalid_Arguments Call arity or argument/formal types are not supported.
    --  @enum Call_Without_Import Callee module prefix is neither self nor an import of the caller.
    --  @enum Not_Exported Imported procedure exists but lacks Export_Flag.
-   --  @enum Unknown_Native_Binding native(target, key) is not in the closed wasi intrinsic set.
+   --  @enum Unknown_Native_Binding Retired path for old native(target, key) closed set (kept for mapping).
+   --  @enum Unknown_Intrinsic `@intrinsic` signature is not in the closed intrinsic table.
    type Ir_Generator_Error_Code is
      (Internal_Error,
       Unresolved_Call,
       Invalid_Arguments,
       Call_Without_Import,
       Not_Exported,
-      Unknown_Native_Binding);
+      Unknown_Native_Binding,
+      Unknown_Intrinsic);
 
    --  One IR Generator failure.
    --  @field Code Predefined error code.

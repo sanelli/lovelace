@@ -248,18 +248,20 @@ package body Lovelace.Compiler.Unit_Graph is
                                    Dep_Path,
                                    Source_String,
                                    (case First_Error.Code is
-                                      when Parser.Internal_Error           =>
+                                      when Parser.Internal_Error            =>
                                         Error_Codes.Internal_Error,
-                                      when Parser.Unexpected_End_Of_Input  =>
+                                      when Parser.Unexpected_End_Of_Input   =>
                                         Error_Codes.Unexpected_End_Of_Input,
-                                      when Parser.Unexpected_Token         =>
+                                      when Parser.Unexpected_Token          =>
                                         Error_Codes.Unexpected_Token,
-                                      when Parser.Unexpected_Trailing      =>
+                                      when Parser.Unexpected_Trailing       =>
                                         Error_Codes.Unexpected_Trailing,
-                                      when Parser.Name_Clash               =>
+                                      when Parser.Name_Clash                =>
                                         Error_Codes.Name_Clash,
-                                      when Parser.Invalid_Flavor_Condition =>
-                                        Error_Codes.Invalid_Flavor_Condition));
+                                      when Parser.Invalid_Flavor_Condition  =>
+                                        Error_Codes.Invalid_Flavor_Condition,
+                                      when Parser.Obsolete_Native_Modifier =>
+                                        Error_Codes.Obsolete_Native_Modifier));
                            end;
                         end if;
 

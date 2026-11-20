@@ -56,10 +56,12 @@ See [compilation-unit-grammar.md](compilation-unit-grammar.md) for the full EBNF
 - Leading imports: zero or more `import` qualified-name `;` before the unit keyword.
 - Programs: `program` name `;` `begin` { statement } `end` `.` (no procedures, no `#if`).
 - Modules: `module` qualified name `;` zero or more `module_declaration`s, then `end` `.`.
-- `module_declaration`: `procedure` (ordinary or native) **or** flavor conditional (`#if flavor = "…" … `#end`).
+- `module_declaration`: `procedure` (ordinary, `@intrinsic`, or `@native`) **or** flavor conditional (`#if flavor = "…" … `#end`).
 - Flavor conditional: parse **all** arms; keep only the active arm’s declarations; discard the rest (no AST for inactive arms). Conditions are only `flavor = "wasi"|"native"|"web"`. See [directives.md](directives.md).
 - Ordinary procedure: `[ export ] procedure` name `(` [parameter list] `)` `;` `begin` { statement } `end` `;` — **no** `;` after `begin`.
-- Native procedure: `[ export ] native ( string , string ) procedure` name `(` [parameter list] `)` `;` — **no** `begin`…`end` body; AST sets `Native_Flag` and stores the two string contents (quotes stripped) as target/key.
+- Intrinsic: `[ export ] @intrinsic procedure` name `(` [parameter list] `)` `;` — **no** `begin`…`end`; AST sets `Intrinsic_Flag` (signature checked in IR).
+- Native FFI: `[ export ] @native ( string , string ) procedure` name `(` [parameter list] `)` `;` — **no** `begin`…`end`; AST sets `Native_Flag` and stores library/function (quotes stripped).
+- Keyword `native(…)` procedure headers are rejected (`Obsolete_Native_Modifier` / `LV00026`).
 - Statements (this slice): qualified call `MODULE.SUBROUTINE(` [integer literals] `);` — callee must contain at least one `.`; args are integer literals only.
 - Types: `integer` / `signed integer` / `unsigned integer` with optional `<8|16|32|64>`; `float` with optional `<32|64>`.
 
@@ -79,8 +81,8 @@ Keywords are case-sensitive. The unit terminator after a unit-level `end` is onl
 
 - A module named the qualified identifier (UTF-8 with `.` separators, e.g. `Foo.Bar`)
 - Ordered `Import_Declaration` list (may be empty)
-- Zero or more procedures from **active** declarations only. Optional `export` sets `Export_Flag` (not `Entrypoint_Flag`); optional `native(…)` sets `Native_Flag` and a present native binding; plain procedures keep flags `0`. Inactive `#if` arms do not appear in the AST.
-- Each procedure has unqualified `Name`, `Full_Name` = `ModuleName.ProcedureName`, ordered parameters, Unit return, optional call-statement body (empty when native)
+- Zero or more procedures from **active** declarations only. Optional `export` sets `Export_Flag` (not `Entrypoint_Flag`); optional `@intrinsic` sets `Intrinsic_Flag`; optional `@native(…)` sets `Native_Flag` and a present native binding; plain procedures keep flags `0`. Inactive `#if` arms do not appear in the AST.
+- Each procedure has unqualified `Name`, `Full_Name` = `ModuleName.ProcedureName`, ordered parameters, Unit return, optional call-statement body (empty when intrinsic/native)
 - `Name_Span` on the module covers the whole qualified name
 
 **Call statement:** `Callee_Name` (dotted), `Name_Span`, ordered `Call_Argument` values (lexeme + span). Resolution of the callee is not done in the parser.

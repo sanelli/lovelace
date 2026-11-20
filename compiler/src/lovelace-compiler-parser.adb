@@ -80,6 +80,7 @@ package body Lovelace.Compiler.Parser is
    function Failure_From_Step (Step : Step_Result) return Parse_Result;
    function Import_Name_Exists (Imports : Ast.Import_Sequence; Name : String) return Boolean;
    function Is_Directive (The_Token : Tokens.Token; Expected : Tokens.Directive_Subtype) return Boolean;
+   function Is_Identifier_Lexeme (Source_Text : String; The_Token : Tokens.Token; Lexeme : String) return Boolean;
    function Is_Keyword (The_Token : Tokens.Token; Expected : Tokens.Keyword_Subtype) return Boolean;
    function Is_Punctuation (The_Token : Tokens.Token; Expected : Tokens.Punctuation_Subtype) return Boolean;
    function Make_Failure
@@ -418,6 +419,11 @@ package body Lovelace.Compiler.Parser is
    begin
       return The_Token.Kind = Tokens.Directive and then The_Token.Directive_Value = Expected;
    end Is_Directive;
+
+   function Is_Identifier_Lexeme (Source_Text : String; The_Token : Tokens.Token; Lexeme : String) return Boolean is
+   begin
+      return The_Token.Kind = Tokens.Identifier and then Tokens.Lexeme (Source_Text, The_Token) = Lexeme;
+   end Is_Identifier_Lexeme;
 
    function Is_Keyword (The_Token : Tokens.Token; Expected : Tokens.Keyword_Subtype) return Boolean is
    begin
@@ -1244,7 +1250,8 @@ package body Lovelace.Compiler.Parser is
       if At_End (The_Cursor) then
          return
            Step_End_Of_Input
-             (The_Cursor, "expected ""export"", ""native"", procedure, or ""#if"", found end of input");
+             (The_Cursor,
+              "expected ""export"", ""@intrinsic"", ""@native"", procedure, or ""#if"", found end of input");
       end if;
 
       declare
@@ -1263,6 +1270,8 @@ package body Lovelace.Compiler.Parser is
          if Is_Keyword (Current, Tokens.Export_Keyword)
            or else Is_Keyword (Current, Tokens.Native_Keyword)
            or else Is_Keyword (Current, Tokens.Procedure_Keyword)
+           or else Is_Identifier_Lexeme (Source_Text, Current, "@intrinsic")
+           or else Is_Identifier_Lexeme (Source_Text, Current, "@native")
          then
             return
               Parse_Procedure_Declaration
@@ -1278,7 +1287,7 @@ package body Lovelace.Compiler.Parser is
               Span     => Current.Span,
               Filename => Current.Filename,
               Detail   =>
-                "expected ""export"", ""native"", procedure, or ""#if"", found "
+                "expected ""export"", ""@intrinsic"", ""@native"", procedure, or ""#if"", found "
                 & Describe_Token (Source_Text, Current));
       end;
    end Parse_Module_Declaration;
@@ -1603,23 +1612,25 @@ package body Lovelace.Compiler.Parser is
      (The_Cursor : in out Cursor; Source_Text : String; The_Unit : in out Unit_Parse; Keep_Declarations : Boolean)
       return Step_Result
    is
-      Name_Token     : Tokens.Token := Dummy_Identifier;
-      Procedure_Name : Ada.Strings.Unbounded.Unbounded_String;
-      Module_Name    : constant String := Ada.Strings.Unbounded.To_String (The_Unit.Module_Name);
-      Parameters     : Ast.Parameter_Sequence := Ast.Empty_Parameter_Sequence;
-      Flags          : Ast.Subroutine_Flags := 0;
-      Is_Native      : Boolean := False;
-      Native_Target  : Ada.Strings.Unbounded.Unbounded_String;
-      Native_Key     : Ada.Strings.Unbounded.Unbounded_String;
-      Step           : Step_Result;
-      The_Subroutine : Ast.Subroutine;
-      Target_Token   : Tokens.Token :=
+      Name_Token      : Tokens.Token := Dummy_Identifier;
+      Procedure_Name  : Ada.Strings.Unbounded.Unbounded_String;
+      Module_Name     : constant String := Ada.Strings.Unbounded.To_String (The_Unit.Module_Name);
+      Parameters      : Ast.Parameter_Sequence := Ast.Empty_Parameter_Sequence;
+      Flags           : Ast.Subroutine_Flags := 0;
+      Is_Intrinsic    : Boolean := False;
+      Is_Native       : Boolean := False;
+      Native_Library  : Ada.Strings.Unbounded.Unbounded_String;
+      Native_Function : Ada.Strings.Unbounded.Unbounded_String;
+      Step            : Step_Result;
+      The_Subroutine  : Ast.Subroutine;
+      Library_Token   : Tokens.Token :=
         (Kind => Tokens.String_Literal, Span => Origin_Span, Filename => Source.Absent_Filename);
-      Key_Token      : Tokens.Token :=
+      Function_Token  : Tokens.Token :=
         (Kind => Tokens.String_Literal, Span => Origin_Span, Filename => Source.Absent_Filename);
    begin
-      --  ordinary: [ export ] procedure … ; begin … end ;
-      --  native:   [ export ] native ( string , string ) procedure … ;
+      --  ordinary:   [ export ] procedure … ; begin … end ;
+      --  intrinsic:  [ export ] @intrinsic procedure … ;
+      --  native FFI: [ export ] @native ( string , string ) procedure … ;
       if not At_End (The_Cursor) and then Is_Keyword (Peek (The_Cursor), Tokens.Export_Keyword) then
          Step :=
            Expect_Keyword
@@ -1637,20 +1648,31 @@ package body Lovelace.Compiler.Parser is
       end if;
 
       if not At_End (The_Cursor) and then Is_Keyword (Peek (The_Cursor), Tokens.Native_Keyword) then
-         Step :=
-           Expect_Keyword
-             (The_Cursor  => The_Cursor,
-              Source_Text => Source_Text,
-              Expected    => Tokens.Native_Keyword,
-              Label       => "native");
-         case Step.Ok is
-            when False =>
-               return Step;
+         declare
+            Native_Tok : constant Tokens.Token := Peek (The_Cursor);
+         begin
+            return
+              Make_Failure
+                (Code     => Obsolete_Native_Modifier,
+                 Span     => Native_Tok.Span,
+                 Filename => Native_Tok.Filename,
+                 Detail   =>
+                   "obsolete native(...) modifier; use @intrinsic or @native(""lib"", ""fn"")");
+         end;
+      end if;
 
-            when True  =>
-               Is_Native := True;
-               Flags := Flags or Ast.Native_Flag;
-         end case;
+      if not At_End (The_Cursor)
+        and then Is_Identifier_Lexeme (Source_Text, Peek (The_Cursor), "@intrinsic")
+      then
+         Advance (The_Cursor);
+         Is_Intrinsic := True;
+         Flags := Flags or Ast.Intrinsic_Flag;
+      elsif not At_End (The_Cursor)
+        and then Is_Identifier_Lexeme (Source_Text, Peek (The_Cursor), "@native")
+      then
+         Advance (The_Cursor);
+         Is_Native := True;
+         Flags := Flags or Ast.Native_Flag;
 
          Step :=
            Expect_Punctuation
@@ -1680,10 +1702,10 @@ package body Lovelace.Compiler.Parser is
             end if;
          end;
 
-         Target_Token := Peek (The_Cursor);
+         Library_Token := Peek (The_Cursor);
          Advance (The_Cursor);
-         Native_Target :=
-           Ada.Strings.Unbounded.To_Unbounded_String (String_Literal_Content (Source_Text, Target_Token));
+         Native_Library :=
+           Ada.Strings.Unbounded.To_Unbounded_String (String_Literal_Content (Source_Text, Library_Token));
 
          Step :=
            Expect_Punctuation
@@ -1713,9 +1735,10 @@ package body Lovelace.Compiler.Parser is
             end if;
          end;
 
-         Key_Token := Peek (The_Cursor);
+         Function_Token := Peek (The_Cursor);
          Advance (The_Cursor);
-         Native_Key := Ada.Strings.Unbounded.To_Unbounded_String (String_Literal_Content (Source_Text, Key_Token));
+         Native_Function :=
+           Ada.Strings.Unbounded.To_Unbounded_String (String_Literal_Content (Source_Text, Function_Token));
 
          Step :=
            Expect_Punctuation
@@ -1844,22 +1867,36 @@ package body Lovelace.Compiler.Parser is
             null;
       end case;
 
-      if Is_Native then
+      if Is_Intrinsic or else Is_Native then
          if Keep_Declarations then
-            The_Subroutine :=
-              Ast.Create_Subroutine
-                (Name        => Ada.Strings.Unbounded.To_String (Procedure_Name),
-                 Module_Name => Module_Name,
-                 Name_Span   => Name_Token.Span,
-                 Filename    => Name_Token.Filename,
-                 Flags       => Flags,
-                 Return_Type => Types.Unit_Type,
-                 Parameters  => Parameters,
-                 The_Body    => Ast.Empty_Body,
-                 Native      =>
-                   (Present => True,
-                    Value   =>
-                      (Target => Native_Target, Key => Native_Key)));
+            if Is_Native then
+               The_Subroutine :=
+                 Ast.Create_Subroutine
+                   (Name        => Ada.Strings.Unbounded.To_String (Procedure_Name),
+                    Module_Name => Module_Name,
+                    Name_Span   => Name_Token.Span,
+                    Filename    => Name_Token.Filename,
+                    Flags       => Flags,
+                    Return_Type => Types.Unit_Type,
+                    Parameters  => Parameters,
+                    The_Body    => Ast.Empty_Body,
+                    Native      =>
+                      (Present => True,
+                       Value   =>
+                         (Library => Native_Library, Function_Name => Native_Function)));
+            else
+               The_Subroutine :=
+                 Ast.Create_Subroutine
+                   (Name        => Ada.Strings.Unbounded.To_String (Procedure_Name),
+                    Module_Name => Module_Name,
+                    Name_Span   => Name_Token.Span,
+                    Filename    => Name_Token.Filename,
+                    Flags       => Flags,
+                    Return_Type => Types.Unit_Type,
+                    Parameters  => Parameters,
+                    The_Body    => Ast.Empty_Body,
+                    Native      => (Present => False));
+            end if;
             Ast.Append (Sequence => The_Unit.Subroutines, The_Subroutine => The_Subroutine);
          end if;
          return (Ok => True);
