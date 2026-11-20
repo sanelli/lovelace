@@ -7,7 +7,7 @@ Ordered planning docs. Filenames use `{series}.{nnn}-roadmap-….md`.
 | Id | Doc | Summary |
 | --- | --- | --- |
 | 1.001 | [print integer (WASI)](1.001-roadmap-print-integer-wasi.md) | Flavor `#if`, import/export, multi-unit, synthesized WASI print, HelloPrint E2E |
-| 1.002 | [replace synthesized print](1.002-roadmap-replace-synthesized-print.md) | Comments, `0b`/`0o`/`0x`, float `f`, boolean, `:=`/exprs, ops, if, loop, `byte`, Lovelace `print` |
+| 1.002 | [replace synthesized print](1.002-roadmap-replace-synthesized-print.md) | Comments, `@intrinsic`/`@native`, literals, boolean, `:=`/exprs, ops, if, loop, `byte`, Lovelace `print` |
 | 1.003 | [web print integer](1.003-roadmap-print-integer-web.md) | `--flavor web` console integer print |
 | 1.004 | [native print + libaugusta](1.004-roadmap-print-integer-native.md) | wasmtime embed, freestanding `libaugusta` on Linux/Windows/macOS |
 
