@@ -69,8 +69,43 @@ package body Lovelace.Compiler.Backend.Wat is
    end Core_Value_Type_Name;
 
    function Dollar_Name (Name : String) return String is
+      --  WAT `$id` only allows a closed ASCII idchar set; map other bytes to `_HH`.
+      Hex    : constant String := "0123456789abcdef";
+      Buffer : String (1 .. 1 + Name'Length * 3);
+      Last   : Natural := 0;
    begin
-      return "$" & Name;
+      for Index in Name'Range loop
+         declare
+            Byte : constant Character := Name (Index);
+            Code : constant Natural := Character'Pos (Byte);
+         begin
+            if Byte in 'A' .. 'Z'
+              or else Byte in 'a' .. 'z'
+              or else Byte in '0' .. '9'
+              or else Byte = '_'
+              or else Byte = '-'
+            then
+               Last := Last + 1;
+               Buffer (Last) := Byte;
+            else
+               Last := Last + 1;
+               Buffer (Last) := '_';
+               Last := Last + 1;
+               Buffer (Last) := Hex (1 + Code / 16);
+               Last := Last + 1;
+               Buffer (Last) := Hex (1 + Code mod 16);
+            end if;
+         end;
+      end loop;
+
+      if Last = 0
+        or else Buffer (1) in '0' .. '9'
+        or else Buffer (1) = '-'
+      then
+         return "$n_" & Buffer (1 .. Last);
+      end if;
+
+      return "$" & Buffer (1 .. Last);
    end Dollar_Name;
 
    function Emit_Wat (The_Module : Lovelace.Lir.Modules.Module) return Wat_Emit_Result is

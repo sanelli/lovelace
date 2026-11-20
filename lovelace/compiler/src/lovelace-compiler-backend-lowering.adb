@@ -56,6 +56,7 @@ package body Lovelace.Compiler.Backend.Lowering is
    end Failure;
 
    function Kebab_Export_Name (Name : String) return String is
+      --  Enough room for one kebab char per source byte; collapse dashes after.
       Buffer : String (1 .. Name'Length);
       Last   : Natural := 0;
    begin
@@ -69,18 +70,31 @@ package body Lovelace.Compiler.Backend.Lowering is
             elsif Byte in 'a' .. 'z' or else Byte in '0' .. '9' then
                Last := Last + 1;
                Buffer (Last) := Byte;
-            else
+            elsif Last = 0 or else Buffer (Last) /= '-' then
+               --  Non-alnum → '-'; skip consecutive dashes.
                Last := Last + 1;
                Buffer (Last) := '-';
             end if;
          end;
       end loop;
 
-      if Last = 0 then
-         return "export";
-      end if;
+      declare
+         First : Natural := 1;
+      begin
+         while First <= Last and then Buffer (First) = '-' loop
+            First := First + 1;
+         end loop;
 
-      return Buffer (1 .. Last);
+         while Last >= First and then Buffer (Last) = '-' loop
+            Last := Last - 1;
+         end loop;
+
+         if Last < First then
+            return "export";
+         end if;
+
+         return Buffer (First .. Last);
+      end;
    end Kebab_Export_Name;
 
    function Lower (The_Module : Lovelace.Lir.Modules.Module) return Lower_Result is

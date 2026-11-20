@@ -56,6 +56,69 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
          Ada.Exceptions.Reraise_Occurrence (Error);
    end Test_Build_Validate_And_Run;
 
+   procedure Test_Emoji_Program_Build_Validate_And_Run
+     (The_Test : in out Fixture)
+   is
+      pragma Unreferenced (The_Test);
+      --  U+1F680 ROCKET as UTF-8 (program / file stem).
+      Rocket          : constant String :=
+        [1 => Character'Val (16#F0#),
+         2 => Character'Val (16#9F#),
+         3 => Character'Val (16#9A#),
+         4 => Character'Val (16#80#)];
+      Test_Name       : constant String :=
+        "build: validate and run program emoji rocket";
+      Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
+      Sample_Path     : constant String :=
+        Helpers.Locate_Sample ("emoji", Rocket & ".love");
+      Output_Root     : constant String :=
+        Helpers.Locate_Output_Root ("emoji");
+      Validate_Status : Helpers.Tool_Status;
+      Run_Status      : Helpers.Tool_Status;
+      Outcome         : Helpers.Test_Outcome := Helpers.Ok;
+   begin
+      AUnit.Assertions.Assert
+        (Lovelace_Path'Length > 0, "lovelace executable present");
+
+      Helpers.Reset_Output_Root (Output_Root);
+      Helpers.Build_Sample
+        (Lovelace_Path => Lovelace_Path,
+         Sample_Path   => Sample_Path,
+         Output_Root   => Output_Root,
+         Message       => "emoji program");
+      Helpers.Assert_Build_Artifacts
+        (Output_Root => Output_Root,
+         Unit_Name   => Rocket,
+         Message     => "emoji program");
+      Helpers.Assert_Wat_Contains
+        (Output_Root => Output_Root,
+         Unit_Name   => Rocket,
+         Fragment    => "(local i32)",
+         Message     => "emoji program local");
+
+      Helpers.Validate_Unit_Artifacts
+        (Output_Root => Output_Root,
+         Unit_Name   => Rocket,
+         Message     => "emoji program",
+         Status      => Validate_Status);
+      Helpers.Run_Unit_Entrypoint
+        (Output_Root => Output_Root,
+         Unit_Name   => Rocket,
+         Message     => "emoji program",
+         Status      => Run_Status);
+
+      if Validate_Status = Helpers.Missing or else Run_Status = Helpers.Missing
+      then
+         Outcome := Helpers.Inconclusive;
+      end if;
+
+      Helpers.Report_Test_Result (Test_Name, Outcome);
+   exception
+      when Error : others =>
+         Helpers.Report_Test_Result (Test_Name, Helpers.Fail);
+         Ada.Exceptions.Reraise_Occurrence (Error);
+   end Test_Emoji_Program_Build_Validate_And_Run;
+
    procedure Test_Hello_Print_Build_Validate_And_Run
      (The_Test : in out Fixture)
    is
@@ -225,5 +288,60 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
          Helpers.Report_Test_Result (Test_Name, Helpers.Fail);
          Ada.Exceptions.Reraise_Occurrence (Error);
    end Test_Resolve_Caller_Build_Validate_And_Run;
+
+   procedure Test_Variables_Build_Validate_And_Run (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Test_Name       : constant String :=
+        "build: validate and run program Variables";
+      Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
+      Sample_Path     : constant String :=
+        Helpers.Locate_Sample ("variables", "Variables.love");
+      Output_Root     : constant String :=
+        Helpers.Locate_Output_Root ("variables");
+      Validate_Status : Helpers.Tool_Status;
+      Run_Status      : Helpers.Tool_Status;
+      Outcome         : Helpers.Test_Outcome := Helpers.Ok;
+   begin
+      AUnit.Assertions.Assert
+        (Lovelace_Path'Length > 0, "lovelace executable present");
+
+      Helpers.Reset_Output_Root (Output_Root);
+      Helpers.Build_Sample
+        (Lovelace_Path => Lovelace_Path,
+         Sample_Path   => Sample_Path,
+         Output_Root   => Output_Root,
+         Message       => "Variables");
+      Helpers.Assert_Build_Artifacts
+        (Output_Root => Output_Root,
+         Unit_Name   => "Variables",
+         Message     => "Variables");
+      Helpers.Assert_Wat_Contains
+        (Output_Root => Output_Root,
+         Unit_Name   => "Variables",
+         Fragment    => "(local i32 i32 i32 f32)",
+         Message     => "Variables flattened locals");
+
+      Helpers.Validate_Unit_Artifacts
+        (Output_Root => Output_Root,
+         Unit_Name   => "Variables",
+         Message     => "Variables",
+         Status      => Validate_Status);
+      Helpers.Run_Unit_Entrypoint
+        (Output_Root => Output_Root,
+         Unit_Name   => "Variables",
+         Message     => "Variables",
+         Status      => Run_Status);
+
+      if Validate_Status = Helpers.Missing or else Run_Status = Helpers.Missing
+      then
+         Outcome := Helpers.Inconclusive;
+      end if;
+
+      Helpers.Report_Test_Result (Test_Name, Outcome);
+   exception
+      when Error : others =>
+         Helpers.Report_Test_Result (Test_Name, Helpers.Fail);
+         Ada.Exceptions.Reraise_Occurrence (Error);
+   end Test_Variables_Build_Validate_And_Run;
 
 end Lovelace.Main.Integration_Tests.Hello_Build;

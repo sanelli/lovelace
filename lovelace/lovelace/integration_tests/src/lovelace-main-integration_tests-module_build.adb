@@ -50,7 +50,7 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
    procedure Test_Build_And_Validate (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Test_Name         : constant String :=
-        "build: validate modules Empty, Foo.Bar, Procedures, ExportProcedures, SameModuleCall";
+        "build: validate modules Empty, Foo.Bar, Procedures, ExportProcedures, SameModuleCall, emoji";
       Lovelace_Path     : constant String := Helpers.Locate_Lovelace;
       Output_Root       : constant String := Helpers.Locate_Output_Root ("modules");
       Empty_Sample      : constant String := Helpers.Locate_Sample ("module", "Empty.love");
@@ -58,6 +58,14 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
       Procedures_Sample : constant String := Helpers.Locate_Sample ("module", "Procedures.love");
       Export_Sample     : constant String := Helpers.Locate_Sample ("module", "ExportProcedures.love");
       Calls_Sample      : constant String := Helpers.Locate_Sample ("calls", "SameModuleCall.love");
+      --  U+1F680 ROCKET as UTF-8 (emoji module stem).
+      Rocket            : constant String :=
+        [1 => Character'Val (16#F0#),
+         2 => Character'Val (16#9F#),
+         3 => Character'Val (16#9A#),
+         4 => Character'Val (16#80#)];
+      Emoji_Sample      : constant String :=
+        Helpers.Locate_Sample ("emoji-module", Rocket & ".love");
       Aggregate_Status  : Helpers.Tool_Status := Helpers.Succeeded;
       Outcome           : Helpers.Test_Outcome := Helpers.Ok;
    begin
@@ -134,6 +142,19 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
          Unit_Name   => "SameModuleCall",
          Fragment    => "call $Sink",
          Message     => "SameModuleCall call");
+
+      Build_Validate_Unit
+        (Lovelace_Path => Lovelace_Path,
+         Sample_Path   => Emoji_Sample,
+         Output_Root   => Output_Root,
+         Unit_Name     => Rocket,
+         Message       => "emoji module",
+         Status        => Aggregate_Status);
+      Helpers.Assert_Wat_Contains
+        (Output_Root => Output_Root,
+         Unit_Name   => Rocket,
+         Fragment    => "(local i32)",
+         Message     => "emoji module local");
 
       if Aggregate_Status = Helpers.Missing then
          Outcome := Helpers.Inconclusive;

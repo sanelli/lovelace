@@ -58,6 +58,22 @@ package body Lovelace.Main.Integration_Tests.Suite is
               .Hello_Build
               .Test_Resolve_Caller_Build_Validate_And_Run'Access));
       Result.Add_Test
+        (Hello_Caller.Create
+           ("build: validate and run program Variables",
+            Lovelace
+              .Main
+              .Integration_Tests
+              .Hello_Build
+              .Test_Variables_Build_Validate_And_Run'Access));
+      Result.Add_Test
+        (Hello_Caller.Create
+           ("build: validate and run program emoji rocket",
+            Lovelace
+              .Main
+              .Integration_Tests
+              .Hello_Build
+              .Test_Emoji_Program_Build_Validate_And_Run'Access));
+      Result.Add_Test
         (Module_Caller.Create
            ("build: validate modules Empty and Foo.Bar",
             Lovelace

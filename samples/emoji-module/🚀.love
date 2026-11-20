@@ -1,0 +1,7 @@
+module 🚀;
+procedure 🚀Go();
+declare
+   🚀X : boolean;
+begin
+end;
+end.

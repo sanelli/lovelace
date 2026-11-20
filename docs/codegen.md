@@ -73,7 +73,7 @@ Emission then attaches the WASI 0.3 import graph (`wasi:cli/types@0.3.0` + `wasi
 
 A nullary subroutine may be both entrypoint and export: then both `wasi:cli/run@0.3.0` and the named export appear. Core module export names keep the original LIR spelling.
 
-Component Model `externname`s must be kebab-case; PascalCase LIR identifiers such as `Hello` become `hello`.
+Component Model `externname`s must be kebab-case; PascalCase LIR identifiers such as `Hello` become `hello`. Pure non-ASCII names (e.g. emoji) sanitize to `export` / package `module` after dash collapse.
 
 ## Types (this slice)
 
@@ -109,6 +109,13 @@ Example core WAT for a module procedure with parameters (exported or not; no WIT
 )
 ```
 
+LIR **locals** (flat list after parameters) lower to Wasm core locals after params. Nested declare scopes from source are already flattened in LIR; the backend maps each LIR local to a core local slot via `Map_Locals` / `Local_Types` (same type encoding as parameters). Example:
+
+```wat
+(func $Main (local i32 i64)
+)
+```
+
 In the component type section, bare `(result)` is a separate `defvaltype`; the `run` functype references it by type index (inline `0x6a` is not a valid `valtype`).
 
 ## Instructions (this slice)
@@ -137,9 +144,10 @@ world module {
 
 Rules:
 
-- Package name: `love:<sanitized-module-name>@0.1.0` (ASCII letters/digits lowercased; every other byte → `-`; empty → `module`).
+- Package name: `love:<sanitized-module-name>@0.1.0` (ASCII letters/digits lowercased; other bytes → `-`, consecutive dashes collapsed, edges stripped; empty → `module`).
 - `export wasi:cli/run@0.3.0;` only when an entrypoint exists.
-- One `export <kebab-name>: func();` per nullary `Export_Flag` subroutine.
+- One `export <kebab-name>: func();` per nullary `Export_Flag` subroutine (same sanitization; empty → `export`).
+- WAT `$` ids: ASCII letters/digits/`_`/`-` kept; other bytes → `_HH` so emoji unit names stay valid in text.
 - `import wasi:cli/stdout@0.3.0;` when a `Print_Integer_Stdout` intrinsic is present (component binary also imports `wasi:cli/types@0.3.0` for `error-code`).
 - `Emit_Wasm` and `Emit_Wat` produce the same WIT string for the same LIR module.
 
@@ -178,7 +186,7 @@ Each failure carries a UTF-8 `Detail` string.
 - Browser / core-module-only default format
 - Alexandria doc embedding in artifacts
 - Linking LIR `Dependencies`
-- General Lovelace locals / expressions (synthesized print uses core locals only)
+- Variable reads / stores / expressions beyond declare+flatten (synthesized print still uses its own core locals)
 
 ## Tests
 

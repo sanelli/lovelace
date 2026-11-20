@@ -20,18 +20,30 @@ package body Lovelace.Compiler.Backend.Wit is
             elsif Byte in 'a' .. 'z' or else Byte in '0' .. '9' then
                Last := Last + 1;
                Buffer (Last) := Byte;
-            else
+            elsif Last = 0 or else Buffer (Last) /= '-' then
                Last := Last + 1;
                Buffer (Last) := '-';
             end if;
          end;
       end loop;
 
-      if Last = 0 then
-         return "module";
-      end if;
+      declare
+         First : Natural := 1;
+      begin
+         while First <= Last and then Buffer (First) = '-' loop
+            First := First + 1;
+         end loop;
 
-      return Buffer (1 .. Last);
+         while Last >= First and then Buffer (Last) = '-' loop
+            Last := Last - 1;
+         end loop;
+
+         if Last < First then
+            return "module";
+         end if;
+
+         return Buffer (First .. Last);
+      end;
    end Sanitize_Package_Name;
 
    function To_Wit (The_Model : Model.Component_Model) return String is

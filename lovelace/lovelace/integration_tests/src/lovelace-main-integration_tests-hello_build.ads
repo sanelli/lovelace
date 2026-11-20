@@ -11,6 +11,11 @@ package Lovelace.Main.Integration_Tests.Hello_Build is
    --  @param The_Test Unused fixture.
    procedure Test_Build_Validate_And_Run (The_Test : in out Fixture);
 
+   --  Build samples/emoji/🚀.love (emoji program + local); validate and run.
+   --  @param The_Test Unused fixture.
+   procedure Test_Emoji_Program_Build_Validate_And_Run
+     (The_Test : in out Fixture);
+
    --  Build samples/io/HelloPrint.love with -I <repo>/augusta/lovelace so augusta.std.io
    --  resolves; validate stdout import in WAT; run and assert stdout is "42".
    --  @param The_Test Unused fixture.
@@ -28,5 +33,10 @@ package Lovelace.Main.Integration_Tests.Hello_Build is
    --  @param The_Test Unused fixture.
    procedure Test_Resolve_Caller_Build_Validate_And_Run
      (The_Test : in out Fixture);
+
+   --  Build samples/variables/Variables.love (nested declare); assert flattened
+   --  Wasm locals in WAT; validate and run.
+   --  @param The_Test Unused fixture.
+   procedure Test_Variables_Build_Validate_And_Run (The_Test : in out Fixture);
 
 end Lovelace.Main.Integration_Tests.Hello_Build;

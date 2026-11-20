@@ -31,16 +31,16 @@ todos:
     status: completed
   - id: "10"
     content: "10. Docs: token-grammar, tokenizer, compilation-unit-grammar, parser, lir, ir-generator, codegen; lock roadmap 1.002 step 5."
-    status: pending
+    status: completed
   - id: "11"
     content: "11. Samples: samples/variables/ (nested declare) + samples covering emoji as program/module/subroutine/variable names; docs/samples.md; wire into lovelace/integration_tests (build+validate; run programs)."
-    status: pending
+    status: completed
   - id: "12"
     content: "12. Run all tests (scripts/run-tests.ps1) including integration suite covering the new samples."
-    status: pending
+    status: completed
   - id: "13"
     content: "13. Push (proxy env cleared) and open a PR with gh pr create."
-    status: pending
+    status: completed
 isProject: false
 ---
 

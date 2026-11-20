@@ -1,0 +1,12 @@
+program Variables;
+declare
+   Outer, Count : integer;
+   Flag : boolean;
+begin
+   declare
+      Inner : float<32>;
+   begin
+   end;
+   begin
+   end;
+end.

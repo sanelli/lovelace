@@ -71,7 +71,8 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | `@native("lib", "fn")` binding | LIR `Set_Native_Binding` (empty instruction body; no statement lower; no closed-set check) |
 | `@intrinsic` | LIR `Set_Intrinsic` after closed-table match (empty body; no statement lower) |
 | Empty statement body | empty instruction sequence (no `noop`) |
-| Same-unit `MODULE.SUBROUTINE(…)` | `Constant_I32` × N then `Call` (1-based local index) |
+| Block locals (including nested `declare`) | Flattened into LIR `Append_Local` in DFS / preorder (nested scopes disappear) |
+| Same-unit `MODULE.SUBROUTINE(…)` | `Constant_I32` × N then `Call` (1-based subroutine index) |
 
 ### Intrinsics (this slice)
 
@@ -117,7 +118,7 @@ Origins use [`Lovelace.Common.Source`](source-locations.md). They are copied ont
 ## Out of scope
 
 - Emitting `No_Operation` for empty bodies
-- Locals, assignment, non-literal arguments
+- Assignment / variable reads / non-literal arguments (roadmap 1.002 step 6+)
 - Analysis and optimization
 
 WASM / WAT / WIT emission from LIR (including native intrinsic synthesis) is implemented separately; see [codegen.md](codegen.md).

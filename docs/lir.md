@@ -49,10 +49,13 @@ A **module** has:
 A **subroutine** has:
 
 - a **signature**: UTF-8 name, **mandatory** return type, zero or more **named** parameters (each UTF-8 name + `Value_Type`)
+- zero or more **locals** (flat ordered list: UTF-8 name + `Value_Type`; nested declare scopes are frontend-only)
 - **flags** (`export` = bit 0, `entrypoint` = bit 1, `native` = bit 2, `intrinsic` = bit 3)
 - an instruction body (may be empty; **must** be empty when `native` or `intrinsic`)
 - an optional **origin** (`Subroutine_Origin`: name span, optional shared filename), persisted in `.lir` / `.tlir` (version numbers stay **1.0**)
 - an optional **native FFI binding** (`Library` + `Function_Name` UTF-8 strings), present **iff** `Native_Flag`, persisted after the origin (`native_present` + two strings). `@intrinsic` uses `Intrinsic_Flag` only (no binding strings)
+
+Locals are empty for `@native` / `@intrinsic`. `Validate` rejects empty local names, invalid UTF-8, duplicate local names within a subroutine, and local names that clash with a parameter name.
 
 Origins support diagnostics and frontend lowering. Codecs round-trip them when present (`origin_present = 0` / omit text form when absent). `Validate` does not require origins. Text form also emits bare `intrinsic` when `Intrinsic_Flag` is set. Shared position types live in [`Lovelace.Common.Source`](source-locations.md); the compiler copies them via the [IR Generator](ir-generator.md). The format **version fields remain 1.0**; layout includes origin fields, optional native binding, and named parameters. The CLI writes `.lir` under the build output `obj/` folder ([cli.md](cli.md)); pass `--generate-tlir` to also write `obj/<Unit>.tlir`. User diagnostics use `LV#####` codes ([diagnostics.md](diagnostics.md)).
 
@@ -84,9 +87,9 @@ Opcodes in this slice:
 
 Builders allow temporarily invalid modules (for example two entrypoints while appending). **Encode**, **Write**, **To_Text**, and **Print** call `Validate` first and fail on:
 
-- empty module, dependency, subroutine, or parameter name
-- invalid UTF-8 in any name (including parameter names)
-- duplicate dependency, subroutine, or parameter names (parameters unique within a signature)
+- empty module, dependency, subroutine, parameter, or local name
+- invalid UTF-8 in any name (including parameter and local names)
+- duplicate dependency, subroutine, parameter, or local names (parameters and locals unique within a subroutine; locals also must not reuse a parameter name)
 - self-dependency (a depend name equals the module name)
 - more than one `Entrypoint` flag
 - `Call` with `Target_Index` outside `1 .. Subroutine_Count`
