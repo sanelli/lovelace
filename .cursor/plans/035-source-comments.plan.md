@@ -19,19 +19,19 @@ todos:
     status: completed
   - id: "6"
     content: "6. Docs: token-grammar, tokenizer.md; lock comment rules on roadmap 1.002 step 1; update augusta.md; gnatformat N/A."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Sample: TEMPORARY `{ … }` on augusta.std.io wasi print; optional tiny samples/comments sample; docs/samples.md if needed."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. Parser/build smoke: existing units with embedded comments still parse/build; AUnit as needed."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Run all existing tests (nested AUnit crates / scripts/run-tests.ps1)."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. Push (proxy env cleared) and open a PR with gh pr create."
-    status: pending
+    status: completed
 isProject: false
 ---
 

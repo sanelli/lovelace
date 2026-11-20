@@ -203,6 +203,10 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Parser.Test_Canonical_Multiline'Access));
       Result.Add_Test
         (Parser_Caller.Create
+           ("parser: comments",
+            Lovelace.Compiler.Tests.Parser.Test_Comments'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
            ("parser: dotted module name",
             Lovelace.Compiler.Tests.Parser.Test_Dotted_Module_Name'Access));
       Result.Add_Test

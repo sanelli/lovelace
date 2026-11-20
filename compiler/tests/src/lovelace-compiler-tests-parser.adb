@@ -86,6 +86,41 @@ package body Lovelace.Compiler.Tests.Parser is
       Assert_Entrypoint_Module (The_Module, "Hello", "canonical");
    end Test_Canonical_Multiline;
 
+   procedure Test_Comments (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Program_Source : constant String :=
+        "{ leading }"
+        & ASCII.LF
+        & "program Comments;"
+        & ASCII.LF
+        & "begin"
+        & ASCII.LF
+        & "{ empty body }"
+        & ASCII.LF
+        & "end.";
+      Module_Source  : constant String :=
+        "module Lib;"
+        & ASCII.LF
+        & "{ TEMPORARY note }"
+        & ASCII.LF
+        & "export native(""wasi"", ""native-print-integer"") procedure print(value : integer);"
+        & ASCII.LF
+        & "end.";
+      Glued_Source   : constant String := "program{c}Hello;begin{}end.";
+      The_Program    : constant Ast.Module := Support.Must_Parse (Program_Source, "program comments");
+      The_Module     : constant Ast.Module := Support.Must_Parse (Module_Source, "module comments");
+      Glued_Program  : constant Ast.Module := Support.Must_Parse (Glued_Source, "glued comments");
+      Native_Sub     : constant Ast.Subroutine := Ast.Get_Subroutine (The_Module, 1);
+   begin
+      Assert_Entrypoint_Module (The_Program, "Comments", "program comments");
+      Assert_Entrypoint_Module (Glued_Program, "Hello", "glued comments");
+      AUnit.Assertions.Assert (Ast.Kind (The_Module) = Ast.Module_Unit, "module comments: unit");
+      AUnit.Assertions.Assert (Ast.Name (The_Module) = "Lib", "module comments: name");
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 1, "module comments: one sub");
+      AUnit.Assertions.Assert (Ast.Name (Native_Sub) = "print", "module comments: print");
+      AUnit.Assertions.Assert (Ast.Has_Native (Ast.Get_Flags (Native_Sub)), "module comments: native");
+   end Test_Comments;
+
    procedure Test_Dotted_Module_Name (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Source_Text : constant String := "module Foo.Bar; end.";

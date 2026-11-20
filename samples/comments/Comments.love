@@ -1,0 +1,5 @@
+{ Block comments are skipped like whitespace. }
+program Comments;
+begin
+{ empty body }
+end.
