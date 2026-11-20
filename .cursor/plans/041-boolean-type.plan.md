@@ -13,13 +13,13 @@ todos:
     status: completed
   - id: "4"
     content: "4. Frontend Types: Type_Kind.Boolean + Boolean_Type; docs types/parser/ir-generator; gnatformat."
-    status: pending
+    status: completed
   - id: "5"
     content: "5. Tokenizer: keywords boolean / true / false; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Parser: boolean in type_name; true/false as call-argument literals; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. IR: Map_Value_Type Boolean→I32; call-arg type check (boolean vs integer); lower true→1 / false→0 Constant_I32; AUnit; gnatformat."
     status: pending

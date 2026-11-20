@@ -11,6 +11,10 @@ package Lovelace.Compiler.Tests.Parser is
    --  @param The_Test Unused fixture.
    procedure Test_Bad_Type_Size (The_Test : in out Fixture);
 
+   --  `boolean` parameters and `true`/`false` call args parse; bad boolean spellings fail.
+   --  @param The_Test Unused fixture.
+   procedure Test_Boolean_Type (The_Test : in out Fixture);
+
    --  Canonical module Empty; end.
    --  @param The_Test Unused fixture.
    procedure Test_Canonical_Module (The_Test : in out Fixture);

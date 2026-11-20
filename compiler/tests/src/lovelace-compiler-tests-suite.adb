@@ -337,6 +337,10 @@ package body Lovelace.Compiler.Tests.Suite is
         (Parser_Caller.Create
            ("parser: bad type size",
             Lovelace.Compiler.Tests.Parser.Test_Bad_Type_Size'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: boolean type",
+            Lovelace.Compiler.Tests.Parser.Test_Boolean_Type'Access));
 
       Result.Add_Test
         (Literals_Caller.Create

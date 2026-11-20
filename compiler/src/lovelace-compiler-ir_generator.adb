@@ -549,6 +549,9 @@ package body Lovelace.Compiler.Ir_Generator is
          when Lovelace.Compiler.Types.Unit    =>
             return Lovelace.Lir.Types.Unit;
 
+         when Lovelace.Compiler.Types.Boolean =>
+            return Lovelace.Lir.Types.I32;
+
          when Lovelace.Compiler.Types.Integer =>
             case The_Type.The_Signedness is
                when Lovelace.Compiler.Types.Signed   =>

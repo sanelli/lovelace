@@ -210,6 +210,15 @@ package body Lovelace.Compiler.Parser is
 
                when Tokens.Unsigned_Keyword  =>
                   return "keyword ""unsigned""";
+
+               when Tokens.Boolean_Keyword   =>
+                  return "keyword ""boolean""";
+
+               when Tokens.True_Keyword      =>
+                  return "keyword ""true""";
+
+               when Tokens.False_Keyword     =>
+                  return "keyword ""false""";
             end case;
 
          when Tokens.Identifier      =>
@@ -522,19 +531,33 @@ package body Lovelace.Compiler.Parser is
 
       loop
          if At_End (The_Cursor) then
-            return Step_End_Of_Input (The_Cursor, "expected integer literal argument, found end of input");
+            return
+              Step_End_Of_Input
+                (The_Cursor, "expected integer literal or true/false argument, found end of input");
          end if;
 
          declare
             Arg_Token : constant Tokens.Token := Peek (The_Cursor);
+            Accepted  : Boolean := False;
          begin
-            if Arg_Token.Kind /= Tokens.Integer_Literal then
+            if Arg_Token.Kind = Tokens.Integer_Literal then
+               Accepted := True;
+            elsif Arg_Token.Kind = Tokens.Keyword
+              and then (Arg_Token.Keyword_Value = Tokens.True_Keyword
+                        or else Arg_Token.Keyword_Value = Tokens.False_Keyword)
+            then
+               Accepted := True;
+            end if;
+
+            if not Accepted then
                return
                  Make_Failure
                    (Code     => Unexpected_Token,
                     Span     => Arg_Token.Span,
                     Filename => Arg_Token.Filename,
-                    Detail   => "expected integer literal argument, found " & Describe_Token (Source_Text, Arg_Token));
+                    Detail   =>
+                      "expected integer literal or true/false argument, found "
+                      & Describe_Token (Source_Text, Arg_Token));
             end if;
 
             Advance (The_Cursor);
@@ -755,7 +778,10 @@ package body Lovelace.Compiler.Parser is
                | Tokens.Integer_Keyword
                | Tokens.Float_Keyword
                | Tokens.Signed_Keyword
-               | Tokens.Unsigned_Keyword =>
+               | Tokens.Unsigned_Keyword
+               | Tokens.Boolean_Keyword
+               | Tokens.True_Keyword
+               | Tokens.False_Keyword =>
                return
                  Make_Failure
                    (Code     => Unexpected_Token,
@@ -2087,12 +2113,32 @@ package body Lovelace.Compiler.Parser is
       The_Type := Types.Unit_Type;
 
       if At_End (The_Cursor) then
-         return Step_End_Of_Input (The_Cursor, "expected type name (""integer"" or ""float""), found end of input");
+         return
+           Step_End_Of_Input
+             (The_Cursor, "expected type name (""integer"", ""float"", or ""boolean""), found end of input");
       end if;
 
       declare
          Current : constant Tokens.Token := Peek (The_Cursor);
+         Step    : Step_Result;
       begin
+         if Is_Keyword (Current, Tokens.Boolean_Keyword) then
+            Step :=
+              Expect_Keyword
+                (The_Cursor  => The_Cursor,
+                 Source_Text => Source_Text,
+                 Expected    => Tokens.Boolean_Keyword,
+                 Label       => "boolean");
+            case Step.Ok is
+               when False =>
+                  return Step;
+
+               when True  =>
+                  The_Type := Types.Boolean_Type;
+                  return (Ok => True);
+            end case;
+         end if;
+
          if Is_Keyword (Current, Tokens.Float_Keyword) then
             return Parse_Float_Type (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Type => The_Type);
          end if;
@@ -2110,7 +2156,8 @@ package body Lovelace.Compiler.Parser is
               Span     => Current.Span,
               Filename => Current.Filename,
               Detail   =>
-                "expected type name (""integer"" or ""float""), found " & Describe_Token (Source_Text, Current));
+                "expected type name (""integer"", ""float"", or ""boolean""), found "
+                & Describe_Token (Source_Text, Current));
       end;
    end Parse_Type_Name;
 

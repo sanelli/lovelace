@@ -70,6 +70,63 @@ package body Lovelace.Compiler.Tests.Parser is
       Support.Assert_Parser_Error_Code (Int_128, 1, Lovelace.Compiler.Parser.Unexpected_Token, "integer 128 code");
    end Test_Bad_Type_Size;
 
+   procedure Test_Boolean_Type (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String :=
+        "module Bools;"
+        & ASCII.LF
+        & "procedure Sink(Flag : boolean); begin end;"
+        & ASCII.LF
+        & "procedure Run();"
+        & ASCII.LF
+        & "begin"
+        & ASCII.LF
+        & "   Bools.Sink(true);"
+        & ASCII.LF
+        & "   Bools.Sink(false);"
+        & ASCII.LF
+        & "end;"
+        & ASCII.LF
+        & "end.";
+      The_Module  : constant Ast.Module := Support.Must_Parse (Source_Text, "boolean type");
+      Signed_Bool : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module M; procedure P(x : signed boolean); begin end; end.", "signed boolean");
+      Sized_Bool  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module M; procedure P(x : boolean<32>); begin end; end.", "boolean size");
+   begin
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 2, "two procedures");
+      declare
+         Sink_Params : constant Ast.Parameter_Sequence :=
+           Ast.Parameters (Ast.Get_Subroutine (The_Module, 1));
+         Run_Body    : constant Ast.Statement_Sequence :=
+           Ast.Get_Body (Ast.Get_Subroutine (The_Module, 2));
+      begin
+         AUnit.Assertions.Assert (Ast.Length (Sink_Params) = 1, "one param");
+         AUnit.Assertions.Assert
+           (Ast.Element (Sink_Params, 1).Parameter_Type.Kind = Types.Boolean, "boolean param");
+         AUnit.Assertions.Assert (Ast.Length (Run_Body) = 2, "two calls");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String
+              (Ast.Element (Ast.Element (Run_Body, 1).The_Call.Arguments, 1).Lexeme)
+            = "true",
+            "true lexeme");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String
+              (Ast.Element (Ast.Element (Run_Body, 2).The_Call.Arguments, 1).Lexeme)
+            = "false",
+            "false lexeme");
+      end;
+
+      Support.Assert_Parser_Error_Count (Signed_Bool, 1, "signed boolean");
+      Support.Assert_Parser_Error_Code
+        (Signed_Bool, 1, Lovelace.Compiler.Parser.Unexpected_Token, "signed boolean code");
+      Support.Assert_Parser_Error_Count (Sized_Bool, 1, "boolean size");
+      Support.Assert_Parser_Error_Code
+        (Sized_Bool, 1, Lovelace.Compiler.Parser.Unexpected_Token, "boolean size code");
+   end Test_Boolean_Type;
+
    procedure Test_Canonical_Module (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Source_Text : constant String := "module Empty;" & ASCII.LF & "end.";

@@ -1,14 +1,15 @@
 --  Frontend type expressions for the Lovelace compiler AST.
 --  Distinct from Lovelace.Lir.Types. Future path / Named kinds may be
---  added without reshaping Integer and Float.
+--  added without reshaping Integer, Float, and Boolean.
 
 package Lovelace.Compiler.Types is
 
    --  Kind of a frontend type expression.
    --  @enum Unit No value; used for procedure return types.
+   --  @enum Boolean Boolean type (LIR i32: 0 = false, nonzero = true).
    --  @enum Integer Signed or unsigned integral type with a bit size.
    --  @enum Float Floating-point type with a bit size.
-   type Type_Kind is (Unit, Integer, Float);
+   type Type_Kind is (Unit, Boolean, Integer, Float);
 
    --  Signedness of an Integer type expression.
    --  @enum Signed Two's-complement signed integer.
@@ -39,9 +40,14 @@ package Lovelace.Compiler.Types is
       Float_Bit_Size   : Float_Size := Bits_32;
    end record;
 
-   --  The unit type expression (no value).
-   --  @return Type_Expression with Kind Unit.
-   function Unit_Type return Type_Expression;
+   --  The boolean type expression.
+   --  @return Type_Expression with Kind Boolean.
+   function Boolean_Type return Type_Expression;
+
+   --  Float type with The_Size.
+   --  @param The_Size Bit width (32 or 64).
+   --  @return Type_Expression with Kind Float.
+   function Float_Type (The_Size : Float_Size) return Type_Expression;
 
    --  Integer type with The_Signedness and The_Size.
    --  @param The_Signedness Signed or Unsigned.
@@ -49,9 +55,8 @@ package Lovelace.Compiler.Types is
    --  @return Type_Expression with Kind Integer.
    function Integer_Type (The_Signedness : Signedness; The_Size : Integer_Size) return Type_Expression;
 
-   --  Float type with The_Size.
-   --  @param The_Size Bit width (32 or 64).
-   --  @return Type_Expression with Kind Float.
-   function Float_Type (The_Size : Float_Size) return Type_Expression;
+   --  The unit type expression (no value).
+   --  @return Type_Expression with Kind Unit.
+   function Unit_Type return Type_Expression;
 
 end Lovelace.Compiler.Types;

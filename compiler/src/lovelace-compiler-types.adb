@@ -1,5 +1,10 @@
 package body Lovelace.Compiler.Types is
 
+   function Boolean_Type return Type_Expression is
+   begin
+      return (Kind => Boolean, The_Signedness => Signed, Integer_Bit_Size => Bits_32, Float_Bit_Size => Bits_32);
+   end Boolean_Type;
+
    function Float_Type (The_Size : Float_Size) return Type_Expression is
    begin
       return (Kind => Float, The_Signedness => Signed, Integer_Bit_Size => Bits_32, Float_Bit_Size => The_Size);
