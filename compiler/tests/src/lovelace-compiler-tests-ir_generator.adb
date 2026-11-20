@@ -291,7 +291,7 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
            Flags       => Ast.Export_Flag,
            Return_Type => Types.Unit_Type,
            Parameters  => Ast.Empty_Parameter_Sequence,
-           The_Body    => Ast.Empty_Body,
+           The_Body    => Ast.Empty_Block,
            Native      => (Present => False));
       Ast_Subroutines : Ast.Subroutine_Sequence :=
         Ast.Empty_Subroutine_Sequence;

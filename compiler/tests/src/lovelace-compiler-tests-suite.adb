@@ -82,6 +82,10 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Tokenizer.Test_Native_Keyword'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
+           ("tokenizer: declare keyword",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Declare_Keyword'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
            ("tokenizer: ascii identifiers",
             Lovelace.Compiler.Tests.Tokenizer.Test_Ascii_Identifiers'Access));
       Result.Add_Test
@@ -205,6 +209,10 @@ package body Lovelace.Compiler.Tests.Suite is
         (Parser_Caller.Create
            ("parser: comments",
             Lovelace.Compiler.Tests.Parser.Test_Comments'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: declare locals",
+            Lovelace.Compiler.Tests.Parser.Test_Declare_Locals'Access));
       Result.Add_Test
         (Parser_Caller.Create
            ("parser: dotted module name",

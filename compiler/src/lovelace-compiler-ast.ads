@@ -88,21 +88,24 @@ package Lovelace.Compiler.Ast is
       Arguments   : Argument_Sequence;
    end record;
 
-   --  Statement kind in a subroutine body.
-   --  @enum Call Qualified call with optional integer literal arguments.
-   type Statement_Kind is (Call);
+   --  One local variable declaration (same shape as a parameter: name + type).
+   subtype Local_Variable is Parameter;
 
-   --  One statement in a subroutine body.
-   --  @disc Kind Selects the statement variant.
-   --  @field The_Call Call_Statement when Kind is Call.
-   type Statement (Kind : Statement_Kind := Call) is record
-      case Kind is
-         when Call =>
-            The_Call : Call_Statement;
-      end case;
-   end record;
+   --  Ordered list of locals on a block.
+   subtype Local_Sequence is Parameter_Sequence;
 
-   --  Ordered list of statements in a subroutine body.
+   --  Statement kind in a block body.
+   --  @enum Call Qualified call with optional literal arguments.
+   --  @enum Nested_Block Nested `[declare…] begin … end;` block statement.
+   type Statement_Kind is (Call, Nested_Block);
+
+   --  One `begin`…`end` block with optional locals (may nest via Nested_Block statements).
+   type Block is private;
+
+   --  One statement in a block body (call or nested block).
+   type Statement is private;
+
+   --  Ordered list of statements in a block body.
    type Statement_Sequence is private;
 
    --  One subroutine declaration in the AST.
@@ -156,6 +159,10 @@ package Lovelace.Compiler.Ast is
    --  @return Sequence with no elements.
    function Empty_Parameter_Sequence return Parameter_Sequence;
 
+   --  Empty local sequence (alias of empty parameters).
+   --  @return Sequence with no elements.
+   function Empty_Local_Sequence return Local_Sequence;
+
    --  Append The_Parameter to the end of Sequence.
    --  @param Sequence Sequence to extend.
    --  @param The_Parameter Parameter to append.
@@ -171,6 +178,51 @@ package Lovelace.Compiler.Ast is
    --  @param Index 1-based index.
    --  @return Parameter at Index.
    function Element (Sequence : Parameter_Sequence; Index : Positive) return Parameter;
+
+   --  Empty block (no locals, no statements).
+   --  @return Block with empty locals and statements.
+   function Empty_Block return Block;
+
+   --  Build a block from Locals and Statements.
+   --  @param Locals Ordered local declarations (may be empty).
+   --  @param Statements Ordered statement list (may be empty).
+   --  @return Block value.
+   function Create_Block (Locals : Local_Sequence; Statements : Statement_Sequence) return Block;
+
+   --  Locals declared on The_Block.
+   --  @param The_Block Block to query.
+   --  @return Local sequence.
+   function Locals (The_Block : Block) return Local_Sequence;
+
+   --  Statements in The_Block.
+   --  @param The_Block Block to query.
+   --  @return Statement sequence.
+   function Statements (The_Block : Block) return Statement_Sequence;
+
+   --  Build a call statement.
+   --  @param The_Call Call payload.
+   --  @return Statement with Kind Call.
+   function Make_Call_Statement (The_Call : Call_Statement) return Statement;
+
+   --  Build a nested-block statement.
+   --  @param The_Block Nested block.
+   --  @return Statement with Kind Nested_Block.
+   function Make_Nested_Block_Statement (The_Block : Block) return Statement;
+
+   --  Kind of The_Statement.
+   --  @param The_Statement Statement to query.
+   --  @return Call or Nested_Block.
+   function Kind (The_Statement : Statement) return Statement_Kind;
+
+   --  Call payload; requires Kind (The_Statement) = Call.
+   --  @param The_Statement Call statement.
+   --  @return Call_Statement.
+   function Call_Of (The_Statement : Statement) return Call_Statement;
+
+   --  Nested block; requires Kind (The_Statement) = Nested_Block.
+   --  @param The_Statement Nested-block statement.
+   --  @return Block.
+   function Block_Of (The_Statement : Statement) return Block;
 
    --  Empty argument sequence.
    --  @return Sequence with no elements.
@@ -221,7 +273,7 @@ package Lovelace.Compiler.Ast is
    --  @param Flags Flag bits (export, entrypoint, and others).
    --  @param Return_Type Frontend return type expression.
    --  @param Parameters Ordered parameter list.
-   --  @param The_Body Statement list (may be empty; must be empty when intrinsic/native).
+   --  @param The_Body Block body (may be empty; must be empty when intrinsic/native).
    --  @param Native Optional `@native("library", "function")` binding.
    --  @return Subroutine value.
    function Create_Subroutine
@@ -232,7 +284,7 @@ package Lovelace.Compiler.Ast is
       Flags       : Subroutine_Flags;
       Return_Type : Types.Type_Expression;
       Parameters  : Parameter_Sequence;
-      The_Body    : Statement_Sequence;
+      The_Body    : Block;
       Native      : Native_Binding_Option) return Subroutine;
 
    --  UTF-8 unqualified name of The_Subroutine.
@@ -270,10 +322,10 @@ package Lovelace.Compiler.Ast is
    --  @return Parameter sequence.
    function Parameters (The_Subroutine : Subroutine) return Parameter_Sequence;
 
-   --  Statement body of The_Subroutine.
+   --  Block body of The_Subroutine.
    --  @param The_Subroutine Subroutine to query.
-   --  @return Statement sequence.
-   function Get_Body (The_Subroutine : Subroutine) return Statement_Sequence;
+   --  @return Body block (locals + statements).
+   function Get_Body (The_Subroutine : Subroutine) return Block;
 
    --  Optional native binding of The_Subroutine.
    --  @param The_Subroutine Subroutine to query.
@@ -399,11 +451,29 @@ private
       Items : Argument_Vectors.Vector;
    end record;
 
+   type Block_Data;
+   type Block is access Block_Data;
+
+   type Statement (Kind_Value : Statement_Kind := Call) is record
+      case Kind_Value is
+         when Call =>
+            The_Call : Call_Statement;
+
+         when Nested_Block =>
+            The_Block : Block;
+      end case;
+   end record;
+
    package Statement_Vectors is new
      Ada.Containers.Indefinite_Vectors (Index_Type => Positive, Element_Type => Statement);
 
    type Statement_Sequence is record
       Items : Statement_Vectors.Vector;
+   end record;
+
+   type Block_Data is record
+      Locals_Value     : Local_Sequence;
+      Statements_Value : Statement_Sequence;
    end record;
 
    type Subroutine is record
@@ -414,7 +484,7 @@ private
       Flags_Value       : Subroutine_Flags := 0;
       Return_Type_Value : Types.Type_Expression := Types.Unit_Type;
       Parameters_Value  : Parameter_Sequence;
-      Body_Value        : Statement_Sequence;
+      Body_Value        : Block;
       Native_Value      : Native_Binding_Option := (Present => False);
    end record;
 

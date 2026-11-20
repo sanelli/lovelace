@@ -54,7 +54,7 @@ package body Lovelace.Compiler.Ir_Generator is
 
    function Lower_Statement_Body
      (Caller_Unit    : Ast.Module;
-      The_Body       : Ast.Statement_Sequence;
+      The_Body       : Ast.Block;
       Symbols        : Flat_Symbol_Vectors.Vector;
       Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine)
       return Generate_Result;
@@ -500,32 +500,42 @@ package body Lovelace.Compiler.Ir_Generator is
 
    function Lower_Statement_Body
      (Caller_Unit    : Ast.Module;
-      The_Body       : Ast.Statement_Sequence;
+      The_Body       : Ast.Block;
       Symbols        : Flat_Symbol_Vectors.Vector;
       Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine)
-      return Generate_Result is
+      return Generate_Result
+   is
+      Statements : constant Ast.Statement_Sequence := Ast.Statements (The_Body);
    begin
-      for Index in 1 .. Ast.Length (The_Body) loop
+      for Index in 1 .. Ast.Length (Statements) loop
          declare
-            The_Statement : constant Ast.Statement :=
-              Ast.Element (The_Body, Index);
-            Call_Result   : Generate_Result;
+            The_Statement : constant Ast.Statement := Ast.Element (Statements, Index);
+            Nested_Result : Generate_Result;
          begin
-            case The_Statement.Kind is
+            case Ast.Kind (The_Statement) is
                when Ast.Call =>
-                  Call_Result :=
+                  Nested_Result :=
                     Lower_Call
                       (Caller_Unit    => Caller_Unit,
-                       The_Call       => The_Statement.The_Call,
+                       The_Call       => Ast.Call_Of (The_Statement),
                        Symbols        => Symbols,
                        Lir_Subroutine => Lir_Subroutine);
-                  case Call_Result.Ok is
-                     when False =>
-                        return Call_Result;
 
-                     when True  =>
-                        null;
-                  end case;
+               when Ast.Nested_Block =>
+                  Nested_Result :=
+                    Lower_Statement_Body
+                      (Caller_Unit    => Caller_Unit,
+                       The_Body       => Ast.Block_Of (The_Statement),
+                       Symbols        => Symbols,
+                       Lir_Subroutine => Lir_Subroutine);
+            end case;
+
+            case Nested_Result.Ok is
+               when False =>
+                  return Nested_Result;
+
+               when True  =>
+                  null;
             end case;
          end;
       end loop;

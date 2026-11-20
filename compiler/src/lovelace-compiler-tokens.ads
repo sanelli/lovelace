@@ -34,6 +34,7 @@ package Lovelace.Compiler.Tokens is
    --  @enum Boolean_Keyword boolean
    --  @enum True_Keyword true
    --  @enum False_Keyword false
+   --  @enum Declare_Keyword declare
    type Keyword_Subtype is
      (Program_Keyword,
       Module_Keyword,
@@ -49,7 +50,8 @@ package Lovelace.Compiler.Tokens is
       Unsigned_Keyword,
       Boolean_Keyword,
       True_Keyword,
-      False_Keyword);
+      False_Keyword,
+      Declare_Keyword);
 
    --  Which punctuation token was matched.
    --  @enum Semicolon ;

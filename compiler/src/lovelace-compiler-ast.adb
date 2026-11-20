@@ -25,6 +25,21 @@ package body Lovelace.Compiler.Ast is
       Sequence.Items.Append (The_Import);
    end Append;
 
+   function Block_Of (The_Statement : Statement) return Block is
+   begin
+      return The_Statement.The_Block;
+   end Block_Of;
+
+   function Call_Of (The_Statement : Statement) return Call_Statement is
+   begin
+      return The_Statement.The_Call;
+   end Call_Of;
+
+   function Create_Block (Locals : Local_Sequence; Statements : Statement_Sequence) return Block is
+   begin
+      return new Block_Data'(Locals_Value => Locals, Statements_Value => Statements);
+   end Create_Block;
+
    function Create_Module
      (Name        : String;
       Name_Span   : Source.Source_Span;
@@ -52,7 +67,7 @@ package body Lovelace.Compiler.Ast is
       Flags       : Subroutine_Flags;
       Return_Type : Types.Type_Expression;
       Parameters  : Parameter_Sequence;
-      The_Body    : Statement_Sequence;
+      The_Body    : Block;
       Native      : Native_Binding_Option) return Subroutine is
    begin
       return
@@ -97,6 +112,11 @@ package body Lovelace.Compiler.Ast is
       return (Items => Argument_Vectors.Empty_Vector);
    end Empty_Argument_Sequence;
 
+   function Empty_Block return Block is
+   begin
+      return Create_Block (Empty_Local_Sequence, Empty_Body);
+   end Empty_Block;
+
    function Empty_Body return Statement_Sequence is
    begin
       return (Items => Statement_Vectors.Empty_Vector);
@@ -106,6 +126,11 @@ package body Lovelace.Compiler.Ast is
    begin
       return (Items => Import_Vectors.Empty_Vector);
    end Empty_Import_Sequence;
+
+   function Empty_Local_Sequence return Local_Sequence is
+   begin
+      return Empty_Parameter_Sequence;
+   end Empty_Local_Sequence;
 
    function Empty_Parameter_Sequence return Parameter_Sequence is
    begin
@@ -132,7 +157,7 @@ package body Lovelace.Compiler.Ast is
       return Ada.Strings.Unbounded.To_String (The_Subroutine.Full_Name_Value);
    end Full_Name;
 
-   function Get_Body (The_Subroutine : Subroutine) return Statement_Sequence is
+   function Get_Body (The_Subroutine : Subroutine) return Block is
    begin
       return The_Subroutine.Body_Value;
    end Get_Body;
@@ -182,6 +207,11 @@ package body Lovelace.Compiler.Ast is
       return The_Module.Kind_Value;
    end Kind;
 
+   function Kind (The_Statement : Statement) return Statement_Kind is
+   begin
+      return The_Statement.Kind_Value;
+   end Kind;
+
    function Length (Sequence : Parameter_Sequence) return Natural is
    begin
       return Natural (Sequence.Items.Length);
@@ -206,6 +236,24 @@ package body Lovelace.Compiler.Ast is
    begin
       return Natural (Sequence.Items.Length);
    end Length;
+
+   function Locals (The_Block : Block) return Local_Sequence is
+   begin
+      if The_Block = null then
+         return Empty_Local_Sequence;
+      end if;
+      return The_Block.Locals_Value;
+   end Locals;
+
+   function Make_Call_Statement (The_Call : Call_Statement) return Statement is
+   begin
+      return (Kind_Value => Call, The_Call => The_Call);
+   end Make_Call_Statement;
+
+   function Make_Nested_Block_Statement (The_Block : Block) return Statement is
+   begin
+      return (Kind_Value => Nested_Block, The_Block => The_Block);
+   end Make_Nested_Block_Statement;
 
    function Name (The_Module : Module) return String is
    begin
@@ -246,6 +294,14 @@ package body Lovelace.Compiler.Ast is
    begin
       return The_Module.Span_Value;
    end Span;
+
+   function Statements (The_Block : Block) return Statement_Sequence is
+   begin
+      if The_Block = null then
+         return Empty_Body;
+      end if;
+      return The_Block.Statements_Value;
+   end Statements;
 
    function Subroutine_Count (The_Module : Module) return Natural is
    begin

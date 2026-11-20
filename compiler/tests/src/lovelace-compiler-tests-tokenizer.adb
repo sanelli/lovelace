@@ -102,6 +102,23 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Support.Assert_String_Literal (In_String, String_List, 1, """{not a comment}""", "string lexeme");
    end Test_Comments;
 
+   procedure Test_Declare_Keyword (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Alone        : constant String := "declare";
+      Declare_Case : constant String := "Declare";
+      Declared     : constant String := "declared";
+      Alone_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Alone, "declare");
+      Case_Tokens  : constant Tokens.Token_Sequence := Support.Must_Succeed (Declare_Case, "Declare");
+      Long_Tokens  : constant Tokens.Token_Sequence := Support.Must_Succeed (Declared, "declared");
+   begin
+      Support.Assert_Token_Count (Alone_Tokens, 1, "declare");
+      Support.Assert_Keyword (Alone, Alone_Tokens, 1, Tokens.Declare_Keyword, "declare keyword");
+      Support.Assert_Token_Count (Case_Tokens, 1, "Declare");
+      Support.Assert_Identifier (Declare_Case, Case_Tokens, 1, "Declare", "Declare");
+      Support.Assert_Token_Count (Long_Tokens, 1, "declared");
+      Support.Assert_Identifier (Declared, Long_Tokens, 1, "declared", "declared");
+   end Test_Declare_Keyword;
+
    procedure Test_Directive_And_String_Errors (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Bare_Hash   : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("#", "bare hash");

@@ -27,6 +27,10 @@ package Lovelace.Compiler.Tests.Parser is
    --  @param The_Test Unused fixture.
    procedure Test_Comments (The_Test : in out Fixture);
 
+   --  `declare` locals, nested blocks, clashes, empty declare, emoji names.
+   --  @param The_Test Unused fixture.
+   procedure Test_Declare_Locals (The_Test : in out Fixture);
+
    --  Dotted module name Foo.Bar is one qualified identifier.
    --  @param The_Test Unused fixture.
    procedure Test_Dotted_Module_Name (The_Test : in out Fixture);

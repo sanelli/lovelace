@@ -13,13 +13,13 @@ todos:
     status: completed
   - id: "4"
     content: "4. Tokenizer: keyword `declare`; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "5"
     content: "5. AST: block statement (optional non-empty declare + statements); locals; nestable; AUnit shape via parser tests; gnatformat."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Parser: block = [declare_part] begin {statement} end; statement |= block_statement; scope stack / no-shadow Name_Clash; AUnit including emoji identifiers for locals/procedures/unit names; gnatformat."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. LIR: local slots on subroutines (types + names); text/binary/Validate; AUnit; gnatformat."
     status: pending

@@ -10,6 +10,7 @@ with Lovelace.Compiler.Types;
 
 package body Lovelace.Compiler.Tests.Parser is
 
+   use type Lovelace.Compiler.Ast.Statement_Kind;
    use type Lovelace.Compiler.Ast.Unit_Kind;
    use type Lovelace.Compiler.Parser.Parser_Error_Code;
    use type Lovelace.Compiler.Types.Float_Size;
@@ -50,7 +51,9 @@ package body Lovelace.Compiler.Tests.Parser is
          AUnit.Assertions.Assert (Return_Type.Kind = Types.Unit, Message & ": return Unit");
          AUnit.Assertions.Assert (Ast.Has_Export (Flags), Message & ": export");
          AUnit.Assertions.Assert (Ast.Has_Entrypoint (Flags), Message & ": entrypoint");
-         AUnit.Assertions.Assert (Ast.Length (Ast.Get_Body (The_Subroutine)) = 0, Message & ": empty body");
+         AUnit.Assertions.Assert
+           (Ast.Length (Ast.Statements (Ast.Get_Body (The_Subroutine))) = 0,
+            Message & ": empty body");
          AUnit.Assertions.Assert
            (Ast.Span (The_Module).Last.Byte_Index >= Ast.Span (The_Module).First.Byte_Index,
             Message & ": unit span bounds");
@@ -101,7 +104,7 @@ package body Lovelace.Compiler.Tests.Parser is
          Sink_Params : constant Ast.Parameter_Sequence :=
            Ast.Parameters (Ast.Get_Subroutine (The_Module, 1));
          Run_Body    : constant Ast.Statement_Sequence :=
-           Ast.Get_Body (Ast.Get_Subroutine (The_Module, 2));
+           Ast.Statements (Ast.Get_Body (Ast.Get_Subroutine (The_Module, 2)));
       begin
          AUnit.Assertions.Assert (Ast.Length (Sink_Params) = 1, "one param");
          AUnit.Assertions.Assert
@@ -109,12 +112,12 @@ package body Lovelace.Compiler.Tests.Parser is
          AUnit.Assertions.Assert (Ast.Length (Run_Body) = 2, "two calls");
          AUnit.Assertions.Assert
            (Ada.Strings.Unbounded.To_String
-              (Ast.Element (Ast.Element (Run_Body, 1).The_Call.Arguments, 1).Lexeme)
+              (Ast.Element (Ast.Call_Of (Ast.Element (Run_Body, 1)).Arguments, 1).Lexeme)
             = "true",
             "true lexeme");
          AUnit.Assertions.Assert
            (Ada.Strings.Unbounded.To_String
-              (Ast.Element (Ast.Element (Run_Body, 2).The_Call.Arguments, 1).Lexeme)
+              (Ast.Element (Ast.Call_Of (Ast.Element (Run_Body, 2)).Arguments, 1).Lexeme)
             = "false",
             "false lexeme");
       end;
@@ -177,6 +180,153 @@ package body Lovelace.Compiler.Tests.Parser is
       AUnit.Assertions.Assert (Ast.Name (Native_Sub) = "print", "module comments: print");
       AUnit.Assertions.Assert (Ast.Has_Native (Ast.Get_Flags (Native_Sub)), "module comments: native");
    end Test_Comments;
+
+   procedure Test_Declare_Locals (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Rocket : constant String := Support.To_Utf_8 (Wide_Wide_Character'Val (16#1F680#));
+      Program_Source : constant String :=
+        "program Demo;"
+        & ASCII.LF
+        & "declare"
+        & ASCII.LF
+        & "   X, Y : integer;"
+        & ASCII.LF
+        & "   Flag : boolean;"
+        & ASCII.LF
+        & "begin"
+        & ASCII.LF
+        & "   declare"
+        & ASCII.LF
+        & "      Inner : float<32>;"
+        & ASCII.LF
+        & "   begin"
+        & ASCII.LF
+        & "   end;"
+        & ASCII.LF
+        & "   begin"
+        & ASCII.LF
+        & "   end;"
+        & ASCII.LF
+        & "end.";
+      Module_Source : constant String :=
+        "module Lib;"
+        & ASCII.LF
+        & "procedure Run(Value : integer);"
+        & ASCII.LF
+        & "declare"
+        & ASCII.LF
+        & "   Tmp : integer;"
+        & ASCII.LF
+        & "begin"
+        & ASCII.LF
+        & "end;"
+        & ASCII.LF
+        & "end.";
+      Emoji_Program : constant String :=
+        "program "
+        & Rocket
+        & ";"
+        & ASCII.LF
+        & "declare"
+        & ASCII.LF
+        & "   "
+        & Rocket
+        & "Var : integer;"
+        & ASCII.LF
+        & "begin"
+        & ASCII.LF
+        & "end.";
+      Emoji_Module : constant String :=
+        "module "
+        & Rocket
+        & ";"
+        & ASCII.LF
+        & "procedure "
+        & Rocket
+        & "Go();"
+        & ASCII.LF
+        & "declare"
+        & ASCII.LF
+        & "   "
+        & Rocket
+        & "X : boolean;"
+        & ASCII.LF
+        & "begin"
+        & ASCII.LF
+        & "end;"
+        & ASCII.LF
+        & "end.";
+      The_Program : constant Ast.Module := Support.Must_Parse (Program_Source, "declare program");
+      The_Module  : constant Ast.Module := Support.Must_Parse (Module_Source, "declare module");
+      Emoji_Prog  : constant Ast.Module := Support.Must_Parse (Emoji_Program, "emoji program");
+      Emoji_Mod   : constant Ast.Module := Support.Must_Parse (Emoji_Module, "emoji module");
+      Empty_Decl  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("program P; declare begin end.", "empty declare");
+      Shadow      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("program P; declare X : integer; begin declare X : boolean; begin end; end.", "shadow");
+      Unit_Clash  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("program Demo; declare Demo : integer; begin end.", "unit clash");
+      Proc_Clash  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module M; procedure Run(); declare Run : integer; begin end; end.", "proc clash");
+      Sibling_Ok  : constant Ast.Module :=
+        Support.Must_Parse
+          ("program P; begin declare X : integer; begin end; declare X : boolean; begin end; end.",
+           "sibling locals");
+   begin
+      declare
+         Prog_Block : constant Ast.Block := Ast.Get_Body (Ast.Get_Subroutine (The_Program, 1));
+         Locals     : constant Ast.Local_Sequence := Ast.Locals (Prog_Block);
+         Stmts      : constant Ast.Statement_Sequence := Ast.Statements (Prog_Block);
+      begin
+         AUnit.Assertions.Assert (Ast.Length (Locals) = 3, "program three locals");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String (Ast.Element (Locals, 1).Parameter_Name) = "X", "X");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String (Ast.Element (Locals, 2).Parameter_Name) = "Y", "Y");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String (Ast.Element (Locals, 3).Parameter_Name) = "Flag", "Flag");
+         AUnit.Assertions.Assert (Ast.Length (Stmts) = 2, "two nested statements");
+         AUnit.Assertions.Assert
+           (Ast.Kind (Ast.Element (Stmts, 1)) = Ast.Nested_Block, "nested declare");
+         AUnit.Assertions.Assert
+           (Ast.Length (Ast.Locals (Ast.Block_Of (Ast.Element (Stmts, 1)))) = 1, "inner local");
+         AUnit.Assertions.Assert
+           (Ast.Kind (Ast.Element (Stmts, 2)) = Ast.Nested_Block, "bare nested");
+         AUnit.Assertions.Assert
+           (Ast.Length (Ast.Locals (Ast.Block_Of (Ast.Element (Stmts, 2)))) = 0, "bare no locals");
+      end;
+
+      declare
+         Mod_Block : constant Ast.Block := Ast.Get_Body (Ast.Get_Subroutine (The_Module, 1));
+      begin
+         AUnit.Assertions.Assert (Ast.Length (Ast.Locals (Mod_Block)) = 1, "module tmp local");
+      end;
+
+      AUnit.Assertions.Assert (Ast.Name (Emoji_Prog) = Rocket, "emoji program name");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String
+           (Ast.Element (Ast.Locals (Ast.Get_Body (Ast.Get_Subroutine (Emoji_Prog, 1))), 1).Parameter_Name)
+         = Rocket & "Var",
+         "emoji local");
+      AUnit.Assertions.Assert (Ast.Name (Emoji_Mod) = Rocket, "emoji module name");
+      AUnit.Assertions.Assert
+        (Ast.Name (Ast.Get_Subroutine (Emoji_Mod, 1)) = Rocket & "Go", "emoji procedure");
+
+      Support.Assert_Parser_Error_Count (Empty_Decl, 1, "empty declare");
+      Support.Assert_Parser_Error_Code
+        (Empty_Decl, 1, Lovelace.Compiler.Parser.Unexpected_Token, "empty declare code");
+      Support.Assert_Parser_Error_Count (Shadow, 1, "shadow");
+      Support.Assert_Parser_Error_Code (Shadow, 1, Lovelace.Compiler.Parser.Name_Clash, "shadow code");
+      Support.Assert_Parser_Error_Count (Unit_Clash, 1, "unit clash");
+      Support.Assert_Parser_Error_Code
+        (Unit_Clash, 1, Lovelace.Compiler.Parser.Name_Clash, "unit clash code");
+      Support.Assert_Parser_Error_Count (Proc_Clash, 1, "proc clash");
+      Support.Assert_Parser_Error_Code
+        (Proc_Clash, 1, Lovelace.Compiler.Parser.Name_Clash, "proc clash code");
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (Sibling_Ok) = 1, "sibling ok");
+   end Test_Declare_Locals;
 
    procedure Test_Dotted_Module_Name (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -643,7 +793,8 @@ package body Lovelace.Compiler.Tests.Parser is
       AUnit.Assertions.Assert (Ast.Has_Export (Ast.Get_Flags (Exported_Sub)), "exported has export");
       AUnit.Assertions.Assert (Ast.Has_Native (Ast.Get_Flags (Exported_Sub)), "exported has native");
       AUnit.Assertions.Assert (Ast.Name (Exported_Sub) = "print", "exported name");
-      AUnit.Assertions.Assert (Ast.Length (Ast.Get_Body (Exported_Sub)) = 0, "exported empty body");
+      AUnit.Assertions.Assert
+        (Ast.Length (Ast.Statements (Ast.Get_Body (Exported_Sub))) = 0, "exported empty body");
       AUnit.Assertions.Assert (Exported_Native.Present, "exported binding present");
       AUnit.Assertions.Assert
         (U.To_String (Exported_Native.Value.Library) = "libx", "exported library");
@@ -712,27 +863,29 @@ package body Lovelace.Compiler.Tests.Parser is
    begin
       AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 2, "two procedures");
       declare
-         Run_Body : constant Ast.Statement_Sequence := Ast.Get_Body (Ast.Get_Subroutine (The_Module, 2));
+         Run_Body : constant Ast.Statement_Sequence :=
+           Ast.Statements (Ast.Get_Body (Ast.Get_Subroutine (The_Module, 2)));
       begin
          AUnit.Assertions.Assert (Ast.Length (Run_Body) = 3, "three statements");
          AUnit.Assertions.Assert
-           (Ada.Strings.Unbounded.To_String (Ast.Element (Run_Body, 1).The_Call.Callee_Name) = "Calls.Sink",
+           (Ada.Strings.Unbounded.To_String (Ast.Call_Of (Ast.Element (Run_Body, 1)).Callee_Name) = "Calls.Sink",
             "callee name");
-         AUnit.Assertions.Assert (Ast.Length (Ast.Element (Run_Body, 1).The_Call.Arguments) = 1, "one arg");
+         AUnit.Assertions.Assert (Ast.Length (Ast.Call_Of (Ast.Element (Run_Body, 1)).Arguments) = 1, "one arg");
          AUnit.Assertions.Assert
-           (Ada.Strings.Unbounded.To_String (Ast.Element (Ast.Element (Run_Body, 1).The_Call.Arguments, 1).Lexeme)
+           (Ada.Strings.Unbounded.To_String (Ast.Element (Ast.Call_Of (Ast.Element (Run_Body, 1)).Arguments, 1).Lexeme)
             = "42",
             "arg lexeme");
-         AUnit.Assertions.Assert (Ast.Length (Ast.Element (Run_Body, 2).The_Call.Arguments) = 0, "nullary");
-         AUnit.Assertions.Assert (Ast.Length (Ast.Element (Run_Body, 3).The_Call.Arguments) = 2, "two args");
+         AUnit.Assertions.Assert (Ast.Length (Ast.Call_Of (Ast.Element (Run_Body, 2)).Arguments) = 0, "nullary");
+         AUnit.Assertions.Assert (Ast.Length (Ast.Call_Of (Ast.Element (Run_Body, 3)).Arguments) = 2, "two args");
       end;
 
       declare
-         Program_Body : constant Ast.Statement_Sequence := Ast.Get_Body (Ast.Get_Subroutine (The_Program, 1));
+         Program_Body : constant Ast.Statement_Sequence :=
+           Ast.Statements (Ast.Get_Body (Ast.Get_Subroutine (The_Program, 1)));
       begin
          AUnit.Assertions.Assert (Ast.Length (Program_Body) = 1, "program one statement");
          AUnit.Assertions.Assert
-           (Ada.Strings.Unbounded.To_String (Ast.Element (Program_Body, 1).The_Call.Callee_Name)
+           (Ada.Strings.Unbounded.To_String (Ast.Call_Of (Ast.Element (Program_Body, 1)).Callee_Name)
             = "augusta.std.io.print",
             "program callee");
       end;
