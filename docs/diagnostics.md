@@ -73,6 +73,9 @@ When there is no useful source span (or for CLI usage errors):
 | `LV00019` | Circular_Import | Unit graph (import cycle among compilation units) |
 | `LV00020` | Ambiguous_Module_Path | Unit graph (two or more distinct `.love` files match one import) |
 | `LV00021` | Unknown_Native_Binding | IR Generator (`native(target, key)` not in the closed wasi intrinsic set) |
+| `LV00022` | Unterminated_Comment | Tokenizer (opening `{` without a matching `}`) |
+| `LV00023` | Nested_Comment | Tokenizer (`{` inside an open `{` … `}` comment) |
+| `LV00024` | Stray_Comment_Closer | Tokenizer (`}` outside a comment) |
 
 Stage-local enums (tokenizer, parser, IR generator, unit graph, …) map to these labels at report time via `Lovelace.Compiler.Reporting` (unit-graph failures also expose `Unit_Graph.Surface_Error_Code`).
 

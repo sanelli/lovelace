@@ -58,6 +58,50 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Support.Assert_Keyword (Source_Text, Token_List, 1, Tokens.Begin_Keyword, "begin");
    end Test_Clean_Begin;
 
+   procedure Test_Comment_Errors (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Nested       : constant Compiler_Tokenizer.Tokenizer_Error_Sequence :=
+        Support.Must_Fail ("{ outer { nest }", "nested");
+      Unterminated : constant Compiler_Tokenizer.Tokenizer_Error_Sequence :=
+        Support.Must_Fail ("{ never closed", "unterminated");
+      Stray        : constant Compiler_Tokenizer.Tokenizer_Error_Sequence :=
+        Support.Must_Fail ("}", "stray");
+      Stray_After  : constant Compiler_Tokenizer.Tokenizer_Error_Sequence :=
+        Support.Must_Fail ("end }", "stray after");
+   begin
+      Support.Assert_Error_Count (Nested, 1, "nested");
+      Support.Assert_Error_Code (Nested, 1, Compiler_Tokenizer.Nested_Comment, "nested code");
+      Support.Assert_Error_Count (Unterminated, 1, "unterminated");
+      Support.Assert_Error_Code
+        (Unterminated, 1, Compiler_Tokenizer.Unterminated_Comment, "unterminated code");
+      Support.Assert_Error_Count (Stray, 1, "stray");
+      Support.Assert_Error_Code (Stray, 1, Compiler_Tokenizer.Stray_Comment_Closer, "stray code");
+      Support.Assert_Error_Count (Stray_After, 1, "stray after");
+      Support.Assert_Error_Code
+        (Stray_After, 1, Compiler_Tokenizer.Stray_Comment_Closer, "stray after code");
+   end Test_Comment_Errors;
+
+   procedure Test_Comments (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Spaced       : constant String := "program { c } begin end.";
+      Glued        : constant String := "program{c}begin end.";
+      Empty_C      : constant String := "program {} begin end.";
+      Multiline    : constant String := "program { line1" & ASCII.LF & "line2 } begin end.";
+      In_String    : constant String := """{not a comment}""";
+      Spaced_List  : constant Tokens.Token_Sequence := Support.Must_Succeed (Spaced, "spaced comment");
+      Glued_List   : constant Tokens.Token_Sequence := Support.Must_Succeed (Glued, "glued comment");
+      Empty_List   : constant Tokens.Token_Sequence := Support.Must_Succeed (Empty_C, "empty comment");
+      Multi_List   : constant Tokens.Token_Sequence := Support.Must_Succeed (Multiline, "multiline comment");
+      String_List  : constant Tokens.Token_Sequence := Support.Must_Succeed (In_String, "braces in string");
+   begin
+      Assert_Program_Begin_End (Spaced, Spaced_List, "spaced comment");
+      Assert_Program_Begin_End (Glued, Glued_List, "glued comment");
+      Assert_Program_Begin_End (Empty_C, Empty_List, "empty comment");
+      Assert_Program_Begin_End (Multiline, Multi_List, "multiline comment");
+      Support.Assert_Token_Count (String_List, 1, "braces in string");
+      Support.Assert_String_Literal (In_String, String_List, 1, """{not a comment}""", "string lexeme");
+   end Test_Comments;
+
    procedure Test_Directive_And_String_Errors (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Bare_Hash   : constant Compiler_Tokenizer.Tokenizer_Error_Sequence := Support.Must_Fail ("#", "bare hash");

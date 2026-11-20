@@ -170,6 +170,14 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Tokenizer.Test_Clean_Begin'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
+           ("tokenizer: comments",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Comments'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
+           ("tokenizer: comment errors",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Comment_Errors'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
            ("tokenizer: directives and strings",
             Lovelace
               .Compiler

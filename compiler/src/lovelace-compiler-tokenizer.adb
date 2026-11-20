@@ -166,6 +166,14 @@ package body Lovelace.Compiler.Tokenizer is
    function Register_Scan_Class
      (Pattern : String; Kind : Tokens.Token_Kind; Filename : Source.Filename_Option) return Tokenizer_Error_Sequence;
    function Scalar_To_Class (Point : Code_Point) return String;
+   procedure Skip_Comment
+     (Errors      : in out Tokenizer_Error_Sequence;
+      Source_Text : String;
+      Position    : in out Positive;
+      Line        : in out Positive;
+      Column      : in out Positive;
+      Filename    : Source.Filename_Option);
+   --  Consume `{` … `}` (no token). Nested `{`, EOF, handled as errors.
    function String_Literal_Pattern return String;
    function Success_Result (Token_List : Tokens.Token_Sequence) return Tokenize_Result;
    function Tokenize_Core (Source_Text : String; Filename : Source.Filename_Option) return Tokenize_Result;
@@ -209,12 +217,33 @@ package body Lovelace.Compiler.Tokenizer is
       Line        : in out Positive;
       Column      : in out Positive;
       Filename    : Source.Filename_Option);
+   procedure Report_Nested_Comment
+     (Errors      : in out Tokenizer_Error_Sequence;
+      Source_Text : String;
+      Position    : in out Positive;
+      Line        : in out Positive;
+      Column      : in out Positive;
+      Filename    : Source.Filename_Option);
+   procedure Report_Stray_Comment_Closer
+     (Errors      : in out Tokenizer_Error_Sequence;
+      Source_Text : String;
+      Position    : in out Positive;
+      Line        : in out Positive;
+      Column      : in out Positive;
+      Filename    : Source.Filename_Option);
    procedure Report_Unrecognized_Symbol
      (Errors      : in out Tokenizer_Error_Sequence;
       Source_Text : String;
       Position    : in out Positive;
       Line        : in out Positive;
       Column      : in out Positive;
+      Filename    : Source.Filename_Option);
+   procedure Report_Unterminated_Comment
+     (Errors      : in out Tokenizer_Error_Sequence;
+      Source_Text : String;
+      Position    : Positive;
+      Line        : Positive;
+      Column      : Positive;
       Filename    : Source.Filename_Option);
    procedure Report_Unterminated_String
      (Errors      : in out Tokenizer_Error_Sequence;
@@ -827,6 +856,62 @@ package body Lovelace.Compiler.Tokenizer is
          Last_Position => Last_Position);
    end Report_Invalid_Utf_8;
 
+   procedure Report_Nested_Comment
+     (Errors      : in out Tokenizer_Error_Sequence;
+      Source_Text : String;
+      Position    : in out Positive;
+      Line        : in out Positive;
+      Column      : in out Positive;
+      Filename    : Source.Filename_Option)
+   is
+      First_Position : constant Source.Source_Position := (Byte_Index => Position, Line => Line, Column => Column);
+      Last_Position  : Source.Source_Position;
+   begin
+      Append_Error
+        (Errors   => Errors,
+         Code     => Nested_Comment,
+         First    => First_Position,
+         Last     => First_Position,
+         Filename => Filename,
+         Detail   => "nested comments are not allowed");
+
+      Advance_Bytes
+        (Source_Text   => Source_Text,
+         Byte_Count    => 1,
+         Position      => Position,
+         Line          => Line,
+         Column        => Column,
+         Last_Position => Last_Position);
+   end Report_Nested_Comment;
+
+   procedure Report_Stray_Comment_Closer
+     (Errors      : in out Tokenizer_Error_Sequence;
+      Source_Text : String;
+      Position    : in out Positive;
+      Line        : in out Positive;
+      Column      : in out Positive;
+      Filename    : Source.Filename_Option)
+   is
+      First_Position : constant Source.Source_Position := (Byte_Index => Position, Line => Line, Column => Column);
+      Last_Position  : Source.Source_Position;
+   begin
+      Append_Error
+        (Errors   => Errors,
+         Code     => Stray_Comment_Closer,
+         First    => First_Position,
+         Last     => First_Position,
+         Filename => Filename,
+         Detail   => "stray comment closer '}'");
+
+      Advance_Bytes
+        (Source_Text   => Source_Text,
+         Byte_Count    => 1,
+         Position      => Position,
+         Line          => Line,
+         Column        => Column,
+         Last_Position => Last_Position);
+   end Report_Stray_Comment_Closer;
+
    procedure Report_Unrecognized_Symbol
      (Errors      : in out Tokenizer_Error_Sequence;
       Source_Text : String;
@@ -867,6 +952,26 @@ package body Lovelace.Compiler.Tokenizer is
                Last_Position => Last_Position);
       end case;
    end Report_Unrecognized_Symbol;
+
+   procedure Report_Unterminated_Comment
+     (Errors      : in out Tokenizer_Error_Sequence;
+      Source_Text : String;
+      Position    : Positive;
+      Line        : Positive;
+      Column      : Positive;
+      Filename    : Source.Filename_Option)
+   is
+      pragma Unreferenced (Source_Text);
+      First_Position : constant Source.Source_Position := (Byte_Index => Position, Line => Line, Column => Column);
+   begin
+      Append_Error
+        (Errors   => Errors,
+         Code     => Unterminated_Comment,
+         First    => First_Position,
+         Last     => First_Position,
+         Filename => Filename,
+         Detail   => "unterminated comment");
+   end Report_Unterminated_Comment;
 
    procedure Report_Unterminated_String
      (Errors      : in out Tokenizer_Error_Sequence;
@@ -918,6 +1023,66 @@ package body Lovelace.Compiler.Tokenizer is
       end loop;
       return "\u{" & Hex & "}";
    end Scalar_To_Class;
+
+   procedure Skip_Comment
+     (Errors      : in out Tokenizer_Error_Sequence;
+      Source_Text : String;
+      Position    : in out Positive;
+      Line        : in out Positive;
+      Column      : in out Positive;
+      Filename    : Source.Filename_Option)
+   is
+      Open_Byte     : constant Positive := Position;
+      Open_Line     : constant Positive := Line;
+      Open_Column   : constant Positive := Column;
+      Last_Position : Source.Source_Position;
+      Skip_Length   : Natural;
+   begin
+      --  Consume opening `{`.
+      Advance_Bytes
+        (Source_Text   => Source_Text,
+         Byte_Count    => 1,
+         Position      => Position,
+         Line          => Line,
+         Column        => Column,
+         Last_Position => Last_Position);
+
+      while Position <= Source_Text'Last loop
+         if Source_Text (Position) = '{' then
+            Report_Nested_Comment (Errors, Source_Text, Position, Line, Column, Filename);
+         elsif Source_Text (Position) = '}' then
+            Advance_Bytes
+              (Source_Text   => Source_Text,
+               Byte_Count    => 1,
+               Position      => Position,
+               Line          => Line,
+               Column        => Column,
+               Last_Position => Last_Position);
+            return;
+         else
+            Skip_Length := Lovelace.Common.Utf_8.Sequence_Length (Source_Text, Position);
+            if Skip_Length = 0 then
+               Report_Invalid_Utf_8 (Errors, Source_Text, Position, Line, Column, Filename);
+            else
+               Advance_Bytes
+                 (Source_Text   => Source_Text,
+                  Byte_Count    => Skip_Length,
+                  Position      => Position,
+                  Line          => Line,
+                  Column        => Column,
+                  Last_Position => Last_Position);
+            end if;
+         end if;
+      end loop;
+
+      Report_Unterminated_Comment
+        (Errors      => Errors,
+         Source_Text => Source_Text,
+         Position    => Open_Byte,
+         Line        => Open_Line,
+         Column      => Open_Column,
+         Filename    => Filename);
+   end Skip_Comment;
 
    function String_Literal_Pattern return String is
    begin
@@ -983,6 +1148,12 @@ package body Lovelace.Compiler.Tokenizer is
                Line          => Line,
                Column        => Column,
                Last_Position => Last_Position);
+            After_Delimiter := True;
+         elsif Source_Text (Position) = '}' then
+            Report_Stray_Comment_Closer (Errors, Source_Text, Position, Line, Column, Filename);
+            After_Delimiter := True;
+         elsif Source_Text (Position) = '{' then
+            Skip_Comment (Errors, Source_Text, Position, Line, Column, Filename);
             After_Delimiter := True;
          else
             Longest_Scan_Match

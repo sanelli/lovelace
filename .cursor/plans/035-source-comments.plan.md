@@ -13,10 +13,10 @@ todos:
     status: completed
   - id: "4"
     content: "4. Tokenizer errors: Unterminated_Comment + Nested_Comment + Stray_Comment_Closer; LV codes + Diagnostics reporting + diagnostics.md; gnatformat."
-    status: pending
+    status: completed
   - id: "5"
     content: "5. Tokenizer: after whitespace, scan `{`…`}` comments (discard; no token); reject nest/unterminated/stray; AUnit tokenizer tests; gnatformat."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Docs: token-grammar, tokenizer.md; lock comment rules on roadmap 1.002 step 1; update augusta.md; gnatformat N/A."
     status: pending

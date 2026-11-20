@@ -106,6 +106,15 @@ package body Lovelace.Compiler.Reporting is
 
          when Tokenizer.Unterminated_String_Literal =>
             return Error_Codes.Unterminated_String_Literal;
+
+         when Tokenizer.Unterminated_Comment        =>
+            return Error_Codes.Unterminated_Comment;
+
+         when Tokenizer.Nested_Comment              =>
+            return Error_Codes.Nested_Comment;
+
+         when Tokenizer.Stray_Comment_Closer        =>
+            return Error_Codes.Stray_Comment_Closer;
       end case;
    end To_Error_Code;
 
