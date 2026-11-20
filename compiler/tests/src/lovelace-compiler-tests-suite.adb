@@ -170,6 +170,14 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Tokenizer.Test_Clean_Begin'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
+           ("tokenizer: comments",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Comments'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
+           ("tokenizer: comment errors",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Comment_Errors'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
            ("tokenizer: directives and strings",
             Lovelace
               .Compiler
@@ -193,6 +201,10 @@ package body Lovelace.Compiler.Tests.Suite is
         (Parser_Caller.Create
            ("parser: canonical multiline",
             Lovelace.Compiler.Tests.Parser.Test_Canonical_Multiline'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: comments",
+            Lovelace.Compiler.Tests.Parser.Test_Comments'Access));
       Result.Add_Test
         (Parser_Caller.Create
            ("parser: dotted module name",

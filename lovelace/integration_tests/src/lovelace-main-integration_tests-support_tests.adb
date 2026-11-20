@@ -21,6 +21,8 @@ package body Lovelace.Main.Integration_Tests.Support_Tests is
         Helpers.Locate_Sample ("import", "ImportLib.love");
       Module_Path     : constant String :=
         Helpers.Locate_Sample ("module", "Empty.love");
+      Comments_Path   : constant String :=
+        Helpers.Locate_Sample ("comments", "Comments.love");
       Calls_Path      : constant String :=
         Helpers.Locate_Sample ("calls", "SameModuleCall.love");
       Resolve_Caller  : constant String :=
@@ -46,6 +48,9 @@ package body Lovelace.Main.Integration_Tests.Support_Tests is
          "import ImportLib.love present");
       AUnit.Assertions.Assert
         (Ada.Directories.Exists (Module_Path), "module Empty.love present");
+      AUnit.Assertions.Assert
+        (Ada.Directories.Exists (Comments_Path),
+         "comments Comments.love present");
       AUnit.Assertions.Assert
         (Ada.Directories.Exists (Calls_Path),
          "calls SameModuleCall.love present");

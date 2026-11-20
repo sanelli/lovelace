@@ -65,6 +65,15 @@ package body Lovelace.Compiler.Error_Codes is
 
          when Unknown_Native_Binding         =>
             return "LV00021";
+
+         when Unterminated_Comment           =>
+            return "LV00022";
+
+         when Nested_Comment                 =>
+            return "LV00023";
+
+         when Stray_Comment_Closer           =>
+            return "LV00024";
       end case;
    end Label;
 

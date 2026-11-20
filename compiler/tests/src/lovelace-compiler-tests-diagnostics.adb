@@ -77,6 +77,14 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert
         (Error_Codes.Label (Error_Codes.Unknown_Native_Binding) = "LV00021",
          "LV00021");
+      AUnit.Assertions.Assert
+        (Error_Codes.Label (Error_Codes.Unterminated_Comment) = "LV00022",
+         "LV00022");
+      AUnit.Assertions.Assert
+        (Error_Codes.Label (Error_Codes.Nested_Comment) = "LV00023", "LV00023");
+      AUnit.Assertions.Assert
+        (Error_Codes.Label (Error_Codes.Stray_Comment_Closer) = "LV00024",
+         "LV00024");
    end Test_Error_Code_Labels;
 
    procedure Test_Format_Shape (The_Test : in out Fixture) is
@@ -134,6 +142,18 @@ package body Lovelace.Compiler.Tests.Diagnostics is
         (Reporting.To_Error_Code (Tokenizer.Unterminated_String_Literal)
          = Error_Codes.Unterminated_String_Literal,
          "unterminated string map");
+      AUnit.Assertions.Assert
+        (Reporting.To_Error_Code (Tokenizer.Unterminated_Comment)
+         = Error_Codes.Unterminated_Comment,
+         "unterminated comment map");
+      AUnit.Assertions.Assert
+        (Reporting.To_Error_Code (Tokenizer.Nested_Comment)
+         = Error_Codes.Nested_Comment,
+         "nested comment map");
+      AUnit.Assertions.Assert
+        (Reporting.To_Error_Code (Tokenizer.Stray_Comment_Closer)
+         = Error_Codes.Stray_Comment_Closer,
+         "stray comment closer map");
       AUnit.Assertions.Assert
         (Reporting.To_Error_Code (Parser.Unexpected_Trailing)
          = Error_Codes.Unexpected_Trailing,

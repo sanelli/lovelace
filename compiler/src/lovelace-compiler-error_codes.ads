@@ -24,6 +24,9 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Circular_Import Unit graph: import cycle among compilation units (LV00019).
    --  @enum Ambiguous_Module_Path Unit graph: two or more distinct .love files match one import (LV00020).
    --  @enum Unknown_Native_Binding IR Generator: native(target, key) not in the closed wasi set (LV00021).
+   --  @enum Unterminated_Comment Tokenizer: opening `{` without a matching `}` (LV00022).
+   --  @enum Nested_Comment Tokenizer: `{` inside an open `{` … `}` comment (LV00023).
+   --  @enum Stray_Comment_Closer Tokenizer: `}` outside a comment (LV00024).
    type Error_Code is
      (Internal_Error,
       Unrecognized_Symbol,
@@ -45,7 +48,10 @@ package Lovelace.Compiler.Error_Codes is
       Not_Exported,
       Circular_Import,
       Ambiguous_Module_Path,
-      Unknown_Native_Binding);
+      Unknown_Native_Binding,
+      Unterminated_Comment,
+      Nested_Comment,
+      Stray_Comment_Closer);
 
    --  Canonical LV##### label for Code.
    --  @param Code Diagnostic kind.

@@ -2,7 +2,7 @@
 
 `Lovelace.Compiler.Tokenizer` turns UTF-8 source into a token sequence, or a list of located errors. It lives in crate `lovelace_compiler` and uses the host [regex engine](regex-engine.md) (`Compile` / `Match_Prefix`) for whitespace, identifiers, punctuation, and numeric literals.
 
-This slice covers keywords, identifiers, punctuation for units and type lists, integer/float literals, flavor **directives** (`#if` / `#elsif` / `#else` / `#end`), and double-quoted **string literals** (no escapes). A recursive-descent parser for program and module compilation units is documented in [parser.md](parser.md) and [compilation-unit-grammar.md](compilation-unit-grammar.md). Flavor selection: [directives.md](directives.md). Literal lexeme interpretation (not wired into bodies yet) is in [literals.md](literals.md).
+This slice covers keywords, identifiers, punctuation for units and type lists, integer/float literals, flavor **directives** (`#if` / `#elsif` / `#else` / `#end`), double-quoted **string literals** (no escapes), and **`{` … `}` block comments** (non-nesting; skipped like whitespace). A recursive-descent parser for program and module compilation units is documented in [parser.md](parser.md) and [compilation-unit-grammar.md](compilation-unit-grammar.md). Flavor selection: [directives.md](directives.md). Literal lexeme interpretation (not wired into bodies yet) is in [literals.md](literals.md).
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). The token grammar for this slice is in [token-grammar.md](token-grammar.md).
 
@@ -42,7 +42,7 @@ begin
 end;
 ```
 
-Empty source and whitespace-only source succeed with an empty token sequence.
+Empty source, whitespace-only source, and comment-only source succeed with an empty token sequence.
 
 ## Token kinds
 
@@ -73,6 +73,14 @@ Lexeme text is not stored on the token. Recover it with `Lexeme (Source_Text, Th
 Any space between tokens is **ignored**: consumed, not emitted, not attached to the previous or next token. That includes ASCII space, tab, LF, CR, FF, Unicode space separators, and line terminators (NBSP, NEL, ideographic space, and similar). Adjacent tokens with no space (`end;`) are valid.
 
 Spaces **inside** a string literal are kept as part of the string token.
+
+## Comments
+
+Block comments use Ada-style **`{` … `}`** delimiters. They are **ignored like whitespace**: consumed, not emitted, not part of adjacent tokens. Empty `{}` is valid. Comments may span lines; line/column advance through the body the same way as for other multi-line spans.
+
+**No nesting:** a `{` inside an open comment is `Nested_Comment` (`LV00023`). An opening `{` with no closing `}` before EOF is `Unterminated_Comment` (`LV00022`). A `}` outside a comment is `Stray_Comment_Closer` (`LV00024`).
+
+`{` / `}` are **not** punctuation in this slice — they are reserved as comment delimiters only. Inside a string literal, braces are ordinary characters and do not start or end a comment.
 
 ## Identifiers
 
@@ -111,8 +119,11 @@ Scan Unicode **scalars** via `Lovelace.Common.Utf_8`. Do not treat Ada `Characte
 | `Unrecognized_Symbol` | Valid scalar that does not start a token (`+` alone, `#` not starting a directive or based integer, …) |
 | `Invalid_Utf_8` | Bytes that are not valid UTF-8 |
 | `Unterminated_String` | Opening `"` without a closing `"` before end of file |
+| `Unterminated_Comment` | Opening `{` without a closing `}` before end of file (`LV00022`) |
+| `Nested_Comment` | `{` found inside an open `{` … `}` comment (`LV00023`) |
+| `Stray_Comment_Closer` | `}` outside a comment (`LV00024`) |
 
-There are no error tokens and no `null` tokens. The scanner collects **all** user-source errors in one pass (it does not stop at the first). After each error it skips one scalar, or one byte / invalid sequence for `Invalid_Utf_8`, and continues.
+There are no error tokens and no `null` tokens. The scanner collects **all** user-source errors in one pass (it does not stop at the first). After each error it skips one scalar, or one byte / invalid sequence for `Invalid_Utf_8`, and continues. Comment errors recover the same way (advance past the offending `{` / `}` or report at EOF for unterminated).
 
 If any error is collected — user or internal — `Tokenize` returns `Ok => False` with the full error list. Recovered tokens from that pass are not returned.
 
@@ -123,8 +134,8 @@ Clean input such as `begin` succeeds (`Ok => True`). That also shows the built-i
 This slice does **not** emit tokens for:
 
 - Character literals
-- Comments
 - Operators beyond the punctuation list above
+- Line comments (`--`, `//`, …) — only `{` … `}` block comments are recognized
 
 ## Tests
 

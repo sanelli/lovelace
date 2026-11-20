@@ -5,6 +5,7 @@ with Ada.Strings.Hash;
 with GNAT.OS_Lib;
 
 with Lovelace.Compiler.Parser;
+with Lovelace.Compiler.Reporting;
 with Lovelace.Compiler.Tokenizer;
 
 package body Lovelace.Compiler.Unit_Graph is
@@ -221,16 +222,7 @@ package body Lovelace.Compiler.Unit_Graph is
                                   (First_Error.Detail),
                                 Dep_Path,
                                 Source_String,
-                                (case First_Error.Code is
-                                   when Tokenizer.Internal_Error
-                                   => Error_Codes.Internal_Error,
-                                   when Tokenizer.Unrecognized_Symbol
-                                   => Error_Codes.Unrecognized_Symbol,
-                                   when Tokenizer.Invalid_Utf_8
-                                   => Error_Codes.Invalid_Utf_8,
-                                   when Tokenizer.Unterminated_String_Literal
-                                   =>
-                                     Error_Codes.Unterminated_String_Literal));
+                                Reporting.To_Error_Code (First_Error.Code));
                         end;
                      end if;
 

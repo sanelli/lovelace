@@ -107,6 +107,14 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Clean_Begin (The_Test : in out Fixture);
 
+   --  Nested `{`, unterminated `{`, and stray `}` are tokenizer comment errors.
+   --  @param The_Test Unused fixture.
+   procedure Test_Comment_Errors (The_Test : in out Fixture);
+
+   --  `{` … `}` comments are skipped like whitespace; braces inside strings are not comments.
+   --  @param The_Test Unused fixture.
+   procedure Test_Comments (The_Test : in out Fixture);
+
    --  Bare # and #pragma are Unrecognized_Symbol; opening " alone is Unterminated_String_Literal.
    --  @param The_Test Unused fixture.
    procedure Test_Directive_And_String_Errors (The_Test : in out Fixture);

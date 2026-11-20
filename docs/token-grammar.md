@@ -3,7 +3,7 @@
 Lexical grammar recognized by [`Lovelace.Compiler.Tokenizer`](tokenizer.md). Not a full Lovelace language grammar. The compilation-unit syntax for this slice is in [compilation-unit-grammar.md](compilation-unit-grammar.md). Directives: [directives.md](directives.md).
 
 ```ebnf
-tokens        = { whitespace | token | error } ;
+tokens        = { whitespace | comment | token | error } ;
 token         = keyword | identifier | punctuation | integer_literal
               | float_literal | directive | string_literal ;
 keyword       = "program" | "module" | "begin" | "end" | "export" | "import" | "native"
@@ -31,7 +31,12 @@ exponent        = ( "e" | "E" ) , [ "+" | "-" ] , digits ;
 whitespace    = whitespace_scalar , { whitespace_scalar } ;
 (* ignored: not emitted, not part of the adjacent tokens *)
 
-error         = unrecognized_symbol | invalid_utf_8 | unterminated_string_literal ;
+comment       = "{" , { comment_character } , "}" ;
+(* ignored like whitespace; not emitted. No nesting: `{` inside a comment is an error.
+   `{` / `}` inside a string_literal are not comment delimiters. *)
+
+error         = unrecognized_symbol | invalid_utf_8 | unterminated_string_literal
+              | unterminated_comment | nested_comment | stray_comment_closer ;
 ```
 
 `identifier_first` / `identifier_continue` are Unicode-scalar predicates documented in [tokenizer.md](tokenizer.md). `_` is allowed; ASCII digits may continue an identifier but must not start one (except after `@`).
