@@ -7,8 +7,8 @@ Ordered planning docs. Filenames use `{series}.{nnn}-roadmap-….md`.
 | Id | Doc | Summary |
 | --- | --- | --- |
 | 1.001 | [print integer (WASI)](1.001-roadmap-print-integer-wasi.md) | Flavor `#if`, import/export, multi-unit, synthesized WASI print, HelloPrint E2E |
-| 1.002 | [replace synthesized print](1.002-roadmap-replace-synthesized-print.md) | Comments, `@intrinsic`/`@native`, literals, boolean, `:=` + **typechecker**/`Lovelace_Type`, exprs, ops, if, loop, `unsigned integer<8>` + minimal casts, Lovelace `print` |
-| 1.003 | [web print integer](1.003-roadmap-print-integer-web.md) | `--flavor web` console integer print |
+| 1.002 | [replace synthesized print](1.002-roadmap-replace-synthesized-print.md) | Comments, `@intrinsic`/`@native`, literals, boolean, `:=` + **resolve/scope** + **definite assignment** + **typechecker**/`Lovelace_Type`, exprs, ops, if, loop, `unsigned integer<8>` + minimal casts, Lovelace `print` |
+| 1.003 | [web print integer](1.003-roadmap-print-integer-web.md) | `--flavor web` console integer print; flavor-keyed `@intrinsic` table |
 | 1.004 | [native print + libaugusta](1.004-roadmap-print-integer-native.md) | wasmtime embed, freestanding `libaugusta` on Linux/Windows/macOS |
 
 ## Series 2 — language depth

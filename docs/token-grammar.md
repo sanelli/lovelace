@@ -6,8 +6,8 @@ Lexical grammar recognized by [`Lovelace.Compiler.Tokenizer`](tokenizer.md). Not
 tokens        = { whitespace | comment | token | error } ;
 token         = keyword | identifier | punctuation | integer_literal
               | float_literal | directive | string_literal ;
-keyword       = "program" | "module" | "begin" | "end" | "export" | "import" | "native"
-              | "procedure" | "integer" | "float" | "signed" | "unsigned"
+keyword       = "program" | "module" | "begin" | "end" | "declare" | "export" | "import"
+              | "native" | "procedure" | "integer" | "float" | "signed" | "unsigned"
               | "boolean" | "true" | "false" ;
               (* case-sensitive *)
 punctuation   = ";" | "." | "(" | ")" | "," | ":" | "<" | ">" | "=" ;
@@ -59,6 +59,7 @@ Examples:
 | Source | Tokens (on success) |
 | --- | --- |
 | `program begin end.` | `program` `begin` `end` `.` |
+| `declare X : integer;` | `declare` `X` `:` `integer` `;` |
 | `module Foo.Bar; end.` | `module` `Foo` `.` `Bar` `;` `end` `.` |
 | `procedure P(x : integer);` | `procedure` `P` `(` `x` `:` `integer` `)` `;` |
 | `export procedure Print(Value : integer);` | `export` `procedure` `Print` `(` `Value` `:` `integer` `)` `;` |

@@ -30,15 +30,22 @@ The toolchain is one Ada **executable** (`lovelace`) plus **static** libraries i
 
 | Component | Role |
 | --- | --- |
-| **`compiler/`** | Static library: frontend, LIR lowering, WASM / WAT / WIT backend |
-| **`lir/`** | Static library: Lovelace IR types, validation, and versioned `.lir` / `.tlir` codecs |
-| **`common/`** | Static library: shared host code (UTF-8, regex, source locations, …) |
-| **`jit/`** | Static library: JIT runtime; binds and links the Wasmtime C library |
-| **`lovelace/`** | Executable CLI (`lovelace build`, `run`, `doc`, project and solution commands) |
-| **`tooling/`** | Static library: `.pjlove`, `.slnlove`, and `.pkglove` formats and behaviour |
-| **`hypatia/`** | Static library: Hypatia package manager (folder or git; a package must include `.pkglove`) |
-| **`alexandria/`** | Static library: parse comments / doc-comments and generate Markdown (and SVG when useful) |
-| **`augusta/`** | Standard library (`.love` plus the **only** dynamic native library); flavors `native`, `wasi`, and `web` |
+| **`lovelace/compiler/`** | Static library: frontend, LIR lowering, WASM / WAT / WIT backend |
+| **`lovelace/lir/`** | Static library: Lovelace IR types, validation, and versioned `.lir` / `.tlir` codecs |
+| **`lovelace/common/`** | Static library: shared host code (UTF-8, regex, source locations, …) |
+| **`lovelace/shared/`** | Shared GPR switches and test helpers |
+| **`lovelace/lovelace/`** | Executable CLI (`lovelace build`, `run`, `doc`, project and solution commands) |
+| **`jit/`** | Static library: JIT runtime; binds and links the Wasmtime C library (planned) |
+| **`tooling/`** | Static library: `.pjlove`, `.slnlove`, and `.pkglove` formats and behaviour (planned) |
+| **`hypatia/`** | Static library: Hypatia package manager (planned) |
+| **`alexandria/`** | Static library: documentation tooling (planned) |
+| **`augusta/lovelace/`** | Augusta `.love` modules (in-tree `AUGUSTA_HOME`) |
+| **`augusta/libaugusta/`** | Freestanding Ada native Augusta (planned) |
+| **`augusta/libaugusta-js/`** | Web JS glue for Augusta (planned) |
+| **`ide/lsp/`** | Language Server Protocol for Lovelace and LIR (planned) |
+| **`ide/textmate/`** | Shared TextMate syntax grammars (planned) |
+| **`ide/vscode/`** | Visual Studio Code extension (planned) |
+| **`ide/jetbrains/`** | JetBrains plugin; WebStorm primary (planned) |
 | **`samples/`** | Lovelace samples used for testing |
 | **`docs/`** | Human documentation (CLI, grammar, HOW TOs) |
 | **`scripts/`** | Scripts to compile and run samples |
@@ -50,14 +57,14 @@ Pipeline: **source → frontend → LIR (analysis / opts) → backend → WebAss
 Early but usable for a minimal path: empty-body `.love` programs can be built to a WebAssembly **component** (and optional WAT / WIT) with the CLI.
 
 ```text
-alr -C lovelace build
-lovelace/bin/lovelace --no-logo build samples/program/Hello.love --output-format wasm,wat
+alr -C lovelace/lovelace build
+lovelace/lovelace/bin/lovelace --no-logo build samples/program/Hello.love --output-format wasm,wat
 wasmtime run -Sp3 -W component-model-async=y .output/bin/Hello.wasm
 ```
 
 CLI reference: [docs/cli.md](docs/cli.md). Diagnostics (`LV#####`): [docs/diagnostics.md](docs/diagnostics.md). Samples: [docs/samples.md](docs/samples.md). Design and conventions live in `.cursor/rules/`. Contributions should follow those rules (Alire, strict Ada, AUnit tests, no extra third-party libraries except the allowed Wasmtime C, libgit2, and AUnit bindings).
 
-Build the workspace from the repository root with `alr build`, or build or run the CLI crate alone with `alr -C lovelace build` or `alr -C lovelace run`. Host UTF-8 and the Thompson NFA regex engine are documented in [docs/regex-engine.md](docs/regex-engine.md). Shared source positions and filenames are in [docs/source-locations.md](docs/source-locations.md). The compiler tokenizer (keywords `program` / `module` / `begin` / `end`, identifiers, `;` and `.`) is documented in [docs/tokenizer.md](docs/tokenizer.md) and [docs/token-grammar.md](docs/token-grammar.md). The compilation-unit parser (recursive descent; programs and modules) is documented in [docs/parser.md](docs/parser.md) and [docs/compilation-unit-grammar.md](docs/compilation-unit-grammar.md). AST→LIR lowering is documented in [docs/ir-generator.md](docs/ir-generator.md). Lovelace Intermediate Representation (in-memory types, optional origins, binary `.lir`, textual `.tlir`) is documented in [docs/lir.md](docs/lir.md), [docs/lir-binary.md](docs/lir-binary.md), and [docs/lir-text.md](docs/lir-text.md). LIR→WebAssembly component backends (`.wasm` / `.wat` plus companion `.wit`) are documented in [docs/codegen.md](docs/codegen.md). Generate host Ada API HTML with GNATdoc via `pwsh scripts/gnatdoc.ps1` (see [docs/gnatdoc.md](docs/gnatdoc.md)).
+Build the workspace from the repository root with `alr build`, or build or run the CLI crate alone with `alr -C lovelace/lovelace build` or `alr -C lovelace/lovelace run`. Host UTF-8 and the Thompson NFA regex engine are documented in [docs/regex-engine.md](docs/regex-engine.md). Shared source positions and filenames are in [docs/source-locations.md](docs/source-locations.md). The compiler tokenizer (keywords `program` / `module` / `begin` / `end`, identifiers, `;` and `.`) is documented in [docs/tokenizer.md](docs/tokenizer.md) and [docs/token-grammar.md](docs/token-grammar.md). The compilation-unit parser (recursive descent; programs and modules) is documented in [docs/parser.md](docs/parser.md) and [docs/compilation-unit-grammar.md](docs/compilation-unit-grammar.md). AST→LIR lowering is documented in [docs/ir-generator.md](docs/ir-generator.md). Lovelace Intermediate Representation (in-memory types, optional origins, binary `.lir`, textual `.tlir`) is documented in [docs/lir.md](docs/lir.md), [docs/lir-binary.md](docs/lir-binary.md), and [docs/lir-text.md](docs/lir-text.md). LIR→WebAssembly component backends (`.wasm` / `.wat` plus companion `.wit`) are documented in [docs/codegen.md](docs/codegen.md). Generate host Ada API HTML with GNATdoc via `pwsh scripts/gnatdoc.ps1` (see [docs/gnatdoc.md](docs/gnatdoc.md)).
 
 ### Development tools
 
@@ -75,7 +82,7 @@ The formatter executable is **`gnatformat`** (from `libadalang_tools`; see **Dev
 Example (format one file in place, 120-column width):
 
 ```powershell
-alr exec -- gnatformat -w 120 -P common/lovelace_common.gpr common/src/lovelace-common-utf_8.adb
+alr exec -- gnatformat -w 120 -P lovelace/common/lovelace_common.gpr lovelace/common/src/lovelace-common-utf_8.adb
 ```
 
 ### macOS setup

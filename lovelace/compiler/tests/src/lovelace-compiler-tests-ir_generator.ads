@@ -1,0 +1,66 @@
+with AUnit.Test_Fixtures;
+
+--  AUnit fixtures for Lovelace.Compiler.Ir_Generator.
+
+package Lovelace.Compiler.Tests.Ir_Generator is
+
+   --  Fixture for IR Generator matrix tests.
+   type Fixture is new AUnit.Test_Fixtures.Test_Fixture with null record;
+
+   --  Canonical program Hello; begin end. lowers to matching LIR structure and origins.
+   --  @param The_Test Unused fixture.
+   procedure Test_Canonical_Multiline (The_Test : in out Fixture);
+
+   --  Multi-unit flatten: import-gated exported calls succeed; missing import / not exported fail.
+   --  @param The_Test Unused fixture.
+   procedure Test_Cross_Module_Calls (The_Test : in out Fixture);
+
+   --  Dotted module name is preserved on the LIR module with zero subroutines.
+   --  @param The_Test Unused fixture.
+   procedure Test_Dotted_Module_Name (The_Test : in out Fixture);
+
+   --  Empty module Empty; end. lowers to a LIR module with no subroutines.
+   --  @param The_Test Unused fixture.
+   procedure Test_Empty_Module (The_Test : in out Fixture);
+
+   --  Hand-built AST with export-only flags maps export without entrypoint.
+   --  @param The_Test Unused fixture.
+   procedure Test_Export_Only_Flags (The_Test : in out Fixture);
+
+   --  export procedure with parameters maps Export_Flag and LIR parameters.
+   --  @param The_Test Unused fixture.
+   procedure Test_Export_Procedure_Parameters (The_Test : in out Fixture);
+
+   --  Tokenize+Parse with a filename label shares storage on LIR module and subroutine.
+   --  @param The_Test Unused fixture.
+   procedure Test_Filename_Shared (The_Test : in out Fixture);
+
+   --  Nested declare locals flatten into ordered LIR local slots with mapped types.
+   --  @param The_Test Unused fixture.
+   procedure Test_Flattened_Locals (The_Test : in out Fixture);
+
+   --  Unicode and @-prefixed identifiers preserve names into LIR.
+   --  @param The_Test Unused fixture.
+   procedure Test_Identifier_Names (The_Test : in out Fixture);
+
+   --  Leading imports lower to LIR Dependencies in source order; empty imports stay zero.
+   --  @param The_Test Unused fixture.
+   procedure Test_Import_Dependencies (The_Test : in out Fixture);
+
+   --  Module procedure parameters lower to named LIR signature entries with mapped types.
+   --  @param The_Test Unused fixture.
+   procedure Test_Module_Procedure_Parameters (The_Test : in out Fixture);
+
+   --  native("wasi", "native-print-integer") lowers to LIR Native_Flag + binding; unknown keys fail.
+   --  @param The_Test Unused fixture.
+   procedure Test_Native_Binding (The_Test : in out Fixture);
+
+   --  Integer/float/boolean formals map to matching LIR Value_Type (boolean → I32).
+   --  @param The_Test Unused fixture.
+   procedure Test_Parameter_Type_Mapping (The_Test : in out Fixture);
+
+   --  Same-unit calls (integer + boolean literals); unresolved / arity / type mismatches fail.
+   --  @param The_Test Unused fixture.
+   procedure Test_Same_Unit_Calls (The_Test : in out Fixture);
+
+end Lovelace.Compiler.Tests.Ir_Generator;

@@ -20,8 +20,11 @@ ordinary_procedure    = [ "export" ] , "procedure" , identifier ,
 native_procedure      = [ "export" ] , native_clause , "procedure" , identifier ,
                         "(" , [ parameter_list ] , ")" , ";" ;
 native_clause         = "native" , "(" , string_literal , "," , string_literal , ")" ;
-block                 = "begin" , { statement } , "end" ;
-statement             = call_statement ;
+block                 = [ declare_part ] , "begin" , { statement } , "end" ;
+declare_part          = "declare" , variable_declaration , { variable_declaration } ;
+variable_declaration  = identifier , { "," , identifier } , ":" , type_name , ";" ;
+statement             = call_statement | block_statement ;
+block_statement       = block , ";" ;
 call_statement        = callee_name , "(" , [ argument_list ] , ")" , ";" ;
 callee_name           = identifier , "." , identifier , { "." , identifier } ;
 argument_list         = argument , { "," , argument } ;
@@ -58,6 +61,7 @@ Defaults: omitted signedness → signed; omitted integer size → 32; omitted fl
 | `"true"` / `"false"` | boolean literal keywords (call arguments) |
 | `"begin"` | keyword `begin` |
 | `"end"` | keyword `end` |
+| `"declare"` | keyword `declare` |
 | `"#if"` / `"#elsif"` / `"#else"` / `"#end"` | directive tokens |
 | `identifier` | identifier (including `@foo`, Unicode names; `flavor` in conditions) |
 | `string_literal` | double-quoted string (no escapes in this slice) |
@@ -69,6 +73,8 @@ Examples (all valid when tokenized then parsed):
 | Source | Notes |
 | --- | --- |
 | `program Hello; begin end.` | Canonical program |
+| `program P; declare X : integer; begin end.` | Optional non-empty `declare` before `begin` |
+| `program P; begin declare Y : boolean; begin end; end.` | Nested `block_statement` (`end;`) |
 | `import augusta.std.io; program Hello; begin end.` | Leading import before program |
 | `program IDENTIFIER;begin end.` | No space after `;` |
 | `    program   X ; begin end .  ` | Arbitrary spaces |
@@ -85,6 +91,8 @@ Examples (all valid when tokenized then parsed):
 
 Imports are **file-leading** only (before `program` / `module`). Duplicate import names and self-import (import name equals the unit name) are `Name_Clash` ([`LV00011`](diagnostics.md)). `import … as …` is reserved and not parsed.
 
-Not accepted in this slice: `import` after `program`/`module`, inside procedure bodies, or inside `#if` arms; `end;` after a program `end`, `module …; begin end.` (modules have no unit-level `begin`), procedures inside `program` units, `#if` in `program` units or inside procedure bodies, keyword `native(…)` headers ([`LV00026`](diagnostics.md)), `@intrinsic`/`@native` together with a `begin`…`end` body, unqualified call targets (`Sink(42);` — need `MODULE.SUBROUTINE`), call arguments other than integer literals / `true` / `false`, `float<16>` / `integer<128>` / `boolean<…>`, wrong keyword order, missing final `.`, trailing tokens after `.`, `Program` / `Module` as the unit keyword (identifiers, not keywords), trailing `.` in a qualified name (`module Foo.;`), duplicate parameter or procedure names among **surviving** declarations ([`LV00011`](diagnostics.md)). Cross-module call **resolution** is a later step; such calls may still parse. `@intrinsic` signature matching against the closed table is an IR concern ([`LV00025`](diagnostics.md)).
+Not accepted in this slice: `import` after `program`/`module`, inside procedure bodies, or inside `#if` arms; `end;` after a program `end`, `module …; begin end.` (modules have no unit-level `begin`), procedures inside `program` units, `#if` in `program` units or inside procedure bodies, empty `declare` (`declare begin`), shadowing / duplicate locals / locals that reuse unit entity or parameter names ([`LV00011`](diagnostics.md)), keyword `native(…)` headers ([`LV00026`](diagnostics.md)), `@intrinsic`/`@native` together with a `begin`…`end` body, unqualified call targets (`Sink(42);` — need `MODULE.SUBROUTINE`), call arguments other than integer literals / `true` / `false`, reading or assigning locals (`:=` → roadmap 1.002 step 6), `float<16>` / `integer<128>` / `boolean<…>`, wrong keyword order, missing final `.`, trailing tokens after `.`, `Program` / `Module` as the unit keyword (identifiers, not keywords), trailing `.` in a qualified name (`module Foo.;`), duplicate parameter or procedure names among **surviving** declarations ([`LV00011`](diagnostics.md)). Cross-module call **resolution** is a later step; such calls may still parse. `@intrinsic` signature matching against the closed table is an IR concern ([`LV00025`](diagnostics.md)).
+
+**Scopes:** each `declare` pushes names for that block only (visible inward, not outward). Nested blocks must not shadow enclosing locals/parameters or clash with the unit name / subroutine names in the same unit. Sibling nested blocks may reuse the same local name.
 
 The `.love` basename (excluding the extension) must equal the program or module name, including dots for modules (`Foo.Bar.love` ↔ `module Foo.Bar;`). See [cli.md](cli.md) and [`LV00009`](diagnostics.md).

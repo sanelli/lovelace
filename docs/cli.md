@@ -1,6 +1,6 @@
 # Lovelace CLI
 
-Crate `lovelace` (`lovelace/`) is the host executable. Build it with `alr -C lovelace build`; the binary is `lovelace/bin/lovelace`.
+Crate `lovelace` (`lovelace/lovelace/`) is the host executable. Build it with `alr -C lovelace/lovelace build`; the binary is `lovelace/lovelace/bin/lovelace`.
 
 Related docs: [diagnostics](diagnostics.md), [codegen](codegen.md), [samples](samples.md), [LIR](lir.md), [directives](directives.md).
 
@@ -54,6 +54,7 @@ A `.love` path is **required** for now. Future builds may accept `.pjlove` / `.s
 | Option | Effect |
 | --- | --- |
 | `--force` | Rebuild every stage from the `.love` file; ignore incremental mtime skips |
+| `--generate-tlir` | Also write `obj/<Unit>.tlir` (textual LIR) next to the binary `.lir`. Not used for incremental mtime decisions. |
 | `--no-wit` | Do not write the companion `.wit` file (WIT may still be computed when emitting) |
 | `--output-format <fmt>` | `wasm` (default), `wat`, `wasm,wat`, or `wat,wasm` |
 | `--output-folder <path>` | Output root (default `.output` in the current working directory) |
@@ -73,10 +74,10 @@ Imported module names are resolved under an ordered list of search roots:
 3. Each `--include-path` / `-I` directory (CLI order)
 4. Augusta stdlib root — **exactly one** slot:
    - `AUGUSTA_HOME` if set
-   - else `LOVELACE_HOME/lib/augusta` if `LOVELACE_HOME` is set
-   - else `~/.lovelace/lib/augusta`
+   - else `LOVELACE_HOME/lib/augusta/<product-version>` if `LOVELACE_HOME` is set
+   - else `~/.lovelace/lib/augusta/<product-version>`
 
-That slot is a normal search root: `import augusta.std.io;` looks for `augusta.std.io.love` / `augusta/std/io.love` (and the other mixed forms) **under** the slot. For the in-tree sources, set `AUGUSTA_HOME` to [`augusta/`](../augusta/) (or pass `-I augusta`). Details: [augusta.md](augusta.md).
+`<product-version>` is the Lovelace product version without the git hash (e.g. `0.0.1-alpha.1`). That slot is a normal search root: `import augusta.std.io;` looks for `augusta.std.io.love` / `augusta/std/io.love` (and the other mixed forms) **under** the slot. For the in-tree sources, set `AUGUSTA_HOME` to [`augusta/lovelace/`](../augusta/lovelace/) (or pass `-I augusta/lovelace`). Details: [augusta.md](augusta.md).
 
 For module `a.b.c`, every mixed slash/dot relative form is a candidate (`a/b/c.love`, `a/b.c.love`, `a.b/c.love`, `a.b.c.love`). Exactly one existing file must match; zero → [`LV00016`](diagnostics.md); two or more → [`LV00020`](diagnostics.md). See [ir-generator.md](ir-generator.md).
 
@@ -86,12 +87,13 @@ Under the output root:
 
 ```text
 obj/<Unit>.lir
+obj/<Unit>.tlir    # only with --generate-tlir
 bin/<Unit>.wasm    # if format includes wasm
 bin/<Unit>.wat     # if format includes wat
 bin/<Unit>.wit     # unless --no-wit
 ```
 
-The `.lir` file is LIR **1.0** (origins included; see [lir-binary.md](lir-binary.md)). Backends: [codegen.md](codegen.md).
+The `.lir` file is LIR **1.0** (origins included; see [lir-binary.md](lir-binary.md)). With `--generate-tlir`, the CLI also writes the companion textual form ([lir-text.md](lir-text.md)). Backends: [codegen.md](codegen.md).
 
 #### Incremental builds
 
@@ -99,6 +101,8 @@ The `.lir` file is LIR **1.0** (origins included; see [lir-binary.md](lir-binary
 | --- | --- |
 | Frontend (tokenize / parse / IR / write `.lir`) | `mtime(.lir) >= mtime(.love)` |
 | Backend (wasm / wat / wit) | each artifact’s mtime is `>=` mtime of `.lir` |
+
+`.tlir` is **never** used for skip decisions (presence or mtime). When `--generate-tlir` is set, textual LIR is rewritten whenever the in-memory LIR module is available (including when the frontend was skipped and `.lir` was only re-read).
 
 Skipped stages log an `[info]` line (for example `LIR up to date, skipping frontend`).
 
@@ -117,6 +121,7 @@ lovelace build samples/module/Foo.Bar.love
 lovelace build samples/directives/FlavorSelect.love
 lovelace build samples/directives/FlavorSelect.love --flavor native
 lovelace --no-logo build samples/program/Hello.love --force
+lovelace build samples/program/Hello.love --generate-tlir
 lovelace build samples/program/Hello.love --output-format wasm,wat --output-folder /tmp/out
 lovelace build samples/program/Hello.love --no-wit --output-format wat
 ```
@@ -146,15 +151,15 @@ pwsh -NoProfile -File scripts/run-tests.ps1 -SkipIntegration
 pwsh -NoProfile -File scripts/run-tests.ps1 -SkipUnit
 ```
 
-By default the script runs workspace `alr build`, all unit crates below, then the integration crate. `-SkipUnit` skips the unit crates; `-SkipIntegration` skips `lovelace/integration_tests`. Both may be combined.
+By default the script runs workspace `alr build`, all unit crates below, then the integration crate. `-SkipUnit` skips the unit crates; `-SkipIntegration` skips `lovelace/lovelace/integration_tests`. Both may be combined.
 
 | Crate | Command | Role |
 | --- | --- | --- |
-| `common/tests` | `alr -C common/tests run` | Shared host library unit tests |
-| `lir/tests` | `alr -C lir/tests run` | LIR types / codecs unit tests |
-| `compiler/tests` | `alr -C compiler/tests run` | Compiler frontend / backend unit tests |
-| `lovelace/tests` (`lovelace_tests`) | `alr -C lovelace/tests run` | Unit tests for argument parsing, output-format, help, version, basename |
-| `lovelace/integration_tests` (`lovelace_integration_tests`) | `alr -C lovelace/integration_tests run` | Optional: build `samples/program/Hello.love` into `.tests/integration-tests/` and run Wasmtime on `.wasm` / `.wat` (prints `INCONCLUSIVE: wasmtime not found` and passes if Wasmtime is missing); also builds module samples under `samples/module/` |
+| `lovelace/common/tests` | `alr -C lovelace/common/tests run` | Shared host library unit tests |
+| `lovelace/lir/tests` | `alr -C lovelace/lir/tests run` | LIR types / codecs unit tests |
+| `lovelace/compiler/tests` | `alr -C lovelace/compiler/tests run` | Compiler frontend / backend unit tests |
+| `lovelace/lovelace/tests` (`lovelace_tests`) | `alr -C lovelace/lovelace/tests run` | Unit tests for argument parsing, output-format, help, version, basename |
+| `lovelace/lovelace/integration_tests` (`lovelace_integration_tests`) | `alr -C lovelace/lovelace/integration_tests run` | Optional: build `samples/program/Hello.love` into `.tests/integration-tests/` and run Wasmtime on `.wasm` / `.wat` (prints `INCONCLUSIVE: wasmtime not found` and passes if Wasmtime is missing); also builds module samples under `samples/module/` |
 
 Integration tests are **not** part of the default unit-test checklist; use `-SkipIntegration` when you only want units, or `-SkipUnit` when you only want integration.
 

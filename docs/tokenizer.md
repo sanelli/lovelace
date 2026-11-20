@@ -48,7 +48,7 @@ Empty source, whitespace-only source, and comment-only source succeed with an em
 
 | `Token_Kind` | Subtype | This slice |
 | --- | --- | --- |
-| `Keyword` | `Keyword_Subtype` | `program`, `module`, `begin`, `end`, `export`, `import`, `procedure`, `integer`, `float`, `signed`, `unsigned`, `boolean`, `true`, `false` |
+| `Keyword` | `Keyword_Subtype` | `program`, `module`, `begin`, `end`, `declare`, `export`, `import`, `procedure`, `integer`, `float`, `signed`, `unsigned`, `boolean`, `true`, `false` |
 | `Identifier` | (none) | Names, including `@foo`, `café`, emoji |
 | `Punctuation` | `Punctuation_Subtype` | `;` `.` `(` `)` `,` `:` `<` `>` `=` |
 | `Integer_Literal` | (none) | Optional sign, `0b`/`0o`/`0x` or decimal, optional `s`/`u` size (see [token-grammar.md](token-grammar.md)) |
@@ -140,5 +140,5 @@ This slice does **not** emit tokens for:
 ## Tests
 
 ```powershell
-alr -C compiler/tests run
+alr -C lovelace/compiler/tests run
 ```

@@ -39,7 +39,8 @@ Inside a subroutine, in order:
 4. **Required** `(result t)` — always present; use `unit` for procedures
 5. Optional bare identifiers `export` and/or `entrypoint` and/or `native` and/or `intrinsic` (flag bits, not strings)
 6. Optional `(native "library" "function")` when a `@native` FFI binding is present (same strings as the LIR binding; emit together with bare `native`). `@intrinsic` emits bare `intrinsic` only — no `(native …)` form
-7. `(body …)` — may be empty (must be empty for native or intrinsic subroutines)
+7. Optional `(local "name1" t1 "name2" t2 …)` — alternating quoted local name and type token; omit when there are zero locals
+8. `(body …)` — may be empty (must be empty for native or intrinsic subroutines)
 
 ### Origin forms
 

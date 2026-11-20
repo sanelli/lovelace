@@ -1,12 +1,12 @@
 ---
 description: CLI integration tests — validate every artifact; run only entrypoints
-globs: "{lovelace/integration_tests,samples,scripts}/**/*"
+globs: "{lovelace/lovelace/integration_tests,samples,scripts}/**/*"
 alwaysApply: false
 ---
 
 # Integration tests (CLI + artifacts)
 
-Crate `lovelace_integration_tests` (`lovelace/integration_tests`) builds [samples](../../samples/) with the `lovelace` CLI and checks generated artifacts. Shared helpers live in `Lovelace.Main.Integration_Tests.Support`.
+Crate `lovelace_integration_tests` (`lovelace/lovelace/integration_tests`) builds [samples](../../samples/) with the `lovelace` CLI and checks generated artifacts. Shared helpers live in `Lovelace.Main.Integration_Tests.Support`.
 
 These tests may invoke **optional host tools on PATH**. Do **not** `depends-on`, vendor, or wrap those tools as Alire/crate dependencies (see dependencies rule). CI installs them via `bytecodealliance/actions` (`wasmtime/setup`, `wasm-tools/setup`).
 

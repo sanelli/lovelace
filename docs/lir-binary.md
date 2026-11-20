@@ -94,15 +94,19 @@ Then follow exactly `subroutine_count` subroutine records in preamble order (no 
 4. `parameter_count` parameters, each:
    - name (encoded string)
    - type — encoded `Value_Type`
-5. `flags` — `u32` (bit 0 = export, bit 1 = entrypoint, bit 2 = native, bit 3 = intrinsic; other bits preserved like module flags)
-6. **Subroutine origin:**
+5. `local_count` — `u32`
+6. `local_count` locals, each (same shape as a parameter):
+   - name (encoded string)
+   - type — encoded `Value_Type`
+7. `flags` — `u32` (bit 0 = export, bit 1 = entrypoint, bit 2 = native, bit 3 = intrinsic; other bits preserved like module flags)
+8. **Subroutine origin:**
    - `origin_present` — `u8` (`0` / `1`; other → `Invalid_Presence`)
    - when present: filename (encoded string; empty = absent), then `name_span` only (no unit span)
-7. **Native binding** (only when `Native_Flag`; absent for `@intrinsic`):
+9. **Native binding** (only when `Native_Flag`; absent for `@intrinsic`):
    - `native_present` — `u8` (`0` / `1`; other → `Invalid_Presence`)
    - when present: library (encoded string), then function name (encoded string)
-8. `instruction_count` — `u32` (number of instructions, not bytes)
-9. Instruction stream — concatenation of encoded instructions (no per-instruction length prefix)
+10. `instruction_count` — `u32` (number of instructions, not bytes)
+11. Instruction stream — concatenation of encoded instructions (no per-instruction length prefix)
 
 ### Instruction stream
 
