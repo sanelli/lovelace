@@ -1,6 +1,6 @@
 ---
 name: Literal reform prefixes
-overview: "Implement roadmap 1.002 macro step 3 — replace `#base#` integer literals with `0b`/`0o`/`0x`; expand float forms; width via `f32`/`f64` suffixes (bare `.`/exp → float<32>); hard-reject old based forms."
+overview: "Implement roadmap 1.002 macro step 3 — replace `#base#` integer literals with `0b`/`0o`/`0x`; expand float forms; width via `f32`/`f64` suffixes (bare `.`/exp → float<32>); old based forms simply fail to tokenize (no dedicated diagnostic)."
 todos:
   - id: "1"
     content: "1. Create GitHub issue with gh issue create (literal reform / roadmap 1.002 macro step 3); reuse if equivalent open issue exists; record <n>."
@@ -12,26 +12,23 @@ todos:
     content: "3. Save this plan as .cursor/plans/<nnn>-literal-reform.plan.md with #<n> in the body (rename from 039 if issue number differs)."
     status: completed
   - id: "4"
-    content: "4. Diagnostics: Obsolete_Based_Literal (LV00027) for old `#base#` forms; wire Reporting + diagnostics.md; gnatformat."
-    status: pending
+    content: "4. Tokenizer: new integer/float regexes; old `#base#` forms do not match (ordinary tokenization failure); AUnit; gnatformat."
+    status: completed
   - id: "5"
-    content: "5. Tokenizer: new integer/float regexes; detect obsolete `#base#` → LV00027; AUnit; gnatformat."
-    status: pending
+    content: "5. Literals interpreter: parse 0b/0o/0x + float f32/f64 width; AUnit; gnatformat."
+    status: completed
   - id: "6"
-    content: "6. Literals interpreter: parse 0b/0o/0x + float f32/f64 width; reject old based; AUnit; gnatformat."
-    status: pending
+    content: "6. Docs: rewrite literals.md; update token-grammar.md, tokenizer.md; lock roadmap 1.002 step 3 (override old f/F + float64-default wording)."
+    status: completed
   - id: "7"
-    content: "7. Docs: rewrite literals.md; update token-grammar.md, tokenizer.md; lock roadmap 1.002 step 3 (override old f/F + float64-default wording)."
-    status: pending
+    content: "7. Sample samples/literals/… + docs/samples.md; update any tests still using `#base#`."
+    status: completed
   - id: "8"
-    content: "8. Sample samples/literals/… + docs/samples.md; update any tests still using `#base#`."
-    status: pending
+    content: "8. Run all tests (scripts/run-tests.ps1)."
+    status: completed
   - id: "9"
-    content: "9. Run all tests (scripts/run-tests.ps1)."
-    status: pending
-  - id: "10"
-    content: "10. Push (proxy env cleared) and open a PR with gh pr create."
-    status: pending
+    content: "9. Push (proxy env cleared) and open a PR with gh pr create."
+    status: completed
 isProject: false
 ---
 
@@ -60,8 +57,8 @@ Roadmap: [docs/roadmap/1.002-roadmap-replace-synthesized-print.md](../../docs/ro
 
 - Optional leading `+` / `-` unchanged
 - Optional `s` / `u` + optional `8|16|32|64` size suffixes unchanged
-- **Hard-reject** all Ada-style `#BASE#` forms (`#2#`, `#8#`, `#10#`, `#16#`) — no compatibility window → tokenizer diagnostic **`Obsolete_Based_Literal` (`LV00027`)**
-- Directives (`#if` / `#elsif` / `#else` / `#end`) unchanged; register obsolete based detection so `#16#FF` is not a successful integer token
+- **No** Ada-style `#BASE#` forms (`#2#`, `#8#`, `#10#`, `#16#`) — they are **not** in the integer pattern, so they are an ordinary **tokenization failure** (existing unexpected-character / invalid-token path). **No** dedicated `Obsolete_Based_Literal` / `LV00027` (or similar) diagnostic
+- Directives (`#if` / `#elsif` / `#else` / `#end`) unchanged and still match before any literal attempt; `#16#FF` must not become a successful integer token
 
 Examples: `42`, `-3u16`, `0xFFs32`, `0b1010`, `0o755`, `+0Xdead`
 
@@ -96,6 +93,7 @@ Where `exponent = (e|E) [+|-] digits` and `width = f32|F32|f64|F64`.
 - Changing bare type `float` → 64
 - Float expression typing in the parser/IR beyond storing width on `Float_Literal_Value`
 - Underscore digit separators
+- A dedicated diagnostic for old `#base#` spellings
 
 ## Architecture
 
@@ -103,14 +101,14 @@ Where `exponent = (e|E) [+|-] digits` and `width = f32|F32|f64|F64`.
 flowchart TD
   src["Source lexeme"]
   tok["Tokenizer longest match"]
-  obsolete["Obsolete_Based_Literal LV00027"]
+  fail["Ordinary tokenization failure"]
   fl["Float_Literal"]
   il["Integer_Literal"]
   litF["Literals.Interpret_Float + width"]
   litI["Literals.Interpret_Integer 0b/0o/0x"]
 
   src --> tok
-  tok -->|"#2# / #8# / #10# / #16#"| obsolete
+  tok -->|"#2# / #8# / #10# / #16# (no match)"| fail
   tok -->|"7f32 / 1.0 / 1e3"| fl
   tok -->|"0xFF / 42 / 0b101"| il
   fl --> litF
@@ -123,47 +121,43 @@ flowchart TD
 
 Create issue, branch from latest `main`, rename/save this plan with `#39` in the body.
 
-### 4. Diagnostics
-
-- Add `Obsolete_Based_Literal` → **`LV00027`** in [`error_codes`](../../compiler/src/lovelace-compiler-error_codes.ads), tokenizer error enum, Reporting, [`docs/diagnostics.md`](../../docs/diagnostics.md), diagnostics AUnit
-
-### 5. Tokenizer
+### 4. Tokenizer
 
 Files: [`lovelace-compiler-tokenizer.adb`](../../compiler/src/lovelace-compiler-tokenizer.adb)
 
 - Replace `Integer_Literal_Pattern` with `0b`/`0o`/`0x`/decimal + existing `s`/`u` suffixes
 - Replace `Float_Literal_Pattern` with the three forms above (including `f32`/`f64` / `F32`/`F64`)
 - Keep float-before-integer registration order
-- After whitespace/comments (or via a dedicated scan class / hand check): if input looks like obsolete `#BASE#…`, report `Obsolete_Based_Literal` and recover (do not emit an integer token)
-- AUnit: update [`Test_Numeric_Literals`](../../compiler/tests/src/lovelace-compiler-tests-tokenizer.adb); add obsolete `#16#FF` failure; ensure `#if` still works; `0xf` is integer; `7f32` is float
+- Do **not** add a special obsolete-based scanner or `LV…` code — dropping `#base#` from the integer pattern is enough; leftover `#…` fails like any other unrecognized input (directives still match)
+- AUnit: update [`Test_Numeric_Literals`](../../compiler/tests/src/lovelace-compiler-tests-tokenizer.adb); `#16#FF` is a tokenization failure; ensure `#if` still works; `0xf` is integer; `7f32` is float
 
-### 6. Literals interpreter
+### 5. Literals interpreter
 
 Files: [`lovelace-compiler-literals.ads`](../../compiler/src/lovelace-compiler-literals.ads) / `.adb`
 
-- `Interpret_Integer`: parse new prefixes; reject any remaining `#base#` shape as `Invalid_Literal` (defense in depth)
+- `Interpret_Integer`: parse new prefixes only (no `#base#` path)
 - `Float_Literal_Value`: add width field (`Types.Float_Size`, default **Bits_32** when suffix absent on `.`/exp forms; from suffix when present)
 - AUnit: rewrite [`Test_Integer_Forms`](../../compiler/tests/src/lovelace-compiler-tests-literals.adb) / float tests / invalid cases; keep `To_Integer_32` coverage on new spellings
 
-### 7. Docs + roadmap lock
+### 6. Docs + roadmap lock
 
 - Rewrite [`docs/literals.md`](../../docs/literals.md) (fix the wrong `16#FF#` examples)
 - Update [`docs/token-grammar.md`](../../docs/token-grammar.md), [`docs/tokenizer.md`](../../docs/tokenizer.md)
 - Update roadmap 1.002 § locked float decisions + macro step 3 status with `#39`: document **`f32`/`f64` suffixes** and **bare `.`/exp → float&lt;32&gt;** (explicitly supersede earlier `f` / float64-default draft)
 
-### 8. Sample + stray `#base#` cleanup
+### 7. Sample + stray `#base#` cleanup
 
 - Add [`samples/literals/`](../../samples/literals/) focused unit (e.g. module or comments-only program is fine if calls still integer-only — prefer a tiny module that tokenizes/parses with new literals in a procedure signature comment… better: a program/module that uses new integer literals in existing call-arg positions like `Sink(0x2A);` if a local sample module is added)
 - Update [`docs/samples.md`](../../docs/samples.md)
 - Grep tests/docs for `#2#` / `#16#` Lovelace spellings and migrate
 
-### 9. Full tests
+### 8. Full tests
 
 ```bash
 pwsh scripts/run-tests.ps1
 ```
 
-### 10. Push / PR
+### 9. Push / PR
 
 Clear proxy env, push, `gh pr create` closing `#39`, referencing roadmap 1.002 step 3.
 
@@ -172,3 +166,4 @@ Clear proxy env, push, `gh pr create` closing `#39`, referencing roadmap 1.002 s
 - Do not implement boolean, `:=`, operators, or float call arguments
 - Do not change type-position bare `float` away from `float<32>`
 - Do not add digit underscores
+- Do not add `Obsolete_Based_Literal` / `LV00027` (or any dedicated obsolete-literal diagnostic)

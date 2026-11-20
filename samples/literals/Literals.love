@@ -1,0 +1,13 @@
+{ Integer literal prefixes: 0b / 0o / 0x (and decimal). Call args stay integer-only. }
+module Literals;
+procedure Sink(Value : integer);
+begin
+end;
+procedure Run();
+begin
+   Literals.Sink(0x2A);
+   Literals.Sink(0b101010);
+   Literals.Sink(0o52);
+   Literals.Sink(42);
+end;
+end.

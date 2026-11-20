@@ -512,7 +512,7 @@ package body Lovelace.Compiler.Tokenizer is
             Whitespace_Engine := Compile_Result.Value;
       end case;
 
-      --  Float before integer so 1.0 / 7. win longest-match over 1 / 7.
+      --  Float before integer so 1.0 / 7. / 7f32 / 1e3 win longest-match over integer forms.
       Class_Errors := Register_Scan_Class (Float_Literal_Pattern, Tokens.Float_Literal, Filename);
       if Length (Class_Errors) > 0 then
          return Class_Errors;
@@ -523,7 +523,7 @@ package body Lovelace.Compiler.Tokenizer is
          return Class_Errors;
       end if;
 
-      --  Directives before identifiers so #if is not unrecognized; exact forms avoid based-integer bases.
+      --  Directives before identifiers so #if is not unrecognized.
       Class_Errors := Register_Scan_Class (Directive_Pattern, Tokens.Directive, Filename);
       if Length (Class_Errors) > 0 then
          return Class_Errors;
@@ -573,7 +573,13 @@ package body Lovelace.Compiler.Tokenizer is
 
    function Float_Literal_Pattern return String is
    begin
-      return "[+-]?[0-9]+\.([0-9]+)?([eE][+-]?[0-9]+)?";
+      --  Form 1: digits . [digits] [exp] [f32|f64]
+      --  Form 2: digits exp [f32|f64]
+      --  Form 3: digits f32|f64 (width required when no . / exp)
+      return
+        "[+-]?([0-9]+\.([0-9]+)?([eE][+-]?[0-9]+)?([fF](32|64))?|"
+        & "[0-9]+[eE][+-]?[0-9]+([fF](32|64))?|"
+        & "[0-9]+[fF](32|64))";
    end Float_Literal_Pattern;
 
    function Format_Scalar (Point : Code_Point) return String is
@@ -616,7 +622,8 @@ package body Lovelace.Compiler.Tokenizer is
 
    function Integer_Literal_Pattern return String is
    begin
-      return "[+-]?(#2#[01]+|#8#[0-7]+|#10#[0-9]+|#16#[0-9A-Fa-f]+|[0-9]+)([su](8|16|32|64)?)?";
+      return
+        "[+-]?(0[bB][01]+|0[oO][0-7]+|0[xX][0-9A-Fa-f]+|[0-9]+)([su](8|16|32|64)?)?";
    end Integer_Literal_Pattern;
 
    function Internal_Compile_Error
