@@ -19,10 +19,10 @@ todos:
     status: completed
   - id: "6"
     content: "6. Parser: block/unit usings, :=, expressions, scope clashes, reject import; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Diagnostics severity + warning codes; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. Semantics: environment, DA, Lovelace_Type, call-target resolve (LV00014/17/18), unused warnings; wire build; AUnit; gnatformat."
     status: pending
@@ -64,7 +64,7 @@ Roadmap: [docs/roadmap/1.002-roadmap-replace-synthesized-print.md](../../docs/ro
 ### Rename `import` → `using`
 
 - Keyword **`using`** replaces **`import`** everywhere (tokenizer, grammar, AST naming, diagnostics text, samples, Augusta docs, rules).
-- Lexeme **`import`** is an **ordinary identifier** (not a keyword). Parser step 6 hard-rejects it with `Obsolete_Import` (**LV00027**) when used as a declaration introducer; until then the parser may still recognize identifier `import` for the old leading-import form.
+- Lexeme **`import`** is an **ordinary identifier** (not a keyword). No dedicated obsolete diagnostic — wrong placement fails as ordinary `Unexpected_Token`.
 - `using … as …` stays **reserved** (not parsed).
 - Unit-leading form remains: `{ using_declaration } program|module …` (today’s leading imports).
 - Diagnostic / IR messages that say “import” become “using”. Keep stable numeric labels where the meaning is unchanged (`LV00016`–`LV00020`, `LV00017` Call_Without_Import → rename enum to `Call_Without_Using`, **same LV00017**).
@@ -138,8 +138,8 @@ New compiler package(s) under `lovelace/compiler` (names locked in implementatio
 2. **Definite assignment** — locals start unassigned; parameters assigned; `:=` assigns; read of unassigned local → error (**LV00028** `Use_Before_Assignment`). Straight-line + nested blocks as already sketched in the roadmap.
 3. **`Lovelace_Type` + typechecker** — hierarchical type model; assignability / implicit cast queries for types already in the language; `:=` and call actuals vs formals use the **same** API. Mismatch → **LV00029** `Type_Mismatch`. Migrate ad-hoc IR literal checks onto this API for sites touched in this step.
 4. **Unused analysis (warnings)** — after resolve/DA/types on a successful-enough AST walk:
-   - **LV00030** `Unused_Variable` (warning): local **never read** (assignment alone is not a use).
-   - **LV00031** `Unused_Assignment` (warning): a specific `:=` whose written value is never read before the next assignment to that name or end of scope (dead store). Prefer emitting **Unused_Assignment** for dead stores when the variable is read elsewhere; emit **Unused_Variable** when there is no read anywhere. Do not double-report both for the same name when never read — **Unused_Variable** wins; still report Unused_Assignment for earlier dead stores only when the variable has at least one later read (or document single-warning priority: if never read → only Unused_Variable).
+   - **LV00028** `Unused_Variable` (warning): local **never read** (assignment alone is not a use).
+   - **LV00029** `Unused_Assignment` (warning): a specific `:=` whose written value is never read before the next assignment to that name or end of scope (dead store). Prefer emitting **Unused_Assignment** for dead stores when the variable is read elsewhere; emit **Unused_Variable** when there is no read anywhere. Do not double-report both for the same name when never read — **Unused_Variable** wins; still report Unused_Assignment for earlier dead stores only when the variable has at least one later read (or document single-warning priority: if never read → only Unused_Variable).
 
 **Locked warning priority:** if a local is never read → only **Unused_Variable** (even if assigned). If a local is read at least once → emit **Unused_Assignment** for any `:=` whose value is not read before overwrite/end.
 
@@ -172,8 +172,8 @@ Introduce **severity** on surfaced diagnostics: `Error` | `Warning`.
 | Flag | Behavior |
 | --- | --- |
 | `--warning-as-errors` | Every warning is promoted to error (counts toward failure; printed as errors) |
-| `--no-warnings LV00030,LV00031` | Comma-separated list (one argv value). Those **warning** codes are suppressed (not printed; not promoted). Requires ≥1 id |
-| Invalid `--no-warnings` entry | Unknown code **or** code that is not a warning → **hard error**, compilation **stops** (invalid CLI / build input). Allocate **LV00032** `Invalid_Warning_Suppression` (or report via CLI argument error before compile — prefer CLI parse failure with clear message **and** stable LV when emitted from build) |
+| `--no-warnings LV00028,LV00029` | Comma-separated list (one argv value). Those **warning** codes are suppressed (not printed; not promoted). Requires ≥1 id |
+| Invalid `--no-warnings` entry | Unknown code **or** code that is not a warning → **hard error**, compilation **stops** (invalid CLI / build input). Allocate **LV00030** `Invalid_Warning_Suppression` (or report via CLI argument error before compile — prefer CLI parse failure with clear message **and** stable LV when emitted from build) |
 
 Build exit: any remaining **error** (including promoted warnings) → non-zero. Warnings alone → zero.
 
@@ -204,7 +204,7 @@ Update [docs/cli.md](../../docs/cli.md), [docs/diagnostics.md](../../docs/diagno
 ### 4. Tokenizer
 
 - Add `using` keyword; punctuation `:=`.
-- Lexeme `import` is **not** a keyword — tokenize as **identifier**. Obsolete_Import (LV00027) is a **parser** concern in step 6.
+- Lexeme `import` is **not** a keyword — tokenize as **identifier**.
 - AUnit + gnatformat.
 
 ### 5. AST
@@ -216,7 +216,7 @@ Update [docs/cli.md](../../docs/cli.md), [docs/diagnostics.md](../../docs/diagno
 
 ### 6. Parser
 
-- Parse block preamble usings + declare; unit-leading usings; reject `import` (LV00027).
+- Parse block preamble usings + declare; unit-leading usings; `import` fails as unexpected token.
 - Parse `:=` and expressions; call args as expressions.
 - Scope stack: usings + locals; no shadowing usings/locals per locked rules.
 - AUnit: nested using+declare; clash with outer using; sibling OK; obsolete import; assignment/expr parse shapes.
@@ -224,7 +224,7 @@ Update [docs/cli.md](../../docs/cli.md), [docs/diagnostics.md](../../docs/diagno
 
 ### 7. Diagnostics infrastructure
 
-- Severity on diagnostics; warning codes LV00030/31; printer `[warning]` vs `[error]`; promote + suppress plumbing (library level, used by CLI later).
+- Severity on diagnostics; warning codes LV00028/29; printer `[warning]` vs `[error]`; promote + suppress plumbing (library level, used by CLI later).
 - AUnit for labeling/severity.
 - gnatformat.
 
@@ -268,9 +268,8 @@ Update [docs/cli.md](../../docs/cli.md), [docs/diagnostics.md](../../docs/diagno
 
 | Code | Name | Severity |
 | --- | --- | --- |
-| LV00027 | Obsolete_Import | Error |
-| LV00028 | Use_Before_Assignment | Error |
-| LV00029 | Type_Mismatch | Error |
-| LV00030 | Unused_Variable | Warning |
-| LV00031 | Unused_Assignment | Warning |
-| LV00032 | Invalid_Warning_Suppression | Error |
+| LV00026 | Use_Before_Assignment | Error |
+| LV00027 | Type_Mismatch | Error |
+| LV00028 | Unused_Variable | Warning |
+| LV00029 | Unused_Assignment | Warning |
+| LV00030 | Invalid_Warning_Suppression | Error |

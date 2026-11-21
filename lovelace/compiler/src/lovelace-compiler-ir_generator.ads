@@ -15,7 +15,7 @@ package Lovelace.Compiler.Ir_Generator is
    --  @enum Internal_Error Compiler bug such as Validate failing on frontend AST.
    --  @enum Unresolved_Call Call target is not a same-unit / imported procedure.
    --  @enum Invalid_Arguments Call arity or argument/formal types are not supported.
-   --  @enum Call_Without_Import Callee module prefix is neither self nor an import of the caller.
+   --  @enum Call_Without_Using Callee module prefix is neither self nor a using of the caller.
    --  @enum Not_Exported Imported procedure exists but lacks Export_Flag.
    --  @enum Unknown_Native_Binding Retired path for old native(target, key) closed set (kept for mapping).
    --  @enum Unknown_Intrinsic `@intrinsic` signature is not in the closed intrinsic table.
@@ -23,7 +23,7 @@ package Lovelace.Compiler.Ir_Generator is
      (Internal_Error,
       Unresolved_Call,
       Invalid_Arguments,
-      Call_Without_Import,
+      Call_Without_Using,
       Not_Exported,
       Unknown_Native_Binding,
       Unknown_Intrinsic);

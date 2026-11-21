@@ -88,7 +88,7 @@ package body Lovelace.Compiler.Parser is
      (The_Cursor : in out Cursor; Source_Text : String; Expected : Tokens.Punctuation_Subtype; Label : String)
       return Step_Result;
    function Failure_From_Step (Step : Step_Result) return Parse_Result;
-   function Import_Name_Exists (Imports : Ast.Using_Sequence; Name : String) return Boolean;
+   procedure Bind_Unit_Usings (Stack : in out Scope_Stack; Usings : Ast.Using_Sequence);
    function Is_Directive (The_Token : Tokens.Token; Expected : Tokens.Directive_Subtype) return Boolean;
    function Is_Identifier_Lexeme (Source_Text : String; The_Token : Tokens.Token; Lexeme : String) return Boolean;
    function Is_Keyword (The_Token : Tokens.Token; Expected : Tokens.Keyword_Subtype) return Boolean;
@@ -97,14 +97,18 @@ package body Lovelace.Compiler.Parser is
      (Code : Parser_Error_Code; Span : Source.Source_Span; Filename : Source.Filename_Option; Detail : String)
       return Step_Result;
    function Parameter_Name_Exists (Parameters : Ast.Parameter_Sequence; Name : String) return Boolean;
+   function Peek_At (The_Cursor : Cursor; Offset : Natural) return Tokens.Token;
    procedure Scope_Push (Stack : in out Scope_Stack);
    procedure Scope_Pop (Stack : in out Scope_Stack);
    procedure Scope_Bind (Stack : in out Scope_Stack; Name : String);
    function Scope_Is_Bound (Stack : Scope_Stack; Name : String) return Boolean;
    function Unit_Entity_Exists
      (Unit_Name : String; Subroutines : Ast.Subroutine_Sequence; Name : String) return Boolean;
+   function Using_Name_Exists (Usings : Ast.Using_Sequence; Name : String) return Boolean;
    function Parse_Argument_List
      (The_Cursor : in out Cursor; Source_Text : String; Arguments : out Ast.Expression_Sequence) return Step_Result;
+   function Parse_Assignment_Statement
+     (The_Cursor : in out Cursor; Source_Text : String; The_Statement : out Ast.Statement) return Step_Result;
    function Parse_Block
      (The_Cursor     : in out Cursor;
       Source_Text    : String;
@@ -117,6 +121,8 @@ package body Lovelace.Compiler.Parser is
      (The_Cursor : in out Cursor; Source_Text : String; The_Statement : out Ast.Statement) return Step_Result;
    function Parse_Compilation_Unit
      (The_Cursor : in out Cursor; Source_Text : String; The_Unit : out Unit_Parse) return Step_Result;
+   function Parse_Expression
+     (The_Cursor : in out Cursor; Source_Text : String; The_Expression : out Ast.Expression) return Step_Result;
    function Parse_Flavor_Condition
      (The_Cursor : in out Cursor; Source_Text : String; Condition_Flavor : out Flavor.Flavor) return Step_Result;
    function Parse_Flavor_Conditional
@@ -124,10 +130,6 @@ package body Lovelace.Compiler.Parser is
       return Step_Result;
    function Parse_Float_Type
      (The_Cursor : in out Cursor; Source_Text : String; The_Type : out Types.Type_Expression) return Step_Result;
-   function Parse_Import_Declaration
-     (The_Cursor : in out Cursor; Source_Text : String; Imports : in out Ast.Using_Sequence) return Step_Result;
-   function Parse_Import_List
-     (The_Cursor : in out Cursor; Source_Text : String; Imports : out Ast.Using_Sequence) return Step_Result;
    function Parse_Integer_Type
      (The_Cursor : in out Cursor; Source_Text : String; The_Type : out Types.Type_Expression) return Step_Result;
    function Parse_Module_Declaration
@@ -140,7 +142,8 @@ package body Lovelace.Compiler.Parser is
       Keep_Declarations : Boolean;
       Stop_At_Arm_End   : Boolean) return Step_Result;
    function Parse_Module_Unit
-     (The_Cursor : in out Cursor; Source_Text : String; The_Unit : out Unit_Parse) return Step_Result;
+     (The_Cursor : in out Cursor; Source_Text : String; Unit_Usings : Ast.Using_Sequence; The_Unit : out Unit_Parse)
+      return Step_Result;
    function Parse_Parameter_Group
      (The_Cursor     : in out Cursor;
       Source_Text    : String;
@@ -159,7 +162,8 @@ package body Lovelace.Compiler.Parser is
      (The_Cursor : in out Cursor; Source_Text : String; The_Unit : in out Unit_Parse; Keep_Declarations : Boolean)
       return Step_Result;
    function Parse_Program_Unit
-     (The_Cursor : in out Cursor; Source_Text : String; The_Unit : out Unit_Parse) return Step_Result;
+     (The_Cursor : in out Cursor; Source_Text : String; Unit_Usings : Ast.Using_Sequence; The_Unit : out Unit_Parse)
+      return Step_Result;
    function Parse_Qualified_Identifier
      (The_Cursor  : in out Cursor;
       Source_Text : String;
@@ -168,8 +172,12 @@ package body Lovelace.Compiler.Parser is
       Filename    : out Source.Filename_Option) return Step_Result;
    function Parse_Type_Name
      (The_Cursor : in out Cursor; Source_Text : String; The_Type : out Types.Type_Expression) return Step_Result;
+   function Parse_Using_Declaration
+     (The_Cursor : in out Cursor; Source_Text : String; Usings : in out Ast.Using_Sequence) return Step_Result;
+   function Parse_Using_List
+     (The_Cursor : in out Cursor; Source_Text : String; Usings : out Ast.Using_Sequence) return Step_Result;
    function Peek (The_Cursor : Cursor) return Tokens.Token;
-   function Reject_Self_Imports (The_Unit : Unit_Parse) return Step_Result;
+   function Reject_Self_Usings (The_Unit : Unit_Parse) return Step_Result;
    function Step_End_Of_Input (The_Cursor : Cursor; Detail : String) return Step_Result;
    function String_Literal_Content (Source_Text : String; The_Token : Tokens.Token) return String;
    function Subroutine_Name_Exists (Subroutines : Ast.Subroutine_Sequence; Name : String) return Boolean;
@@ -211,9 +219,6 @@ package body Lovelace.Compiler.Parser is
 
                when Tokens.Export_Keyword    =>
                   return "keyword ""export""";
-
-               when Tokens.Native_Keyword    =>
-                  return "keyword ""native""";
 
                when Tokens.Procedure_Keyword =>
                   return "keyword ""procedure""";
@@ -441,17 +446,6 @@ package body Lovelace.Compiler.Parser is
       end case;
    end Failure_From_Step;
 
-   function Import_Name_Exists (Imports : Ast.Using_Sequence; Name : String) return Boolean is
-   begin
-      for Index in 1 .. Ast.Length (Imports) loop
-         if Ada.Strings.Unbounded.To_String (Ast.Element (Imports, Index).Module_Name) = Name then
-            return True;
-         end if;
-      end loop;
-
-      return False;
-   end Import_Name_Exists;
-
    function Is_Directive (The_Token : Tokens.Token; Expected : Tokens.Directive_Subtype) return Boolean is
    begin
       return The_Token.Kind = Tokens.Directive and then The_Token.Directive_Value = Expected;
@@ -558,53 +552,17 @@ package body Lovelace.Compiler.Parser is
       end if;
 
       loop
-         if At_End (The_Cursor) then
-            return
-              Step_End_Of_Input (The_Cursor, "expected integer literal or true/false argument, found end of input");
-         end if;
-
          declare
-            Arg_Token : constant Tokens.Token := Peek (The_Cursor);
-            Accepted  : Boolean := False;
+            The_Expression : Ast.Expression;
          begin
-            if Arg_Token.Kind = Tokens.Integer_Literal then
-               Accepted := True;
-            elsif Arg_Token.Kind = Tokens.Keyword
-              and then (Arg_Token.Keyword_Value = Tokens.True_Keyword
-                        or else Arg_Token.Keyword_Value = Tokens.False_Keyword)
-            then
-               Accepted := True;
-            end if;
+            Step := Parse_Expression (The_Cursor, Source_Text, The_Expression);
+            case Step.Ok is
+               when False =>
+                  return Step;
 
-            if not Accepted then
-               return
-                 Make_Failure
-                   (Code     => Unexpected_Token,
-                    Span     => Arg_Token.Span,
-                    Filename => Arg_Token.Filename,
-                    Detail   =>
-                      "expected integer literal or true/false argument, found "
-                      & Describe_Token (Source_Text, Arg_Token));
-            end if;
-
-            Advance (The_Cursor);
-            declare
-               Expr_Kind : Ast.Expression_Kind;
-            begin
-               if Arg_Token.Kind = Tokens.Integer_Literal then
-                  Expr_Kind := Ast.Integer_Literal;
-               else
-                  Expr_Kind := Ast.Boolean_Literal;
-               end if;
-
-               Ast.Append
-                 (Sequence       => Arguments,
-                  The_Expression =>
-                    (Kind     => Expr_Kind,
-                     Lexeme   => Ada.Strings.Unbounded.To_Unbounded_String (Tokens.Lexeme (Source_Text, Arg_Token)),
-                     Span     => Arg_Token.Span,
-                     Filename => Arg_Token.Filename));
-            end;
+               when True  =>
+                  Ast.Append (Sequence => Arguments, The_Expression => The_Expression);
+            end case;
          end;
 
          if At_End (The_Cursor) or else not Is_Punctuation (Peek (The_Cursor), Tokens.Comma) then
@@ -625,6 +583,218 @@ package body Lovelace.Compiler.Parser is
    end Parse_Argument_List;
 
    pragma Style_Checks (Off);
+
+   procedure Bind_Unit_Usings (Stack : in out Scope_Stack; Usings : Ast.Using_Sequence) is
+   begin
+      for Index in 1 .. Ast.Length (Usings) loop
+         Scope_Bind (Stack, Ada.Strings.Unbounded.To_String (Ast.Element (Usings, Index).Module_Name));
+      end loop;
+   end Bind_Unit_Usings;
+
+   function Has_Token_At (The_Cursor : Cursor; Offset : Natural) return Boolean is
+   begin
+      return The_Cursor.Next_Index + Offset <= Tokens.Length (The_Cursor.Token_List);
+   end Has_Token_At;
+
+   function Using_Name_Exists (Usings : Ast.Using_Sequence; Name : String) return Boolean is
+   begin
+      for Index in 1 .. Ast.Length (Usings) loop
+         if Ada.Strings.Unbounded.To_String (Ast.Element (Usings, Index).Module_Name) = Name then
+            return True;
+         end if;
+      end loop;
+      return False;
+   end Using_Name_Exists;
+
+   function Parse_Expression
+     (The_Cursor : in out Cursor; Source_Text : String; The_Expression : out Ast.Expression) return Step_Result
+   is
+      Expected : constant String := "expected integer literal, true/false, or identifier";
+   begin
+      The_Expression :=
+        (Kind     => Ast.Integer_Literal,
+         Lexeme   => Ada.Strings.Unbounded.Null_Unbounded_String,
+         Span     => Origin_Span,
+         Filename => Source.Absent_Filename);
+
+      if At_End (The_Cursor) then
+         return Step_End_Of_Input (The_Cursor, Expected & ", found end of input");
+      end if;
+
+      declare
+         Current : constant Tokens.Token := Peek (The_Cursor);
+         Kind    : Ast.Expression_Kind;
+      begin
+         if Current.Kind = Tokens.Integer_Literal then
+            Kind := Ast.Integer_Literal;
+         elsif Is_Keyword (Current, Tokens.True_Keyword) or else Is_Keyword (Current, Tokens.False_Keyword) then
+            Kind := Ast.Boolean_Literal;
+         elsif Current.Kind = Tokens.Identifier then
+            Kind := Ast.Name_Reference;
+         else
+            return
+              Make_Failure
+                (Code     => Unexpected_Token,
+                 Span     => Current.Span,
+                 Filename => Current.Filename,
+                 Detail   => Expected & ", found " & Describe_Token (Source_Text, Current));
+         end if;
+
+         Advance (The_Cursor);
+         The_Expression :=
+           (Kind     => Kind,
+            Lexeme   => Ada.Strings.Unbounded.To_Unbounded_String (Tokens.Lexeme (Source_Text, Current)),
+            Span     => Current.Span,
+            Filename => Current.Filename);
+         return (Ok => True);
+      end;
+   end Parse_Expression;
+
+   function Parse_Assignment_Statement
+     (The_Cursor : in out Cursor; Source_Text : String; The_Statement : out Ast.Statement) return Step_Result
+   is
+      Name_Token     : Tokens.Token := Dummy_Identifier;
+      The_Expression : Ast.Expression;
+      Step           : Step_Result;
+   begin
+      The_Statement :=
+        Ast.Make_Call_Statement
+          ((Callee_Name => Ada.Strings.Unbounded.Null_Unbounded_String,
+            Name_Span   => Origin_Span,
+            Filename    => Source.Absent_Filename,
+            Arguments   => Ast.Empty_Expression_Sequence));
+
+      --  assignment_statement = identifier , ":=" , expression , ";"
+      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => Name_Token);
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            null;
+      end case;
+
+      Step :=
+        Expect_Punctuation
+          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Colon_Equals, Label => ":=");
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            null;
+      end case;
+
+      Step := Parse_Expression (The_Cursor, Source_Text, The_Expression);
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            null;
+      end case;
+
+      Step :=
+        Expect_Punctuation
+          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Semicolon, Label => ";");
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            The_Statement :=
+              Ast.Make_Assignment_Statement
+                ((Target_Name => Ada.Strings.Unbounded.To_Unbounded_String (Tokens.Lexeme (Source_Text, Name_Token)),
+                  Name_Span   => Name_Token.Span,
+                  Filename    => Name_Token.Filename,
+                  Value       => The_Expression));
+            return (Ok => True);
+      end case;
+   end Parse_Assignment_Statement;
+
+   function Parse_Using_Declaration
+     (The_Cursor : in out Cursor; Source_Text : String; Usings : in out Ast.Using_Sequence) return Step_Result
+   is
+      Step        : Step_Result;
+      Module_Name : Ada.Strings.Unbounded.Unbounded_String;
+      Name_Span   : Source.Source_Span := Origin_Span;
+      Filename    : Source.Filename_Option := Source.Absent_Filename;
+   begin
+      --  using_declaration = "using" , qualified_identifier , ";"
+      Step :=
+        Expect_Keyword
+          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Using_Keyword, Label => "using");
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            null;
+      end case;
+
+      Step :=
+        Parse_Qualified_Identifier
+          (The_Cursor  => The_Cursor,
+           Source_Text => Source_Text,
+           Module_Name => Module_Name,
+           Name_Span   => Name_Span,
+           Filename    => Filename);
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            null;
+      end case;
+
+      declare
+         Name_Text : constant String := Ada.Strings.Unbounded.To_String (Module_Name);
+      begin
+         if Using_Name_Exists (Usings, Name_Text) then
+            return
+              Make_Failure
+                (Code     => Name_Clash,
+                 Span     => Name_Span,
+                 Filename => Filename,
+                 Detail   => "duplicate using """ & Name_Text & '"');
+         end if;
+      end;
+
+      Step :=
+        Expect_Punctuation
+          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Semicolon, Label => ";");
+      case Step.Ok is
+         when False =>
+            return Step;
+
+         when True  =>
+            Ast.Append
+              (Sequence  => Usings,
+               The_Using => (Module_Name => Module_Name, Name_Span => Name_Span, Filename => Filename));
+            return (Ok => True);
+      end case;
+   end Parse_Using_Declaration;
+
+   function Parse_Using_List
+     (The_Cursor : in out Cursor; Source_Text : String; Usings : out Ast.Using_Sequence) return Step_Result
+   is
+      Step : Step_Result;
+   begin
+      Usings := Ast.Empty_Using_Sequence;
+
+      while not At_End (The_Cursor) and then Is_Keyword (Peek (The_Cursor), Tokens.Using_Keyword) loop
+         Step := Parse_Using_Declaration (The_Cursor => The_Cursor, Source_Text => Source_Text, Usings => Usings);
+         case Step.Ok is
+            when False =>
+               return Step;
+
+            when True  =>
+               null;
+         end case;
+      end loop;
+
+      return (Ok => True);
+   end Parse_Using_List;
 
    procedure Scope_Push (Stack : in out Scope_Stack) is
    begin
@@ -674,9 +844,9 @@ package body Lovelace.Compiler.Parser is
       The_Body       : out Ast.Block) return Step_Result
    is
       Locals     : Ast.Local_Sequence := Ast.Empty_Local_Sequence;
+      Usings     : Ast.Using_Sequence := Ast.Empty_Using_Sequence;
       Statements : Ast.Statement_Sequence := Ast.Empty_Body;
       Step       : Step_Result;
-      Pushed     : Boolean := False;
 
       function Bind_Local_Name
         (Name : String; Name_Span : Source.Source_Span; Filename : Source.Filename_Option) return Step_Result is
@@ -794,6 +964,87 @@ package body Lovelace.Compiler.Parser is
          return (Ok => True);
       end Parse_Variable_Declaration;
 
+      function Parse_Block_Using return Step_Result is
+         Module_Name : Ada.Strings.Unbounded.Unbounded_String;
+         Name_Span   : Source.Source_Span := Origin_Span;
+         Filename    : Source.Filename_Option := Source.Absent_Filename;
+         Inner       : Step_Result;
+      begin
+         Inner :=
+           Expect_Keyword
+             (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Using_Keyword, Label => "using");
+         case Inner.Ok is
+            when False =>
+               return Inner;
+
+            when True  =>
+               null;
+         end case;
+
+         Inner :=
+           Parse_Qualified_Identifier
+             (The_Cursor  => The_Cursor,
+              Source_Text => Source_Text,
+              Module_Name => Module_Name,
+              Name_Span   => Name_Span,
+              Filename    => Filename);
+         case Inner.Ok is
+            when False =>
+               return Inner;
+
+            when True  =>
+               null;
+         end case;
+
+         declare
+            Name_Text : constant String := Ada.Strings.Unbounded.To_String (Module_Name);
+         begin
+            if Name_Text = Unit_Name then
+               return
+                 Make_Failure
+                   (Code     => Name_Clash,
+                    Span     => Name_Span,
+                    Filename => Filename,
+                    Detail   => "module cannot use itself """ & Name_Text & '"');
+            end if;
+
+            if Using_Name_Exists (Usings, Name_Text) then
+               return
+                 Make_Failure
+                   (Code     => Name_Clash,
+                    Span     => Name_Span,
+                    Filename => Filename,
+                    Detail   => "duplicate using """ & Name_Text & '"');
+            end if;
+
+            if Scope_Is_Bound (Scope, Name_Text) then
+               return
+                 Make_Failure
+                   (Code     => Name_Clash,
+                    Span     => Name_Span,
+                    Filename => Filename,
+                    Detail   => "using """ & Name_Text & """ conflicts with an enclosing binding or using");
+            end if;
+
+            Inner :=
+              Expect_Punctuation
+                (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Semicolon, Label => ";");
+            case Inner.Ok is
+               when False =>
+                  return Inner;
+
+               when True  =>
+                  null;
+            end case;
+
+            Scope_Bind (Scope, Name_Text);
+            Ast.Append
+              (Sequence  => Usings,
+               The_Using => (Module_Name => Module_Name, Name_Span => Name_Span, Filename => Filename));
+            return (Ok => True);
+         end;
+      end Parse_Block_Using;
+
       function Parse_Statement (The_Statement : out Ast.Statement) return Step_Result is
          Nested : Ast.Block;
       begin
@@ -804,38 +1055,57 @@ package body Lovelace.Compiler.Parser is
                Filename    => Source.Absent_Filename,
                Arguments   => Ast.Empty_Expression_Sequence));
 
-         if not At_End (The_Cursor)
-           and then (Is_Keyword (Peek (The_Cursor), Tokens.Declare_Keyword)
-                     or else Is_Keyword (Peek (The_Cursor), Tokens.Begin_Keyword))
-         then
-            Step :=
-              Parse_Block
-                (The_Cursor     => The_Cursor,
-                 Source_Text    => Source_Text,
-                 Unit_Name      => Unit_Name,
-                 Procedure_Name => Procedure_Name,
-                 Subroutines    => Subroutines,
-                 Scope          => Scope,
-                 The_Body       => Nested);
-            case Step.Ok is
-               when False =>
-                  return Step;
-
-               when True  =>
-                  null;
-            end case;
-            Step :=
-              Expect_Punctuation
-                (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Semicolon, Label => ";");
-            case Step.Ok is
-               when False =>
-                  return Step;
-
-               when True  =>
-                  The_Statement := Ast.Make_Nested_Block_Statement (Nested);
-                  return (Ok => True);
-            end case;
+         if At_End (The_Cursor) then
+            return
+              Parse_Call_Statement
+                (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Statement => The_Statement);
          end if;
+
+         declare
+            Current : constant Tokens.Token := Peek (The_Cursor);
+         begin
+            if Is_Keyword (Current, Tokens.Using_Keyword)
+              or else Is_Keyword (Current, Tokens.Declare_Keyword)
+              or else Is_Keyword (Current, Tokens.Begin_Keyword)
+            then
+               Step :=
+                 Parse_Block
+                   (The_Cursor     => The_Cursor,
+                    Source_Text    => Source_Text,
+                    Unit_Name      => Unit_Name,
+                    Procedure_Name => Procedure_Name,
+                    Subroutines    => Subroutines,
+                    Scope          => Scope,
+                    The_Body       => Nested);
+               case Step.Ok is
+                  when False =>
+                     return Step;
+
+                  when True  =>
+                     null;
+               end case;
+               Step :=
+                 Expect_Punctuation
+                   (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Semicolon, Label => ";");
+               case Step.Ok is
+                  when False =>
+                     return Step;
+
+                  when True  =>
+                     The_Statement := Ast.Make_Nested_Block_Statement (Nested);
+                     return (Ok => True);
+               end case;
+            end if;
+
+            if Current.Kind = Tokens.Identifier
+              and then Has_Token_At (The_Cursor, 1)
+              and then Is_Punctuation (Peek_At (The_Cursor, 1), Tokens.Colon_Equals)
+            then
+               return
+                 Parse_Assignment_Statement
+                   (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Statement => The_Statement);
+            end if;
+         end;
 
          return
            Parse_Call_Statement (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Statement => The_Statement);
@@ -843,18 +1113,32 @@ package body Lovelace.Compiler.Parser is
 
    begin
       The_Body := Ast.Empty_Block;
+      Scope_Push (Scope);
+
+      --  block = { using } , [ "declare" , variable_declaration , { variable_declaration } ] , "begin" , ...
+      while not At_End (The_Cursor) and then Is_Keyword (Peek (The_Cursor), Tokens.Using_Keyword) loop
+         Step := Parse_Block_Using;
+         case Step.Ok is
+            when False =>
+               Scope_Pop (Scope);
+               return Step;
+
+            when True  =>
+               null;
+         end case;
+      end loop;
 
       if not At_End (The_Cursor) and then Is_Keyword (Peek (The_Cursor), Tokens.Declare_Keyword) then
          Advance (The_Cursor);
-         Scope_Push (Scope);
-         Pushed := True;
 
          if At_End (The_Cursor) then
+            Scope_Pop (Scope);
             return
               Step_End_Of_Input (The_Cursor, "expected variable declaration after ""declare"", found end of input");
          end if;
 
          if Is_Keyword (Peek (The_Cursor), Tokens.Begin_Keyword) then
+            Scope_Pop (Scope);
             return
               Make_Failure
                 (Code     => Unexpected_Token,
@@ -882,9 +1166,7 @@ package body Lovelace.Compiler.Parser is
           (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Begin_Keyword, Label => "begin");
       case Step.Ok is
          when False =>
-            if Pushed then
-               Scope_Pop (Scope);
-            end if;
+            Scope_Pop (Scope);
             return Step;
 
          when True  =>
@@ -898,9 +1180,7 @@ package body Lovelace.Compiler.Parser is
             Step := Parse_Statement (The_Statement);
             case Step.Ok is
                when False =>
-                  if Pushed then
-                     Scope_Pop (Scope);
-                  end if;
+                  Scope_Pop (Scope);
                   return Step;
 
                when True  =>
@@ -912,16 +1192,13 @@ package body Lovelace.Compiler.Parser is
       Step :=
         Expect_Keyword
           (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.End_Keyword, Label => "end");
-      if Pushed then
-         Scope_Pop (Scope);
-      end if;
+      Scope_Pop (Scope);
       case Step.Ok is
          when False =>
             return Step;
 
          when True  =>
-            The_Body :=
-              Ast.Create_Block (Usings => Ast.Empty_Using_Sequence, Locals => Locals, Statements => Statements);
+            The_Body := Ast.Create_Block (Usings => Usings, Locals => Locals, Statements => Statements);
             return (Ok => True);
       end case;
    end Parse_Block;
@@ -1022,8 +1299,8 @@ package body Lovelace.Compiler.Parser is
    function Parse_Compilation_Unit
      (The_Cursor : in out Cursor; Source_Text : String; The_Unit : out Unit_Parse) return Step_Result
    is
-      Imports : Ast.Using_Sequence;
-      Step    : Step_Result;
+      Usings : Ast.Using_Sequence;
+      Step   : Step_Result;
    begin
       The_Unit :=
         (Module_Name  => Ada.Strings.Unbounded.Null_Unbounded_String,
@@ -1035,7 +1312,7 @@ package body Lovelace.Compiler.Parser is
          Subroutines  => Ast.Empty_Subroutine_Sequence,
          Program_Body => Ast.Empty_Block);
 
-      Step := Parse_Import_List (The_Cursor => The_Cursor, Source_Text => Source_Text, Imports => Imports);
+      Step := Parse_Using_List (The_Cursor => The_Cursor, Source_Text => Source_Text, Usings => Usings);
       case Step.Ok is
          when False =>
             return Step;
@@ -1063,15 +1340,18 @@ package body Lovelace.Compiler.Parser is
 
          case Current.Keyword_Value is
             when Tokens.Program_Keyword =>
-               Step := Parse_Program_Unit (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Unit => The_Unit);
+               Step :=
+                 Parse_Program_Unit
+                   (The_Cursor => The_Cursor, Source_Text => Source_Text, Unit_Usings => Usings, The_Unit => The_Unit);
 
             when Tokens.Module_Keyword  =>
-               Step := Parse_Module_Unit (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Unit => The_Unit);
+               Step :=
+                 Parse_Module_Unit
+                   (The_Cursor => The_Cursor, Source_Text => Source_Text, Unit_Usings => Usings, The_Unit => The_Unit);
 
             when Tokens.Begin_Keyword
                | Tokens.End_Keyword
                | Tokens.Export_Keyword
-               | Tokens.Native_Keyword
                | Tokens.Procedure_Keyword
                | Tokens.Integer_Keyword
                | Tokens.Float_Keyword
@@ -1097,8 +1377,7 @@ package body Lovelace.Compiler.Parser is
             return Step;
 
          when True  =>
-            The_Unit.Usings := Imports;
-            return Reject_Self_Imports (The_Unit);
+            return Reject_Self_Usings (The_Unit);
       end case;
    end Parse_Compilation_Unit;
 
@@ -1378,97 +1657,6 @@ package body Lovelace.Compiler.Parser is
       end case;
    end Parse_Float_Type;
 
-   function Parse_Import_Declaration
-     (The_Cursor : in out Cursor; Source_Text : String; Imports : in out Ast.Using_Sequence) return Step_Result
-   is
-      Step        : Step_Result;
-      Module_Name : Ada.Strings.Unbounded.Unbounded_String;
-      Name_Span   : Source.Source_Span := Origin_Span;
-      Filename    : Source.Filename_Option := Source.Absent_Filename;
-      Introducer  : Tokens.Token := Dummy_Identifier;
-   begin
-      --  Temporary: `import` is an ordinary identifier until step 6 switches to `using`
-      --  and rejects this lexeme. import_declaration = "import" , qualified_identifier , ";"
-      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => Introducer);
-      case Step.Ok is
-         when False =>
-            return Step;
-
-         when True  =>
-            if not Is_Identifier_Lexeme (Source_Text, Introducer, "import") then
-               return
-                 Make_Failure
-                   (Code     => Unexpected_Token,
-                    Span     => Introducer.Span,
-                    Filename => Introducer.Filename,
-                    Detail   => "expected identifier ""import"", found " & Describe_Token (Source_Text, Introducer));
-            end if;
-      end case;
-
-      Step :=
-        Parse_Qualified_Identifier
-          (The_Cursor  => The_Cursor,
-           Source_Text => Source_Text,
-           Module_Name => Module_Name,
-           Name_Span   => Name_Span,
-           Filename    => Filename);
-      case Step.Ok is
-         when False =>
-            return Step;
-
-         when True  =>
-            null;
-      end case;
-
-      declare
-         Name_Text : constant String := Ada.Strings.Unbounded.To_String (Module_Name);
-      begin
-         if Import_Name_Exists (Imports, Name_Text) then
-            return
-              Make_Failure
-                (Code     => Name_Clash,
-                 Span     => Name_Span,
-                 Filename => Filename,
-                 Detail   => "duplicate import """ & Name_Text & '"');
-         end if;
-      end;
-
-      Step :=
-        Expect_Punctuation
-          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Semicolon, Label => ";");
-      case Step.Ok is
-         when False =>
-            return Step;
-
-         when True  =>
-            Ast.Append
-              (Sequence  => Imports,
-               The_Using => (Module_Name => Module_Name, Name_Span => Name_Span, Filename => Filename));
-            return (Ok => True);
-      end case;
-   end Parse_Import_Declaration;
-
-   function Parse_Import_List
-     (The_Cursor : in out Cursor; Source_Text : String; Imports : out Ast.Using_Sequence) return Step_Result
-   is
-      Step : Step_Result;
-   begin
-      Imports := Ast.Empty_Using_Sequence;
-
-      while not At_End (The_Cursor) and then Is_Identifier_Lexeme (Source_Text, Peek (The_Cursor), "import") loop
-         Step := Parse_Import_Declaration (The_Cursor => The_Cursor, Source_Text => Source_Text, Imports => Imports);
-         case Step.Ok is
-            when False =>
-               return Step;
-
-            when True  =>
-               null;
-         end case;
-      end loop;
-
-      return (Ok => True);
-   end Parse_Import_List;
-
    function Parse_Integer_Type
      (The_Cursor : in out Cursor; Source_Text : String; The_Type : out Types.Type_Expression) return Step_Result
    is
@@ -1601,7 +1789,6 @@ package body Lovelace.Compiler.Parser is
          end if;
 
          if Is_Keyword (Current, Tokens.Export_Keyword)
-           or else Is_Keyword (Current, Tokens.Native_Keyword)
            or else Is_Keyword (Current, Tokens.Procedure_Keyword)
            or else Is_Identifier_Lexeme (Source_Text, Current, "@intrinsic")
            or else Is_Identifier_Lexeme (Source_Text, Current, "@native")
@@ -1672,7 +1859,8 @@ package body Lovelace.Compiler.Parser is
    end Parse_Module_Declaration_List;
 
    function Parse_Module_Unit
-     (The_Cursor : in out Cursor; Source_Text : String; The_Unit : out Unit_Parse) return Step_Result
+     (The_Cursor : in out Cursor; Source_Text : String; Unit_Usings : Ast.Using_Sequence; The_Unit : out Unit_Parse)
+      return Step_Result
    is
       Step : Step_Result;
    begin
@@ -1682,7 +1870,7 @@ package body Lovelace.Compiler.Parser is
          Filename     => Source.Absent_Filename,
          Kind         => Ast.Module_Unit,
          Stop_Span    => Origin_Span,
-         Usings       => Ast.Empty_Using_Sequence,
+         Usings       => Unit_Usings,
          Subroutines  => Ast.Empty_Subroutine_Sequence,
          Program_Body => Ast.Empty_Block);
 
@@ -1961,9 +2149,9 @@ package body Lovelace.Compiler.Parser is
       Function_Token  : Tokens.Token :=
         (Kind => Tokens.String_Literal, Span => Origin_Span, Filename => Source.Absent_Filename);
    begin
-      --  ordinary:   [ export ] procedure Ã¢ÂÂ¦ ; begin Ã¢ÂÂ¦ end ;
-      --  intrinsic:  [ export ] @intrinsic procedure Ã¢ÂÂ¦ ;
-      --  native FFI: [ export ] @native ( string , string ) procedure Ã¢ÂÂ¦ ;
+      --  ordinary:   [ export ] procedure ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¦ ; begin ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¦ end ;
+      --  intrinsic:  [ export ] @intrinsic procedure ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¦ ;
+      --  native FFI: [ export ] @native ( string , string ) procedure ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¦ ;
       if not At_End (The_Cursor) and then Is_Keyword (Peek (The_Cursor), Tokens.Export_Keyword) then
          Step :=
            Expect_Keyword
@@ -1978,19 +2166,6 @@ package body Lovelace.Compiler.Parser is
             when True  =>
                Flags := Ast.Export_Flag;
          end case;
-      end if;
-
-      if not At_End (The_Cursor) and then Is_Keyword (Peek (The_Cursor), Tokens.Native_Keyword) then
-         declare
-            Native_Tok : constant Tokens.Token := Peek (The_Cursor);
-         begin
-            return
-              Make_Failure
-                (Code     => Obsolete_Native_Modifier,
-                 Span     => Native_Tok.Span,
-                 Filename => Native_Tok.Filename,
-                 Detail   => "obsolete native(...) modifier; use @intrinsic or @native(""lib"", ""fn"")");
-         end;
       end if;
 
       if not At_End (The_Cursor) and then Is_Identifier_Lexeme (Source_Text, Peek (The_Cursor), "@intrinsic") then
@@ -2233,6 +2408,7 @@ package body Lovelace.Compiler.Parser is
          Scope    : Scope_Stack;
       begin
          Scope_Push (Scope);
+         Bind_Unit_Usings (Scope, The_Unit.Usings);
          for Param_Index in 1 .. Ast.Length (Parameters) loop
             Scope_Bind (Scope, Ada.Strings.Unbounded.To_String (Ast.Element (Parameters, Param_Index).Parameter_Name));
          end loop;
@@ -2285,7 +2461,8 @@ package body Lovelace.Compiler.Parser is
    end Parse_Procedure_Declaration;
 
    function Parse_Program_Unit
-     (The_Cursor : in out Cursor; Source_Text : String; The_Unit : out Unit_Parse) return Step_Result
+     (The_Cursor : in out Cursor; Source_Text : String; Unit_Usings : Ast.Using_Sequence; The_Unit : out Unit_Parse)
+      return Step_Result
    is
       Name_Token : Tokens.Token := Dummy_Identifier;
       Step       : Step_Result;
@@ -2296,7 +2473,7 @@ package body Lovelace.Compiler.Parser is
          Filename     => Source.Absent_Filename,
          Kind         => Ast.Program_Unit,
          Stop_Span    => Origin_Span,
-         Usings       => Ast.Empty_Using_Sequence,
+         Usings       => Unit_Usings,
          Subroutines  => Ast.Empty_Subroutine_Sequence,
          Program_Body => Ast.Empty_Block);
 
@@ -2342,6 +2519,7 @@ package body Lovelace.Compiler.Parser is
       declare
          Scope : Scope_Stack;
       begin
+         Bind_Unit_Usings (Scope, Unit_Usings);
          Step :=
            Parse_Block
              (The_Cursor     => The_Cursor,
@@ -2493,27 +2671,32 @@ package body Lovelace.Compiler.Parser is
       return Tokens.Element (The_Cursor.Token_List, The_Cursor.Next_Index);
    end Peek;
 
-   function Reject_Self_Imports (The_Unit : Unit_Parse) return Step_Result is
+   function Peek_At (The_Cursor : Cursor; Offset : Natural) return Tokens.Token is
+   begin
+      return Tokens.Element (The_Cursor.Token_List, The_Cursor.Next_Index + Offset);
+   end Peek_At;
+
+   function Reject_Self_Usings (The_Unit : Unit_Parse) return Step_Result is
       Unit_Name : constant String := Ada.Strings.Unbounded.To_String (The_Unit.Module_Name);
    begin
       for Index in 1 .. Ast.Length (The_Unit.Usings) loop
          declare
-            The_Import  : constant Ast.Using_Declaration := Ast.Element (The_Unit.Usings, Index);
-            Import_Name : constant String := Ada.Strings.Unbounded.To_String (The_Import.Module_Name);
+            The_Using  : constant Ast.Using_Declaration := Ast.Element (The_Unit.Usings, Index);
+            Using_Name : constant String := Ada.Strings.Unbounded.To_String (The_Using.Module_Name);
          begin
-            if Import_Name = Unit_Name then
+            if Using_Name = Unit_Name then
                return
                  Make_Failure
                    (Code     => Name_Clash,
-                    Span     => The_Import.Name_Span,
-                    Filename => The_Import.Filename,
-                    Detail   => "module cannot import itself """ & Import_Name & '"');
+                    Span     => The_Using.Name_Span,
+                    Filename => The_Using.Filename,
+                    Detail   => "module cannot use itself """ & Using_Name & '"');
             end if;
          end;
       end loop;
 
       return (Ok => True);
-   end Reject_Self_Imports;
+   end Reject_Self_Usings;
 
    function Step_End_Of_Input (The_Cursor : Cursor; Detail : String) return Step_Result is
    begin

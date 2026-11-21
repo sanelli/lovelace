@@ -77,7 +77,11 @@ When there is no useful source span (or for CLI usage errors):
 | `LV00023` | Nested_Comment | Tokenizer (`{` inside an open `{` … `}` comment) |
 | `LV00024` | Stray_Comment_Closer | Tokenizer (`}` outside a comment) |
 | `LV00025` | Unknown_Intrinsic | IR Generator (`@intrinsic` signature not in the closed intrinsic table) |
-| `LV00026` | Obsolete_Native_Modifier | Parser (keyword `native(…)` procedure header; use `@intrinsic` / `@native`) |
+| `LV00026` | Use_Before_Assignment | Semantics (read of a local that is not definitely assigned) |
+| `LV00027` | Type_Mismatch | Semantics (assignment or call actual not assignable) |
+| `LV00028` | Unused_Variable | Warning: local never read |
+| `LV00029` | Unused_Assignment | Warning: store whose value is never read before overwrite/end |
+| `LV00030` | Invalid_Warning_Suppression | CLI/build: `--no-warnings` entry unknown or not a warning |
 
 Stage-local enums (tokenizer, parser, IR generator, unit graph, …) map to these labels at report time via `Lovelace.Compiler.Reporting` (unit-graph failures also expose `Unit_Graph.Surface_Error_Code`).
 

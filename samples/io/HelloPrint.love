@@ -1,4 +1,4 @@
-import augusta.std.io;
+using augusta.std.io;
 program HelloPrint;
 begin
    augusta.std.io.print(42);

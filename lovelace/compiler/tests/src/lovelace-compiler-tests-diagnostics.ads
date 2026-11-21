@@ -11,13 +11,17 @@ package Lovelace.Compiler.Tests.Diagnostics is
    --  @param The_Test Unused fixture.
    procedure Test_Error_Code_Labels (The_Test : in out Fixture);
 
-   --  Format produces the required [err] / line / caret / [LV] shape.
+   --  Format produces the required [error]/[warning] / line / caret / [LV] shape.
    --  @param The_Test Unused fixture.
    procedure Test_Format_Shape (The_Test : in out Fixture);
 
    --  Love_Basename strips directories and a final .love suffix (including dotted stems).
    --  @param The_Test Unused fixture.
    procedure Test_Love_Basename (The_Test : in out Fixture);
+
+   --  Default_Severity, Effective_Severity, promote, and suppress policy.
+   --  @param The_Test Unused fixture.
+   procedure Test_Severity_Policy (The_Test : in out Fixture);
 
    --  To_Error_Code maps tokenizer and parser enums to LV kinds.
    --  @param The_Test Unused fixture.

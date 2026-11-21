@@ -24,7 +24,6 @@ package Lovelace.Compiler.Tokens is
    --  @enum Begin_Keyword begin
    --  @enum End_Keyword end
    --  @enum Export_Keyword export
-   --  @enum Native_Keyword native
    --  @enum Procedure_Keyword procedure
    --  @enum Integer_Keyword integer
    --  @enum Float_Keyword float
@@ -35,14 +34,13 @@ package Lovelace.Compiler.Tokens is
    --  @enum False_Keyword false
    --  @enum Declare_Keyword declare
    --  @enum Using_Keyword using
-   --  Note: `import` is not a keyword (ordinary identifier); parser/step 6 retires it.
+   --  Note: `import` and `native` are ordinary identifiers (not keywords).
    type Keyword_Subtype is
      (Program_Keyword,
       Module_Keyword,
       Begin_Keyword,
       End_Keyword,
       Export_Keyword,
-      Native_Keyword,
       Procedure_Keyword,
       Integer_Keyword,
       Float_Keyword,

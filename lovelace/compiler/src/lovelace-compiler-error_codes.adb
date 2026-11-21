@@ -1,5 +1,16 @@
 package body Lovelace.Compiler.Error_Codes is
 
+   function Default_Severity (Code : Error_Code) return Severity is
+   begin
+      case Code is
+         when Unused_Variable | Unused_Assignment =>
+            return Warning;
+
+         when others                              =>
+            return Error;
+      end case;
+   end Default_Severity;
+
    function Label (Code : Error_Code) return String is
    begin
       case Code is
@@ -51,7 +62,7 @@ package body Lovelace.Compiler.Error_Codes is
          when Unknown_Module                 =>
             return "LV00016";
 
-         when Call_Without_Import            =>
+         when Call_Without_Using             =>
             return "LV00017";
 
          when Not_Exported                   =>
@@ -78,8 +89,20 @@ package body Lovelace.Compiler.Error_Codes is
          when Unknown_Intrinsic              =>
             return "LV00025";
 
-         when Obsolete_Native_Modifier        =>
+         when Use_Before_Assignment          =>
             return "LV00026";
+
+         when Type_Mismatch                  =>
+            return "LV00027";
+
+         when Unused_Variable                =>
+            return "LV00028";
+
+         when Unused_Assignment              =>
+            return "LV00029";
+
+         when Invalid_Warning_Suppression    =>
+            return "LV00030";
       end case;
    end Label;
 

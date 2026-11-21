@@ -57,7 +57,7 @@ package Lovelace.Compiler.Tests.Tokenizer is
 
    --  native alone and before procedure; Native / nativeness are identifiers.
    --  @param The_Test Unused fixture.
-   procedure Test_Native_Keyword (The_Test : in out Fixture);
+   procedure Test_Native_Identifier (The_Test : in out Fixture);
 
    --  declare alone is the keyword; Declare / declared are identifiers.
    --  @param The_Test Unused fixture.

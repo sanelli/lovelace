@@ -20,15 +20,13 @@ package Lovelace.Compiler.Parser is
    --  @enum Unexpected_Trailing Extra tokens after a complete unit.
    --  @enum Name_Clash Duplicate or conflicting procedure/parameter name.
    --  @enum Invalid_Flavor_Condition `#if`/`#elsif` flavor string is not wasi/native/web.
-   --  @enum Obsolete_Native_Modifier Keyword `native(…)` procedure header; use `@intrinsic` / `@native`.
    type Parser_Error_Code is
      (Internal_Error,
       Unexpected_End_Of_Input,
       Unexpected_Token,
       Unexpected_Trailing,
       Name_Clash,
-      Invalid_Flavor_Condition,
-      Obsolete_Native_Modifier);
+      Invalid_Flavor_Condition);
 
    --  One located parser diagnostic.
    --  @field Code Predefined parser error code.
@@ -60,12 +58,12 @@ package Lovelace.Compiler.Parser is
    end record;
 
    --  Parse Token_List for Source_Text into a compilation-unit AST.
-   --  Accepts optional leading import declarations, then program_unit
-   --  (program identifier; begin { statement } end.) or module_unit
+   --  Accepts optional leading using declarations, then program_unit
+   --  (program identifier; block .) or module_unit
    --  (module qualified_identifier; { module_declaration } end.). Recursive
    --  descent. Flavor `#if` arms are selected using Active_Flavor; inactive arms
    --  are parsed for syntax but omitted from the AST. Statements are qualified
-   --  calls with integer literal arguments.
+   --  calls, assignments, or nested blocks; expressions are literals or names.
    --  @param Source_Text Original UTF-8 source (for identifier lexemes).
    --  @param Token_List Tokens from a successful Tokenize of Source_Text.
    --  @param Active_Flavor Flavor used to select #if flavor = "wasi"|"native"|"web" arms.

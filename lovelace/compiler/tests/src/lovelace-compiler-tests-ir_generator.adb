@@ -97,7 +97,7 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       Hidden_Ast : constant Ast.Module :=
         Support.Must_Parse ("module Lib; procedure Sink(Value : integer); begin end; end.", "hidden lib");
       Caller_Ast : constant Ast.Module :=
-        Support.Must_Parse ("import Lib; program Caller; begin Lib.Sink(7); end.", "caller");
+        Support.Must_Parse ("using Lib; program Caller; begin Lib.Sink(7); end.", "caller");
       No_Imp_Ast : constant Ast.Module := Support.Must_Parse ("program Caller; begin Lib.Sink(7); end.", "no import");
       Units      : Unit_Graph.Compilation_Set;
       Hidden     : Unit_Graph.Compilation_Set;
@@ -157,7 +157,7 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
             Source_Text => Ada.Strings.Unbounded.Null_Unbounded_String));
       No_Imp_Err := Ir_Gen.Generate (No_Import);
       AUnit.Assertions.Assert (not No_Imp_Err.Ok, "no import fails");
-      AUnit.Assertions.Assert (No_Imp_Err.Error.Code = Ir_Gen.Call_Without_Import, "call without import");
+      AUnit.Assertions.Assert (No_Imp_Err.Error.Code = Ir_Gen.Call_Without_Using, "call without import");
    end Test_Cross_Module_Calls;
 
    procedure Test_Dotted_Module_Name (The_Test : in out Fixture) is
@@ -355,16 +355,16 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
    procedure Test_Import_Dependencies (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Program_Source : constant String :=
-        "import augusta.std.io;"
+        "using augusta.std.io;"
         & ASCII.LF
-        & "import Other;"
+        & "using Other;"
         & ASCII.LF
         & "program Hello;"
         & ASCII.LF
         & "begin"
         & ASCII.LF
         & "end.";
-      Module_Source  : constant String := "import Lib.A;" & ASCII.LF & "module Host; end.";
+      Module_Source  : constant String := "using Lib.A;" & ASCII.LF & "module Host; end.";
       Empty_Source   : constant String := "program EmptyImports; begin end.";
       Program_Ast    : constant Ast.Module := Support.Must_Parse (Program_Source, "program imports");
       Module_Ast     : constant Ast.Module := Support.Must_Parse (Module_Source, "module imports");
@@ -576,7 +576,7 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       AUnit.Assertions.Assert (Lovelace.Lir.Instructions.Element (Bool_Body, 1).Immediate_I32 = 1, "true to 1");
       AUnit.Assertions.Assert (Lovelace.Lir.Instructions.Element (Bool_Body, 3).Immediate_I32 = 0, "false to 0");
 
-      AUnit.Assertions.Assert (Cross_Error.Code = Ir_Gen.Call_Without_Import, "cross code");
+      AUnit.Assertions.Assert (Cross_Error.Code = Ir_Gen.Call_Without_Using, "cross code");
       AUnit.Assertions.Assert (Unknown_Error.Code = Ir_Gen.Unresolved_Call, "unknown code");
       AUnit.Assertions.Assert (Arity_Error.Code = Ir_Gen.Invalid_Arguments, "arity code");
       AUnit.Assertions.Assert (Unsigned_Error.Code = Ir_Gen.Invalid_Arguments, "unsigned code");

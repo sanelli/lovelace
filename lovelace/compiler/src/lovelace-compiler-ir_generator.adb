@@ -620,10 +620,10 @@ package body Lovelace.Compiler.Ir_Generator is
       end if;
 
       if not Import_Allows (Caller_Unit, Ada.Strings.Unbounded.To_String (Prefix_Text)) then
-         Error_Code := Call_Without_Import;
+         Error_Code := Call_Without_Using;
          Error_Detail :=
            Ada.Strings.Unbounded.To_Unbounded_String
-             ("call '" & Callee_Name & "' requires import " & Ada.Strings.Unbounded.To_String (Prefix_Text));
+             ("call '" & Callee_Name & "' requires using " & Ada.Strings.Unbounded.To_String (Prefix_Text));
          return False;
       end if;
 

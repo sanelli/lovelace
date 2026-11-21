@@ -1,4 +1,4 @@
-import ImportLib;
+using ImportLib;
 program ImportDecl;
 begin
 end.

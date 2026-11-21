@@ -63,7 +63,7 @@ See [compilation-unit-grammar.md](compilation-unit-grammar.md) for the full EBNF
 - Ordinary procedure: `[ export ] procedure` name `(` [parameter list] `)` `;` block `;`.
 - Intrinsic: `[ export ] @intrinsic procedure` name `(` [parameter list] `)` `;` — **no** body; AST sets `Intrinsic_Flag` (signature checked in IR).
 - Native FFI: `[ export ] @native ( string , string ) procedure` name `(` [parameter list] `)` `;` — **no** body; AST sets `Native_Flag` and stores library/function (quotes stripped).
-- Keyword `native(…)` procedure headers are rejected (`Obsolete_Native_Modifier` / `LV00026`).
+- Bare `native(…)` procedure headers are not accepted (`native` is an ordinary identifier; use `@intrinsic` / `@native`).
 - Call statements (this slice): qualified call `MODULE.SUBROUTINE(` [integer / boolean literals] `);` — callee must contain at least one `.`.
 - Types: `integer` / `signed integer` / `unsigned integer` with optional `<8|16|32|64>`; `float` with optional `<32|64>`; `boolean`.
 - **Scopes:** scope stack while parsing (parameters → declare parts). No shadowing; no clash with unit name / subroutine names (`Name_Clash` / [`LV00011`](diagnostics.md)).

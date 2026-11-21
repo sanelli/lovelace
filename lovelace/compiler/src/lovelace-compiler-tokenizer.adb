@@ -105,7 +105,6 @@ package body Lovelace.Compiler.Tokenizer is
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("begin"), Value => Tokens.Begin_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("end"), Value => Tokens.End_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("export"), Value => Tokens.Export_Keyword),
-      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("native"), Value => Tokens.Native_Keyword),
       Keyword_Entry'
         (Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("procedure"), Value => Tokens.Procedure_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("integer"), Value => Tokens.Integer_Keyword),
@@ -178,7 +177,7 @@ package body Lovelace.Compiler.Tokenizer is
       Line        : in out Positive;
       Column      : in out Positive;
       Filename    : Source.Filename_Option);
-   --  Consume `{` … `}` (no token). Nested `{`, EOF, handled as errors.
+   --  Consume `{` â¦ `}` (no token). Nested `{`, EOF, handled as errors.
    function String_Literal_Pattern return String;
    function Success_Result (Token_List : Tokens.Token_Sequence) return Tokenize_Result;
    function Tokenize_Core (Source_Text : String; Filename : Source.Filename_Option) return Tokenize_Result;
@@ -627,8 +626,7 @@ package body Lovelace.Compiler.Tokenizer is
 
    function Integer_Literal_Pattern return String is
    begin
-      return
-        "[+-]?(0[bB][01]+|0[oO][0-7]+|0[xX][0-9A-Fa-f]+|[0-9]+)([su](8|16|32|64)?)?";
+      return "[+-]?(0[bB][01]+|0[oO][0-7]+|0[xX][0-9A-Fa-f]+|[0-9]+)([su](8|16|32|64)?)?";
    end Integer_Literal_Pattern;
 
    function Internal_Compile_Error

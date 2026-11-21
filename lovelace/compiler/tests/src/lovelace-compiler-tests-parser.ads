@@ -23,7 +23,7 @@ package Lovelace.Compiler.Tests.Parser is
    --  @param The_Test Unused fixture.
    procedure Test_Canonical_Multiline (The_Test : in out Fixture);
 
-   --  `{ … }` comments in program/module sources parse like the comment-free forms.
+   --  `{ â¦ }` comments in program/module sources parse like the comment-free forms.
    --  @param The_Test Unused fixture.
    procedure Test_Comments (The_Test : in out Fixture);
 
@@ -87,9 +87,21 @@ package Lovelace.Compiler.Tests.Parser is
    --  @param The_Test Unused fixture.
    procedure Test_Identifier_Names (The_Test : in out Fixture);
 
-   --  Leading imports before program/module; placement and clash failures.
+   --  Leading usings before program/module; placement and clash failures.
    --  @param The_Test Unused fixture.
-   procedure Test_Import_Declarations (The_Test : in out Fixture);
+   procedure Test_Using_Declarations (The_Test : in out Fixture);
+
+   --  `import` as a declaration introducer fails as Unexpected_Token (ordinary identifier).
+   --  @param The_Test Unused fixture.
+   procedure Test_Obsolete_Import (The_Test : in out Fixture);
+
+   --  Block usings with declare/nesting, clashes, and sibling reuse.
+   --  @param The_Test Unused fixture.
+   procedure Test_Block_Usings (The_Test : in out Fixture);
+
+   --  `Name := expression;` and identifier call arguments.
+   --  @param The_Test Unused fixture.
+   procedure Test_Assignment_Statements (The_Test : in out Fixture);
 
    --  module with begin is Unexpected_Token (no begin in module_unit).
    --  @param The_Test Unused fixture.
@@ -103,7 +115,7 @@ package Lovelace.Compiler.Tests.Parser is
    --  @param The_Test Unused fixture.
    procedure Test_Module_Procedure (The_Test : in out Fixture);
 
-   --  `@intrinsic` / `@native("…","…")` procedure headers; reject obsolete `native(…)` / bad forms.
+   --  `@intrinsic` / `@native("â¦","â¦")` procedure headers; reject obsolete `native(â¦)` / bad forms.
    --  @param The_Test Unused fixture.
    procedure Test_Native_Procedure (The_Test : in out Fixture);
 
