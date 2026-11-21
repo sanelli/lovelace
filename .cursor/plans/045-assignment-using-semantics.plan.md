@@ -28,7 +28,7 @@ todos:
     status: completed
   - id: "9"
     content: "9. Unit graph nested usings; IR Local_Get/Set lowering (no call resolve); LIR opcodes; backend; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "10"
     content: "10. CLI --warning-as-errors and --no-warnings; AUnit; gnatformat."
     status: pending

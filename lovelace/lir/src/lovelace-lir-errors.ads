@@ -22,6 +22,7 @@ package Lovelace.Lir.Errors is
    --  @enum Self_Dependency A dependency name equals the module name.
    --  @enum Invalid_Call_Target Call Target_Index is 0 or past Subroutine_Count.
    --  @enum Invalid_Native_Binding Native_Flag / binding / empty-body / entrypoint rules violated.
+   --  @enum Invalid_Local_Index Local_Get / Local_Set Local_Index is 0 or past Param_Count + Local_Count.
    type Error_Code is
      (Internal_Error,
       Io_Failure,
@@ -39,12 +40,16 @@ package Lovelace.Lir.Errors is
       Duplicate_Entrypoint,
       Self_Dependency,
       Invalid_Call_Target,
-      Invalid_Native_Binding);
+      Invalid_Native_Binding,
+      Invalid_Local_Index);
 
    --  Empty success payload for validation Results.
    type Empty_Success is null record;
 
    --  Validation outcome: Empty_Success or Error_Code.
-   package Validation_Results is new Lovelace.Common.Result (Success_Type => Empty_Success, Error_Type => Error_Code);
+   package Validation_Results is new
+     Lovelace.Common.Result
+       (Success_Type => Empty_Success,
+        Error_Type   => Error_Code);
 
 end Lovelace.Lir.Errors;

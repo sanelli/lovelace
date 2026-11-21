@@ -13,17 +13,29 @@ package body Lovelace.Lir.Tests.Type_Codes is
       pragma Unreferenced (The_Test);
    begin
       AUnit.Assertions.Assert
-        (Opcodes.Immediate_Length (Opcodes.No_Operation) = 0, "noop immediate");
+        (Opcodes.Immediate_Length (Opcodes.No_Operation) = 0,
+         "noop immediate");
       AUnit.Assertions.Assert
         (Opcodes.Encoded_Length (Opcodes.No_Operation) = 2, "noop encoded");
       AUnit.Assertions.Assert
-        (Opcodes.Immediate_Length (Opcodes.Constant_I32) = 4, "const immediate");
+        (Opcodes.Immediate_Length (Opcodes.Constant_I32) = 4,
+         "const immediate");
       AUnit.Assertions.Assert
         (Opcodes.Encoded_Length (Opcodes.Constant_I32) = 6, "const encoded");
       AUnit.Assertions.Assert
         (Opcodes.Immediate_Length (Opcodes.Call) = 4, "call immediate");
       AUnit.Assertions.Assert
         (Opcodes.Encoded_Length (Opcodes.Call) = 6, "call encoded");
+      AUnit.Assertions.Assert
+        (Opcodes.Immediate_Length (Opcodes.Local_Get) = 4,
+         "local.get immediate");
+      AUnit.Assertions.Assert
+        (Opcodes.Encoded_Length (Opcodes.Local_Get) = 6, "local.get encoded");
+      AUnit.Assertions.Assert
+        (Opcodes.Immediate_Length (Opcodes.Local_Set) = 4,
+         "local.set immediate");
+      AUnit.Assertions.Assert
+        (Opcodes.Encoded_Length (Opcodes.Local_Set) = 6, "local.set encoded");
    end Test_Encoded_Length;
 
    procedure Test_Type_Codes (The_Test : in out Fixture) is

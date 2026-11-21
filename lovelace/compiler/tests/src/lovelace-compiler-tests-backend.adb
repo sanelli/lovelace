@@ -24,36 +24,49 @@ package body Lovelace.Compiler.Tests.Backend is
    use type Subroutines.Subroutine_Flags;
 
    procedure Assert_Bytes_Contain
-     (Bytes : Lovelace.Compiler.Backend.Byte_Sequence; Fragment : String; Message : String);
+     (Bytes    : Lovelace.Compiler.Backend.Byte_Sequence;
+      Fragment : String;
+      Message  : String);
    --  Assert Fragment UTF-8 bytes appear contiguously in Bytes.
 
-   procedure Assert_Component_Preamble (Bytes : Lovelace.Compiler.Backend.Byte_Sequence; Message : String);
+   procedure Assert_Component_Preamble
+     (Bytes : Lovelace.Compiler.Backend.Byte_Sequence; Message : String);
    --  Assert component magic, version 0x0d, layer 1.
 
-   procedure Assert_Contains (Text : String; Fragment : String; Message : String);
+   procedure Assert_Contains
+     (Text : String; Fragment : String; Message : String);
    --  Assert Text contains Fragment.
 
-   procedure Assert_Not_Contains (Text : String; Fragment : String; Message : String);
+   procedure Assert_Not_Contains
+     (Text : String; Fragment : String; Message : String);
    --  Assert Text does not contain Fragment.
 
    function Make_Unit_Subroutine
-     (Name : String; Flags : Subroutines.Subroutine_Flags; Noop_Count : Natural := 0) return Subroutines.Subroutine;
+     (Name       : String;
+      Flags      : Subroutines.Subroutine_Flags;
+      Noop_Count : Natural := 0) return Subroutines.Subroutine;
    --  Build a Unit/no-params subroutine with optional noop instructions.
 
    function Make_Unit_Subroutine_With_Parameters
-     (Name : String; Flags : Subroutines.Subroutine_Flags; Parameters : Types.Parameter_Sequence)
-      return Subroutines.Subroutine;
+     (Name       : String;
+      Flags      : Subroutines.Subroutine_Flags;
+      Parameters : Types.Parameter_Sequence) return Subroutines.Subroutine;
    --  Build a Unit-return subroutine with Parameters.
 
    function Must_Emit_Wasm
-     (The_Module : Modules.Module; Message : String) return Lovelace.Compiler.Backend.Wasm_Emit_Result;
+     (The_Module : Modules.Module; Message : String)
+      return Lovelace.Compiler.Backend.Wasm_Emit_Result;
    --  Require Emit_Wasm success.
 
    function Must_Emit_Wat
-     (The_Module : Modules.Module; Message : String) return Lovelace.Compiler.Backend.Wat_Emit_Result;
+     (The_Module : Modules.Module; Message : String)
+      return Lovelace.Compiler.Backend.Wat_Emit_Result;
    --  Require Emit_Wat success.
 
-   procedure Assert_Bytes_Contain (Bytes : Lovelace.Compiler.Backend.Byte_Sequence; Fragment : String; Message : String)
+   procedure Assert_Bytes_Contain
+     (Bytes    : Lovelace.Compiler.Backend.Byte_Sequence;
+      Fragment : String;
+      Message  : String)
    is
       package Backend renames Lovelace.Compiler.Backend;
       Found : Boolean := False;
@@ -70,7 +83,8 @@ package body Lovelace.Compiler.Tests.Backend is
             begin
                for Offset in 0 .. Fragment'Length - 1 loop
                   if Backend.Element (Bytes, Start + Offset)
-                    /= Interfaces.Unsigned_8 (Character'Pos (Fragment (Fragment'First + Offset)))
+                    /= Interfaces.Unsigned_8
+                         (Character'Pos (Fragment (Fragment'First + Offset)))
                   then
                      Match := False;
                      exit;
@@ -85,70 +99,100 @@ package body Lovelace.Compiler.Tests.Backend is
          end loop;
       end if;
 
-      AUnit.Assertions.Assert (Found, Message & ": missing bytes `" & Fragment & "`");
+      AUnit.Assertions.Assert
+        (Found, Message & ": missing bytes `" & Fragment & "`");
    end Assert_Bytes_Contain;
 
-   procedure Assert_Component_Preamble (Bytes : Lovelace.Compiler.Backend.Byte_Sequence; Message : String) is
+   procedure Assert_Component_Preamble
+     (Bytes : Lovelace.Compiler.Backend.Byte_Sequence; Message : String)
+   is
       package Backend renames Lovelace.Compiler.Backend;
    begin
-      AUnit.Assertions.Assert (Backend.Length (Bytes) >= 8, Message & ": preamble length");
-      AUnit.Assertions.Assert (Backend.Element (Bytes, 1) = 16#00#, Message & ": magic 0");
-      AUnit.Assertions.Assert (Backend.Element (Bytes, 2) = 16#61#, Message & ": magic a");
-      AUnit.Assertions.Assert (Backend.Element (Bytes, 3) = 16#73#, Message & ": magic s");
-      AUnit.Assertions.Assert (Backend.Element (Bytes, 4) = 16#6D#, Message & ": magic m");
-      AUnit.Assertions.Assert (Backend.Element (Bytes, 5) = 16#0D#, Message & ": version 0x0d");
-      AUnit.Assertions.Assert (Backend.Element (Bytes, 6) = 16#00#, Message & ": version low");
-      AUnit.Assertions.Assert (Backend.Element (Bytes, 7) = 16#01#, Message & ": layer 1");
-      AUnit.Assertions.Assert (Backend.Element (Bytes, 8) = 16#00#, Message & ": layer high");
+      AUnit.Assertions.Assert
+        (Backend.Length (Bytes) >= 8, Message & ": preamble length");
+      AUnit.Assertions.Assert
+        (Backend.Element (Bytes, 1) = 16#00#, Message & ": magic 0");
+      AUnit.Assertions.Assert
+        (Backend.Element (Bytes, 2) = 16#61#, Message & ": magic a");
+      AUnit.Assertions.Assert
+        (Backend.Element (Bytes, 3) = 16#73#, Message & ": magic s");
+      AUnit.Assertions.Assert
+        (Backend.Element (Bytes, 4) = 16#6D#, Message & ": magic m");
+      AUnit.Assertions.Assert
+        (Backend.Element (Bytes, 5) = 16#0D#, Message & ": version 0x0d");
+      AUnit.Assertions.Assert
+        (Backend.Element (Bytes, 6) = 16#00#, Message & ": version low");
+      AUnit.Assertions.Assert
+        (Backend.Element (Bytes, 7) = 16#01#, Message & ": layer 1");
+      AUnit.Assertions.Assert
+        (Backend.Element (Bytes, 8) = 16#00#, Message & ": layer high");
    end Assert_Component_Preamble;
 
-   procedure Assert_Contains (Text : String; Fragment : String; Message : String) is
-   begin
-      AUnit.Assertions.Assert (Ada.Strings.Fixed.Index (Text, Fragment) > 0, Message & ": missing `" & Fragment & "`");
-   end Assert_Contains;
-
-   procedure Assert_Not_Contains (Text : String; Fragment : String; Message : String) is
+   procedure Assert_Contains
+     (Text : String; Fragment : String; Message : String) is
    begin
       AUnit.Assertions.Assert
-        (Ada.Strings.Fixed.Index (Text, Fragment) = 0, Message & ": unexpected `" & Fragment & "`");
+        (Ada.Strings.Fixed.Index (Text, Fragment) > 0,
+         Message & ": missing `" & Fragment & "`");
+   end Assert_Contains;
+
+   procedure Assert_Not_Contains
+     (Text : String; Fragment : String; Message : String) is
+   begin
+      AUnit.Assertions.Assert
+        (Ada.Strings.Fixed.Index (Text, Fragment) = 0,
+         Message & ": unexpected `" & Fragment & "`");
    end Assert_Not_Contains;
 
    function Make_Unit_Subroutine
-     (Name : String; Flags : Subroutines.Subroutine_Flags; Noop_Count : Natural := 0) return Subroutines.Subroutine
+     (Name       : String;
+      Flags      : Subroutines.Subroutine_Flags;
+      Noop_Count : Natural := 0) return Subroutines.Subroutine
    is
       The_Signature : constant Subroutines.Signature :=
         (Name        => Ada.Strings.Unbounded.To_Unbounded_String (Name),
          Return_Type => Types.Unit,
          Parameters  => Types.Empty_Sequence);
-      Result        : Subroutines.Subroutine := Subroutines.Create (The_Signature => The_Signature, Flags => Flags);
+      Result        : Subroutines.Subroutine :=
+        Subroutines.Create (The_Signature => The_Signature, Flags => Flags);
    begin
       for Index in 1 .. Noop_Count loop
          pragma Unreferenced (Index);
-         Subroutines.Append_Instruction (Result, (Operation => Lovelace.Lir.Opcodes.No_Operation));
+         Subroutines.Append_Instruction
+           (Result, (Operation => Lovelace.Lir.Opcodes.No_Operation));
       end loop;
 
       return Result;
    end Make_Unit_Subroutine;
 
    function Make_Unit_Subroutine_With_Parameters
-     (Name : String; Flags : Subroutines.Subroutine_Flags; Parameters : Types.Parameter_Sequence)
-      return Subroutines.Subroutine
+     (Name       : String;
+      Flags      : Subroutines.Subroutine_Flags;
+      Parameters : Types.Parameter_Sequence) return Subroutines.Subroutine
    is
       The_Signature : constant Subroutines.Signature :=
-        (Name => Ada.Strings.Unbounded.To_Unbounded_String (Name), Return_Type => Types.Unit, Parameters => Parameters);
+        (Name        => Ada.Strings.Unbounded.To_Unbounded_String (Name),
+         Return_Type => Types.Unit,
+         Parameters  => Parameters);
    begin
-      return Subroutines.Create (The_Signature => The_Signature, Flags => Flags);
+      return
+        Subroutines.Create (The_Signature => The_Signature, Flags => Flags);
    end Make_Unit_Subroutine_With_Parameters;
 
    function Must_Emit_Wasm
-     (The_Module : Modules.Module; Message : String) return Lovelace.Compiler.Backend.Wasm_Emit_Result
+     (The_Module : Modules.Module; Message : String)
+      return Lovelace.Compiler.Backend.Wasm_Emit_Result
    is
-      Emitted : constant Lovelace.Compiler.Backend.Wasm_Emit_Result := Wasm_Backend.Emit_Wasm (The_Module);
+      Emitted : constant Lovelace.Compiler.Backend.Wasm_Emit_Result :=
+        Wasm_Backend.Emit_Wasm (The_Module);
    begin
       case Emitted.Ok is
          when False =>
             AUnit.Assertions.Assert
-              (False, Message & ": Emit_Wasm failed: " & Ada.Strings.Unbounded.To_String (Emitted.Error.Detail));
+              (False,
+               Message
+               & ": Emit_Wasm failed: "
+               & Ada.Strings.Unbounded.To_String (Emitted.Error.Detail));
             return Emitted;
 
          when True  =>
@@ -157,14 +201,19 @@ package body Lovelace.Compiler.Tests.Backend is
    end Must_Emit_Wasm;
 
    function Must_Emit_Wat
-     (The_Module : Modules.Module; Message : String) return Lovelace.Compiler.Backend.Wat_Emit_Result
+     (The_Module : Modules.Module; Message : String)
+      return Lovelace.Compiler.Backend.Wat_Emit_Result
    is
-      Emitted : constant Lovelace.Compiler.Backend.Wat_Emit_Result := Wat_Backend.Emit_Wat (The_Module);
+      Emitted : constant Lovelace.Compiler.Backend.Wat_Emit_Result :=
+        Wat_Backend.Emit_Wat (The_Module);
    begin
       case Emitted.Ok is
          when False =>
             AUnit.Assertions.Assert
-              (False, Message & ": Emit_Wat failed: " & Ada.Strings.Unbounded.To_String (Emitted.Error.Detail));
+              (False,
+               Message
+               & ": Emit_Wat failed: "
+               & Ada.Strings.Unbounded.To_String (Emitted.Error.Detail));
             return Emitted;
 
          when True  =>
@@ -183,15 +232,27 @@ package body Lovelace.Compiler.Tests.Backend is
       Types.Append (Params, "Value", Types.I32);
       Sink := Make_Unit_Subroutine_With_Parameters ("Sink", 0, Params);
       Subroutines.Append_Instruction
-        (Caller, (Operation => Lovelace.Lir.Opcodes.Constant_I32, Immediate_I32 => Interfaces.Integer_32'(42)));
-      Subroutines.Append_Instruction (Caller, (Operation => Lovelace.Lir.Opcodes.Call, Target_Index => 1));
+        (Caller,
+         (Operation     => Lovelace.Lir.Opcodes.Constant_I32,
+          Immediate_I32 => Interfaces.Integer_32'(42)));
+      Subroutines.Append_Instruction
+        (Caller, (Operation => Lovelace.Lir.Opcodes.Call, Target_Index => 1));
       Modules.Append_Subroutine (The_Module, Sink);
       Modules.Append_Subroutine (The_Module, Caller);
       Emitted := Must_Emit_Wat (The_Module, "const and call");
 
-      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "i32.const 42", "i32.const");
-      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "call $Sink", "call Sink");
-      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "(func $Run", "Run func");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
+         "i32.const 42",
+         "i32.const");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
+         "call $Sink",
+         "call Sink");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
+         "(func $Run",
+         "Run func");
    end Test_Const_And_Call_Body;
 
    procedure Test_Entrypoint (The_Test : in out Fixture) is
@@ -200,16 +261,28 @@ package body Lovelace.Compiler.Tests.Backend is
       Wat_Emitted  : Lovelace.Compiler.Backend.Wat_Emit_Result;
       Wasm_Emitted : Lovelace.Compiler.Backend.Wasm_Emit_Result;
    begin
-      Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine ("Hello", Subroutines.Entrypoint_Flag));
+      Modules.Append_Subroutine
+        (The_Module,
+         Make_Unit_Subroutine ("Hello", Subroutines.Entrypoint_Flag));
       Wat_Emitted := Must_Emit_Wat (The_Module, "entrypoint wat");
       Wasm_Emitted := Must_Emit_Wasm (The_Module, "entrypoint wasm");
 
       Assert_Contains
-        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text), "export wasi:cli/run@0.3.0;", "entrypoint wit run");
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text),
+         "export wasi:cli/run@0.3.0;",
+         "entrypoint wit run");
       Assert_Not_Contains
-        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text), "export Hello:", "entrypoint wit named");
-      Assert_Contains (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text), "$_start", "entrypoint wat start");
-      Assert_Contains (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text), "i32.const 0", "entrypoint wat success");
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text),
+         "export Hello:",
+         "entrypoint wit named");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
+         "$_start",
+         "entrypoint wat start");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
+         "i32.const 0",
+         "entrypoint wat success");
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
          "(export ""wasi:cli/run@0.3.0""",
@@ -218,35 +291,56 @@ package body Lovelace.Compiler.Tests.Backend is
         (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
          "(instance (export ""run""",
          "entrypoint wat run instance");
-      Assert_Contains (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text), "call $Hello", "entrypoint wat call");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
+         "call $Hello",
+         "entrypoint wat call");
       Assert_Component_Preamble (Wasm_Emitted.Wasm_Bytes, "entrypoint wasm");
-      Assert_Bytes_Contain (Wasm_Emitted.Wasm_Bytes, "wasi:cli/run@0.3.0", "entrypoint wasm run");
-      Assert_Bytes_Contain (Wasm_Emitted.Wasm_Bytes, "_start", "entrypoint wasm start");
+      Assert_Bytes_Contain
+        (Wasm_Emitted.Wasm_Bytes, "wasi:cli/run@0.3.0", "entrypoint wasm run");
+      Assert_Bytes_Contain
+        (Wasm_Emitted.Wasm_Bytes, "_start", "entrypoint wasm start");
    end Test_Entrypoint;
 
    procedure Test_Entrypoint_And_Export (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       The_Module : Modules.Module := Modules.Create ("Hello");
       Emitted    : Lovelace.Compiler.Backend.Wat_Emit_Result;
-      Flags      : constant Subroutines.Subroutine_Flags := Subroutines.Export_Flag or Subroutines.Entrypoint_Flag;
+      Flags      : constant Subroutines.Subroutine_Flags :=
+        Subroutines.Export_Flag or Subroutines.Entrypoint_Flag;
    begin
-      Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine ("Hello", Flags));
+      Modules.Append_Subroutine
+        (The_Module, Make_Unit_Subroutine ("Hello", Flags));
       Emitted := Must_Emit_Wat (The_Module, "both flags");
 
       Assert_Contains
-        (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text), "export hello: func();", "both flags wit Hello");
+        (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text),
+         "export hello: func();",
+         "both flags wit Hello");
       Assert_Contains
-        (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text), "export wasi:cli/run@0.3.0;", "both flags wit run");
-      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "(export ""hello""", "both flags wat Hello");
+        (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text),
+         "export wasi:cli/run@0.3.0;",
+         "both flags wit run");
       Assert_Contains
-        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "(export ""wasi:cli/run@0.3.0""", "both flags wat run");
+        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
+         "(export ""hello""",
+         "both flags wat Hello");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
+         "(export ""wasi:cli/run@0.3.0""",
+         "both flags wat run");
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
          "(instance (export ""run""",
          "both flags wat run instance");
-      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "(func (type", "both flags wat canon func");
       Assert_Contains
-        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "(type (result))", "both flags wat result type");
+        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
+         "(func (type",
+         "both flags wat canon func");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
+         "(type (result))",
+         "both flags wat result type");
    end Test_Entrypoint_And_Export;
 
    procedure Test_Export_Only (The_Test : in out Fixture) is
@@ -255,23 +349,38 @@ package body Lovelace.Compiler.Tests.Backend is
       Wat_Emitted  : Lovelace.Compiler.Backend.Wat_Emit_Result;
       Wasm_Emitted : Lovelace.Compiler.Backend.Wasm_Emit_Result;
    begin
-      Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine ("Helper", Subroutines.Export_Flag));
+      Modules.Append_Subroutine
+        (The_Module, Make_Unit_Subroutine ("Helper", Subroutines.Export_Flag));
       Wat_Emitted := Must_Emit_Wat (The_Module, "export only wat");
       Wasm_Emitted := Must_Emit_Wasm (The_Module, "export only wasm");
 
       Assert_Contains
-        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text), "package love:lib@0.1.0;", "export only wit");
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text),
+         "package love:lib@0.1.0;",
+         "export only wit");
       Assert_Contains
-        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text), "export helper: func();", "export only wit helper");
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text),
+         "export helper: func();",
+         "export only wit helper");
       Assert_Not_Contains
-        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text), "wasi:cli/run", "export only wit run");
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text),
+         "wasi:cli/run",
+         "export only wit run");
       Assert_Contains
-        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text), "(export ""helper""", "export only wat helper");
-      Assert_Not_Contains (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text), "$_start", "export only wat start");
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
+         "(export ""helper""",
+         "export only wat helper");
       Assert_Not_Contains
-        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text), "wasi:cli/run", "export only wat run");
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
+         "$_start",
+         "export only wat start");
+      Assert_Not_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
+         "wasi:cli/run",
+         "export only wat run");
       Assert_Component_Preamble (Wasm_Emitted.Wasm_Bytes, "export only wasm");
-      Assert_Bytes_Contain (Wasm_Emitted.Wasm_Bytes, "helper", "export only wasm helper");
+      Assert_Bytes_Contain
+        (Wasm_Emitted.Wasm_Bytes, "helper", "export only wasm helper");
    end Test_Export_Only;
 
    procedure Test_Export_With_Parameters (The_Test : in out Fixture) is
@@ -283,7 +392,9 @@ package body Lovelace.Compiler.Tests.Backend is
    begin
       Types.Append (Parameters, "Value", Types.I32);
       Modules.Append_Subroutine
-        (The_Module, Make_Unit_Subroutine_With_Parameters ("Print", Subroutines.Export_Flag, Parameters));
+        (The_Module,
+         Make_Unit_Subroutine_With_Parameters
+           ("Print", Subroutines.Export_Flag, Parameters));
       Wat_Emitted := Must_Emit_Wat (The_Module, "export params wat");
       Wasm_Emitted := Must_Emit_Wasm (The_Module, "export params wasm");
 
@@ -292,38 +403,82 @@ package body Lovelace.Compiler.Tests.Backend is
          "(func $Print (param i32)",
          "export params wat functype");
       Assert_Not_Contains
-        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text), "export print:", "export params wit no kebab");
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text),
+         "export print:",
+         "export params wit no kebab");
       Assert_Not_Contains
         (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text),
          "(export ""Print""",
          "export params wat no core export");
-      Assert_Component_Preamble (Wasm_Emitted.Wasm_Bytes, "export params wasm");
+      Assert_Component_Preamble
+        (Wasm_Emitted.Wasm_Bytes, "export params wasm");
    end Test_Export_With_Parameters;
 
    procedure Test_Invalid_Module (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       The_Module : constant Modules.Module := Modules.Create ("");
-      Wat_Out    : constant Lovelace.Compiler.Backend.Wat_Emit_Result := Wat_Backend.Emit_Wat (The_Module);
-      Wasm_Out   : constant Lovelace.Compiler.Backend.Wasm_Emit_Result := Wasm_Backend.Emit_Wasm (The_Module);
+      Wat_Out    : constant Lovelace.Compiler.Backend.Wat_Emit_Result :=
+        Wat_Backend.Emit_Wat (The_Module);
+      Wasm_Out   : constant Lovelace.Compiler.Backend.Wasm_Emit_Result :=
+        Wasm_Backend.Emit_Wasm (The_Module);
    begin
       case Wat_Out.Ok is
          when True  =>
-            AUnit.Assertions.Assert (False, "invalid module wat: expected failure");
+            AUnit.Assertions.Assert
+              (False, "invalid module wat: expected failure");
 
          when False =>
             AUnit.Assertions.Assert
-              (Wat_Out.Error.Code = Lovelace.Compiler.Backend.Invalid_Module, "invalid module wat: code");
+              (Wat_Out.Error.Code = Lovelace.Compiler.Backend.Invalid_Module,
+               "invalid module wat: code");
       end case;
 
       case Wasm_Out.Ok is
          when True  =>
-            AUnit.Assertions.Assert (False, "invalid module wasm: expected failure");
+            AUnit.Assertions.Assert
+              (False, "invalid module wasm: expected failure");
 
          when False =>
             AUnit.Assertions.Assert
-              (Wasm_Out.Error.Code = Lovelace.Compiler.Backend.Invalid_Module, "invalid module wasm: code");
+              (Wasm_Out.Error.Code = Lovelace.Compiler.Backend.Invalid_Module,
+               "invalid module wasm: code");
       end case;
    end Test_Invalid_Module;
+
+   procedure Test_Local_Get_Set_Body (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      The_Module : Modules.Module := Modules.Create ("Locals");
+      The_Sub    : Subroutines.Subroutine :=
+        Make_Unit_Subroutine ("Run", Subroutines.Entrypoint_Flag);
+      Emitted    : Lovelace.Compiler.Backend.Wat_Emit_Result;
+   begin
+      Subroutines.Append_Local (The_Sub, "Foo", Types.I32);
+      Subroutines.Append_Instruction
+        (The_Sub,
+         (Operation     => Lovelace.Lir.Opcodes.Constant_I32,
+          Immediate_I32 => Interfaces.Integer_32'(1)));
+      Subroutines.Append_Instruction
+        (The_Sub,
+         (Operation => Lovelace.Lir.Opcodes.Local_Set, Local_Index => 1));
+      Subroutines.Append_Instruction
+        (The_Sub,
+         (Operation => Lovelace.Lir.Opcodes.Local_Get, Local_Index => 1));
+      Modules.Append_Subroutine (The_Module, The_Sub);
+      Emitted := Must_Emit_Wat (The_Module, "local get set");
+
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
+         "i32.const 1",
+         "local get set const");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
+         "local.set 0",
+         "local.set 0-based");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
+         "local.get 0",
+         "local.get 0-based");
+   end Test_Local_Get_Set_Body;
 
    procedure Test_Native_Print_Integer (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -337,7 +492,8 @@ package body Lovelace.Compiler.Tests.Backend is
    begin
       Types.Append (Params, "value", Types.I32);
       Print_Sub :=
-        Make_Unit_Subroutine_With_Parameters ("print", Subroutines.Export_Flag, Params);
+        Make_Unit_Subroutine_With_Parameters
+          ("print", Subroutines.Export_Flag, Params);
       Subroutines.Set_Intrinsic (Print_Sub);
       Modules.Append_Subroutine (The_Module, Print_Sub);
 
@@ -366,9 +522,11 @@ package body Lovelace.Compiler.Tests.Backend is
         (Ada.Strings.Unbounded.To_String (Wat_Text),
          "(func $print",
          "wat print func");
-      Assert_Bytes_Contain (Wasm_Emitted.Wasm_Bytes, "wasi:cli/stdout@0.3.0", "wasm stdout");
+      Assert_Bytes_Contain
+        (Wasm_Emitted.Wasm_Bytes, "wasi:cli/stdout@0.3.0", "wasm stdout");
       AUnit.Assertions.Assert
-        (Ada.Strings.Unbounded."=" (Wat_Emitted.Wit_Text, Wasm_Emitted.Wit_Text),
+        (Ada.Strings.Unbounded."="
+           (Wat_Emitted.Wit_Text, Wasm_Emitted.Wit_Text),
          "native print wit equality");
    end Test_Native_Print_Integer;
 
@@ -377,11 +535,20 @@ package body Lovelace.Compiler.Tests.Backend is
       The_Module : Modules.Module := Modules.Create ("Lib");
       Emitted    : Lovelace.Compiler.Backend.Wat_Emit_Result;
    begin
-      Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine ("Helper", Subroutines.Export_Flag, Noop_Count => 2));
+      Modules.Append_Subroutine
+        (The_Module,
+         Make_Unit_Subroutine
+           ("Helper", Subroutines.Export_Flag, Noop_Count => 2));
       Emitted := Must_Emit_Wat (The_Module, "noop body");
 
-      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "(func $Helper", "noop body wat func");
-      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text), "export helper: func();", "noop body wit");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
+         "(func $Helper",
+         "noop body wat func");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text),
+         "export helper: func();",
+         "noop body wit");
    end Test_Noop_Body;
 
    procedure Test_Two_Exports (The_Test : in out Fixture) is
@@ -389,26 +556,44 @@ package body Lovelace.Compiler.Tests.Backend is
       The_Module : Modules.Module := Modules.Create ("Lib");
       Emitted    : Lovelace.Compiler.Backend.Wat_Emit_Result;
    begin
-      Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine ("Alpha", Subroutines.Export_Flag));
-      Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine ("Beta", Subroutines.Export_Flag));
+      Modules.Append_Subroutine
+        (The_Module, Make_Unit_Subroutine ("Alpha", Subroutines.Export_Flag));
+      Modules.Append_Subroutine
+        (The_Module, Make_Unit_Subroutine ("Beta", Subroutines.Export_Flag));
       Emitted := Must_Emit_Wat (The_Module, "two exports");
 
       Assert_Contains
-        (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text), "export alpha: func();", "two exports wit Alpha");
+        (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text),
+         "export alpha: func();",
+         "two exports wit Alpha");
       Assert_Contains
-        (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text), "export beta: func();", "two exports wit Beta");
-      Assert_Not_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text), "wasi:cli/run", "two exports wit run");
+        (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text),
+         "export beta: func();",
+         "two exports wit Beta");
+      Assert_Not_Contains
+        (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text),
+         "wasi:cli/run",
+         "two exports wit run");
       Assert_Contains
-        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "(export ""alpha""", "two exports wat Alpha");
-      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "(export ""beta""", "two exports wat Beta");
-      Assert_Not_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "$_start", "two exports wat start");
+        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
+         "(export ""alpha""",
+         "two exports wat Alpha");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
+         "(export ""beta""",
+         "two exports wat Beta");
+      Assert_Not_Contains
+        (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
+         "$_start",
+         "two exports wat start");
    end Test_Two_Exports;
 
    procedure Test_Typed_Locals (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      The_Module   : Modules.Module := Modules.Create ("Locals");
-      The_Sub      : Subroutines.Subroutine := Make_Unit_Subroutine ("Run", Subroutines.Entrypoint_Flag);
-      Wat_Emitted  : Lovelace.Compiler.Backend.Wat_Emit_Result;
+      The_Module  : Modules.Module := Modules.Create ("Locals");
+      The_Sub     : Subroutines.Subroutine :=
+        Make_Unit_Subroutine ("Run", Subroutines.Entrypoint_Flag);
+      Wat_Emitted : Lovelace.Compiler.Backend.Wat_Emit_Result;
    begin
       Subroutines.Append_Local (The_Sub, "a", Types.I32);
       Subroutines.Append_Local (The_Sub, "b", Types.F64);
@@ -439,7 +624,9 @@ package body Lovelace.Compiler.Tests.Backend is
       Types.Append (Parameters, "u64", Types.U64);
       Types.Append (Parameters, "f32", Types.F32);
       Types.Append (Parameters, "f64", Types.F64);
-      Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine_With_Parameters ("Map", 0, Parameters));
+      Modules.Append_Subroutine
+        (The_Module,
+         Make_Unit_Subroutine_With_Parameters ("Map", 0, Parameters));
       Wat_Emitted := Must_Emit_Wat (The_Module, "typed parameters wat");
       Wasm_Emitted := Must_Emit_Wasm (The_Module, "typed parameters wasm");
 
@@ -448,8 +635,11 @@ package body Lovelace.Compiler.Tests.Backend is
          "(func $Map (param i32 i32 i32 i64 i32 i32 i32 i64 f32 f64)",
          "typed parameters wat functype");
       Assert_Not_Contains
-        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text), "export map:", "typed parameters wit no export");
-      Assert_Component_Preamble (Wasm_Emitted.Wasm_Bytes, "typed parameters wasm");
+        (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text),
+         "export map:",
+         "typed parameters wit no export");
+      Assert_Component_Preamble
+        (Wasm_Emitted.Wasm_Bytes, "typed parameters wasm");
       --  Core functype: 0x60, 10 params, i32 i32 i32 i64 i32 i32 i32 i64 f32 f64, 0 results.
       Assert_Bytes_Contain
         (Wasm_Emitted.Wasm_Bytes,
@@ -480,46 +670,61 @@ package body Lovelace.Compiler.Tests.Backend is
       Entrypoint_Module : Modules.Module := Modules.Create ("Lib");
    begin
       Modules.Append_Subroutine
-        (The_Module, Subroutines.Create (The_Signature => The_Signature, Flags => Subroutines.Export_Flag));
+        (The_Module,
+         Subroutines.Create
+           (The_Signature => The_Signature, Flags => Subroutines.Export_Flag));
 
       declare
-         Wat_Out  : constant Lovelace.Compiler.Backend.Wat_Emit_Result := Wat_Backend.Emit_Wat (The_Module);
-         Wasm_Out : constant Lovelace.Compiler.Backend.Wasm_Emit_Result := Wasm_Backend.Emit_Wasm (The_Module);
+         Wat_Out  : constant Lovelace.Compiler.Backend.Wat_Emit_Result :=
+           Wat_Backend.Emit_Wat (The_Module);
+         Wasm_Out : constant Lovelace.Compiler.Backend.Wasm_Emit_Result :=
+           Wasm_Backend.Emit_Wasm (The_Module);
       begin
          case Wat_Out.Ok is
             when True  =>
-               AUnit.Assertions.Assert (False, "unsupported type wat: expected failure");
+               AUnit.Assertions.Assert
+                 (False, "unsupported type wat: expected failure");
 
             when False =>
                AUnit.Assertions.Assert
-                 (Wat_Out.Error.Code = Lovelace.Compiler.Backend.Unsupported_Type, "unsupported type wat: code");
+                 (Wat_Out.Error.Code
+                  = Lovelace.Compiler.Backend.Unsupported_Type,
+                  "unsupported type wat: code");
          end case;
 
          case Wasm_Out.Ok is
             when True  =>
-               AUnit.Assertions.Assert (False, "unsupported type wasm: expected failure");
+               AUnit.Assertions.Assert
+                 (False, "unsupported type wasm: expected failure");
 
             when False =>
                AUnit.Assertions.Assert
-                 (Wasm_Out.Error.Code = Lovelace.Compiler.Backend.Unsupported_Type, "unsupported type wasm: code");
+                 (Wasm_Out.Error.Code
+                  = Lovelace.Compiler.Backend.Unsupported_Type,
+                  "unsupported type wasm: code");
          end case;
       end;
 
       Types.Append (Entrypoint_Params, "x", Types.I32);
       Modules.Append_Subroutine
         (Entrypoint_Module,
-         Make_Unit_Subroutine_With_Parameters ("Main", Subroutines.Entrypoint_Flag, Entrypoint_Params));
+         Make_Unit_Subroutine_With_Parameters
+           ("Main", Subroutines.Entrypoint_Flag, Entrypoint_Params));
 
       declare
-         Wat_Out : constant Lovelace.Compiler.Backend.Wat_Emit_Result := Wat_Backend.Emit_Wat (Entrypoint_Module);
+         Wat_Out : constant Lovelace.Compiler.Backend.Wat_Emit_Result :=
+           Wat_Backend.Emit_Wat (Entrypoint_Module);
       begin
          case Wat_Out.Ok is
             when True  =>
-               AUnit.Assertions.Assert (False, "entrypoint params wat: expected failure");
+               AUnit.Assertions.Assert
+                 (False, "entrypoint params wat: expected failure");
 
             when False =>
                AUnit.Assertions.Assert
-                 (Wat_Out.Error.Code = Lovelace.Compiler.Backend.Unsupported_Type, "entrypoint params wat: code");
+                 (Wat_Out.Error.Code
+                  = Lovelace.Compiler.Backend.Unsupported_Type,
+                  "entrypoint params wat: code");
          end case;
       end;
    end Test_Unsupported_Type;
@@ -529,7 +734,8 @@ package body Lovelace.Compiler.Tests.Backend is
       The_Module : Modules.Module := Modules.Create ("Lib");
       Emitted    : Lovelace.Compiler.Backend.Wasm_Emit_Result;
    begin
-      Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine ("Helper", Subroutines.Export_Flag));
+      Modules.Append_Subroutine
+        (The_Module, Make_Unit_Subroutine ("Helper", Subroutines.Export_Flag));
       Emitted := Must_Emit_Wasm (The_Module, "preamble");
       Assert_Component_Preamble (Emitted.Wasm_Bytes, "preamble");
    end Test_Wasm_Component_Preamble;
@@ -537,15 +743,20 @@ package body Lovelace.Compiler.Tests.Backend is
    procedure Test_Wasm_Wit_Equality (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       The_Module   : Modules.Module := Modules.Create ("Hello");
-      Flags        : constant Subroutines.Subroutine_Flags := Subroutines.Export_Flag or Subroutines.Entrypoint_Flag;
+      Flags        : constant Subroutines.Subroutine_Flags :=
+        Subroutines.Export_Flag or Subroutines.Entrypoint_Flag;
       Wat_Emitted  : Lovelace.Compiler.Backend.Wat_Emit_Result;
       Wasm_Emitted : Lovelace.Compiler.Backend.Wasm_Emit_Result;
    begin
-      Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine ("Hello", Flags));
+      Modules.Append_Subroutine
+        (The_Module, Make_Unit_Subroutine ("Hello", Flags));
       Wat_Emitted := Must_Emit_Wat (The_Module, "wit eq wat");
       Wasm_Emitted := Must_Emit_Wasm (The_Module, "wit eq wasm");
 
-      AUnit.Assertions.Assert (Ada.Strings.Unbounded."=" (Wat_Emitted.Wit_Text, Wasm_Emitted.Wit_Text), "wit equality");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded."="
+           (Wat_Emitted.Wit_Text, Wasm_Emitted.Wit_Text),
+         "wit equality");
    end Test_Wasm_Wit_Equality;
 
 end Lovelace.Compiler.Tests.Backend;

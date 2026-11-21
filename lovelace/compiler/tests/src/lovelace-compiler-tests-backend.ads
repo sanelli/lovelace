@@ -35,7 +35,7 @@ package Lovelace.Compiler.Tests.Backend is
    --  @param The_Test Unused fixture.
    procedure Test_Const_And_Call_Body (The_Test : in out Fixture);
 
-   --  LIR locals widen into WAT `(local …)` after parameters.
+   --  LIR locals widen into WAT `(local Ã¢ÂÂ¦)` after parameters.
    --  @param The_Test Unused fixture.
    procedure Test_Typed_Locals (The_Test : in out Fixture);
 
@@ -50,6 +50,10 @@ package Lovelace.Compiler.Tests.Backend is
    --  Empty module name fails Validate and yields Invalid_Module.
    --  @param The_Test Unused fixture.
    procedure Test_Invalid_Module (The_Test : in out Fixture);
+
+   --  Local_Get / Local_Set (1-based LIR) lower to 0-based local.get / local.set in WAT.
+   --  @param The_Test Unused fixture.
+   procedure Test_Local_Get_Set_Body (The_Test : in out Fixture);
 
    --  native-print-integer synthesizes stdout import + stream builtins in WAT/WIT.
    --  @param The_Test Unused fixture.

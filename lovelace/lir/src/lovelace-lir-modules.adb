@@ -11,12 +11,15 @@ package body Lovelace.Lir.Modules is
 
    use type Interfaces.Unsigned_32;
 
-   procedure Append_Dependency (The_Module : in out Module; Dependency_Name : String) is
+   procedure Append_Dependency
+     (The_Module : in out Module; Dependency_Name : String) is
    begin
-      The_Module.Dependencies.Append (Ada.Strings.Unbounded.To_Unbounded_String (Dependency_Name));
+      The_Module.Dependencies.Append
+        (Ada.Strings.Unbounded.To_Unbounded_String (Dependency_Name));
    end Append_Dependency;
 
-   procedure Append_Subroutine (The_Module : in out Module; The_Subroutine : Subroutines.Subroutine) is
+   procedure Append_Subroutine
+     (The_Module : in out Module; The_Subroutine : Subroutines.Subroutine) is
    begin
       The_Module.Subroutines.Append (The_Subroutine);
    end Append_Subroutine;
@@ -36,9 +39,12 @@ package body Lovelace.Lir.Modules is
       return Natural (The_Module.Dependencies.Length);
    end Dependency_Count;
 
-   function Dependency_Name (The_Module : Module; Index : Positive) return String is
+   function Dependency_Name
+     (The_Module : Module; Index : Positive) return String is
    begin
-      return Ada.Strings.Unbounded.To_String (The_Module.Dependencies.Element (Index));
+      return
+        Ada.Strings.Unbounded.To_String
+          (The_Module.Dependencies.Element (Index));
    end Dependency_Name;
 
    function Flags (The_Module : Module) return Module_Flags is
@@ -46,7 +52,8 @@ package body Lovelace.Lir.Modules is
       return The_Module.Flags_Value;
    end Flags;
 
-   function Get_Subroutine (The_Module : Module; Index : Positive) return Subroutines.Subroutine is
+   function Get_Subroutine
+     (The_Module : Module; Index : Positive) return Subroutines.Subroutine is
    begin
       return The_Module.Subroutines.Element (Index);
    end Get_Subroutine;
@@ -66,7 +73,8 @@ package body Lovelace.Lir.Modules is
       The_Module.Flags_Value := Flags;
    end Set_Flags;
 
-   procedure Set_Origin (The_Module : in out Module; The_Origin : Module_Origin) is
+   procedure Set_Origin
+     (The_Module : in out Module; The_Origin : Module_Origin) is
    begin
       The_Module.Origin_Value := (Present => True, Value => The_Origin);
    end Set_Origin;
@@ -76,7 +84,9 @@ package body Lovelace.Lir.Modules is
       return Natural (The_Module.Subroutines.Length);
    end Subroutine_Count;
 
-   function Validate (The_Module : Module) return Errors.Validation_Results.Result is
+   function Validate
+     (The_Module : Module) return Errors.Validation_Results.Result
+   is
       function Is_Valid_Utf_8 (Source : String) return Boolean;
       --  True when Source is empty or every byte sequence is valid UTF-8.
 
@@ -94,7 +104,11 @@ package body Lovelace.Lir.Modules is
                Valid  : Boolean;
             begin
                Lovelace.Common.Utf_8.Decode
-                 (Source => Source, Index => Index, Point => Point, Length => Length, Valid => Valid);
+                 (Source => Source,
+                  Index  => Index,
+                  Point  => Point,
+                  Length => Length,
+                  Valid  => Valid);
 
                if not Valid or else Length = 0 then
                   return False;
@@ -120,23 +134,30 @@ package body Lovelace.Lir.Modules is
 
       for Dependency_Index in 1 .. Dependency_Count (The_Module) loop
          declare
-            Depend_Text : constant String := Dependency_Name (The_Module, Dependency_Index);
+            Depend_Text : constant String :=
+              Dependency_Name (The_Module, Dependency_Index);
          begin
             if Depend_Text'Length = 0 then
-               return Errors.Validation_Results.From_Failure (Errors.Empty_Name);
+               return
+                 Errors.Validation_Results.From_Failure (Errors.Empty_Name);
             end if;
 
             if not Is_Valid_Utf_8 (Depend_Text) then
-               return Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
+               return
+                 Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
             end if;
 
             if Depend_Text = Module_Name_Text then
-               return Errors.Validation_Results.From_Failure (Errors.Self_Dependency);
+               return
+                 Errors.Validation_Results.From_Failure
+                   (Errors.Self_Dependency);
             end if;
 
             for Prior_Index in 1 .. Dependency_Index - 1 loop
                if Dependency_Name (The_Module, Prior_Index) = Depend_Text then
-                  return Errors.Validation_Results.From_Failure (Errors.Duplicate_Name);
+                  return
+                    Errors.Validation_Results.From_Failure
+                      (Errors.Duplicate_Name);
                end if;
             end loop;
          end;
@@ -144,50 +165,72 @@ package body Lovelace.Lir.Modules is
 
       for Subroutine_Index in 1 .. Subroutine_Count (The_Module) loop
          declare
-            The_Subroutine       : constant Subroutines.Subroutine := Get_Subroutine (The_Module, Subroutine_Index);
-            The_Signature        : constant Subroutines.Signature := Subroutines.Get_Signature (The_Subroutine);
-            Subroutine_Name_Text : constant String := Ada.Strings.Unbounded.To_String (The_Signature.Name);
+            The_Subroutine       : constant Subroutines.Subroutine :=
+              Get_Subroutine (The_Module, Subroutine_Index);
+            The_Signature        : constant Subroutines.Signature :=
+              Subroutines.Get_Signature (The_Subroutine);
+            Subroutine_Name_Text : constant String :=
+              Ada.Strings.Unbounded.To_String (The_Signature.Name);
          begin
             if Subroutine_Name_Text'Length = 0 then
-               return Errors.Validation_Results.From_Failure (Errors.Empty_Name);
+               return
+                 Errors.Validation_Results.From_Failure (Errors.Empty_Name);
             end if;
 
             if not Is_Valid_Utf_8 (Subroutine_Name_Text) then
-               return Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
+               return
+                 Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
             end if;
 
             for Prior_Index in 1 .. Subroutine_Index - 1 loop
                declare
                   Prior_Signature : constant Subroutines.Signature :=
-                    Subroutines.Get_Signature (Get_Subroutine (The_Module, Prior_Index));
+                    Subroutines.Get_Signature
+                      (Get_Subroutine (The_Module, Prior_Index));
                begin
-                  if Ada.Strings.Unbounded.To_String (Prior_Signature.Name) = Subroutine_Name_Text then
-                     return Errors.Validation_Results.From_Failure (Errors.Duplicate_Name);
+                  if Ada.Strings.Unbounded.To_String (Prior_Signature.Name)
+                    = Subroutine_Name_Text
+                  then
+                     return
+                       Errors.Validation_Results.From_Failure
+                         (Errors.Duplicate_Name);
                   end if;
                end;
             end loop;
 
-            for Parameter_Index in 1 .. Types.Length (The_Signature.Parameters) loop
+            for Parameter_Index in 1 .. Types.Length (The_Signature.Parameters)
+            loop
                declare
                   The_Parameter       : constant Types.Parameter :=
                     Types.Element (The_Signature.Parameters, Parameter_Index);
-                  Parameter_Name_Text : constant String := Ada.Strings.Unbounded.To_String (The_Parameter.Name);
+                  Parameter_Name_Text : constant String :=
+                    Ada.Strings.Unbounded.To_String (The_Parameter.Name);
                begin
                   if Parameter_Name_Text'Length = 0 then
-                     return Errors.Validation_Results.From_Failure (Errors.Empty_Name);
+                     return
+                       Errors.Validation_Results.From_Failure
+                         (Errors.Empty_Name);
                   end if;
 
                   if not Is_Valid_Utf_8 (Parameter_Name_Text) then
-                     return Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
+                     return
+                       Errors.Validation_Results.From_Failure
+                         (Errors.Invalid_Utf_8);
                   end if;
 
                   for Prior_Parameter_Index in 1 .. Parameter_Index - 1 loop
                      declare
                         Prior_Parameter : constant Types.Parameter :=
-                          Types.Element (The_Signature.Parameters, Prior_Parameter_Index);
+                          Types.Element
+                            (The_Signature.Parameters, Prior_Parameter_Index);
                      begin
-                        if Ada.Strings.Unbounded.To_String (Prior_Parameter.Name) = Parameter_Name_Text then
-                           return Errors.Validation_Results.From_Failure (Errors.Duplicate_Name);
+                        if Ada.Strings.Unbounded.To_String
+                             (Prior_Parameter.Name)
+                          = Parameter_Name_Text
+                        then
+                           return
+                             Errors.Validation_Results.From_Failure
+                               (Errors.Duplicate_Name);
                         end if;
                      end;
                   end loop;
@@ -195,38 +238,59 @@ package body Lovelace.Lir.Modules is
             end loop;
 
             declare
-               Locals : constant Types.Parameter_Sequence := Subroutines.Get_Locals (The_Subroutine);
+               Locals : constant Types.Parameter_Sequence :=
+                 Subroutines.Get_Locals (The_Subroutine);
             begin
                for Local_Index in 1 .. Types.Length (Locals) loop
                   declare
-                     The_Local       : constant Types.Parameter := Types.Element (Locals, Local_Index);
-                     Local_Name_Text : constant String := Ada.Strings.Unbounded.To_String (The_Local.Name);
+                     The_Local       : constant Types.Parameter :=
+                       Types.Element (Locals, Local_Index);
+                     Local_Name_Text : constant String :=
+                       Ada.Strings.Unbounded.To_String (The_Local.Name);
                   begin
                      if Local_Name_Text'Length = 0 then
-                        return Errors.Validation_Results.From_Failure (Errors.Empty_Name);
+                        return
+                          Errors.Validation_Results.From_Failure
+                            (Errors.Empty_Name);
                      end if;
 
                      if not Is_Valid_Utf_8 (Local_Name_Text) then
-                        return Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
+                        return
+                          Errors.Validation_Results.From_Failure
+                            (Errors.Invalid_Utf_8);
                      end if;
 
                      for Prior_Local_Index in 1 .. Local_Index - 1 loop
                         declare
-                           Prior_Local : constant Types.Parameter := Types.Element (Locals, Prior_Local_Index);
+                           Prior_Local : constant Types.Parameter :=
+                             Types.Element (Locals, Prior_Local_Index);
                         begin
-                           if Ada.Strings.Unbounded.To_String (Prior_Local.Name) = Local_Name_Text then
-                              return Errors.Validation_Results.From_Failure (Errors.Duplicate_Name);
+                           if Ada.Strings.Unbounded.To_String
+                                (Prior_Local.Name)
+                             = Local_Name_Text
+                           then
+                              return
+                                Errors.Validation_Results.From_Failure
+                                  (Errors.Duplicate_Name);
                            end if;
                         end;
                      end loop;
 
-                     for Parameter_Index in 1 .. Types.Length (The_Signature.Parameters) loop
+                     for Parameter_Index in
+                       1 .. Types.Length (The_Signature.Parameters)
+                     loop
                         declare
                            The_Parameter : constant Types.Parameter :=
-                             Types.Element (The_Signature.Parameters, Parameter_Index);
+                             Types.Element
+                               (The_Signature.Parameters, Parameter_Index);
                         begin
-                           if Ada.Strings.Unbounded.To_String (The_Parameter.Name) = Local_Name_Text then
-                              return Errors.Validation_Results.From_Failure (Errors.Duplicate_Name);
+                           if Ada.Strings.Unbounded.To_String
+                                (The_Parameter.Name)
+                             = Local_Name_Text
+                           then
+                              return
+                                Errors.Validation_Results.From_Failure
+                                  (Errors.Duplicate_Name);
                            end if;
                         end;
                      end loop;
@@ -235,89 +299,145 @@ package body Lovelace.Lir.Modules is
             end;
 
             declare
-               The_Flags   : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (The_Subroutine);
-               The_Native  : constant Subroutines.Native_Binding_Option := Subroutines.Native (The_Subroutine);
+               The_Flags   : constant Subroutines.Subroutine_Flags :=
+                 Subroutines.Get_Flags (The_Subroutine);
+               The_Native  : constant Subroutines.Native_Binding_Option :=
+                 Subroutines.Native (The_Subroutine);
                Body_Instrs : constant Instructions.Instruction_Sequence :=
                  Subroutines.Get_Instructions (The_Subroutine);
-               Local_Count : constant Natural := Types.Length (Subroutines.Get_Locals (The_Subroutine));
+               Local_Count : constant Natural :=
+                 Types.Length (Subroutines.Get_Locals (The_Subroutine));
             begin
                if Subroutines.Has_Entrypoint (The_Flags) then
                   Entrypoint_Count := Entrypoint_Count + 1;
                end if;
 
                if Subroutines.Has_Native (The_Flags) /= The_Native.Present then
-                  return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+                  return
+                    Errors.Validation_Results.From_Failure
+                      (Errors.Invalid_Native_Binding);
                end if;
 
-               if Subroutines.Has_Intrinsic (The_Flags) and then Subroutines.Has_Native (The_Flags) then
-                  return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+               if Subroutines.Has_Intrinsic (The_Flags)
+                 and then Subroutines.Has_Native (The_Flags)
+               then
+                  return
+                    Errors.Validation_Results.From_Failure
+                      (Errors.Invalid_Native_Binding);
                end if;
 
                if Subroutines.Has_Intrinsic (The_Flags) then
                   if Subroutines.Has_Entrypoint (The_Flags) then
-                     return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+                     return
+                       Errors.Validation_Results.From_Failure
+                         (Errors.Invalid_Native_Binding);
                   end if;
 
                   if Instructions.Length (Body_Instrs) /= 0 then
-                     return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+                     return
+                       Errors.Validation_Results.From_Failure
+                         (Errors.Invalid_Native_Binding);
                   end if;
 
                   if Local_Count /= 0 then
-                     return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+                     return
+                       Errors.Validation_Results.From_Failure
+                         (Errors.Invalid_Native_Binding);
                   end if;
                end if;
 
                if The_Native.Present then
                   declare
                      Library_Text  : constant String :=
-                       Ada.Strings.Unbounded.To_String (The_Native.Value.Library);
+                       Ada.Strings.Unbounded.To_String
+                         (The_Native.Value.Library);
                      Function_Text : constant String :=
-                       Ada.Strings.Unbounded.To_String (The_Native.Value.Function_Name);
+                       Ada.Strings.Unbounded.To_String
+                         (The_Native.Value.Function_Name);
                   begin
-                     if Library_Text'Length = 0 or else Function_Text'Length = 0 then
-                        return Errors.Validation_Results.From_Failure (Errors.Empty_Name);
+                     if Library_Text'Length = 0
+                       or else Function_Text'Length = 0
+                     then
+                        return
+                          Errors.Validation_Results.From_Failure
+                            (Errors.Empty_Name);
                      end if;
 
-                     if not Is_Valid_Utf_8 (Library_Text) or else not Is_Valid_Utf_8 (Function_Text) then
-                        return Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
+                     if not Is_Valid_Utf_8 (Library_Text)
+                       or else not Is_Valid_Utf_8 (Function_Text)
+                     then
+                        return
+                          Errors.Validation_Results.From_Failure
+                            (Errors.Invalid_Utf_8);
                      end if;
                   end;
 
                   if Subroutines.Has_Entrypoint (The_Flags) then
-                     return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+                     return
+                       Errors.Validation_Results.From_Failure
+                         (Errors.Invalid_Native_Binding);
                   end if;
 
                   if Instructions.Length (Body_Instrs) /= 0 then
-                     return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+                     return
+                       Errors.Validation_Results.From_Failure
+                         (Errors.Invalid_Native_Binding);
                   end if;
 
                   if Local_Count /= 0 then
-                     return Errors.Validation_Results.From_Failure (Errors.Invalid_Native_Binding);
+                     return
+                       Errors.Validation_Results.From_Failure
+                         (Errors.Invalid_Native_Binding);
                   end if;
                end if;
 
-               for Instruction_Index in 1 .. Instructions.Length (Body_Instrs) loop
-                  declare
-                     Item : constant Instructions.Instruction := Instructions.Element (Body_Instrs, Instruction_Index);
-                  begin
-                     case Item.Operation is
-                        when Opcodes.No_Operation | Opcodes.Constant_I32 =>
-                           null;
+               declare
+                  Param_Count : constant Natural :=
+                    Types.Length (The_Signature.Parameters);
+                  Slot_Limit  : constant Natural := Param_Count + Local_Count;
+               begin
+                  for Instruction_Index in
+                    1 .. Instructions.Length (Body_Instrs)
+                  loop
+                     declare
+                        Item : constant Instructions.Instruction :=
+                          Instructions.Element
+                            (Body_Instrs, Instruction_Index);
+                     begin
+                        case Item.Operation is
+                           when Opcodes.No_Operation | Opcodes.Constant_I32 =>
+                              null;
 
-                        when Opcodes.Call                                =>
-                           if Item.Target_Index = 0 or else Natural (Item.Target_Index) > Subroutine_Count (The_Module)
-                           then
-                              return Errors.Validation_Results.From_Failure (Errors.Invalid_Call_Target);
-                           end if;
-                     end case;
-                  end;
-               end loop;
+                           when Opcodes.Call                                =>
+                              if Item.Target_Index = 0
+                                or else Natural (Item.Target_Index)
+                                        > Subroutine_Count (The_Module)
+                              then
+                                 return
+                                   Errors.Validation_Results.From_Failure
+                                     (Errors.Invalid_Call_Target);
+                              end if;
+
+                           when Opcodes.Local_Get | Opcodes.Local_Set       =>
+                              if Item.Local_Index = 0
+                                or else Natural (Item.Local_Index) > Slot_Limit
+                              then
+                                 return
+                                   Errors.Validation_Results.From_Failure
+                                     (Errors.Invalid_Local_Index);
+                              end if;
+                        end case;
+                     end;
+                  end loop;
+               end;
             end;
          end;
       end loop;
 
       if Entrypoint_Count > 1 then
-         return Errors.Validation_Results.From_Failure (Errors.Duplicate_Entrypoint);
+         return
+           Errors.Validation_Results.From_Failure
+             (Errors.Duplicate_Entrypoint);
       end if;
 
       return Errors.Validation_Results.From_Success ((null record));
