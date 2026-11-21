@@ -74,8 +74,8 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Tokenizer.Test_Export_Keyword'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
-           ("tokenizer: import keyword",
-            Lovelace.Compiler.Tests.Tokenizer.Test_Import_Keyword'Access));
+           ("tokenizer: import identifier",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Import_Identifier'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
            ("tokenizer: native keyword",
@@ -84,6 +84,14 @@ package body Lovelace.Compiler.Tests.Suite is
         (Tokenizer_Caller.Create
            ("tokenizer: declare keyword",
             Lovelace.Compiler.Tests.Tokenizer.Test_Declare_Keyword'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
+           ("tokenizer: using keyword",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Using_Keyword'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
+           ("tokenizer: assign punctuation",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Assign_Punctuation'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
            ("tokenizer: ascii identifiers",

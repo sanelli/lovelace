@@ -13,7 +13,7 @@ todos:
     status: completed
   - id: "4"
     content: "4. Tokenizer: using keyword; :=; obsolete import path; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "5"
     content: "5. AST: block usings, expressions, assignment; rename Import→Using APIs; gnatformat."
     status: pending
@@ -64,7 +64,7 @@ Roadmap: [docs/roadmap/1.002-roadmap-replace-synthesized-print.md](../../docs/ro
 ### Rename `import` → `using`
 
 - Keyword **`using`** replaces **`import`** everywhere (tokenizer, grammar, AST naming, diagnostics text, samples, Augusta docs, rules).
-- Keyword **`import`** is **hard-rejected** (same spirit as obsolete `native(…)`): allocate `Obsolete_Import` / next free `LV…` (expected **LV00027**).
+- Lexeme **`import`** is an **ordinary identifier** (not a keyword). Parser step 6 hard-rejects it with `Obsolete_Import` (**LV00027**) when used as a declaration introducer; until then the parser may still recognize identifier `import` for the old leading-import form.
 - `using … as …` stays **reserved** (not parsed).
 - Unit-leading form remains: `{ using_declaration } program|module …` (today’s leading imports).
 - Diagnostic / IR messages that say “import” become “using”. Keep stable numeric labels where the meaning is unchanged (`LV00016`–`LV00020`, `LV00017` Call_Without_Import → rename enum to `Call_Without_Using`, **same LV00017**).
@@ -202,8 +202,8 @@ Update [docs/cli.md](../../docs/cli.md), [docs/diagnostics.md](../../docs/diagno
 
 ### 4. Tokenizer
 
-- Keywords: add `using`; remove/reserve `import` as non-keyword that errors via obsolete path **or** keep lexing `import` as keyword only to emit Obsolete_Import at parse — **lock: tokenize `import` as identifier is wrong**; tokenize as keyword `import` and parser/build rejects with Obsolete_Import, **or** tokenizer maps `import` to a dedicated obsolete keyword subtype. Prefer **keyword `import` still recognized** solely so the parser can emit LV00027 at the keyword span (clearer diagnostics than “unexpected identifier”).
 - Add `using` keyword; punctuation `:=`.
+- Lexeme `import` is **not** a keyword — tokenize as **identifier**. Obsolete_Import (LV00027) is a **parser** concern in step 6.
 - AUnit + gnatformat.
 
 ### 5. AST

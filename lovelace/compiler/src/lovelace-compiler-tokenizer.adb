@@ -105,7 +105,6 @@ package body Lovelace.Compiler.Tokenizer is
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("begin"), Value => Tokens.Begin_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("end"), Value => Tokens.End_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("export"), Value => Tokens.Export_Keyword),
-      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("import"), Value => Tokens.Import_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("native"), Value => Tokens.Native_Keyword),
       Keyword_Entry'
         (Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("procedure"), Value => Tokens.Procedure_Keyword),
@@ -117,15 +116,17 @@ package body Lovelace.Compiler.Tokenizer is
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("boolean"), Value => Tokens.Boolean_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("true"), Value => Tokens.True_Keyword),
       Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("false"), Value => Tokens.False_Keyword),
-      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("declare"), Value => Tokens.Declare_Keyword)];
+      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("declare"), Value => Tokens.Declare_Keyword),
+      Keyword_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("using"), Value => Tokens.Using_Keyword)];
 
-   --  Exact lexemes classified as punctuation tokens.
+   --  Exact lexemes classified as punctuation tokens (`:=` before `:` for longest match).
    Punctuation_Table : constant Punctuation_Entry_List :=
      [Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (";"), Value => Tokens.Semicolon),
       Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("."), Value => Tokens.Full_Stop),
       Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("("), Value => Tokens.Left_Parenthesis),
       Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (")"), Value => Tokens.Right_Parenthesis),
       Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (","), Value => Tokens.Comma),
+      Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (":="), Value => Tokens.Colon_Equals),
       Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (":"), Value => Tokens.Colon),
       Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String ("<"), Value => Tokens.Less_Than),
       Punctuation_Entry'(Lexeme => Ada.Strings.Unbounded.To_Unbounded_String (">"), Value => Tokens.Greater_Than),

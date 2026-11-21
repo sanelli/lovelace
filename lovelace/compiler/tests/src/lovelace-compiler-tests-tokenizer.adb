@@ -33,6 +33,33 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Support.Assert_Identifier (Names, Token_List, 4, "foo2", "foo2");
    end Test_Ascii_Identifiers;
 
+   procedure Test_Assign_Punctuation (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Assign_Alone   : constant String := ":=";
+      Colon_Alone    : constant String := ":";
+      Spaced         : constant String := "X := 1";
+      Glued          : constant String := "X:=1";
+      Type_Colon     : constant String := "X : integer";
+      Assign_Tokens  : constant Tokens.Token_Sequence := Support.Must_Succeed (Assign_Alone, ":=");
+      Colon_Tokens   : constant Tokens.Token_Sequence := Support.Must_Succeed (Colon_Alone, ":");
+      Spaced_Tokens  : constant Tokens.Token_Sequence := Support.Must_Succeed (Spaced, "X := 1");
+      Glued_Tokens   : constant Tokens.Token_Sequence := Support.Must_Succeed (Glued, "X:=1");
+      Type_Tokens    : constant Tokens.Token_Sequence := Support.Must_Succeed (Type_Colon, "X : integer");
+   begin
+      Support.Assert_Token_Count (Assign_Tokens, 1, ":=");
+      Support.Assert_Punctuation (Assign_Tokens, 1, Tokens.Colon_Equals, ":= alone");
+      Support.Assert_Token_Count (Colon_Tokens, 1, ":");
+      Support.Assert_Punctuation (Colon_Tokens, 1, Tokens.Colon, ": alone");
+      Support.Assert_Token_Count (Spaced_Tokens, 3, "X := 1");
+      Support.Assert_Identifier (Spaced, Spaced_Tokens, 1, "X", "X spaced");
+      Support.Assert_Punctuation (Spaced_Tokens, 2, Tokens.Colon_Equals, ":= spaced");
+      Support.Assert_Token_Count (Glued_Tokens, 3, "X:=1");
+      Support.Assert_Identifier (Glued, Glued_Tokens, 1, "X", "X glued");
+      Support.Assert_Punctuation (Glued_Tokens, 2, Tokens.Colon_Equals, ":= glued");
+      Support.Assert_Token_Count (Type_Tokens, 3, "X : integer");
+      Support.Assert_Punctuation (Type_Tokens, 2, Tokens.Colon, "type colon");
+   end Test_Assign_Punctuation;
+
    procedure Test_At_Prefix (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       At_Foo        : constant String := "@foo";
@@ -238,7 +265,7 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Support.Assert_Punctuation (Spaced_Tokens, 2, Tokens.Semicolon, "end ; semicolon");
    end Test_Glued_Punctuation;
 
-   procedure Test_Import_Keyword (The_Test : in out Fixture) is
+   procedure Test_Import_Identifier (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Alone            : constant String := "import";
       Qualified        : constant String := "import Foo.Bar;";
@@ -250,9 +277,9 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Importer_Tokens  : constant Tokens.Token_Sequence := Support.Must_Succeed (Importer, "importer");
    begin
       Support.Assert_Token_Count (Alone_Tokens, 1, "import");
-      Support.Assert_Keyword (Alone, Alone_Tokens, 1, Tokens.Import_Keyword, "import keyword");
+      Support.Assert_Identifier (Alone, Alone_Tokens, 1, "import", "import identifier");
       Support.Assert_Token_Count (Qualified_Tokens, 5, "import Foo.Bar;");
-      Support.Assert_Keyword (Qualified, Qualified_Tokens, 1, Tokens.Import_Keyword, "import before name");
+      Support.Assert_Identifier (Qualified, Qualified_Tokens, 1, "import", "import before name");
       Support.Assert_Identifier (Qualified, Qualified_Tokens, 2, "Foo", "Foo");
       Support.Assert_Punctuation (Qualified_Tokens, 3, Tokens.Full_Stop, "dot");
       Support.Assert_Identifier (Qualified, Qualified_Tokens, 4, "Bar", "Bar");
@@ -261,7 +288,7 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Support.Assert_Identifier (Import_Case, Case_Tokens, 1, "Import", "Import");
       Support.Assert_Token_Count (Importer_Tokens, 1, "importer");
       Support.Assert_Identifier (Importer, Importer_Tokens, 1, "importer", "importer");
-   end Test_Import_Keyword;
+   end Test_Import_Identifier;
 
    procedure Test_Invalid_Utf_8 (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -486,6 +513,31 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Support.Assert_Token_Count (Comma_List, 1, "comma");
       Support.Assert_Punctuation (Comma_List, 1, Tokens.Comma, "comma punct");
    end Test_Unrecognized_Symbols;
+
+   procedure Test_Using_Keyword (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Alone            : constant String := "using";
+      Qualified        : constant String := "using Foo.Bar;";
+      Using_Case       : constant String := "Using";
+      Usingx           : constant String := "usingx";
+      Alone_Tokens     : constant Tokens.Token_Sequence := Support.Must_Succeed (Alone, "using");
+      Qualified_Tokens : constant Tokens.Token_Sequence := Support.Must_Succeed (Qualified, "using Foo.Bar;");
+      Case_Tokens      : constant Tokens.Token_Sequence := Support.Must_Succeed (Using_Case, "Using");
+      Usingx_Tokens    : constant Tokens.Token_Sequence := Support.Must_Succeed (Usingx, "usingx");
+   begin
+      Support.Assert_Token_Count (Alone_Tokens, 1, "using");
+      Support.Assert_Keyword (Alone, Alone_Tokens, 1, Tokens.Using_Keyword, "using keyword");
+      Support.Assert_Token_Count (Qualified_Tokens, 5, "using Foo.Bar;");
+      Support.Assert_Keyword (Qualified, Qualified_Tokens, 1, Tokens.Using_Keyword, "using before name");
+      Support.Assert_Identifier (Qualified, Qualified_Tokens, 2, "Foo", "Foo");
+      Support.Assert_Punctuation (Qualified_Tokens, 3, Tokens.Full_Stop, "dot");
+      Support.Assert_Identifier (Qualified, Qualified_Tokens, 4, "Bar", "Bar");
+      Support.Assert_Punctuation (Qualified_Tokens, 5, Tokens.Semicolon, "semicolon");
+      Support.Assert_Token_Count (Case_Tokens, 1, "Using");
+      Support.Assert_Identifier (Using_Case, Case_Tokens, 1, "Using", "Using");
+      Support.Assert_Token_Count (Usingx_Tokens, 1, "usingx");
+      Support.Assert_Identifier (Usingx, Usingx_Tokens, 1, "usingx", "usingx");
+   end Test_Using_Keyword;
 
    procedure Test_Whitespace_Kinds (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);

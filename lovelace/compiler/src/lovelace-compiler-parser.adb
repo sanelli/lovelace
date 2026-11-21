@@ -213,9 +213,6 @@ package body Lovelace.Compiler.Parser is
                when Tokens.Export_Keyword    =>
                   return "keyword ""export""";
 
-               when Tokens.Import_Keyword    =>
-                  return "keyword ""import""";
-
                when Tokens.Native_Keyword    =>
                   return "keyword ""native""";
 
@@ -245,6 +242,9 @@ package body Lovelace.Compiler.Parser is
 
                when Tokens.Declare_Keyword   =>
                   return "keyword ""declare""";
+
+               when Tokens.Using_Keyword     =>
+                  return "keyword ""using""";
             end case;
 
          when Tokens.Identifier      =>
@@ -266,6 +266,9 @@ package body Lovelace.Compiler.Parser is
 
                when Tokens.Comma             =>
                   return "punctuation "",""";
+
+               when Tokens.Colon_Equals      =>
+                  return "punctuation "":=""";
 
                when Tokens.Colon             =>
                   return "punctuation "":""";
@@ -1056,7 +1059,6 @@ package body Lovelace.Compiler.Parser is
             when Tokens.Begin_Keyword
                | Tokens.End_Keyword
                | Tokens.Export_Keyword
-               | Tokens.Import_Keyword
                | Tokens.Native_Keyword
                | Tokens.Procedure_Keyword
                | Tokens.Integer_Keyword
@@ -1066,7 +1068,8 @@ package body Lovelace.Compiler.Parser is
                | Tokens.Boolean_Keyword
                | Tokens.True_Keyword
                | Tokens.False_Keyword
-               | Tokens.Declare_Keyword =>
+               | Tokens.Declare_Keyword
+               | Tokens.Using_Keyword =>
                return
                  Make_Failure
                    (Code     => Unexpected_Token,
@@ -1370,17 +1373,27 @@ package body Lovelace.Compiler.Parser is
       Module_Name : Ada.Strings.Unbounded.Unbounded_String;
       Name_Span   : Source.Source_Span := Origin_Span;
       Filename    : Source.Filename_Option := Source.Absent_Filename;
+      Introducer  : Tokens.Token := Dummy_Identifier;
    begin
-      --  import_declaration = "import" , qualified_identifier , ";"
+      --  Temporary: `import` is an ordinary identifier until step 6 switches to `using`
+      --  and rejects this lexeme. import_declaration = "import" , qualified_identifier , ";"
       Step :=
-        Expect_Keyword
-          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Import_Keyword, Label => "import");
+        Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => Introducer);
       case Step.Ok is
          when False =>
             return Step;
 
          when True  =>
-            null;
+            if not Is_Identifier_Lexeme (Source_Text, Introducer, "import") then
+               return
+                 Make_Failure
+                   (Code     => Unexpected_Token,
+                    Span     => Introducer.Span,
+                    Filename => Introducer.Filename,
+                    Detail   =>
+                      "expected identifier ""import"", found "
+                      & Describe_Token (Source_Text, Introducer));
+            end if;
       end case;
 
       Step :=
@@ -1433,7 +1446,9 @@ package body Lovelace.Compiler.Parser is
    begin
       Imports := Ast.Empty_Import_Sequence;
 
-      while not At_End (The_Cursor) and then Is_Keyword (Peek (The_Cursor), Tokens.Import_Keyword) loop
+      while not At_End (The_Cursor)
+        and then Is_Identifier_Lexeme (Source_Text, Peek (The_Cursor), "import")
+      loop
          Step := Parse_Import_Declaration (The_Cursor => The_Cursor, Source_Text => Source_Text, Imports => Imports);
          case Step.Ok is
             when False =>
