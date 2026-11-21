@@ -2146,14 +2146,20 @@ package body Lovelace.Compiler.Parser is
       Native_Function : Ada.Strings.Unbounded.Unbounded_String;
       Step            : Step_Result;
       The_Subroutine  : Ast.Subroutine;
+      Decl_First      : Source.Source_Position := Origin_Span.First;
+      Decl_Span       : Source.Source_Span := Origin_Span;
       Library_Token   : Tokens.Token :=
         (Kind => Tokens.String_Literal, Span => Origin_Span, Filename => Source.Absent_Filename);
       Function_Token  : Tokens.Token :=
         (Kind => Tokens.String_Literal, Span => Origin_Span, Filename => Source.Absent_Filename);
    begin
-      --  ordinary:   [ export ] procedure ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¦ ; begin ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¦ end ;
-      --  intrinsic:  [ export ] @intrinsic procedure ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¦ ;
-      --  native FFI: [ export ] @native ( string , string ) procedure ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¦ ;
+      --  ordinary:   [ export ] procedure … ; begin … end ;
+      --  intrinsic:  [ export ] @intrinsic procedure … ;
+      --  native FFI: [ export ] @native ( string , string ) procedure … ;
+      if not At_End (The_Cursor) then
+         Decl_First := Peek (The_Cursor).Span.First;
+      end if;
+
       if not At_End (The_Cursor) and then Is_Keyword (Peek (The_Cursor), Tokens.Export_Keyword) then
          Step :=
            Expect_Keyword
@@ -2377,6 +2383,9 @@ package body Lovelace.Compiler.Parser is
             null;
       end case;
 
+      Decl_Span :=
+        (First => Decl_First, Last => The_Cursor.Last_Consumed_Span.Last);
+
       if Is_Intrinsic or else Is_Native then
          if Keep_Declarations then
             if Is_Native then
@@ -2386,6 +2395,7 @@ package body Lovelace.Compiler.Parser is
                     Module_Name => Module_Name,
                     Name_Span   => Name_Token.Span,
                     Filename    => Name_Token.Filename,
+                    Span        => Decl_Span,
                     Flags       => Flags,
                     Return_Type => Types.Unit_Type,
                     Parameters  => Parameters,
@@ -2399,6 +2409,7 @@ package body Lovelace.Compiler.Parser is
                     Module_Name => Module_Name,
                     Name_Span   => Name_Token.Span,
                     Filename    => Name_Token.Filename,
+                    Span        => Decl_Span,
                     Flags       => Flags,
                     Return_Type => Types.Unit_Type,
                     Parameters  => Parameters,
@@ -2450,12 +2461,15 @@ package body Lovelace.Compiler.Parser is
          end case;
 
          if Keep_Declarations then
+            Decl_Span :=
+              (First => Decl_First, Last => The_Cursor.Last_Consumed_Span.Last);
             The_Subroutine :=
               Ast.Create_Subroutine
                 (Name        => Ada.Strings.Unbounded.To_String (Procedure_Name),
                  Module_Name => Module_Name,
                  Name_Span   => Name_Token.Span,
                  Filename    => Name_Token.Filename,
+                 Span        => Decl_Span,
                  Flags       => Flags,
                  Return_Type => Types.Unit_Type,
                  Parameters  => Parameters,
@@ -2790,6 +2804,7 @@ package body Lovelace.Compiler.Parser is
                     Module_Name => Module_Name,
                     Name_Span   => The_Unit.Name_Span,
                     Filename    => The_Unit.Filename,
+                    Span        => Unit_Span,
                     Flags       => Ast.Export_Flag or Ast.Entrypoint_Flag,
                     Return_Type => Types.Unit_Type,
                     Parameters  => Ast.Empty_Parameter_Sequence,

@@ -52,7 +52,7 @@ A **subroutine** has:
 - zero or more **locals** (flat ordered list: UTF-8 name + `Value_Type`; nested declare scopes are frontend-only)
 - **flags** (`export` = bit 0, `entrypoint` = bit 1, `native` = bit 2, `intrinsic` = bit 3)
 - an instruction body (may be empty; **must** be empty when `native` or `intrinsic`)
-- an optional **origin** (`Subroutine_Origin`: name span, optional shared filename), persisted in `.lir` / `.tlir` (version numbers stay **1.0**)
+- an optional **origin** (`Subroutine_Origin`: name span, whole-declaration span, optional shared filename), persisted in `.lir` / `.tlir` (version numbers stay **1.0**)
 - an optional **native FFI binding** (`Library` + `Function_Name` UTF-8 strings), present **iff** `Native_Flag`, persisted after the origin (`native_present` + two strings). `@intrinsic` uses `Intrinsic_Flag` only (no binding strings)
 
 Locals are empty for `@native` / `@intrinsic`. `Validate` rejects empty local names, invalid UTF-8, duplicate local names within a subroutine, and local names that clash with a parameter name.

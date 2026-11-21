@@ -308,6 +308,7 @@ package Lovelace.Compiler.Ast is
    --  @param Module_Name UTF-8 enclosing module name (may be dotted).
    --  @param Name_Span Source span of the name identifier.
    --  @param Filename Optional shared filename from the name token.
+   --  @param Span Source span covering the whole procedure declaration.
    --  @param Flags Flag bits (export, entrypoint, and others).
    --  @param Return_Type Frontend return type expression.
    --  @param Parameters Ordered parameter list.
@@ -319,6 +320,7 @@ package Lovelace.Compiler.Ast is
       Module_Name : String;
       Name_Span   : Source.Source_Span;
       Filename    : Source.Filename_Option;
+      Span        : Source.Source_Span;
       Flags       : Subroutine_Flags;
       Return_Type : Types.Type_Expression;
       Parameters  : Parameter_Sequence;
@@ -344,6 +346,11 @@ package Lovelace.Compiler.Ast is
    --  @param The_Subroutine Subroutine to query.
    --  @return Filename option from construction.
    function Filename (The_Subroutine : Subroutine) return Source.Filename_Option;
+
+   --  Source span of the whole procedure declaration (header through final `;`).
+   --  @param The_Subroutine Subroutine to query.
+   --  @return Declaration span.
+   function Span (The_Subroutine : Subroutine) return Source.Source_Span;
 
    --  Flag bits of The_Subroutine.
    --  @param The_Subroutine Subroutine to query.
@@ -523,6 +530,7 @@ private
       Full_Name_Value   : Ada.Strings.Unbounded.Unbounded_String;
       Name_Span_Value   : Source.Source_Span;
       Filename_Value    : Source.Filename_Option;
+      Span_Value        : Source.Source_Span;
       Flags_Value       : Subroutine_Flags := 0;
       Return_Type_Value : Types.Type_Expression := Types.Unit_Type;
       Parameters_Value  : Parameter_Sequence;

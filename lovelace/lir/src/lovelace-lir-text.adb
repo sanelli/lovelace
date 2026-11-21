@@ -232,6 +232,8 @@ package body Lovelace.Lir.Text is
                "name-span",
                Origin_Value.Value.Name_Span,
                Indentation => 3);
+            Append_Span
+              (Buffer, "span", Origin_Value.Value.Span, Indentation => 3);
             Append_Line (Buffer, Indent (2) & ")");
       end case;
    end Append_Subroutine_Origin;

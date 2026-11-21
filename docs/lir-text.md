@@ -68,7 +68,7 @@ Module origin (after `(flags …)`):
   (span (position <byte> <line> <column>) (position <byte> <line> <column>)))
 ```
 
-Subroutine origin (after `(name …)`): same shape but **without** `(span …)` (name-span only). Empty `(filename "")` means no filename was attached. Omit the whole `(origin …)` when the in-memory origin is absent.
+Subroutine origin (after `(name …)`): same shape as the module origin — `(filename …)`, `(name-span …)`, and `(span …)` for the whole procedure declaration. Empty `(filename "")` means no filename was attached. Omit the whole `(origin …)` when the in-memory origin is absent.
 
 `(version 1 0)` is unchanged; origin fields are part of the still-labeled 1.0 text layout.
 

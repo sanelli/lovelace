@@ -57,9 +57,11 @@ package Lovelace.Lir.Subroutines is
 
    --  In-memory source origin for a subroutine (also stored in .lir / .tlir v1.0 layouts).
    --  @field Name_Span Span of the subroutine name in the original source.
+   --  @field Span Span of the whole procedure declaration.
    --  @field Filename Optional shared filename from the frontend.
    type Subroutine_Origin is record
       Name_Span : Lovelace.Common.Source.Source_Span;
+      Span      : Lovelace.Common.Source.Source_Span;
       Filename  : Lovelace.Common.Source.Filename_Option;
    end record;
 

@@ -104,7 +104,7 @@ Then follow exactly `subroutine_count` subroutine records in preamble order (no 
 7. `flags` — `u32` (bit 0 = export, bit 1 = entrypoint, bit 2 = native, bit 3 = intrinsic; other bits preserved like module flags)
 8. **Subroutine origin:**
    - `origin_present` — `u8` (`0` / `1`; other → `Invalid_Presence`)
-   - when present: filename (encoded string; empty = absent), then `name_span` only (no unit span)
+   - when present: filename (encoded string; empty = absent), then `name_span`, then `span` (whole procedure declaration)
 9. **Native binding** (only when `Native_Flag`; absent for `@intrinsic`):
    - `native_present` — `u8` (`0` / `1`; other → `Invalid_Presence`)
    - when present: library (encoded string), then function name (encoded string)

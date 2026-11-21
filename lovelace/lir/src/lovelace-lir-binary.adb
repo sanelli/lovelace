@@ -282,6 +282,7 @@ package body Lovelace.Lir.Binary is
             Append_String
               (Buffer, Source.To_Utf_8 (The_Origin.Value.Filename));
             Append_Span (Buffer, The_Origin.Value.Name_Span);
+            Append_Span (Buffer, The_Origin.Value.Span);
       end case;
    end Append_Subroutine_Origin;
 
@@ -938,6 +939,7 @@ package body Lovelace.Lir.Binary is
       Filename_Text : Ada.Strings.Unbounded.Unbounded_String;
       Filename      : Source.Filename_Option;
       Name_Span     : Source.Source_Span;
+      Decl_Span     : Source.Source_Span;
    begin
       if not Read_Byte (Bytes, Cursor, Presence) then
          Code := Errors.Truncated;
@@ -958,6 +960,10 @@ package body Lovelace.Lir.Binary is
          Code := Errors.Truncated;
          return False;
       end if;
+      if not Parse_Span (Bytes, Cursor, Decl_Span) then
+         Code := Errors.Truncated;
+         return False;
+      end if;
 
       if Ada.Strings.Unbounded.Length (Filename_Text) = 0 then
          Filename := Source.Absent_Filename;
@@ -969,7 +975,8 @@ package body Lovelace.Lir.Binary is
       end if;
 
       Subroutines.Set_Origin
-        (The_Subroutine, (Name_Span => Name_Span, Filename => Filename));
+        (The_Subroutine,
+         (Name_Span => Name_Span, Span => Decl_Span, Filename => Filename));
       return True;
    end Parse_Subroutine_Origin;
 

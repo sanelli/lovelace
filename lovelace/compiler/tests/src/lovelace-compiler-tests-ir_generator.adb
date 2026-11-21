@@ -110,6 +110,9 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
               (Sub_Origin.Value.Name_Span = Ast.Name_Span (Ast_Subroutine),
                Message & ": subroutine name span");
             AUnit.Assertions.Assert
+              (Sub_Origin.Value.Span = Ast.Span (Ast_Subroutine),
+               Message & ": subroutine span");
+            AUnit.Assertions.Assert
               (Source.Same_Storage
                  (Sub_Origin.Value.Filename, Ast.Filename (Ast_Subroutine)),
                Message & ": subroutine filename");
@@ -368,6 +371,7 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
            Module_Name => "Lib",
            Name_Span   => Name_Span,
            Filename    => Source.Absent_Filename,
+           Span        => Unit_Span,
            Flags       => Ast.Export_Flag,
            Return_Type => Types.Unit_Type,
            Parameters  => Ast.Empty_Parameter_Sequence,

@@ -91,8 +91,8 @@ Keywords are case-sensitive. The unit terminator after a unit-level `end` is onl
 - A module named the qualified identifier (UTF-8 with `.` separators, e.g. `Foo.Bar`)
 - Ordered `Using_Declaration` list (may be empty)
 - Zero or more procedures from **active** declarations only. Optional `export` sets `Export_Flag` (not `Entrypoint_Flag`); optional `@intrinsic` sets `Intrinsic_Flag`; optional `@native(…)` sets `Native_Flag` and a present native binding; plain procedures keep flags `0`. Inactive `#if` arms do not appear in the AST.
-- Each procedure has unqualified `Name`, `Full_Name` = `ModuleName.ProcedureName`, ordered parameters, Unit return, optional block body (absent/empty when intrinsic/native)
-- `Name_Span` on the module covers the whole qualified name
+- Each procedure has unqualified `Name`, `Full_Name` = `ModuleName.ProcedureName`, ordered parameters, Unit return, optional block body (absent/empty when intrinsic/native), `Name_Span` (identifier), and `Span` (whole declaration from optional `export`/`@intrinsic`/`@native` through the final `;`)
+- `Name_Span` on the module covers the whole qualified name; module `Span` covers the compilation unit
 
 **Call statement:** `Callee_Name` (dotted), `Name_Span`, ordered expression arguments. Call-target resolve runs in **semantics**, not the parser.
 

@@ -70,6 +70,7 @@ package body Lovelace.Compiler.Ast is
       Module_Name : String;
       Name_Span   : Source.Source_Span;
       Filename    : Source.Filename_Option;
+      Span        : Source.Source_Span;
       Flags       : Subroutine_Flags;
       Return_Type : Types.Type_Expression;
       Parameters  : Parameter_Sequence;
@@ -81,6 +82,7 @@ package body Lovelace.Compiler.Ast is
          Full_Name_Value   => Ada.Strings.Unbounded.To_Unbounded_String (Module_Name & "." & Name),
          Name_Span_Value   => Name_Span,
          Filename_Value    => Filename,
+         Span_Value        => Span,
          Flags_Value       => Flags,
          Return_Type_Value => Return_Type,
          Parameters_Value  => Parameters,
@@ -299,6 +301,11 @@ package body Lovelace.Compiler.Ast is
    function Span (The_Module : Module) return Source.Source_Span is
    begin
       return The_Module.Span_Value;
+   end Span;
+
+   function Span (The_Subroutine : Subroutine) return Source.Source_Span is
+   begin
+      return The_Subroutine.Span_Value;
    end Span;
 
    function Statements (The_Block : Block) return Statement_Sequence is

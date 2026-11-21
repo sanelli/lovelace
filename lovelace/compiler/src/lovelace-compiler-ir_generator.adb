@@ -508,6 +508,7 @@ package body Lovelace.Compiler.Ir_Generator is
             Lovelace.Lir.Subroutines.Set_Origin
               (Lir_Subroutine,
                (Name_Span => Ast.Name_Span (Symbol.The_Subroutine),
+                Span      => Ast.Span (Symbol.The_Subroutine),
                 Filename  => Ast.Filename (Symbol.The_Subroutine)));
 
             declare
