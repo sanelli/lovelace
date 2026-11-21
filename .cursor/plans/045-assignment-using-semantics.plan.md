@@ -25,7 +25,7 @@ todos:
     status: completed
   - id: "8"
     content: "8. Semantics: environment, DA, Lovelace_Type, call-target resolve (LV00014/17/18), unused warnings; wire build; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Unit graph nested usings; IR Local_Get/Set lowering (no call resolve); LIR opcodes; backend; AUnit; gnatformat."
     status: pending
@@ -135,8 +135,8 @@ flowchart LR
 New compiler package(s) under `lovelace/compiler` (names locked in implementation; suggested: `Lovelace.Compiler.Semantics` with subpackages for Environment / Definite_Assignment / Types / Unused):
 
 1. **Environment** — scope stack answering what a name binds to (local, parameter, module via using, subroutine, type). Extensible entity kinds.
-2. **Definite assignment** — locals start unassigned; parameters assigned; `:=` assigns; read of unassigned local → error (**LV00028** `Use_Before_Assignment`). Straight-line + nested blocks as already sketched in the roadmap.
-3. **`Lovelace_Type` + typechecker** — hierarchical type model; assignability / implicit cast queries for types already in the language; `:=` and call actuals vs formals use the **same** API. Mismatch → **LV00029** `Type_Mismatch`. Migrate ad-hoc IR literal checks onto this API for sites touched in this step.
+2. **Definite assignment** — locals start unassigned; parameters assigned; `:=` assigns; read of unassigned local → error (**LV00026** `Use_Before_Assignment`). Straight-line + nested blocks as already sketched in the roadmap.
+3. **`Lovelace_Type` + typechecker** — hierarchical type model; assignability / implicit cast queries for types already in the language; `:=` and call actuals vs formals use the **same** API. Mismatch → **LV00027** `Type_Mismatch`. Undeclared name on RHS/LHS → **LV00031** `Unresolved_Name`. Migrate ad-hoc IR literal checks onto this API for sites touched in this step.
 4. **Unused analysis (warnings)** — after resolve/DA/types on a successful-enough AST walk:
    - **LV00028** `Unused_Variable` (warning): local **never read** (assignment alone is not a use).
    - **LV00029** `Unused_Assignment` (warning): a specific `:=` whose written value is never read before the next assignment to that name or end of scope (dead store). Prefer emitting **Unused_Assignment** for dead stores when the variable is read elsewhere; emit **Unused_Variable** when there is no read anywhere. Do not double-report both for the same name when never read — **Unused_Variable** wins; still report Unused_Assignment for earlier dead stores only when the variable has at least one later read (or document single-warning priority: if never read → only Unused_Variable).
@@ -273,3 +273,4 @@ Update [docs/cli.md](../../docs/cli.md), [docs/diagnostics.md](../../docs/diagno
 | LV00028 | Unused_Variable | Warning |
 | LV00029 | Unused_Assignment | Warning |
 | LV00030 | Invalid_Warning_Suppression | Error |
+| LV00031 | Unresolved_Name | Error |

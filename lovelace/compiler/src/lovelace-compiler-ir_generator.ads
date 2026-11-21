@@ -11,22 +11,12 @@ package Lovelace.Compiler.Ir_Generator is
 
    package Source renames Lovelace.Common.Source;
 
-   --  Why Generate failed.
-   --  @enum Internal_Error Compiler bug such as Validate failing on frontend AST.
-   --  @enum Unresolved_Call Call target is not a same-unit / imported procedure.
-   --  @enum Invalid_Arguments Call arity or argument/formal types are not supported.
-   --  @enum Call_Without_Using Callee module prefix is neither self nor a using of the caller.
-   --  @enum Not_Exported Imported procedure exists but lacks Export_Flag.
+   --  Why Generate failed. Call-target resolve, arity, and type checks live in Semantics;
+   --  IR assumes a resolved, well-typed unit set and reports Internal_Error otherwise.
+   --  @enum Internal_Error Compiler bug such as Validate failing, or an AST Semantics should have rejected.
    --  @enum Unknown_Native_Binding Retired path for old native(target, key) closed set (kept for mapping).
    --  @enum Unknown_Intrinsic `@intrinsic` signature is not in the closed intrinsic table.
-   type Ir_Generator_Error_Code is
-     (Internal_Error,
-      Unresolved_Call,
-      Invalid_Arguments,
-      Call_Without_Using,
-      Not_Exported,
-      Unknown_Native_Binding,
-      Unknown_Intrinsic);
+   type Ir_Generator_Error_Code is (Internal_Error, Unknown_Native_Binding, Unknown_Intrinsic);
 
    --  One IR Generator failure.
    --  @field Code Predefined error code.
@@ -57,10 +47,9 @@ package Lovelace.Compiler.Ir_Generator is
    --  @return LIR module, or a located IR error.
    function Generate (The_Module : Ast.Module) return Generate_Result;
 
-   --  Flatten Units (root first) into one LIR module with import-gated call resolve.
+   --  Flatten Units (root first) into one LIR module; units must have passed Semantics.Analyze.
    --  @param Units Compilation set from Unit_Graph.Load (root at index 1).
    --  @return Combined LIR module, or a located IR error.
-   function Generate
-     (Units : Unit_Graph.Compilation_Set) return Generate_Result;
+   function Generate (Units : Unit_Graph.Compilation_Set) return Generate_Result;
 
 end Lovelace.Compiler.Ir_Generator;

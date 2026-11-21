@@ -46,23 +46,46 @@ package body Lovelace.Compiler.Reporting is
          when Ir_Generator.Internal_Error         =>
             return Error_Codes.Internal_Error;
 
-         when Ir_Generator.Unresolved_Call        =>
-            return Error_Codes.Unresolved_Call;
-
-         when Ir_Generator.Invalid_Arguments      =>
-            return Error_Codes.Invalid_Arguments;
-
-         when Ir_Generator.Call_Without_Using     =>
-            return Error_Codes.Call_Without_Using;
-
-         when Ir_Generator.Not_Exported           =>
-            return Error_Codes.Not_Exported;
-
          when Ir_Generator.Unknown_Native_Binding =>
             return Error_Codes.Unknown_Native_Binding;
 
          when Ir_Generator.Unknown_Intrinsic      =>
             return Error_Codes.Unknown_Intrinsic;
+      end case;
+   end To_Error_Code;
+
+   function To_Error_Code (Code : Semantics.Semantics_Error_Code) return Error_Codes.Error_Code is
+   begin
+      case Code is
+         when Semantics.Internal_Error        =>
+            return Error_Codes.Internal_Error;
+
+         when Semantics.Unresolved_Call       =>
+            return Error_Codes.Unresolved_Call;
+
+         when Semantics.Invalid_Arguments     =>
+            return Error_Codes.Invalid_Arguments;
+
+         when Semantics.Call_Without_Using    =>
+            return Error_Codes.Call_Without_Using;
+
+         when Semantics.Not_Exported          =>
+            return Error_Codes.Not_Exported;
+
+         when Semantics.Use_Before_Assignment =>
+            return Error_Codes.Use_Before_Assignment;
+
+         when Semantics.Type_Mismatch         =>
+            return Error_Codes.Type_Mismatch;
+
+         when Semantics.Unresolved_Name       =>
+            return Error_Codes.Unresolved_Name;
+
+         when Semantics.Unused_Variable       =>
+            return Error_Codes.Unused_Variable;
+
+         when Semantics.Unused_Assignment     =>
+            return Error_Codes.Unused_Assignment;
       end case;
    end To_Error_Code;
 

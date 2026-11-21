@@ -11,7 +11,7 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  @param The_Test Unused fixture.
    procedure Test_Canonical_Multiline (The_Test : in out Fixture);
 
-   --  Multi-unit flatten: import-gated exported calls succeed; missing import / not exported fail.
+   --  Multi-unit flatten lowers resolved exported calls to the flat callee index.
    --  @param The_Test Unused fixture.
    procedure Test_Cross_Module_Calls (The_Test : in out Fixture);
 
@@ -55,11 +55,11 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  @param The_Test Unused fixture.
    procedure Test_Native_Binding (The_Test : in out Fixture);
 
-   --  Integer/float/boolean formals map to matching LIR Value_Type (boolean → I32).
+   --  Integer/float/boolean formals map to matching LIR Value_Type (boolean â I32).
    --  @param The_Test Unused fixture.
    procedure Test_Parameter_Type_Mapping (The_Test : in out Fixture);
 
-   --  Same-unit calls (integer + boolean literals); unresolved / arity / type mismatches fail.
+   --  Same-unit calls (integer + boolean literals) lower; unresolved calls are not an IR decision (Internal_Error).
    --  @param The_Test Unused fixture.
    procedure Test_Same_Unit_Calls (The_Test : in out Fixture);
 

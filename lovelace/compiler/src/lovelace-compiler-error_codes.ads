@@ -16,7 +16,7 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Name_Clash Parser: duplicate or conflicting procedure/parameter name (LV00011).
    --  @enum Invalid_Flavor_Condition Parser: `#if`/`#elsif` flavor string is not wasi/native/web (LV00012).
    --  @enum Unterminated_String_Literal Tokenizer: opening `"` without a matching closer (LV00013).
-   --  @enum Unresolved_Call IR Generator: call target is not a same-unit procedure (LV00014).
+   --  @enum Unresolved_Call Semantics: call target subroutine does not exist (LV00014).
    --  @enum Invalid_Arguments IR Generator: call arity or argument/formal mismatch (LV00015).
    --  @enum Unknown_Module Unit graph: import name has no candidate .love on the search roots (LV00016).
    --  @enum Call_Without_Using IR Generator/Semantics: callee module prefix is not brought in by a using (LV00017).
@@ -25,7 +25,7 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Ambiguous_Module_Path Unit graph: two or more distinct .love files match one using (LV00020).
    --  @enum Unknown_Native_Binding Retired: old native(target, key) closed wasi set (LV00021); no longer emitted.
    --  @enum Unterminated_Comment Tokenizer: opening `{` without a matching `}` (LV00022).
-   --  @enum Nested_Comment Tokenizer: `{` inside an open `{` ÃÂ¢ÃÂÃÂ¦ `}` comment (LV00023).
+   --  @enum Nested_Comment Tokenizer: `{` inside an open `{` ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¦ `}` comment (LV00023).
    --  @enum Stray_Comment_Closer Tokenizer: `}` outside a comment (LV00024).
    --  @enum Unknown_Intrinsic IR Generator: `@intrinsic` signature not in the closed intrinsic table (LV00025).
    --  @enum Use_Before_Assignment Semantics: read of a local that is not definitely assigned (LV00026).
@@ -33,6 +33,7 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Unused_Variable Warning: local is never read (LV00028).
    --  @enum Unused_Assignment Warning: a store whose value is never read before overwrite/end (LV00029).
    --  @enum Invalid_Warning_Suppression CLI/build: `--no-warnings` entry is unknown or not a warning (LV00030).
+   --  @enum Unresolved_Name Semantics: identifier does not name a visible local or parameter (LV00031).
    type Error_Code is
      (Internal_Error,
       Unrecognized_Symbol,
@@ -63,7 +64,8 @@ package Lovelace.Compiler.Error_Codes is
       Type_Mismatch,
       Unused_Variable,
       Unused_Assignment,
-      Invalid_Warning_Suppression);
+      Invalid_Warning_Suppression,
+      Unresolved_Name);
 
    --  Diagnostic severity for Code (warnings are Unused_Variable / Unused_Assignment).
    --  @enum Error Fatal or hard diagnostic (default for almost all codes).

@@ -6,6 +6,7 @@ with Lovelace.Compiler.Tests.Ir_Generator;
 with Lovelace.Compiler.Tests.Literals;
 with Lovelace.Compiler.Tests.Module_Path;
 with Lovelace.Compiler.Tests.Parser;
+with Lovelace.Compiler.Tests.Semantics;
 with Lovelace.Compiler.Tests.Tokenizer;
 with Lovelace.Compiler.Tests.Unit_Graph;
 
@@ -17,6 +18,7 @@ package body Lovelace.Compiler.Tests.Suite is
    package Literals_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Literals.Fixture);
    package Module_Path_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Module_Path.Fixture);
    package Parser_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Parser.Fixture);
+   package Semantics_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Semantics.Fixture);
    package Tokenizer_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Tokenizer.Fixture);
    package Unit_Graph_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Unit_Graph.Fixture);
 
@@ -355,6 +357,36 @@ package body Lovelace.Compiler.Tests.Suite is
       Result.Add_Test
         (Unit_Graph_Caller.Create
            ("unit graph: load failures", Lovelace.Compiler.Tests.Unit_Graph.Test_Load_Failures'Access));
+
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: definite assignment", Lovelace.Compiler.Tests.Semantics.Test_Definite_Assignment'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: environment scopes", Lovelace.Compiler.Tests.Semantics.Test_Environment_Scopes'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: type mismatch", Lovelace.Compiler.Tests.Semantics.Test_Type_Mismatch'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: typecheck api", Lovelace.Compiler.Tests.Semantics.Test_Typecheck_Api'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: unused priority", Lovelace.Compiler.Tests.Semantics.Test_Unused_Priority'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: scoped using visibility",
+            Lovelace.Compiler.Tests.Semantics.Test_Scoped_Using_Visibility'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: missing and non-exported callees",
+            Lovelace.Compiler.Tests.Semantics.Test_Missing_And_Not_Exported_Callees'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: warnings do not fail", Lovelace.Compiler.Tests.Semantics.Test_Warnings_Do_Not_Fail'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: reporting mapping", Lovelace.Compiler.Tests.Semantics.Test_Reporting_Mapping'Access));
 
       return Result;
    end Suite;

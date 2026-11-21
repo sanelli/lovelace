@@ -45,6 +45,7 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Unused_Variable) = "LV00028", "LV00028");
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Unused_Assignment) = "LV00029", "LV00029");
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Invalid_Warning_Suppression) = "LV00030", "LV00030");
+      AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Unresolved_Name) = "LV00031", "LV00031");
    end Test_Error_Code_Labels;
 
    procedure Test_Format_Shape (The_Test : in out Fixture) is
@@ -172,16 +173,6 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert
         (Reporting.To_Error_Code (Parser.Invalid_Flavor_Condition) = Error_Codes.Invalid_Flavor_Condition,
          "invalid flavor map");
-      AUnit.Assertions.Assert
-        (Reporting.To_Error_Code (Ir_Generator.Unresolved_Call) = Error_Codes.Unresolved_Call, "unresolved call map");
-      AUnit.Assertions.Assert
-        (Reporting.To_Error_Code (Ir_Generator.Invalid_Arguments) = Error_Codes.Invalid_Arguments,
-         "invalid arguments map");
-      AUnit.Assertions.Assert
-        (Reporting.To_Error_Code (Ir_Generator.Call_Without_Using) = Error_Codes.Call_Without_Using,
-         "call without using map");
-      AUnit.Assertions.Assert
-        (Reporting.To_Error_Code (Ir_Generator.Not_Exported) = Error_Codes.Not_Exported, "not exported map");
       AUnit.Assertions.Assert
         (Reporting.To_Error_Code (Ir_Generator.Unknown_Native_Binding) = Error_Codes.Unknown_Native_Binding,
          "unknown native binding map");

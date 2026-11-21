@@ -103,6 +103,9 @@ package body Lovelace.Compiler.Error_Codes is
 
          when Invalid_Warning_Suppression    =>
             return "LV00030";
+
+         when Unresolved_Name                =>
+            return "LV00031";
       end case;
    end Label;
 

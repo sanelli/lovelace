@@ -13,7 +13,7 @@ with Lovelace.Lir.Types;
 
 package body Lovelace.Compiler.Ir_Generator is
 
-   use type Interfaces.Integer_32;
+   use type Ada.Strings.Unbounded.Unbounded_String;
    use type Lovelace.Compiler.Types.Type_Kind;
    use type Lovelace.Lir.Subroutines.Subroutine_Flags;
    use type Lovelace.Lir.Types.Value_Type;
@@ -33,19 +33,19 @@ package body Lovelace.Compiler.Ir_Generator is
 
    function Failure (Code : Ir_Generator_Error_Code; Span : Source.Source_Span; Detail : String) return Generate_Result;
 
-   function Formal_Accepts_I32_Constant (Formal_Type : Lovelace.Lir.Types.Value_Type) return Boolean;
-
-   function Import_Allows (Caller : Ast.Module; Module_Name : String) return Boolean;
+   function Find_Symbol
+     (Callee_Name  : String;
+      Symbols      : Flat_Symbol_Vectors.Vector;
+      Target_Index : out Positive;
+      Callee_Ast   : out Ast.Subroutine) return Boolean;
 
    function Lower_Call
-     (Caller_Unit    : Ast.Module;
-      The_Call       : Ast.Call_Statement;
+     (The_Call       : Ast.Call_Statement;
       Symbols        : Flat_Symbol_Vectors.Vector;
       Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine) return Generate_Result;
 
    function Lower_Statement_Body
-     (Caller_Unit    : Ast.Module;
-      The_Body       : Ast.Block;
+     (The_Body       : Ast.Block;
       Symbols        : Flat_Symbol_Vectors.Vector;
       Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine) return Generate_Result;
 
@@ -54,15 +54,6 @@ package body Lovelace.Compiler.Ir_Generator is
    function Map_Parameters (Parameters : Ast.Parameter_Sequence) return Lovelace.Lir.Types.Parameter_Sequence;
 
    function Map_Value_Type (The_Type : Lovelace.Compiler.Types.Type_Expression) return Lovelace.Lir.Types.Value_Type;
-
-   function Resolve_Callee
-     (Caller_Unit  : Ast.Module;
-      Callee_Name  : String;
-      Symbols      : Flat_Symbol_Vectors.Vector;
-      Target_Index : out Positive;
-      Callee_Ast   : out Ast.Subroutine;
-      Error_Code   : out Ir_Generator_Error_Code;
-      Error_Detail : out Ada.Strings.Unbounded.Unbounded_String) return Boolean;
 
    function Split_Callee
      (Callee_Name    : String;
@@ -77,21 +68,34 @@ package body Lovelace.Compiler.Ir_Generator is
          Error => (Code => Code, Span => Span, Detail => Ada.Strings.Unbounded.To_Unbounded_String (Detail)));
    end Failure;
 
-   function Formal_Accepts_I32_Constant (Formal_Type : Lovelace.Lir.Types.Value_Type) return Boolean is
+   function Find_Symbol
+     (Callee_Name  : String;
+      Symbols      : Flat_Symbol_Vectors.Vector;
+      Target_Index : out Positive;
+      Callee_Ast   : out Ast.Subroutine) return Boolean
+   is
+      Module_Prefix  : Ada.Strings.Unbounded.Unbounded_String;
+      Procedure_Name : Ada.Strings.Unbounded.Unbounded_String;
    begin
-      case Formal_Type is
-         when Lovelace.Lir.Types.I8
-            | Lovelace.Lir.Types.I16
-            | Lovelace.Lir.Types.I32
-            | Lovelace.Lir.Types.U8
-            | Lovelace.Lir.Types.U16
-            | Lovelace.Lir.Types.U32 =>
-            return True;
+      Target_Index := 1;
+      if not Split_Callee (Callee_Name, Module_Prefix, Procedure_Name) then
+         return False;
+      end if;
 
-         when others                 =>
-            return False;
-      end case;
-   end Formal_Accepts_I32_Constant;
+      for Index in 1 .. Natural (Symbols.Length) loop
+         declare
+            Symbol : constant Flat_Symbol := Symbols.Element (Index);
+         begin
+            if Symbol.Module_Name = Module_Prefix and then Symbol.Procedure_Name = Procedure_Name then
+               Target_Index := Index;
+               Callee_Ast := Symbol.The_Subroutine;
+               return True;
+            end if;
+         end;
+      end loop;
+
+      return False;
+   end Find_Symbol;
 
    function Generate (The_Module : Ast.Module) return Generate_Result is
       Units : Unit_Graph.Compilation_Set;
@@ -161,7 +165,6 @@ package body Lovelace.Compiler.Ir_Generator is
       for Symbol_Index in 1 .. Natural (Symbols.Length) loop
          declare
             Symbol         : constant Flat_Symbol := Symbols.Element (Symbol_Index);
-            Caller_Unit    : constant Ast.Module := Units.Element (Symbol.Unit_Index).The_Module;
             Parameters     : constant Lovelace.Lir.Types.Parameter_Sequence :=
               Map_Parameters (Ast.Parameters (Symbol.The_Subroutine));
             The_Signature  : constant Lovelace.Lir.Subroutines.Signature :=
@@ -245,8 +248,7 @@ package body Lovelace.Compiler.Ir_Generator is
 
                   Body_Result :=
                     Lower_Statement_Body
-                      (Caller_Unit    => Caller_Unit,
-                       The_Body       => Ast.Get_Body (Symbol.The_Subroutine),
+                      (The_Body       => Ast.Get_Body (Symbol.The_Subroutine),
                        Symbols        => Symbols,
                        Lir_Subroutine => Lir_Subroutine);
                   case Body_Result.Ok is
@@ -281,127 +283,63 @@ package body Lovelace.Compiler.Ir_Generator is
       end;
    end Generate;
 
-   function Import_Allows (Caller : Ast.Module; Module_Name : String) return Boolean is
-   begin
-      for Index in 1 .. Ast.Using_Count (Caller) loop
-         if Ada.Strings.Unbounded.To_String (Ast.Get_Using (Caller, Index).Module_Name) = Module_Name then
-            return True;
-         end if;
-      end loop;
-      return False;
-   end Import_Allows;
-
    function Lower_Call
-     (Caller_Unit    : Ast.Module;
-      The_Call       : Ast.Call_Statement;
+     (The_Call       : Ast.Call_Statement;
       Symbols        : Flat_Symbol_Vectors.Vector;
       Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine) return Generate_Result
    is
       Callee_Text  : constant String := Ada.Strings.Unbounded.To_String (The_Call.Callee_Name);
       Target_Index : Positive;
       Callee_Ast   : Ast.Subroutine;
-      Error_Code   : Ir_Generator_Error_Code;
-      Error_Detail : Ada.Strings.Unbounded.Unbounded_String;
-      Formal_Count : Natural;
-      Actual_Count : constant Natural := Ast.Length (The_Call.Arguments);
    begin
-      if not Resolve_Callee (Caller_Unit, Callee_Text, Symbols, Target_Index, Callee_Ast, Error_Code, Error_Detail) then
-         return Failure (Error_Code, The_Call.Name_Span, Ada.Strings.Unbounded.To_String (Error_Detail));
-      end if;
-
-      Formal_Count := Ast.Length (Ast.Parameters (Callee_Ast));
-      if Actual_Count /= Formal_Count then
+      --  Semantics already resolved and typed this call; the lookup only recovers the flat index.
+      if not Find_Symbol (Callee_Text, Symbols, Target_Index, Callee_Ast) then
          return
            Failure
-             (Invalid_Arguments,
-              The_Call.Name_Span,
-              "call '"
-              & Callee_Text
-              & "' expects "
-              & Natural'Image (Formal_Count)
-              & " argument(s), found "
-              & Natural'Image (Actual_Count));
+             (Internal_Error, The_Call.Name_Span, "call '" & Callee_Text & "' was not resolved by semantic analysis");
       end if;
 
-      for Arg_Index in 1 .. Actual_Count loop
+      if Ast.Length (The_Call.Arguments) /= Ast.Length (Ast.Parameters (Callee_Ast)) then
+         return
+           Failure
+             (Internal_Error, The_Call.Name_Span, "call '" & Callee_Text & "' has an arity semantic analysis rejected");
+      end if;
+
+      for Arg_Index in 1 .. Ast.Length (The_Call.Arguments) loop
          declare
             The_Argument : constant Ast.Expression := Ast.Element (The_Call.Arguments, Arg_Index);
-            Formal       : constant Ast.Parameter := Ast.Element (Ast.Parameters (Callee_Ast), Arg_Index);
-            Formal_Lir   : constant Lovelace.Lir.Types.Value_Type := Map_Value_Type (Formal.Parameter_Type);
             Lexeme       : constant String := Ada.Strings.Unbounded.To_String (The_Argument.Lexeme);
          begin
-            case Formal.Parameter_Type.Kind is
-               when Lovelace.Compiler.Types.Boolean                              =>
-                  if Lexeme = "true" then
-                     Lovelace.Lir.Subroutines.Append_Instruction
-                       (Lir_Subroutine, (Operation => Lovelace.Lir.Opcodes.Constant_I32, Immediate_I32 => 1));
-                  elsif Lexeme = "false" then
-                     Lovelace.Lir.Subroutines.Append_Instruction
-                       (Lir_Subroutine, (Operation => Lovelace.Lir.Opcodes.Constant_I32, Immediate_I32 => 0));
-                  else
-                     return
-                       Failure
-                         (Invalid_Arguments,
-                          The_Argument.Span,
-                          "argument "
-                          & Natural'Image (Arg_Index)
-                          & " of '"
-                          & Callee_Text
-                          & "' expects true or false for a boolean parameter");
-                  end if;
+            case The_Argument.Kind is
+               when Ast.Boolean_Literal =>
+                  Lovelace.Lir.Subroutines.Append_Instruction
+                    (Lir_Subroutine,
+                     (Operation     => Lovelace.Lir.Opcodes.Constant_I32,
+                      Immediate_I32 => (if Lexeme = "true" then 1 else 0)));
 
-               when Lovelace.Compiler.Types.Integer                              =>
+               when Ast.Integer_Literal =>
                   declare
                      Evaluated : constant Literals.Integer_32_Results.Result := Literals.To_Integer_32 (Lexeme);
                   begin
-                     if not Formal_Accepts_I32_Constant (Formal_Lir) then
-                        return
-                          Failure
-                            (Invalid_Arguments,
-                             The_Argument.Span,
-                             "argument "
-                             & Natural'Image (Arg_Index)
-                             & " of '"
-                             & Callee_Text
-                             & "' has a formal type that cannot take an i32 constant in this slice");
-                     end if;
-
                      case Evaluated.Ok is
                         when False =>
                            return
                              Failure
-                               (Invalid_Arguments,
+                               (Internal_Error,
                                 The_Argument.Span,
-                                "invalid integer literal argument: "
+                                "integer literal rejected by semantic analysis: "
                                 & Ada.Strings.Unbounded.To_String (Evaluated.Error.Detail));
 
                         when True  =>
-                           if Formal_Lir in Lovelace.Lir.Types.U8 | Lovelace.Lir.Types.U16 | Lovelace.Lir.Types.U32
-                             and then Evaluated.Value < 0
-                           then
-                              return
-                                Failure
-                                  (Invalid_Arguments,
-                                   The_Argument.Span,
-                                   "negative literal cannot be passed to an unsigned parameter");
-                           end if;
-
                            Lovelace.Lir.Subroutines.Append_Instruction
                              (Lir_Subroutine,
                               (Operation => Lovelace.Lir.Opcodes.Constant_I32, Immediate_I32 => Evaluated.Value));
                      end case;
                   end;
 
-               when Lovelace.Compiler.Types.Unit | Lovelace.Compiler.Types.Float =>
-                  return
-                    Failure
-                      (Invalid_Arguments,
-                       The_Argument.Span,
-                       "argument "
-                       & Natural'Image (Arg_Index)
-                       & " of '"
-                       & Callee_Text
-                       & "' has a formal type that cannot take a literal argument in this slice");
+               when Ast.Name_Reference  =>
+                  --  Local_Get lowering lands in a later plan step.
+                  return Failure (Internal_Error, The_Argument.Span, "identifier arguments are not lowered yet");
             end case;
          end;
       end loop;
@@ -413,8 +351,7 @@ package body Lovelace.Compiler.Ir_Generator is
    end Lower_Call;
 
    function Lower_Statement_Body
-     (Caller_Unit    : Ast.Module;
-      The_Body       : Ast.Block;
+     (The_Body       : Ast.Block;
       Symbols        : Flat_Symbol_Vectors.Vector;
       Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine) return Generate_Result
    is
@@ -441,10 +378,7 @@ package body Lovelace.Compiler.Ir_Generator is
                when Ast.Call         =>
                   Nested_Result :=
                     Lower_Call
-                      (Caller_Unit    => Caller_Unit,
-                       The_Call       => Ast.Call_Of (The_Statement),
-                       Symbols        => Symbols,
-                       Lir_Subroutine => Lir_Subroutine);
+                      (The_Call => Ast.Call_Of (The_Statement), Symbols => Symbols, Lir_Subroutine => Lir_Subroutine);
 
                when Ast.Assignment   =>
                   --  Assignment lowering lands in a later plan step (Local_Set).
@@ -457,10 +391,7 @@ package body Lovelace.Compiler.Ir_Generator is
                when Ast.Nested_Block =>
                   Nested_Result :=
                     Lower_Statement_Body
-                      (Caller_Unit    => Caller_Unit,
-                       The_Body       => Ast.Block_Of (The_Statement),
-                       Symbols        => Symbols,
-                       Lir_Subroutine => Lir_Subroutine);
+                      (The_Body => Ast.Block_Of (The_Statement), Symbols => Symbols, Lir_Subroutine => Lir_Subroutine);
             end case;
 
             case Nested_Result.Ok is
@@ -567,97 +498,6 @@ package body Lovelace.Compiler.Ir_Generator is
             end case;
       end case;
    end Map_Value_Type;
-
-   function Resolve_Callee
-     (Caller_Unit  : Ast.Module;
-      Callee_Name  : String;
-      Symbols      : Flat_Symbol_Vectors.Vector;
-      Target_Index : out Positive;
-      Callee_Ast   : out Ast.Subroutine;
-      Error_Code   : out Ir_Generator_Error_Code;
-      Error_Detail : out Ada.Strings.Unbounded.Unbounded_String) return Boolean
-   is
-      Module_Prefix  : Ada.Strings.Unbounded.Unbounded_String;
-      Procedure_Name : Ada.Strings.Unbounded.Unbounded_String;
-      Prefix_Text    : Ada.Strings.Unbounded.Unbounded_String;
-      Proc_Text      : Ada.Strings.Unbounded.Unbounded_String;
-      Found_Index    : Natural := 0;
-      Found_Export   : Boolean := False;
-      Found_Ast      : Ast.Subroutine;
-   begin
-      Target_Index := 1;
-      Error_Code := Unresolved_Call;
-      Error_Detail := Ada.Strings.Unbounded.Null_Unbounded_String;
-      --  Placeholder; overwritten on success. Caller always has at least one
-      --  subroutine when lowering a body.
-      Callee_Ast := Ast.Get_Subroutine (Caller_Unit, 1);
-
-      if not Split_Callee (Callee_Name, Module_Prefix, Procedure_Name) then
-         Error_Detail := Ada.Strings.Unbounded.To_Unbounded_String ("unresolved call '" & Callee_Name & "'");
-         return False;
-      end if;
-
-      Prefix_Text := Module_Prefix;
-      Proc_Text := Procedure_Name;
-
-      if Ada.Strings.Unbounded.To_String (Prefix_Text) = Ast.Name (Caller_Unit) then
-         for Index in 1 .. Natural (Symbols.Length) loop
-            declare
-               Symbol : constant Flat_Symbol := Symbols.Element (Index);
-            begin
-               if Ada.Strings.Unbounded.To_String (Symbol.Module_Name) = Ast.Name (Caller_Unit)
-                 and then Ada.Strings.Unbounded.To_String (Symbol.Procedure_Name)
-                          = Ada.Strings.Unbounded.To_String (Proc_Text)
-               then
-                  Target_Index := Index;
-                  Callee_Ast := Symbol.The_Subroutine;
-                  return True;
-               end if;
-            end;
-         end loop;
-         Error_Detail := Ada.Strings.Unbounded.To_Unbounded_String ("unresolved call '" & Callee_Name & "'");
-         return False;
-      end if;
-
-      if not Import_Allows (Caller_Unit, Ada.Strings.Unbounded.To_String (Prefix_Text)) then
-         Error_Code := Call_Without_Using;
-         Error_Detail :=
-           Ada.Strings.Unbounded.To_Unbounded_String
-             ("call '" & Callee_Name & "' requires using " & Ada.Strings.Unbounded.To_String (Prefix_Text));
-         return False;
-      end if;
-
-      for Index in 1 .. Natural (Symbols.Length) loop
-         declare
-            Symbol : constant Flat_Symbol := Symbols.Element (Index);
-         begin
-            if Ada.Strings.Unbounded.To_String (Symbol.Module_Name) = Ada.Strings.Unbounded.To_String (Prefix_Text)
-              and then Ada.Strings.Unbounded.To_String (Symbol.Procedure_Name)
-                       = Ada.Strings.Unbounded.To_String (Proc_Text)
-            then
-               Found_Index := Index;
-               Found_Export := Symbol.Exported;
-               Found_Ast := Symbol.The_Subroutine;
-               exit;
-            end if;
-         end;
-      end loop;
-
-      if Found_Index = 0 then
-         Error_Detail := Ada.Strings.Unbounded.To_Unbounded_String ("unresolved call '" & Callee_Name & "'");
-         return False;
-      end if;
-
-      if not Found_Export then
-         Error_Code := Not_Exported;
-         Error_Detail := Ada.Strings.Unbounded.To_Unbounded_String ("procedure '" & Callee_Name & "' is not exported");
-         return False;
-      end if;
-
-      Target_Index := Found_Index;
-      Callee_Ast := Found_Ast;
-      return True;
-   end Resolve_Callee;
 
    function Split_Callee
      (Callee_Name    : String;
