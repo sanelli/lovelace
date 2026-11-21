@@ -39,8 +39,11 @@ package Lovelace.Lir.Modules is
    --  One LIR module.
    type Module is private;
 
+   --  Default package-version string written into .lir / .tlir.
+   Default_Package_Version : constant String := "0.0.1";
+
    --  Build a module with Name, empty flags, no depends or subroutines, and
-   --  no origin.
+   --  no origin. Package_Version starts as Default_Package_Version.
    --  @param Name UTF-8 module name.
    --  @return Module with Flags 0 and absent origin.
    function Create (Name : String) return Module;
@@ -54,6 +57,11 @@ package Lovelace.Lir.Modules is
    --  @param The_Module Module to update.
    --  @param The_Origin Source location metadata.
    procedure Set_Origin (The_Module : in out Module; The_Origin : Module_Origin);
+
+   --  Set Package_Version on The_Module (UTF-8; empty rejected by Validate).
+   --  @param The_Module Module to update.
+   --  @param Version Package version string (default Create uses "0.0.1").
+   procedure Set_Package_Version (The_Module : in out Module; Version : String);
 
    --  Append a dependency module name.
    --  @param The_Module Module to extend.
@@ -69,6 +77,11 @@ package Lovelace.Lir.Modules is
    --  @param The_Module Module to query.
    --  @return Name bytes.
    function Name (The_Module : Module) return String;
+
+   --  UTF-8 package-version string (default "0.0.1").
+   --  @param The_Module Module to query.
+   --  @return Package version bytes.
+   function Package_Version (The_Module : Module) return String;
 
    --  Flag bitset of The_Module.
    --  @param The_Module Module to query.
@@ -121,11 +134,13 @@ private
      Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Subroutines.Subroutine);
 
    type Module is record
-      Module_Name  : Ada.Strings.Unbounded.Unbounded_String;
-      Flags_Value  : Module_Flags := 0;
-      Origin_Value : Origin_Option := (Present => False);
-      Dependencies : Dependency_Vectors.Vector;
-      Subroutines  : Subroutine_Vectors.Vector;
+      Module_Name            : Ada.Strings.Unbounded.Unbounded_String;
+      Package_Version_Value  : Ada.Strings.Unbounded.Unbounded_String :=
+        Ada.Strings.Unbounded.To_Unbounded_String (Default_Package_Version);
+      Flags_Value            : Module_Flags := 0;
+      Origin_Value           : Origin_Option := (Present => False);
+      Dependencies           : Dependency_Vectors.Vector;
+      Subroutines            : Subroutine_Vectors.Vector;
    end record;
 
 end Lovelace.Lir.Modules;

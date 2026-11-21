@@ -18,6 +18,9 @@ package body Lovelace.Lir.Text is
 
    package Source renames Lovelace.Common.Source;
 
+   procedure Append_From_Dependency
+     (Buffer         : in out Ada.Strings.Unbounded.Unbounded_String;
+      The_Subroutine : Subroutines.Subroutine);
    procedure Append_Index
      (Buffer     : in out Ada.Strings.Unbounded.Unbounded_String;
       The_Module : Modules.Module);
@@ -45,6 +48,27 @@ package body Lovelace.Lir.Text is
    function Instruction_Token (Item : Instructions.Instruction) return String;
    function Type_Token (The_Type : Types.Value_Type) return String;
    function Unsigned_Image (Value : Interfaces.Unsigned_32) return String;
+
+   procedure Append_From_Dependency
+     (Buffer         : in out Ada.Strings.Unbounded.Unbounded_String;
+      The_Subroutine : Subroutines.Subroutine)
+   is
+      From_Dep : constant Subroutines.From_Dependency_Option :=
+        Subroutines.From_Dependency (The_Subroutine);
+   begin
+      case From_Dep.Present is
+         when False =>
+            null;
+
+         when True  =>
+            Ada.Strings.Unbounded.Append
+              (Buffer, Indent (2) & "(from-dependency ");
+            Append_Quoted
+              (Buffer,
+               Ada.Strings.Unbounded.To_String (From_Dep.Module_Name));
+            Append_Line (Buffer, ")");
+      end case;
+   end Append_From_Dependency;
 
    procedure Append_Index
      (Buffer     : in out Ada.Strings.Unbounded.Unbounded_String;
@@ -139,13 +163,13 @@ package body Lovelace.Lir.Text is
    begin
       Ada.Strings.Unbounded.Append
         (Buffer,
-         "(position "
+         "(position (byte "
          & Unsigned_Image (Interfaces.Unsigned_32 (Position.Byte_Index))
-         & " "
+         & ") (row "
          & Unsigned_Image (Interfaces.Unsigned_32 (Position.Line))
-         & " "
+         & ") (column "
          & Unsigned_Image (Interfaces.Unsigned_32 (Position.Column))
-         & ")");
+         & "))");
    end Append_Position;
 
    procedure Append_Quoted
@@ -333,7 +357,11 @@ package body Lovelace.Lir.Text is
          Buffer : Ada.Strings.Unbounded.Unbounded_String;
       begin
          Append_Line (Buffer, "(module");
-         Append_Line (Buffer, Indent (1) & "(version 1 0)");
+         Append_Line (Buffer, Indent (1) & "(lir-version 1 0)");
+         Ada.Strings.Unbounded.Append
+           (Buffer, Indent (1) & "(package-version ");
+         Append_Quoted (Buffer, Modules.Package_Version (The_Module));
+         Append_Line (Buffer, ")");
          Ada.Strings.Unbounded.Append (Buffer, Indent (1) & "(name ");
          Append_Quoted (Buffer, Modules.Name (The_Module));
          Append_Line (Buffer, ")");
@@ -383,6 +411,7 @@ package body Lovelace.Lir.Text is
                   Ada.Strings.Unbounded.To_String (The_Signature.Name));
                Append_Line (Buffer, ")");
 
+               Append_From_Dependency (Buffer, The_Subroutine);
                Append_Subroutine_Origin (Buffer, The_Subroutine);
 
                if Parameter_Count > 0 then

@@ -15,7 +15,7 @@ Search roots treat the module name as a relative path under each root (mixed sla
 
 ## Finding Augusta (`AUGUSTA_HOME`)
 
-`lovelace build` appends exactly one Augusta slot after the root-file directory, cwd, and each `-I` path (see [cli.md](cli.md)):
+`lovelace compile` appends exactly one Augusta slot after the root-file directory, cwd, and each `-I` path (see [cli.md](cli.md)):
 
 1. `AUGUSTA_HOME` if set
 2. else `LOVELACE_HOME/lib/augusta/<product-version>` if `LOVELACE_HOME` is set
@@ -58,6 +58,6 @@ end.
 Build with Augusta visible, then run:
 
 ```text
-AUGUSTA_HOME=./augusta/lovelace lovelace build samples/io/HelloPrint.love --force
+AUGUSTA_HOME=./augusta/lovelace lovelace compile samples/io/HelloPrint.love --force
 wasmtime run -Sp3 -W component-model-async=y .output/bin/HelloPrint.wasm
 ```

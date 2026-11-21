@@ -19,12 +19,12 @@ package body Lovelace.Main.Tests.Help is
       Tokens       : Cli_Arguments.String_Vectors.Vector;
       Discard_Path : constant String :=
         Ada.Directories.Compose
-          (Ada.Directories.Current_Directory, "help-build-out.txt");
+          (Ada.Directories.Current_Directory, "help-compile-out.txt");
       Discard_File : Ada.Text_IO.File_Type;
       Succeeded    : Boolean;
       Contents     : Ada.Strings.Unbounded.Unbounded_String;
    begin
-      Tokens.Append ("build");
+      Tokens.Append ("compile");
 
       Ada.Text_IO.Create (Discard_File, Ada.Text_IO.Out_File, Discard_Path);
       Ada.Text_IO.Set_Output (Discard_File);
@@ -32,7 +32,7 @@ package body Lovelace.Main.Tests.Help is
       Ada.Text_IO.Set_Output (Ada.Text_IO.Standard_Output.all);
       Ada.Text_IO.Close (Discard_File);
 
-      AUnit.Assertions.Assert (Succeeded, "help build");
+      AUnit.Assertions.Assert (Succeeded, "help compile");
 
       declare
          File : Ada.Text_IO.File_Type;
@@ -53,17 +53,17 @@ package body Lovelace.Main.Tests.Help is
         (Ada.Strings.Fixed.Index
            (Ada.Strings.Unbounded.To_String (Contents), "--generate-tlir")
          > 0,
-         "help build mentions --generate-tlir");
+         "help compile mentions --generate-tlir");
       AUnit.Assertions.Assert
         (Ada.Strings.Fixed.Index
            (Ada.Strings.Unbounded.To_String (Contents), "--warning-as-errors")
          > 0,
-         "help build mentions --warning-as-errors");
+         "help compile mentions --warning-as-errors");
       AUnit.Assertions.Assert
         (Ada.Strings.Fixed.Index
            (Ada.Strings.Unbounded.To_String (Contents), "--no-warnings")
          > 0,
-         "help build mentions --no-warnings");
+         "help compile mentions --no-warnings");
    end Test_Help_Build_Topic;
 
    procedure Test_Help_Mentions_Build (The_Test : in out Fixture) is
@@ -111,9 +111,9 @@ package body Lovelace.Main.Tests.Help is
 
       AUnit.Assertions.Assert
         (Ada.Strings.Fixed.Index
-           (Ada.Strings.Unbounded.To_String (Contents), "build")
+           (Ada.Strings.Unbounded.To_String (Contents), "compile")
          > 0,
-         "help mentions build");
+         "help mentions compile");
    end Test_Help_Mentions_Build;
 
 end Lovelace.Main.Tests.Help;

@@ -15,7 +15,7 @@ The **only dynamic library** in the whole project is Augusta’s native backing 
 
 1. **`lovelace/compiler/`** — crate `lovelace_compiler`; static library: compiler (frontend, analysis, codegen).
 2. **`jit/`** — crate `lovelace_jit`; static library: JIT runtime; **only** crate that links Wasmtime C (planned).
-3. **`lovelace/lovelace/`** — crate `lovelace`; CLI executable (`lovelace build`, `run`, `doc`, `format`, project/solution/package commands); statically links the host libraries.
+3. **`lovelace/lovelace/`** — crate `lovelace`; CLI executable (`lovelace compile`, `run`, `doc`, `format`, project/solution/package commands); statically links the host libraries.
 4. **`augusta/`** — standard library: `.love` under `augusta/lovelace/`, native Ada under `augusta/libaugusta/`, web glue under `augusta/libaugusta-js/`. Flavors `native` / `wasi` / `web`.
 5. **`tooling/`** — crate `lovelace_tooling`; static library: `.pjlove`, `.slnlove`, `.pkglove` files and their behavior (planned).
 6. **`hypatia/`** — crate `lovelace_hypatia`; static library: **Hypatia** package system (planned).

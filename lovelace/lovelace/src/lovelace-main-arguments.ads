@@ -11,11 +11,11 @@ package Lovelace.Main.Arguments is
         Element_Type => String);
 
    --  Recognized top-level commands.
-   --  @enum Build Compile a .love file.
+   --  @enum Compile Compile a .love file.
    --  @enum Help Show help text.
    --  @enum Version Print the product version string.
    --  @enum None No command was present on the command line.
-   type Command_Kind is (Build, Help, Version, None);
+   type Command_Kind is (Compile, Help, Version, None);
 
    --  Parsed command line.
    --  @field Show_Logo True unless --no-logo was given before the command.

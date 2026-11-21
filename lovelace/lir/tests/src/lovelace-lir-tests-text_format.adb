@@ -28,7 +28,9 @@ package body Lovelace.Lir.Tests.Text_Format is
       Expected   : constant String :=
         "(module"
         & ASCII.LF
-        & "  (version 1 0)"
+        & "  (lir-version 1 0)"
+        & ASCII.LF
+        & "  (package-version ""0.0.1"")"
         & ASCII.LF
         & "  (name ""example"")"
         & ASCII.LF

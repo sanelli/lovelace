@@ -3,23 +3,23 @@ with AUnit.Assertions;
 
 with Lovelace.Main.Integration_Tests.Support;
 
-package body Lovelace.Main.Integration_Tests.Module_Build is
+package body Lovelace.Main.Integration_Tests.Module_Compile is
 
    package Helpers renames Lovelace.Main.Integration_Tests.Support;
 
    use type Helpers.Tool_Status;
 
-   procedure Build_Validate_Unit
+   procedure Compile_Validate_Unit
      (Lovelace_Path : String;
       Sample_Path   : String;
       Output_Root   : String;
       Unit_Name     : String;
       Message       : String;
       Status        : in out Helpers.Tool_Status);
-   --  Build Sample_Path, assert artifacts, and validate .wasm/.wat.
+   --  Compile Sample_Path, assert artifacts, and validate .wasm/.wat.
    --  Status becomes Missing if any validate step is Missing; Failed if any Failed.
 
-   procedure Build_Validate_Unit
+   procedure Compile_Validate_Unit
      (Lovelace_Path : String;
       Sample_Path   : String;
       Output_Root   : String;
@@ -29,7 +29,7 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
    is
       Validate_Status : Helpers.Tool_Status;
    begin
-      Helpers.Build_Sample
+      Helpers.Compile_Sample
         (Lovelace_Path => Lovelace_Path, Sample_Path => Sample_Path, Output_Root => Output_Root, Message => Message);
       Helpers.Assert_Build_Artifacts (Output_Root => Output_Root, Unit_Name => Unit_Name, Message => Message);
       Helpers.Validate_Unit_Artifacts
@@ -45,12 +45,12 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
          when Helpers.Succeeded =>
             null;
       end case;
-   end Build_Validate_Unit;
+   end Compile_Validate_Unit;
 
    procedure Test_Build_And_Validate (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Test_Name         : constant String :=
-        "build: validate modules Empty, Foo.Bar, Procedures, ExportProcedures, SameModuleCall, Overload, emoji";
+        "compile: validate modules Empty, Foo.Bar, Procedures, ExportProcedures, SameModuleCall, Overload, emoji";
       Lovelace_Path     : constant String := Helpers.Locate_Lovelace;
       Output_Root       : constant String := Helpers.Locate_Output_Root ("modules");
       Empty_Sample      : constant String := Helpers.Locate_Sample ("module", "Empty.love");
@@ -74,7 +74,7 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
 
       Helpers.Reset_Output_Root (Output_Root);
 
-      Build_Validate_Unit
+      Compile_Validate_Unit
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Empty_Sample,
          Output_Root   => Output_Root,
@@ -82,7 +82,7 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
          Message       => "Empty",
          Status        => Aggregate_Status);
 
-      Build_Validate_Unit
+      Compile_Validate_Unit
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Dotted_Sample,
          Output_Root   => Output_Root,
@@ -90,7 +90,7 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
          Message       => "Foo.Bar",
          Status        => Aggregate_Status);
 
-      Build_Validate_Unit
+      Compile_Validate_Unit
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Procedures_Sample,
          Output_Root   => Output_Root,
@@ -100,15 +100,15 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
       Helpers.Assert_Wat_Contains
         (Output_Root => Output_Root,
          Unit_Name   => "Procedures",
-         Fragment    => "(func $Whatever (param i32 f32 f32)",
+         Fragment    => "(func $Procedures_2eWhatever (param i32 f32 f32)",
          Message     => "Procedures");
       Helpers.Assert_Wat_Contains
         (Output_Root => Output_Root,
          Unit_Name   => "Procedures",
-         Fragment    => "(func $Sized (param i32 i64 f64)",
+         Fragment    => "(func $Procedures_2eSized (param i32 i64 f64)",
          Message     => "Procedures sized");
 
-      Build_Validate_Unit
+      Compile_Validate_Unit
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Export_Sample,
          Output_Root   => Output_Root,
@@ -118,15 +118,15 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
       Helpers.Assert_Wat_Contains
         (Output_Root => Output_Root,
          Unit_Name   => "ExportProcedures",
-         Fragment    => "(func $Print (param i32)",
+         Fragment    => "(func $ExportProcedures_2ePrint (param i32)",
          Message     => "ExportProcedures Print");
       Helpers.Assert_Wat_Contains
         (Output_Root => Output_Root,
          Unit_Name   => "ExportProcedures",
-         Fragment    => "(func $InternalHelper (param i32)",
+         Fragment    => "(func $ExportProcedures_2eInternalHelper (param i32)",
          Message     => "ExportProcedures InternalHelper");
 
-      Build_Validate_Unit
+      Compile_Validate_Unit
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Calls_Sample,
          Output_Root   => Output_Root,
@@ -141,10 +141,10 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
       Helpers.Assert_Wat_Contains
         (Output_Root => Output_Root,
          Unit_Name   => "SameModuleCall",
-         Fragment    => "call $Sink",
+         Fragment    => "call $SameModuleCall_2eSink",
          Message     => "SameModuleCall call");
 
-      Build_Validate_Unit
+      Compile_Validate_Unit
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Overload_Sample,
          Output_Root   => Output_Root,
@@ -155,15 +155,15 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
       Helpers.Assert_Wat_Contains
         (Output_Root => Output_Root,
          Unit_Name   => "Overload",
-         Fragment    => "call $Sink_1",
+         Fragment    => "call $Overload_2eSink_1",
          Message     => "Overload integer call");
       Helpers.Assert_Wat_Contains
         (Output_Root => Output_Root,
          Unit_Name   => "Overload",
-         Fragment    => "call $Sink_2",
+         Fragment    => "call $Overload_2eSink_2",
          Message     => "Overload boolean call");
 
-      Build_Validate_Unit
+      Compile_Validate_Unit
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Emoji_Sample,
          Output_Root   => Output_Root,
@@ -187,4 +187,4 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
          Ada.Exceptions.Reraise_Occurrence (Error);
    end Test_Build_And_Validate;
 
-end Lovelace.Main.Integration_Tests.Module_Build;
+end Lovelace.Main.Integration_Tests.Module_Compile;

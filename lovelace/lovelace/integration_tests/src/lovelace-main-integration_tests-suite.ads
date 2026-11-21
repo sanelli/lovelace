@@ -4,7 +4,7 @@ with AUnit.Test_Suites;
 
 package Lovelace.Main.Integration_Tests.Suite is
 
-   --  Build the integration-test suite.
+   --  Compile the integration-test suite.
    --  @return Heap-allocated suite.
    function Suite return AUnit.Test_Suites.Access_Test_Suite;
 

@@ -481,11 +481,8 @@ package body Lovelace.Compiler.Ir_Generator is
               Ada.Strings.Unbounded.To_String (Symbol.Module_Name);
             Proc_Name : constant String :=
               Ada.Strings.Unbounded.To_String (Symbol.Procedure_Name);
-            Is_Root   : constant Boolean := Symbol.Unit_Index = 1;
-            --  Source names (overloads share a name); Call targets are by index.
-            --  Non-root units keep Module.Proc so flattened deps stay distinct by module.
-            Lir_Name  : constant String :=
-              (if Is_Root then Proc_Name else Mod_Name & "." & Proc_Name);
+            --  Always Module.Proc (overloads share a name); Call targets are by index.
+            Lir_Name  : constant String := Mod_Name & "." & Proc_Name;
          begin
             Symbol.Lir_Name :=
               Ada.Strings.Unbounded.To_Unbounded_String (Lir_Name);
@@ -521,6 +518,12 @@ package body Lovelace.Compiler.Ir_Generator is
                   Origin_Filename
                     (Units.Element (Symbol.Unit_Index),
                      Ast.Filename (Symbol.The_Subroutine))));
+
+            if Symbol.Unit_Index /= 1 then
+               Lovelace.Lir.Subroutines.Set_From_Dependency
+                 (Lir_Subroutine,
+                  Ada.Strings.Unbounded.To_String (Symbol.Module_Name));
+            end if;
 
             declare
                Sub_Flags : constant Ast.Subroutine_Flags :=

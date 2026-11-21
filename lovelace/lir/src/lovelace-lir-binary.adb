@@ -54,6 +54,8 @@ package body Lovelace.Lir.Binary is
    procedure Append_String (Buffer : in out Byte_Sequence; Text : String);
    procedure Append_Subroutine
      (Buffer : in out Byte_Sequence; The_Subroutine : Subroutines.Subroutine);
+   procedure Append_Subroutine_From_Dependency
+     (Buffer : in out Byte_Sequence; The_Subroutine : Subroutines.Subroutine);
    procedure Append_Subroutine_Native
      (Buffer : in out Byte_Sequence; The_Subroutine : Subroutines.Subroutine);
    procedure Append_Subroutine_Origin
@@ -88,6 +90,11 @@ package body Lovelace.Lir.Binary is
      (Bytes          : Byte_Sequence;
       Cursor         : in out Natural;
       The_Subroutine : out Subroutines.Subroutine;
+      Code           : out Errors.Error_Code) return Boolean;
+   function Parse_Subroutine_From_Dependency
+     (Bytes          : Byte_Sequence;
+      Cursor         : in out Natural;
+      The_Subroutine : in out Subroutines.Subroutine;
       Code           : out Errors.Error_Code) return Boolean;
    function Parse_Subroutine_Native
      (Bytes          : Byte_Sequence;
@@ -237,6 +244,7 @@ package body Lovelace.Lir.Binary is
         (Buffer,
          Interfaces.Unsigned_32 (Subroutines.Get_Flags (The_Subroutine)));
       Append_Subroutine_Origin (Buffer, The_Subroutine);
+      Append_Subroutine_From_Dependency (Buffer, The_Subroutine);
       Append_Subroutine_Native (Buffer, The_Subroutine);
       Append_U32
         (Buffer, Interfaces.Unsigned_32 (Instructions.Length (Body_Instrs)));
@@ -245,6 +253,23 @@ package body Lovelace.Lir.Binary is
            (Buffer, Instructions.Element (Body_Instrs, Instruction_Index));
       end loop;
    end Append_Subroutine;
+
+   procedure Append_Subroutine_From_Dependency
+     (Buffer : in out Byte_Sequence; The_Subroutine : Subroutines.Subroutine)
+   is
+      From_Dep : constant Subroutines.From_Dependency_Option :=
+        Subroutines.From_Dependency (The_Subroutine);
+   begin
+      case From_Dep.Present is
+         when False =>
+            Append_Byte (Buffer, Origin_Absent);
+
+         when True  =>
+            Append_Byte (Buffer, Origin_Present);
+            Append_String
+              (Buffer, Ada.Strings.Unbounded.To_String (From_Dep.Module_Name));
+      end case;
+   end Append_Subroutine_From_Dependency;
 
    procedure Append_Subroutine_Native
      (Buffer : in out Byte_Sequence; The_Subroutine : Subroutines.Subroutine)
@@ -365,20 +390,30 @@ package body Lovelace.Lir.Binary is
          return (Ok => False, Error => Errors.Unsupported_Version);
       end if;
 
-      if not Read_String (Bytes, Cursor, Module_Name_Text) then
-         return (Ok => False, Error => Errors.Truncated);
-      end if;
-      if not Read_U32 (Bytes, Cursor, Module_Flags_Value) then
-         return (Ok => False, Error => Errors.Truncated);
-      end if;
-      if not Read_U32 (Bytes, Cursor, Dependency_Total) then
-         return (Ok => False, Error => Errors.Truncated);
-      end if;
+      declare
+         Package_Version_Text : Ada.Strings.Unbounded.Unbounded_String;
+      begin
+         if not Read_String (Bytes, Cursor, Package_Version_Text) then
+            return (Ok => False, Error => Errors.Truncated);
+         end if;
+         if not Read_String (Bytes, Cursor, Module_Name_Text) then
+            return (Ok => False, Error => Errors.Truncated);
+         end if;
+         if not Read_U32 (Bytes, Cursor, Module_Flags_Value) then
+            return (Ok => False, Error => Errors.Truncated);
+         end if;
+         if not Read_U32 (Bytes, Cursor, Dependency_Total) then
+            return (Ok => False, Error => Errors.Truncated);
+         end if;
 
-      The_Module :=
-        Modules.Create (Ada.Strings.Unbounded.To_String (Module_Name_Text));
-      Modules.Set_Flags
-        (The_Module, Modules.Module_Flags (Module_Flags_Value));
+         The_Module :=
+           Modules.Create (Ada.Strings.Unbounded.To_String (Module_Name_Text));
+         Modules.Set_Package_Version
+           (The_Module,
+            Ada.Strings.Unbounded.To_String (Package_Version_Text));
+         Modules.Set_Flags
+           (The_Module, Modules.Module_Flags (Module_Flags_Value));
+      end;
 
       for Unused in 1 .. Natural (Dependency_Total) loop
          declare
@@ -525,6 +560,7 @@ package body Lovelace.Lir.Binary is
          Append_Byte (Buffer, Magic_3);
          Append_U16 (Buffer, Format_Major);
          Append_U16 (Buffer, Format_Minor);
+         Append_String (Buffer, Modules.Package_Version (The_Module));
 
          Append_String (Buffer, Modules.Name (The_Module));
          Append_U32
@@ -811,6 +847,12 @@ package body Lovelace.Lir.Binary is
          return False;
       end if;
 
+      if not Parse_Subroutine_From_Dependency
+           (Bytes, Cursor, The_Subroutine, Code)
+      then
+         return False;
+      end if;
+
       if not Parse_Subroutine_Native (Bytes, Cursor, The_Subroutine, Code) then
          return False;
       end if;
@@ -901,6 +943,36 @@ package body Lovelace.Lir.Binary is
 
       return True;
    end Parse_Subroutine;
+
+   function Parse_Subroutine_From_Dependency
+     (Bytes          : Byte_Sequence;
+      Cursor         : in out Natural;
+      The_Subroutine : in out Subroutines.Subroutine;
+      Code           : out Errors.Error_Code) return Boolean
+   is
+      Presence : Interfaces.Unsigned_8;
+      Dep_Text : Ada.Strings.Unbounded.Unbounded_String;
+   begin
+      if not Read_Byte (Bytes, Cursor, Presence) then
+         Code := Errors.Truncated;
+         return False;
+      end if;
+      if Presence = Origin_Absent then
+         return True;
+      end if;
+      if Presence /= Origin_Present then
+         Code := Errors.Invalid_Presence;
+         return False;
+      end if;
+      if not Read_String (Bytes, Cursor, Dep_Text) then
+         Code := Errors.Truncated;
+         return False;
+      end if;
+
+      Subroutines.Set_From_Dependency
+        (The_Subroutine, Ada.Strings.Unbounded.To_String (Dep_Text));
+      return True;
+   end Parse_Subroutine_From_Dependency;
 
    function Parse_Subroutine_Native
      (Bytes          : Byte_Sequence;

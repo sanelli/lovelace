@@ -66,7 +66,8 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
         (Modules.Subroutine_Count (Lir_Module) = 1,
          Message & ": one subroutine");
       AUnit.Assertions.Assert
-        (Ada.Strings.Unbounded.To_String (The_Signature.Name) = Expected_Name,
+        (Ada.Strings.Unbounded.To_String (The_Signature.Name)
+         = Expected_Name & "." & Expected_Name,
          Message & ": subroutine name");
       AUnit.Assertions.Assert
         (The_Signature.Return_Type = Lovelace.Lir.Types.Unit,
@@ -289,10 +290,34 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
          AUnit.Assertions.Assert
            (Ada.Strings.Unbounded.To_String
               (Subroutines.Get_Signature
+                 (Modules.Get_Subroutine (Ok_Result.The_Module, 1))
+                 .Name)
+            = "Caller.Caller",
+            "qualified root name");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String
+              (Subroutines.Get_Signature
                  (Modules.Get_Subroutine (Ok_Result.The_Module, 2))
                  .Name)
             = "Lib.Sink",
             "qualified dep name");
+         AUnit.Assertions.Assert
+           (Subroutines.From_Dependency
+              (Modules.Get_Subroutine (Ok_Result.The_Module, 2))
+              .Present,
+            "dep from-dependency present");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String
+              (Subroutines.From_Dependency
+                 (Modules.Get_Subroutine (Ok_Result.The_Module, 2))
+                 .Module_Name)
+            = "Lib",
+            "dep from-dependency name");
+         AUnit.Assertions.Assert
+           (not Subroutines.From_Dependency
+                  (Modules.Get_Subroutine (Ok_Result.The_Module, 1))
+                  .Present,
+            "root has no from-dependency");
          AUnit.Assertions.Assert
            (Lovelace.Lir.Instructions.Element (Caller_Body, 2).Target_Index
             = 2,
@@ -428,7 +453,7 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
       AUnit.Assertions.Assert
         (Modules.Name (Lir_Module) = "Lib", "export procedure params: module");
       AUnit.Assertions.Assert
-        (Ada.Strings.Unbounded.To_String (The_Signature.Name) = "Print",
+        (Ada.Strings.Unbounded.To_String (The_Signature.Name) = "Lib.Print",
          "export procedure params: name");
       AUnit.Assertions.Assert
         (Subroutines.Has_Export (Flags), "export procedure params: export");
@@ -678,7 +703,8 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
         (Modules.Subroutine_Count (Lir_Module) = 1,
          "module procedure params: one sub");
       AUnit.Assertions.Assert
-        (Ada.Strings.Unbounded.To_String (The_Signature.Name) = "Whatever",
+        (Ada.Strings.Unbounded.To_String (The_Signature.Name)
+         = "MyModule.Whatever",
          "module procedure params: name");
       AUnit.Assertions.Assert
         (The_Signature.Return_Type = Lovelace.Lir.Types.Unit,
@@ -806,8 +832,10 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
         Ada.Strings.Unbounded.To_String (Subroutines.Get_Signature (Bool_Sink).Name);
    begin
       AUnit.Assertions.Assert (Modules.Subroutine_Count (The_Lir) = 3, "three subroutines");
-      AUnit.Assertions.Assert (Int_Name = "Sink", "integer overload keeps source name");
-      AUnit.Assertions.Assert (Bool_Name = "Sink", "boolean overload keeps source name");
+      AUnit.Assertions.Assert
+        (Int_Name = "Calls.Sink", "integer overload keeps Module.Name");
+      AUnit.Assertions.Assert
+        (Bool_Name = "Calls.Sink", "boolean overload keeps Module.Name");
       AUnit.Assertions.Assert
         (Lovelace.Lir.Instructions.Element (Run_Body, 2).Target_Index = 1, "integer call to first Sink");
       AUnit.Assertions.Assert

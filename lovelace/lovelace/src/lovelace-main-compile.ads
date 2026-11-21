@@ -3,9 +3,9 @@ with Ada.Strings.Unbounded;
 with Lovelace.Compiler.Diagnostics;
 with Lovelace.Main.Arguments;
 
---  lovelace build: compile .love through LIR to WASM/WAT/WIT.
+--  lovelace compile: compile .love through LIR to WASM/WAT/WIT.
 
-package Lovelace.Main.Build is
+package Lovelace.Main.Compile is
 
    --  Selected backend artifact kinds for --output-format.
    --  @field Want_Wasm True when .wasm should be written.
@@ -33,10 +33,10 @@ package Lovelace.Main.Build is
       The_Policy : in out Lovelace.Compiler.Diagnostics.Policy;
       Detail     : out Ada.Strings.Unbounded.Unbounded_String) return Boolean;
 
-   --  Run the build command with Command_Arguments.
-   --  @param Command_Arguments Tokens after 'build'.
+   --  Run the compile command with Command_Arguments.
+   --  @param Command_Arguments Tokens after 'compile'.
    --  @return True on success; False after reporting errors.
    function Run
      (Command_Arguments : Arguments.String_Vectors.Vector) return Boolean;
 
-end Lovelace.Main.Build;
+end Lovelace.Main.Compile;

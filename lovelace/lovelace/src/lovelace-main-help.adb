@@ -2,7 +2,7 @@ with Ada.Text_IO;
 
 package body Lovelace.Main.Help is
 
-   procedure Put_Build (File : Ada.Text_IO.File_Type);
+   procedure Put_Compile (File : Ada.Text_IO.File_Type);
    procedure Put_General (File : Ada.Text_IO.File_Type);
    procedure Put_Line (File : Ada.Text_IO.File_Type; Text : String);
 
@@ -11,9 +11,9 @@ package body Lovelace.Main.Help is
       File              : Ada.Text_IO.File_Type) return Boolean;
    --  Write help for Command_Arguments to File.
 
-   procedure Put_Build (File : Ada.Text_IO.File_Type) is
+   procedure Put_Compile (File : Ada.Text_IO.File_Type) is
    begin
-      Put_Line (File, "Usage: lovelace build <file.love> [options...]");
+      Put_Line (File, "Usage: lovelace compile <file.love> [options...]");
       Put_Line (File, "");
       Put_Line
         (File,
@@ -29,7 +29,7 @@ package body Lovelace.Main.Help is
       Put_Line (File, "Options:");
       Put_Line
         (File,
-         "  --force                  Rebuild from source; ignore incremental skips");
+         "  --force                  Recompile from source; ignore incremental skips");
       Put_Line
         (File, "  --flavor <name>          wasi (default), native, or web");
       Put_Line
@@ -52,7 +52,7 @@ package body Lovelace.Main.Help is
          "  --output-folder <path>   Replace the default .output directory");
       Put_Line
         (File,
-         "  --warning-as-errors      Promote warnings to errors (fail the build)");
+         "  --warning-as-errors      Promote warnings to errors (fail the compile)");
       Put_Line (File, "");
       Put_Line
         (File,
@@ -72,28 +72,28 @@ package body Lovelace.Main.Help is
       Put_Line (File, "");
       Put_Line
         (File,
-         "Incremental builds skip IR/backend when outputs are newer than all");
+         "Incremental compiles skip IR/backend when outputs are newer than all");
       Put_Line
-        (File, "loaded .love inputs. Pass --force to rebuild every stage.");
+        (File, "loaded .love inputs. Pass --force to recompile every stage.");
       Put_Line
         (File,
          ".tlir is never consulted for mtime skips (even with --generate-tlir).");
       Put_Line (File, "");
       Put_Line (File, "Examples:");
-      Put_Line (File, "  lovelace build foo.love");
-      Put_Line (File, "  lovelace build foo.love --force");
-      Put_Line (File, "  lovelace build foo.love --generate-tlir");
-      Put_Line (File, "  lovelace build foo.love -I libs --include-path more");
-      Put_Line (File, "  lovelace build foo.love --no-wit");
+      Put_Line (File, "  lovelace compile foo.love");
+      Put_Line (File, "  lovelace compile foo.love --force");
+      Put_Line (File, "  lovelace compile foo.love --generate-tlir");
+      Put_Line (File, "  lovelace compile foo.love -I libs --include-path more");
+      Put_Line (File, "  lovelace compile foo.love --no-wit");
       Put_Line
-        (File, "  lovelace build foo.love --no-warnings LV00028,LV00029");
-      Put_Line (File, "  lovelace build foo.love --warning-as-errors");
+        (File, "  lovelace compile foo.love --no-warnings LV00028,LV00029");
+      Put_Line (File, "  lovelace compile foo.love --warning-as-errors");
       Put_Line
-        (File, "  lovelace build foo.love --output-format wat --no-wit");
+        (File, "  lovelace compile foo.love --output-format wat --no-wit");
       Put_Line
         (File,
-         "  lovelace build foo.love --no-wit --output-format wasm --output-folder bar");
-   end Put_Build;
+         "  lovelace compile foo.love --no-wit --output-format wasm --output-folder bar");
+   end Put_Compile;
 
    procedure Put_General (File : Ada.Text_IO.File_Type) is
    begin
@@ -106,7 +106,7 @@ package body Lovelace.Main.Help is
       Put_Line (File, "  --no-colour   Disable ANSI colours in output");
       Put_Line (File, "");
       Put_Line (File, "Commands:");
-      Put_Line (File, "  build     Compile a .love source file");
+      Put_Line (File, "  compile  Compile a .love source file");
       Put_Line (File, "  help      Show this help, or help for a command");
       Put_Line (File, "  version   Print the Lovelace version string");
       Put_Line (File, "");
@@ -144,14 +144,14 @@ package body Lovelace.Main.Help is
          declare
             Topic : constant String := Command_Arguments.Element (1);
          begin
-            if Topic = "build" then
-               Put_Build (File);
+            if Topic = "compile" then
+               Put_Compile (File);
                return True;
             elsif Topic = "help" then
                Put_Line (File, "Usage: lovelace help [command]");
                Put_Line
                  (File,
-                  "Show general help, or details for build, help, or version.");
+                  "Show general help, or details for compile, help, or version.");
                return True;
             elsif Topic = "version" then
                Put_Line (File, "Usage: lovelace version");

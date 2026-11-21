@@ -81,7 +81,7 @@ package body Lovelace.Main.Integration_Tests.Support is
          Message & ": missing `" & Fragment & "`");
    end Assert_Wat_Contains;
 
-   procedure Build_Sample
+   procedure Compile_Sample
      (Lovelace_Path : String;
       Sample_Path   : String;
       Output_Root   : String;
@@ -98,7 +98,7 @@ package body Lovelace.Main.Integration_Tests.Support is
          Build_Args :=
            new GNAT.OS_Lib.Argument_List'
              (1 => new String'("--no-logo"),
-              2 => new String'("build"),
+              2 => new String'("compile"),
               3 => new String'(Sample_Path),
               4 => new String'("--output-format"),
               5 => new String'("wasm,wat"),
@@ -109,7 +109,7 @@ package body Lovelace.Main.Integration_Tests.Support is
          Build_Args :=
            new GNAT.OS_Lib.Argument_List'
              (1  => new String'("--no-logo"),
-              2  => new String'("build"),
+              2  => new String'("compile"),
               3  => new String'(Sample_Path),
               4  => new String'("--output-format"),
               5  => new String'("wasm,wat"),
@@ -123,7 +123,7 @@ package body Lovelace.Main.Integration_Tests.Support is
       Return_Code := Spawn_Discarding_Stdout (Lovelace_Path, Build_Args.all);
       GNAT.OS_Lib.Free (Build_Args);
       AUnit.Assertions.Assert (Return_Code = 0, Message & ": build exit 0");
-   end Build_Sample;
+   end Compile_Sample;
 
    function Compose_Under (Root, Relative : String) return String is
    begin

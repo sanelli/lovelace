@@ -71,9 +71,9 @@ Emission then attaches the WASI 0.3 import graph (`wasi:cli/types@0.3.0` + `wasi
 
 `Export_Flag` on LIR means **Lovelace visibility** (for `using` / cross-module calls). **WIT/component export** is emitted only when that subroutine also has **zero parameters**: it is canon-lifted under a **kebab-case** form of its LIR name (ASCII letters/digits lowercased; other bytes become `-`). Parameterized `Export_Flag` procedures lower to core functypes only (no `Core_Exported`, no WIT line) so Augusta-style `print(integer)` can exist without Canonical ABI export yet.
 
-A nullary subroutine may be both entrypoint and export: then both `wasi:cli/run@0.3.0` and the named export appear. Core module export names keep the original LIR spelling. WAT `$` labels sanitize non-id bytes (``.`` → `_2e`); when several LIR functions share a name (overloads), the label appends `_<1-based-index>` (e.g. `$Sink_1`, `$OverloadLib_2eSink_2`). Binary `call` remains by function index.
+A nullary subroutine may be both entrypoint and export: then both `wasi:cli/run@0.3.0` and the named export appear. LIR names are always `Module.Proc`; core and component export strings use the kebab form (`Module.Proc` → `module-proc`). WAT `$` labels sanitize non-id bytes on the core function name (``.`` → `_2e`, or kebab `-` kept); when several LIR functions share a name (overloads), the label appends `_<1-based-index>` (e.g. `$Overload_2eSink_1`). Binary `call` remains by function index.
 
-Component Model `externname`s must be kebab-case; PascalCase LIR identifiers such as `Hello` become `hello`. Pure non-ASCII names (e.g. emoji) sanitize to `export` / package `module` after dash collapse.
+Component Model `externname`s must be kebab-case. Pure non-ASCII names (e.g. emoji) sanitize to `export` after dash collapse.
 
 ## Types (this slice)
 

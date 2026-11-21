@@ -1,6 +1,6 @@
 # Samples
 
-The [`samples/`](../samples/) tree holds small `.love` programs and modules used to exercise features end-to-end (CLI builds, integration tests, and manual checks). Build them with [`lovelace build`](cli.md).
+The [`samples/`](../samples/) tree holds small `.love` programs and modules used to exercise features end-to-end (CLI builds, integration tests, and manual checks). Build them with [`lovelace compile`](cli.md).
 
 Integration tests (`lovelace/lovelace/integration_tests`) require `wasm-tools` and `wasmtime` on `PATH`, build these samples (suppressing `[info]` stdout), validate every `.wasm`/`.wat`, and **run** only program/entrypoint artifacts. See the integration-tests Cursor rule.
 
@@ -17,7 +17,7 @@ For **every** new user-facing feature, add at least one `.love` file under `samp
 
 | Path | Feature |
 | --- | --- |
-| [`samples/program/Hello.love`](../samples/program/Hello.love) | Minimal empty-body program for `lovelace build` and wasmtime integration |
+| [`samples/program/Hello.love`](../samples/program/Hello.love) | Minimal empty-body program for `lovelace compile` and wasmtime integration |
 | [`samples/using/UsingDecl.love`](../samples/using/UsingDecl.love) | File-leading `using UsingLib;` before an empty-body program (resolves same-folder module) |
 | [`samples/using/UsingLib.love`](../samples/using/UsingLib.love) | Empty module dependency for `UsingDecl` |
 | [`samples/nested-using/NestedUsing.love`](../samples/nested-using/NestedUsing.love) | Block-scoped `using` + declare + assign + print (needs Augusta) |

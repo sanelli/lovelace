@@ -96,7 +96,7 @@ package body Lovelace.Lir.Tests.Origins is
                   Support.Assert_Contains (Text, "(filename ""origins.love"")", "text filename");
                   Support.Assert_Contains (Text, "(name-span", "text name-span");
                   Support.Assert_Contains (Text, "(span ", "text subroutine span");
-                  Support.Assert_Contains (Text, "(position 1 1 1)", "text position");
+                  Support.Assert_Contains (Text, "(position (byte 1) (row 1) (column 1))", "text position");
                end;
          end case;
       end;

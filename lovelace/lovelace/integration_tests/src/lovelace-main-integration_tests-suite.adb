@@ -1,15 +1,15 @@
 with AUnit.Test_Caller;
 
-with Lovelace.Main.Integration_Tests.Hello_Build;
-with Lovelace.Main.Integration_Tests.Module_Build;
+with Lovelace.Main.Integration_Tests.Hello_Compile;
+with Lovelace.Main.Integration_Tests.Module_Compile;
 with Lovelace.Main.Integration_Tests.Support_Tests;
 
 package body Lovelace.Main.Integration_Tests.Suite is
 
    package Hello_Caller is new
-     AUnit.Test_Caller (Lovelace.Main.Integration_Tests.Hello_Build.Fixture);
+     AUnit.Test_Caller (Lovelace.Main.Integration_Tests.Hello_Compile.Fixture);
    package Module_Caller is new
-     AUnit.Test_Caller (Lovelace.Main.Integration_Tests.Module_Build.Fixture);
+     AUnit.Test_Caller (Lovelace.Main.Integration_Tests.Module_Compile.Fixture);
    package Support_Caller is new
      AUnit.Test_Caller (Lovelace.Main.Integration_Tests.Support_Tests.Fixture);
 
@@ -27,83 +27,83 @@ package body Lovelace.Main.Integration_Tests.Suite is
               .Test_Locate_And_Compose'Access));
       Result.Add_Test
         (Hello_Caller.Create
-           ("build: validate and run program Hello",
+           ("compile: validate and run program Hello",
             Lovelace
               .Main
               .Integration_Tests
-              .Hello_Build
+              .Hello_Compile
               .Test_Build_Validate_And_Run'Access));
       Result.Add_Test
         (Hello_Caller.Create
-           ("build: validate and run program HelloPrint",
+           ("compile: validate and run program HelloPrint",
             Lovelace
               .Main
               .Integration_Tests
-              .Hello_Build
+              .Hello_Compile
               .Test_Hello_Print_Build_Validate_And_Run'Access));
       Result.Add_Test
         (Hello_Caller.Create
-           ("build: validate and run program NestedUsing",
+           ("compile: validate and run program NestedUsing",
             Lovelace
               .Main
               .Integration_Tests
-              .Hello_Build
+              .Hello_Compile
               .Test_Nested_Using_Build_Validate_And_Run'Access));
       Result.Add_Test
         (Hello_Caller.Create
-           ("build: validate and run program OverloadCaller",
+           ("compile: validate and run program OverloadCaller",
             Lovelace
               .Main
               .Integration_Tests
-              .Hello_Build
+              .Hello_Compile
               .Test_Overload_Caller_Build_Validate_And_Run'Access));
       Result.Add_Test
         (Hello_Caller.Create
-           ("build: validate and run program UsingDecl",
+           ("compile: validate and run program UsingDecl",
             Lovelace
               .Main
               .Integration_Tests
-              .Hello_Build
+              .Hello_Compile
               .Test_Using_Decl_Build_Validate_And_Run'Access));
       Result.Add_Test
         (Hello_Caller.Create
-           ("build: validate and run program Assignment",
+           ("compile: validate and run program Assignment",
             Lovelace
               .Main
               .Integration_Tests
-              .Hello_Build
+              .Hello_Compile
               .Test_Assignment_Build_Validate_And_Run'Access));
       Result.Add_Test
         (Hello_Caller.Create
-           ("build: validate and run program Caller",
+           ("compile: validate and run program Caller",
             Lovelace
               .Main
               .Integration_Tests
-              .Hello_Build
+              .Hello_Compile
               .Test_Resolve_Caller_Build_Validate_And_Run'Access));
       Result.Add_Test
         (Hello_Caller.Create
-           ("build: validate and run program Variables",
+           ("compile: validate and run program Variables",
             Lovelace
               .Main
               .Integration_Tests
-              .Hello_Build
+              .Hello_Compile
               .Test_Variables_Build_Validate_And_Run'Access));
       Result.Add_Test
         (Hello_Caller.Create
-           ("build: validate and run program emoji rocket",
+           ("compile: validate and run program emoji rocket",
             Lovelace
               .Main
               .Integration_Tests
-              .Hello_Build
+              .Hello_Compile
               .Test_Emoji_Program_Build_Validate_And_Run'Access));
       Result.Add_Test
         (Module_Caller.Create
-           ("build: validate modules Empty and Foo.Bar",
+           ("compile: validate modules Empty and Foo.Bar",
             Lovelace
               .Main
               .Integration_Tests
-              .Module_Build
+              .Module_Compile
               .Test_Build_And_Validate'Access));
       return Result;
    end Suite;

@@ -40,13 +40,13 @@ Prints one line to stdout. The short git hash is generated at `alr build` by [`s
 | Form | Output |
 | --- | --- |
 | `lovelace help` | General usage (stdout) |
-| `lovelace help build` | Build usage and options |
+| `lovelace help compile` | Build usage and options |
 | `lovelace help version` | Version usage |
 
-### `lovelace build`
+### `lovelace compile`
 
 ```text
-lovelace build <file.love> [options...]
+lovelace compile <file.love> [options...]
 ```
 
 A `.love` path is **required** for now. Future builds may accept `.pjlove` / `.slnlove` with no file operand; that is not implemented yet.
@@ -117,17 +117,17 @@ Skipped stages log an `[info]` line (for example `LIR up to date, skipping front
 #### Examples
 
 ```text
-lovelace build samples/program/Hello.love
-lovelace build samples/module/Empty.love
-lovelace build samples/module/Foo.Bar.love
-lovelace build samples/directives/FlavorSelect.love
-lovelace build samples/directives/FlavorSelect.love --flavor native
+lovelace compile samples/program/Hello.love
+lovelace compile samples/module/Empty.love
+lovelace compile samples/module/Foo.Bar.love
+lovelace compile samples/directives/FlavorSelect.love
+lovelace compile samples/directives/FlavorSelect.love --flavor native
 lovelace --no-logo build samples/program/Hello.love --force
-lovelace build samples/program/Hello.love --generate-tlir
-lovelace build samples/program/Hello.love --output-format wasm,wat --output-folder /tmp/out
-lovelace build samples/program/Hello.love --no-wit --output-format wat
-lovelace build samples/variables/Variables.love --warning-as-errors
-lovelace build samples/variables/Variables.love --no-warnings LV00028,LV00029,LV00032
+lovelace compile samples/program/Hello.love --generate-tlir
+lovelace compile samples/program/Hello.love --output-format wasm,wat --output-folder /tmp/out
+lovelace compile samples/program/Hello.love --no-wit --output-format wat
+lovelace compile samples/variables/Variables.love --warning-as-errors
+lovelace compile samples/variables/Variables.love --no-warnings LV00028,LV00029,LV00032
 ```
 
 Samples: [`samples/program/Hello.love`](../samples/program/Hello.love) (program), [`samples/module/Empty.love`](../samples/module/Empty.love) and [`samples/module/Foo.Bar.love`](../samples/module/Foo.Bar.love) (modules), [`samples/directives/FlavorSelect.love`](../samples/directives/FlavorSelect.love) (flavor `#if`). Policy: [samples.md](samples.md).

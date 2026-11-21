@@ -60,7 +60,7 @@ package body Lovelace.Compiler.Backend.Lowering is
    end Failure;
 
    function Kebab_Export_Name (Name : String) return String is
-      --  Enough room for one kebab char per source byte; collapse dashes after.
+      --  COMPONENT/WIT export: Module.Name -> module-name (kebab; dots to dashes).
       Buffer : String (1 .. Name'Length);
       Last   : Natural := 0;
    begin
@@ -75,7 +75,7 @@ package body Lovelace.Compiler.Backend.Lowering is
                Last := Last + 1;
                Buffer (Last) := Byte;
             elsif Last = 0 or else Buffer (Last) /= '-' then
-               --  Non-alnum Ã¢ÂÂ '-'; skip consecutive dashes.
+               --  '.' and other non-alnum become '-'; skip consecutive dashes.
                Last := Last + 1;
                Buffer (Last) := '-';
             end if;
@@ -265,7 +265,12 @@ package body Lovelace.Compiler.Backend.Lowering is
 
                   Model.Append_Function
                     (The_Model,
-                     (Name            => The_Signature.Name,
+                     (Name            =>
+                        Ada.Strings.Unbounded.To_Unbounded_String
+                          (if Component_Export then
+                              Kebab_Export_Name (Source_Name)
+                           else
+                              Source_Name),
                       Parameter_Types => Parameter_Types,
                       Local_Types     => Local_Types,
                       Result_Is_I32   => False,

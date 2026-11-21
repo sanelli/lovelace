@@ -2,7 +2,7 @@
 
 `Lovelace.Compiler.Ir_Generator` lowers a frontend AST module into a LIR module. It lives in crate `lovelace_compiler`, which depends on `lovelace_lir`. Frontend AST and types stay separate from LIR; only this package (and tests) reference `Lovelace.Lir.*`.
 
-The CLI (`lovelace build`) calls Tokenize → Parse → **Semantics** → `Generate` → `Lir.Binary.Write`, then the backends; see [cli.md](cli.md). Semantics (environment, definite assignment, typecheck, call-target / overload resolve, unused warnings) runs **before** IR and owns `LV00014` / `LV00017` / `LV00018` / `LV00026`–`LV00029` / `LV00031`–`LV00033` — rules: [semantics.md](semantics.md). IR assumes a resolved, well-typed AST and only lowers.
+The CLI (`lovelace compile`) calls Tokenize → Parse → **Semantics** → `Generate` → `Lir.Binary.Write`, then the backends; see [cli.md](cli.md). Semantics (environment, definite assignment, typecheck, call-target / overload resolve, unused warnings) runs **before** IR and owns `LV00014` / `LV00017` / `LV00018` / `LV00026`–`LV00029` / `LV00031`–`LV00033` — rules: [semantics.md](semantics.md). IR assumes a resolved, well-typed AST and only lowers.
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). AST input comes from [parser.md](parser.md). LIR shapes and codecs: [lir.md](lir.md). Source locations: [source-locations.md](source-locations.md).
 
@@ -62,7 +62,7 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | Module flags | flags `0` |
 | All usings in the unit (unit-leading + nested; unique module names) | `Append_Dependency` for each used module name |
 | Each subroutine | `Subroutines.Create` + body instructions + `Append_Subroutine` |
-| Subroutine name | `Signature.Name` (unqualified) |
+| Subroutine name | `Signature.Name` as `Module.Proc` (always qualified) |
 | Subroutine name span, declaration span, filename | `Subroutines.Set_Origin` (`Subroutine_Origin`); same absolutized `Source_Path` preference as the module origin |
 | Return type `Unit` | `Lir.Types.Unit` |
 | Parameters (name + type) | named LIR parameters (same order) |
@@ -76,7 +76,7 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | Identifier expression | `Local_Get` (same 1-based index map) |
 | Integer / boolean literal expression | `Constant_I32` |
 | Same-unit / cross-module `MODULE.SUBROUTINE(…)` | Push args then `Call` (1-based subroutine index); select overload by name + argument types (assignability); **semantics already resolved** |
-| Procedure LIR name | Source name on the root unit (`Proc`); dependency procedures `Module.Proc`. Overloads **share** the name; distinction is the index (see LIR/TLIR `(index)` / binary preamble) |
+| Procedure LIR name | Always `Module.Proc` (root and dependencies). Overloads **share** the name; distinction is the index (see LIR/TLIR `(index)` / binary preamble). Non-root units also set `from-dependency` |
 
 ### Intrinsics (this slice)
 

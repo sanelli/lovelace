@@ -2,7 +2,7 @@ with Ada.Command_Line;
 with Ada.Strings.Unbounded;
 
 with Lovelace.Main.Arguments;
-with Lovelace.Main.Build;
+with Lovelace.Main.Compile;
 with Lovelace.Main.Help;
 with Lovelace.Main.Terminal;
 with Lovelace.Main.Version;
@@ -61,8 +61,8 @@ package body Lovelace.Main is
                   Version.Run;
                   Success := True;
 
-               when Arguments.Build   =>
-                  Success := Build.Run (Parsed.Command_Arguments);
+               when Arguments.Compile   =>
+                  Success := Compile.Run (Parsed.Command_Arguments);
             end case;
 
             if Success then

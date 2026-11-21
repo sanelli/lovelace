@@ -78,6 +78,20 @@ package Lovelace.Lir.Subroutines is
       end case;
    end record;
 
+   --  Optional dependency-module tag when this subroutine was flattened from
+   --  another compilation unit (not the root).
+   --  @disc Present True when Module_Name is stored; False when absent.
+   --  @field Module_Name UTF-8 dependency module name (matches a `(depend …)`).
+   type From_Dependency_Option (Present : Boolean := False) is record
+      case Present is
+         when True =>
+            Module_Name : Ada.Strings.Unbounded.Unbounded_String;
+
+         when False =>
+            null;
+      end case;
+   end record;
+
    --  One subroutine with signature, flags, and body.
    type Subroutine is private;
 
@@ -87,10 +101,15 @@ package Lovelace.Lir.Subroutines is
    --  @return Subroutine with no instructions and absent origin.
    function Create (The_Signature : Signature; Flags : Subroutine_Flags := 0) return Subroutine;
 
-   --  Attach The_Origin to The_Subroutine (replaces any previous origin).
+   --  Mark The_Subroutine as coming from Dependency_Module (flattened non-root unit).
    --  @param The_Subroutine Subroutine to update.
-   --  @param The_Origin Source location metadata.
-   procedure Set_Origin (The_Subroutine : in out Subroutine; The_Origin : Subroutine_Origin);
+   --  @param Dependency_Module UTF-8 module name of the dependency unit.
+   procedure Set_From_Dependency
+     (The_Subroutine : in out Subroutine; Dependency_Module : String);
+
+   --  Mark The_Subroutine as `@intrinsic` (sets Intrinsic_Flag; clears Native_Flag and binding).
+   --  @param The_Subroutine Subroutine to update.
+   procedure Set_Intrinsic (The_Subroutine : in out Subroutine);
 
    --  Store a native FFI binding and set Native_Flag (replaces any previous binding; clears Intrinsic_Flag).
    --  @param The_Subroutine Subroutine to update.
@@ -99,9 +118,10 @@ package Lovelace.Lir.Subroutines is
    procedure Set_Native_Binding
      (The_Subroutine : in out Subroutine; Library : String; Function_Name : String);
 
-   --  Mark The_Subroutine as `@intrinsic` (sets Intrinsic_Flag; clears Native_Flag and binding).
+   --  Attach The_Origin to The_Subroutine (replaces any previous origin).
    --  @param The_Subroutine Subroutine to update.
-   procedure Set_Intrinsic (The_Subroutine : in out Subroutine);
+   --  @param The_Origin Source location metadata.
+   procedure Set_Origin (The_Subroutine : in out Subroutine; The_Origin : Subroutine_Origin);
 
    --  Append Item to the instruction body of The_Subroutine.
    --  @param The_Subroutine Subroutine to extend.
@@ -140,6 +160,12 @@ package Lovelace.Lir.Subroutines is
    --  @return Present origin, or absent when Create left it unset / codecs decode.
    function Origin (The_Subroutine : Subroutine) return Origin_Option;
 
+   --  Optional from-dependency tag of The_Subroutine.
+   --  @param The_Subroutine Subroutine to query.
+   --  @return Present dependency module name, or absent for root-unit subroutines.
+   function From_Dependency
+     (The_Subroutine : Subroutine) return From_Dependency_Option;
+
    --  Optional native binding of The_Subroutine.
    --  @param The_Subroutine Subroutine to query.
    --  @return Present binding, or absent when not native / Create left it unset.
@@ -168,12 +194,13 @@ package Lovelace.Lir.Subroutines is
 private
 
    type Subroutine is record
-      The_Signature    : Signature;
-      Locals           : Types.Parameter_Sequence := Types.Empty_Sequence;
-      Flags            : Subroutine_Flags := 0;
-      Origin_Value     : Origin_Option := (Present => False);
-      Native_Value     : Native_Binding_Option := (Present => False);
-      Instruction_Body : Instructions.Instruction_Sequence;
+      The_Signature         : Signature;
+      Locals                : Types.Parameter_Sequence := Types.Empty_Sequence;
+      Flags                 : Subroutine_Flags := 0;
+      Origin_Value          : Origin_Option := (Present => False);
+      From_Dependency_Value : From_Dependency_Option := (Present => False);
+      Native_Value          : Native_Binding_Option := (Present => False);
+      Instruction_Body      : Instructions.Instruction_Sequence;
    end record;
 
 end Lovelace.Lir.Subroutines;

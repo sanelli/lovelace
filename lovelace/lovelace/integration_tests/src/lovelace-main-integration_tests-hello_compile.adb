@@ -4,7 +4,7 @@ with AUnit.Assertions;
 
 with Lovelace.Main.Integration_Tests.Support;
 
-package body Lovelace.Main.Integration_Tests.Hello_Build is
+package body Lovelace.Main.Integration_Tests.Hello_Compile is
 
    package Helpers renames Lovelace.Main.Integration_Tests.Support;
 
@@ -15,7 +15,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
    is
       pragma Unreferenced (The_Test);
       Test_Name       : constant String :=
-        "build: validate and run program Assignment";
+        "compile: validate and run program Assignment";
       Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
       Sample_Path     : constant String :=
         Helpers.Locate_Sample ("assignment", "Assignment.love");
@@ -33,7 +33,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
         (Lovelace_Path'Length > 0, "lovelace executable present");
 
       Helpers.Reset_Output_Root (Output_Root);
-      Helpers.Build_Sample
+      Helpers.Compile_Sample
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Sample_Path,
          Output_Root   => Output_Root,
@@ -71,7 +71,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
    procedure Test_Build_Validate_And_Run (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Test_Name       : constant String :=
-        "build: validate and run program Hello";
+        "compile: validate and run program Hello";
       Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
       Sample_Path     : constant String :=
         Helpers.Locate_Sample ("program", "Hello.love");
@@ -84,7 +84,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
         (Lovelace_Path'Length > 0, "lovelace executable present");
 
       Helpers.Reset_Output_Root (Output_Root);
-      Helpers.Build_Sample
+      Helpers.Compile_Sample
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Sample_Path,
          Output_Root   => Output_Root,
@@ -131,7 +131,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
          3 => Character'Val (16#9A#),
          4 => Character'Val (16#80#)];
       Test_Name       : constant String :=
-        "build: validate and run program emoji rocket";
+        "compile: validate and run program emoji rocket";
       Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
       Sample_Path     : constant String :=
         Helpers.Locate_Sample ("emoji", Rocket & ".love");
@@ -145,7 +145,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
         (Lovelace_Path'Length > 0, "lovelace executable present");
 
       Helpers.Reset_Output_Root (Output_Root);
-      Helpers.Build_Sample
+      Helpers.Compile_Sample
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Sample_Path,
          Output_Root   => Output_Root,
@@ -188,7 +188,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
    is
       pragma Unreferenced (The_Test);
       Test_Name       : constant String :=
-        "build: validate and run program HelloPrint";
+        "compile: validate and run program HelloPrint";
       Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
       Sample_Path     : constant String :=
         Helpers.Locate_Sample ("io", "HelloPrint.love");
@@ -206,7 +206,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
         (Lovelace_Path'Length > 0, "lovelace executable present");
 
       Helpers.Reset_Output_Root (Output_Root);
-      Helpers.Build_Sample
+      Helpers.Compile_Sample
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Sample_Path,
          Output_Root   => Output_Root,
@@ -251,7 +251,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
    is
       pragma Unreferenced (The_Test);
       Test_Name       : constant String :=
-        "build: validate and run program NestedUsing";
+        "compile: validate and run program NestedUsing";
       Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
       Sample_Path     : constant String :=
         Helpers.Locate_Sample ("nested-using", "NestedUsing.love");
@@ -269,7 +269,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
         (Lovelace_Path'Length > 0, "lovelace executable present");
 
       Helpers.Reset_Output_Root (Output_Root);
-      Helpers.Build_Sample
+      Helpers.Compile_Sample
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Sample_Path,
          Output_Root   => Output_Root,
@@ -309,7 +309,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
    is
       pragma Unreferenced (The_Test);
       Test_Name       : constant String :=
-        "build: validate and run program OverloadCaller";
+        "compile: validate and run program OverloadCaller";
       Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
       Sample_Path     : constant String :=
         Helpers.Locate_Sample ("overload", "OverloadCaller.love");
@@ -323,7 +323,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
         (Lovelace_Path'Length > 0, "lovelace executable present");
 
       Helpers.Reset_Output_Root (Output_Root);
-      Helpers.Build_Sample
+      Helpers.Compile_Sample
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Sample_Path,
          Output_Root   => Output_Root,
@@ -372,7 +372,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
    is
       pragma Unreferenced (The_Test);
       Test_Name       : constant String :=
-        "build: validate and run program Caller";
+        "compile: validate and run program Caller";
       Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
       --  Building samples/resolve/Caller.love: search root = file dir finds Lib
       --  and pkg/Util without -I. Once CLI has --include-path/-I, builds from
@@ -389,7 +389,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
         (Lovelace_Path'Length > 0, "lovelace executable present");
 
       Helpers.Reset_Output_Root (Output_Root);
-      Helpers.Build_Sample
+      Helpers.Compile_Sample
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Sample_Path,
          Output_Root   => Output_Root,
@@ -427,7 +427,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
    is
       pragma Unreferenced (The_Test);
       Test_Name       : constant String :=
-        "build: validate and run program UsingDecl";
+        "compile: validate and run program UsingDecl";
       Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
       Sample_Path     : constant String :=
         Helpers.Locate_Sample ("using", "UsingDecl.love");
@@ -441,7 +441,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
         (Lovelace_Path'Length > 0, "lovelace executable present");
 
       Helpers.Reset_Output_Root (Output_Root);
-      Helpers.Build_Sample
+      Helpers.Compile_Sample
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Sample_Path,
          Output_Root   => Output_Root,
@@ -477,7 +477,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
    procedure Test_Variables_Build_Validate_And_Run (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Test_Name       : constant String :=
-        "build: validate and run program Variables";
+        "compile: validate and run program Variables";
       Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
       Sample_Path     : constant String :=
         Helpers.Locate_Sample ("variables", "Variables.love");
@@ -491,7 +491,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
         (Lovelace_Path'Length > 0, "lovelace executable present");
 
       Helpers.Reset_Output_Root (Output_Root);
-      Helpers.Build_Sample
+      Helpers.Compile_Sample
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Sample_Path,
          Output_Root   => Output_Root,
@@ -529,4 +529,4 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
          Ada.Exceptions.Reraise_Occurrence (Error);
    end Test_Variables_Build_Validate_And_Run;
 
-end Lovelace.Main.Integration_Tests.Hello_Build;
+end Lovelace.Main.Integration_Tests.Hello_Compile;

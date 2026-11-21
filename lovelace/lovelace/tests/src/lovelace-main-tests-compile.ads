@@ -1,8 +1,8 @@
 with AUnit.Test_Fixtures;
 
---  Tests for Lovelace.Main.Build option helpers.
+--  Tests for Lovelace.Main.Compile option helpers.
 
-package Lovelace.Main.Tests.Build is
+package Lovelace.Main.Tests.Compile is
 
    --  Fixture for build option helper tests.
    type Fixture is new AUnit.Test_Fixtures.Test_Fixture with null record;
@@ -24,4 +24,4 @@ package Lovelace.Main.Tests.Build is
    --  @param The_Test Unused fixture.
    procedure Test_Warning_Policy_Cli (The_Test : in out Fixture);
 
-end Lovelace.Main.Tests.Build;
+end Lovelace.Main.Tests.Compile;

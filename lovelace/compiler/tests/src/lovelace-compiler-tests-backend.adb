@@ -543,7 +543,7 @@ package body Lovelace.Compiler.Tests.Backend is
 
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text),
-         "(func $Helper",
+         "(func $helper",
          "noop body wat func");
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text),

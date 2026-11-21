@@ -50,7 +50,7 @@ flavor_condition      = "flavor" , "=" , string_literal ;
 
 Defaults: omitted signedness → signed; omitted integer size → 32; omitted float size → 32.
 
-`string_literal` content for a flavor condition must be exactly `wasi`, `native`, or `web` ([`LV00012`](diagnostics.md) otherwise). Active flavor comes from `lovelace build --flavor` (default `wasi`). Inactive arms are parsed for syntax but omitted from the AST.
+`string_literal` content for a flavor condition must be exactly `wasi`, `native`, or `web` ([`LV00012`](diagnostics.md) otherwise). Active flavor comes from `lovelace compile --flavor` (default `wasi`). Inactive arms are parsed for syntax but omitted from the AST.
 
 | Terminal | Token |
 | --- | --- |

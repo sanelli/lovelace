@@ -26,7 +26,7 @@ Missing either tool fails the suite immediately (integration tests are not meani
 
 For every sample under test:
 
-1. `lovelace build … --output-format wasm,wat --force`
+1. `lovelace compile … --output-format wasm,wat --force`
 2. Assert `obj/<Unit>.lir` and `bin/<Unit>.wasm` / `.wat` / `.wit` exist
 
 Discard child **stdout** when spawning `lovelace` / `wasm-tools` / `wasmtime` so `[info]` lines do not flood the suite. Keep **stderr** so `[err]` / `LV#####` diagnostics still appear.

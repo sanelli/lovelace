@@ -177,18 +177,21 @@ package body Lovelace.Lir.Tests.Binary_Format is
             Typed_Bytes : constant Ada.Streams.Stream_Element_Array :=
               Support.Must_Encode (Typed, "typed");
          begin
-            --  Return type is 18 bytes before end:
-            --  param_count + local_count + flags + origin + native + instr_count.
+            --  Return type is 19 bytes before end:
+            --  param_count + local_count + flags + origin + from-dep + native
+            --  + instr_count.
             Support.Assert_Decode_Error
               (Support.Replace_Byte
-                 (Typed_Bytes, Typed_Bytes'Last - 18, 16#FF#),
+                 (Typed_Bytes, Typed_Bytes'Last - 19, 16#FF#),
                Errors.Unknown_Type,
                "unknown type");
          end;
       end;
 
+      --  After magic(4)+version(4)+package-version("0.0.1"=9) lies name length;
+      --  first name byte is at +21 for module "m".
       Support.Assert_Decode_Error
-        (Support.Replace_Byte (Base, Base'First + 12, 16#FF#),
+        (Support.Replace_Byte (Base, Base'First + 21, 16#FF#),
          Errors.Invalid_Utf_8,
          "invalid utf-8 name");
    end Test_Decode_Failures;

@@ -56,14 +56,14 @@ package Lovelace.Main.Integration_Tests.Support is
    --  @return Repository root directory.
    function Locate_Repository_Root return String;
 
-   --  Run lovelace build --force for Sample_Path into Output_Root.
+   --  Run lovelace compile --force for Sample_Path into Output_Root.
    --  Stdout ([info]) is discarded; stderr ([err]) still prints.
    --  @param Lovelace_Path Path to the lovelace executable.
    --  @param Sample_Path Path to the .love source.
-   --  @param Output_Root Build output folder.
+   --  @param Output_Root Compile output folder.
    --  @param Message Assertion prefix on failure.
    --  @param Include_Path Optional -I search root (empty = omit).
-   procedure Build_Sample
+   procedure Compile_Sample
      (Lovelace_Path : String;
       Sample_Path   : String;
       Output_Root   : String;
@@ -71,14 +71,14 @@ package Lovelace.Main.Integration_Tests.Support is
       Include_Path  : String := "");
 
    --  Assert obj/Unit_Name.lir and bin Unit_Name .wasm/.wat/.wit exist.
-   --  @param Output_Root Build output folder.
+   --  @param Output_Root Compile output folder.
    --  @param Unit_Name Unit stem (matches .love basename).
    --  @param Message Assertion prefix.
    procedure Assert_Build_Artifacts
      (Output_Root : String; Unit_Name : String; Message : String);
 
    --  Assert obj/Unit_Name.lir contains Fragment (raw bytes as String).
-   --  @param Output_Root Build output folder.
+   --  @param Output_Root Compile output folder.
    --  @param Unit_Name Unit stem.
    --  @param Fragment Required UTF-8 substring.
    --  @param Message Assertion prefix.
@@ -89,7 +89,7 @@ package Lovelace.Main.Integration_Tests.Support is
       Message     : String);
 
    --  Assert bin/Unit_Name.wat contains Fragment.
-   --  @param Output_Root Build output folder.
+   --  @param Output_Root Compile output folder.
    --  @param Unit_Name Unit stem.
    --  @param Fragment Required UTF-8 substring.
    --  @param Message Assertion prefix.
@@ -107,7 +107,7 @@ package Lovelace.Main.Integration_Tests.Support is
      (Path : String; Message : String; Status : out Tool_Status);
 
    --  Validate bin/Unit_Name.wasm and .wat when wasm-tools is available.
-   --  @param Output_Root Build output folder.
+   --  @param Output_Root Compile output folder.
    --  @param Unit_Name Unit stem.
    --  @param Message Assertion prefix.
    --  @param Status Missing if wasm-tools absent; Succeeded if both files validate.
@@ -130,7 +130,7 @@ package Lovelace.Main.Integration_Tests.Support is
       Expected_Stdout : String := "");
 
    --  Run bin/Unit_Name.wasm and .wat when wasmtime is available (program/entrypoint only).
-   --  @param Output_Root Build output folder.
+   --  @param Output_Root Compile output folder.
    --  @param Unit_Name Unit stem.
    --  @param Message Assertion prefix.
    --  @param Status Missing if wasmtime absent; Succeeded if both runs exit 0 (and stdout matches).

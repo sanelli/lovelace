@@ -51,7 +51,7 @@ At least:
 
 - `lovelace new` — create project and/or solution
 - `lovelace sln add` / `remove` — attach projects to a solution
-- `lovelace build`
+- `lovelace compile`
 - `lovelace run` — compile if needed, then JIT via `jit/`
 - `lovelace doc` — generate Markdown documentation (SVG diagrams when useful) for a project, solution, or package; implemented via **Alexandria**
 - `lovelace format` — reformat `.love` files to the effective style; implemented via **`format/`**

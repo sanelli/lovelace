@@ -7,12 +7,12 @@ with GNAT.OS_Lib;
 
 with Lovelace.Compiler.Diagnostics;
 with Lovelace.Compiler.Error_Codes;
-with Lovelace.Main.Build;
+with Lovelace.Main.Compile;
 with Lovelace.Main.Tests.Support;
 
-package body Lovelace.Main.Tests.Build is
+package body Lovelace.Main.Tests.Compile is
 
-   package Cli_Build renames Lovelace.Main.Build;
+   package Cli_Build renames Lovelace.Main.Compile;
    package Diagnostics renames Lovelace.Compiler.Diagnostics;
    package Error_Codes renames Lovelace.Compiler.Error_Codes;
 
@@ -28,7 +28,7 @@ package body Lovelace.Main.Tests.Build is
       Capture_Path  : String;
       Extra_1       : String := "";
       Extra_2       : String := "") return Integer;
-   --  Spawn lovelace build with stderr merged into Capture_Path; return exit code.
+   --  Spawn lovelace compile with stderr merged into Capture_Path; return exit code.
 
    procedure Write_Unread_Local_Source (Path : String);
    --  Tiny program with one unread local (triggers LV00028).
@@ -63,7 +63,7 @@ package body Lovelace.Main.Tests.Build is
            new GNAT.OS_Lib.Argument_List'
              (1 => new String'("--no-logo"),
               2 => new String'("--no-colour"),
-              3 => new String'("build"),
+              3 => new String'("compile"),
               4 => new String'(Source_Path),
               5 => new String'("--force"),
               6 => new String'("--output-folder"),
@@ -73,7 +73,7 @@ package body Lovelace.Main.Tests.Build is
            new GNAT.OS_Lib.Argument_List'
              (1 => new String'("--no-logo"),
               2 => new String'("--no-colour"),
-              3 => new String'("build"),
+              3 => new String'("compile"),
               4 => new String'(Source_Path),
               5 => new String'("--force"),
               6 => new String'("--output-folder"),
@@ -84,7 +84,7 @@ package body Lovelace.Main.Tests.Build is
            new GNAT.OS_Lib.Argument_List'
              (1 => new String'("--no-logo"),
               2 => new String'("--no-colour"),
-              3 => new String'("build"),
+              3 => new String'("compile"),
               4 => new String'(Source_Path),
               5 => new String'("--force"),
               6 => new String'("--output-folder"),
@@ -101,7 +101,7 @@ package body Lovelace.Main.Tests.Build is
          Return_Code  => Return_Code,
          Err_To_Out   => True);
       GNAT.OS_Lib.Free (Args);
-      AUnit.Assertions.Assert (Success, "spawn build");
+      AUnit.Assertions.Assert (Success, "spawn compile");
       return Return_Code;
    end Spawn_Build;
 
@@ -229,7 +229,7 @@ package body Lovelace.Main.Tests.Build is
       AUnit.Assertions.Assert (Code_Default = 0, "warnings alone exit 0");
       AUnit.Assertions.Assert
         (Ada.Strings.Fixed.Index (Read_File (Cap_Default), "LV00028") > 0,
-         "default build surfaces LV00028");
+         "default compile surfaces LV00028");
 
       Code_As_Err :=
         Spawn_Build
@@ -270,4 +270,4 @@ package body Lovelace.Main.Tests.Build is
       Ada.Text_IO.Close (File);
    end Write_Unread_Local_Source;
 
-end Lovelace.Main.Tests.Build;
+end Lovelace.Main.Tests.Compile;

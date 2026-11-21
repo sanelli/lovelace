@@ -34,7 +34,7 @@ The toolchain is one Ada **executable** (`lovelace`) plus **static** libraries i
 | **`lovelace/lir/`** | Static library: Lovelace IR types, validation, and versioned `.lir` / `.tlir` codecs |
 | **`lovelace/common/`** | Static library: shared host code (UTF-8, regex, source locations, …) |
 | **`lovelace/shared/`** | Shared GPR switches and test helpers |
-| **`lovelace/lovelace/`** | Executable CLI (`lovelace build`, `run`, `doc`, project and solution commands) |
+| **`lovelace/lovelace/`** | Executable CLI (`lovelace compile`, `run`, `doc`, project and solution commands) |
 | **`jit/`** | Static library: JIT runtime; binds and links the Wasmtime C library (planned) |
 | **`tooling/`** | Static library: `.pjlove`, `.slnlove`, and `.pkglove` formats and behaviour (planned) |
 | **`hypatia/`** | Static library: Hypatia package manager (planned) |

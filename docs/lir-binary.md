@@ -16,6 +16,8 @@ File offsets in the subroutine preamble are **0-based** from the first magic byt
 
 Wrong magic → `Invalid_Magic`. Any version other than major `1` / minor `0` → `Unsupported_Version`.
 
+After the version words: **package-version** — encoded string (default `"0.0.1"`).
+
 ## Encoded string
 
 Every name uses the same encoding:
@@ -106,11 +108,14 @@ Then follow exactly `subroutine_count` subroutine records in preamble order (no 
 8. **Subroutine origin:**
    - `origin_present` — `u8` (`0` / `1`; other → `Invalid_Presence`)
    - when present: filename (encoded string; empty = absent), then `name_span`, then `span` (whole procedure declaration)
-9. **Native binding** (only when `Native_Flag`; absent for `@intrinsic`):
+9. **From-dependency:**
+   - `from_dependency_present` — `u8` (`0` / `1`; other → `Invalid_Presence`)
+   - when present: dependency module name (encoded string)
+10. **Native binding** (only when `Native_Flag`; absent for `@intrinsic`):
    - `native_present` — `u8` (`0` / `1`; other → `Invalid_Presence`)
    - when present: library (encoded string), then function name (encoded string)
-10. `instruction_count` — `u32` (number of instructions, not bytes)
-11. Instruction stream — concatenation of encoded instructions (no per-instruction length prefix)
+11. `instruction_count` — `u32` (number of instructions, not bytes)
+12. Instruction stream — concatenation of encoded instructions (no per-instruction length prefix)
 
 ### Instruction stream
 

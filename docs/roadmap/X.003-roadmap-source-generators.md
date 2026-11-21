@@ -9,7 +9,7 @@ Prerequisite: stable build/CLI story; package distribution may interact with [Y.
 - Extension point for user source generators (invocation, inputs/outputs, diagnostics — TBC)
 - Sandboxing / trust / versioning policy for generators (TBC)
 - Samples of a minimal generator and docs for authors
-- Integration with `lovelace build` (and later the package manager)
+- Integration with `lovelace compile` (and later the package manager)
 
 ## Out of scope
 

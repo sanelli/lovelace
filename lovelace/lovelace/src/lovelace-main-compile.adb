@@ -24,7 +24,7 @@ with Lovelace.Lir.Modules;
 with Lovelace.Lir.Text;
 with Lovelace.Main.Terminal;
 
-package body Lovelace.Main.Build is
+package body Lovelace.Main.Compile is
 
    use type Ada.Calendar.Time;
    use type GNAT.OS_Lib.File_Descriptor;
@@ -48,7 +48,7 @@ package body Lovelace.Main.Build is
    package Lir_Text renames Lovelace.Lir.Text;
    package Modules renames Lovelace.Lir.Modules;
 
-   type Build_Options is record
+   type Compile_Options is record
       Source_Path   : Ada.Strings.Unbounded.Unbounded_String;
       Output_Root   : Ada.Strings.Unbounded.Unbounded_String :=
         Ada.Strings.Unbounded.To_Unbounded_String (".output");
@@ -67,7 +67,7 @@ package body Lovelace.Main.Build is
    function Is_Stale (Output_Path, Input_Path : String) return Boolean;
    function Parse_Options
      (Command_Arguments : Arguments.String_Vectors.Vector;
-      Options           : out Build_Options) return Boolean;
+      Options           : out Compile_Options) return Boolean;
    function Read_Entire_File
      (Path : String; Contents : out Ada.Strings.Unbounded.Unbounded_String)
       return Boolean;
@@ -113,7 +113,7 @@ package body Lovelace.Main.Build is
 
    function Parse_Options
      (Command_Arguments : Arguments.String_Vectors.Vector;
-      Options           : out Build_Options) return Boolean
+      Options           : out Compile_Options) return Boolean
    is
       Index          : Positive := 1;
       Have_Source    : Boolean := False;
@@ -233,7 +233,7 @@ package body Lovelace.Main.Build is
             elsif Token'Length >= 2
               and then Token (Token'First .. Token'First + 1) = "--"
             then
-               Report_Cli_Error ("unknown build option '" & Token & "'");
+               Report_Cli_Error ("unknown compile option '" & Token & "'");
                return False;
             else
                if Have_Source then
@@ -251,7 +251,7 @@ package body Lovelace.Main.Build is
 
       if not Have_Source then
          Report_Cli_Error
-           ("missing .love source file (future builds may use .pjlove/.slnlove)");
+           ("missing .love source file (future compiles may use .pjlove/.slnlove)");
          return False;
       end if;
       return True;
@@ -314,7 +314,7 @@ package body Lovelace.Main.Build is
 
    procedure Report_Cli_Error (Description : String) is
       Text : constant String :=
-        "[err] build"
+        "[err] compile"
         & ASCII.LF
         & ASCII.LF
         & ASCII.LF
@@ -327,7 +327,7 @@ package body Lovelace.Main.Build is
    procedure Report_Invalid_Warning_Suppression (Detail : String) is
    begin
       Report_Located
-        (Filename    => "build",
+        (Filename    => "compile",
          Span        =>
            (First => (Byte_Index => 1, Line => 1, Column => 1),
             Last  => (Byte_Index => 1, Line => 1, Column => 1)),
@@ -352,7 +352,7 @@ package body Lovelace.Main.Build is
    function Run
      (Command_Arguments : Arguments.String_Vectors.Vector) return Boolean
    is
-      Options       : Build_Options;
+      Options       : Compile_Options;
       Source_Path   : Ada.Strings.Unbounded.Unbounded_String;
       Output_Root   : Ada.Strings.Unbounded.Unbounded_String;
       Obj_Dir       : Ada.Strings.Unbounded.Unbounded_String;
@@ -811,7 +811,7 @@ package body Lovelace.Main.Build is
 
       if not Need_Wasm and then not Need_Wat and then not Need_Wit then
          Terminal.Put_Info ("Artifacts up to date, skipping backend");
-         Terminal.Put_Info ("Build succeeded");
+         Terminal.Put_Info ("Compile succeeded");
          return True;
       end if;
 
@@ -939,7 +939,7 @@ package body Lovelace.Main.Build is
          end if;
       end if;
 
-      Terminal.Put_Info ("Build succeeded");
+      Terminal.Put_Info ("Compile succeeded");
       return True;
    end Run;
 
@@ -1180,4 +1180,4 @@ package body Lovelace.Main.Build is
       return True;
    end Write_Text;
 
-end Lovelace.Main.Build;
+end Lovelace.Main.Compile;

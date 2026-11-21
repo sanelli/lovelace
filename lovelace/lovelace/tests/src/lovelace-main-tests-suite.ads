@@ -4,7 +4,7 @@ with AUnit.Test_Suites;
 
 package Lovelace.Main.Tests.Suite is
 
-   --  Build the CLI unit-test suite.
+   --  Compile the CLI unit-test suite.
    --  @return Heap-allocated suite with all fixtures registered.
    function Suite return AUnit.Test_Suites.Access_Test_Suite;
 
