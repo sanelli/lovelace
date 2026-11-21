@@ -18,21 +18,23 @@ For **every** new user-facing feature, add at least one `.love` file under `samp
 | Path | Feature |
 | --- | --- |
 | [`samples/program/Hello.love`](../samples/program/Hello.love) | Minimal empty-body program for `lovelace build` and wasmtime integration |
-| [`samples/import/ImportDecl.love`](../samples/import/ImportDecl.love) | File-leading `import ImportLib;` before an empty-body program (resolves same-folder module) |
-| [`samples/import/ImportLib.love`](../samples/import/ImportLib.love) | Empty module dependency for `ImportDecl` |
+| [`samples/using/UsingDecl.love`](../samples/using/UsingDecl.love) | File-leading `using UsingLib;` before an empty-body program (resolves same-folder module) |
+| [`samples/using/UsingLib.love`](../samples/using/UsingLib.love) | Empty module dependency for `UsingDecl` |
+| [`samples/nested-using/NestedUsing.love`](../samples/nested-using/NestedUsing.love) | Block-scoped `using` + declare + assign + print (needs Augusta) |
+| [`samples/assignment/Assignment.love`](../samples/assignment/Assignment.love) | Declare, `:=`, read, print via Augusta |
 | [`samples/module/Empty.love`](../samples/module/Empty.love) | Minimal empty module (`module Empty; end.`) |
 | [`samples/module/Foo.Bar.love`](../samples/module/Foo.Bar.love) | Dotted module name (`module Foo.Bar; end.`) |
 | [`samples/module/Procedures.love`](../samples/module/Procedures.love) | Module procedures with Ada-style typed parameters |
 | [`samples/module/ExportProcedures.love`](../samples/module/ExportProcedures.love) | `export procedure` (Lovelace visibility) plus a non-exported helper |
-| [`samples/io/HelloPrint.love`](../samples/io/HelloPrint.love) | `import augusta.std.io;` then `augusta.std.io.print(42);` (needs `AUGUSTA_HOME=augusta/lovelace` or `-I augusta/lovelace`; wasi `print` is `@intrinsic`) |
+| [`samples/io/HelloPrint.love`](../samples/io/HelloPrint.love) | `using augusta.std.io;` then `augusta.std.io.print(42);` (needs `AUGUSTA_HOME=augusta/lovelace` or `-I augusta/lovelace`; wasi `print` is `@intrinsic`) |
 | [`samples/comments/Comments.love`](../samples/comments/Comments.love) | `{ … }` block comments (non-nesting; ignored like whitespace) |
 | [`samples/literals/Literals.love`](../samples/literals/Literals.love) | Integer literals with `0x` / `0b` / `0o` prefixes in call args |
 | [`samples/boolean/Boolean.love`](../samples/boolean/Boolean.love) | `boolean` params and `true`/`false` call args |
-| [`samples/variables/Variables.love`](../samples/variables/Variables.love) | Nested `declare` / block statements (outer locals + nested + bare nested `begin`…`end;`) |
+| [`samples/variables/Variables.love`](../samples/variables/Variables.love) | Nested `declare` / block statements (outer locals + nested + bare nested `begin`…`end;`; unused locals may warn) |
 | [`samples/emoji/🚀.love`](../samples/emoji/🚀.love) | Emoji program name + emoji local (`declare`) |
 | [`samples/emoji-module/🚀.love`](../samples/emoji-module/🚀.love) | Emoji module name, emoji procedure, emoji local |
 | [`samples/directives/FlavorSelect.love`](../samples/directives/FlavorSelect.love) | Flavor `#if` / `#elsif` / `#else` / `#end` (default `--flavor wasi` keeps `WasiOnly`) |
 | [`samples/calls/SameModuleCall.love`](../samples/calls/SameModuleCall.love) | Same-unit qualified call with integer literal (`SameModuleCall.Sink(42)`) |
-| [`samples/resolve/Caller.love`](../samples/resolve/Caller.love) | Multi-unit program: `import Lib` / `import pkg.Util` and cross-module calls |
+| [`samples/resolve/Caller.love`](../samples/resolve/Caller.love) | Multi-unit program: `using Lib` / `using pkg.Util` and cross-module calls |
 | [`samples/resolve/Lib.love`](../samples/resolve/Lib.love) | Exported `Sink` module for resolve (`Lib.love`) |
 | [`samples/resolve/pkg/Util.love`](../samples/resolve/pkg/Util.love) | Mixed path for dotted module `pkg.Util` (`pkg/Util.love`) |

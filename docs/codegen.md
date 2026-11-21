@@ -69,7 +69,7 @@ Emission then attaches the WASI 0.3 import graph (`wasi:cli/types@0.3.0` + `wasi
 
 ## Exports
 
-`Export_Flag` on LIR means **Lovelace visibility** (for future `import` / cross-module calls). **WIT/component export** is emitted only when that subroutine also has **zero parameters**: it is canon-lifted under a **kebab-case** form of its LIR name (ASCII letters/digits lowercased; other bytes become `-`). Parameterized `Export_Flag` procedures lower to core functypes only (no `Core_Exported`, no WIT line) so Augusta-style `print(integer)` can exist without Canonical ABI export yet.
+`Export_Flag` on LIR means **Lovelace visibility** (for `using` / cross-module calls). **WIT/component export** is emitted only when that subroutine also has **zero parameters**: it is canon-lifted under a **kebab-case** form of its LIR name (ASCII letters/digits lowercased; other bytes become `-`). Parameterized `Export_Flag` procedures lower to core functypes only (no `Core_Exported`, no WIT line) so Augusta-style `print(integer)` can exist without Canonical ABI export yet.
 
 A nullary subroutine may be both entrypoint and export: then both `wasi:cli/run@0.3.0` and the named export appear. Core module export names keep the original LIR spelling.
 
@@ -116,6 +116,8 @@ LIR **locals** (flat list after parameters) lower to Wasm core locals after para
 )
 ```
 
+LIR `Local_Get` / `Local_Set` use **1-based** indices (parameters occupy the first slots, then flattened locals). The backend emits Wasm **`local.get` / `local.set` with 0-based indices** (`Local_Index - 1`).
+
 In the component type section, bare `(result)` is a separate `defvaltype`; the `run` functype references it by type index (inline `0x6a` is not a valid `valtype`).
 
 ## Instructions (this slice)
@@ -126,6 +128,8 @@ In the component type section, bare `(result)` is a separate `defvaltype`; the `
 | `No_Operation` | Skipped (not emitted) |
 | `Constant_I32` | `i32.const` (core) |
 | `Call` | `call` to the 1-based core function with the same index |
+| `Local_Get` | `local.get` (0-based Wasm index = LIR index − 1) |
+| `Local_Set` | `local.set` (0-based Wasm index = LIR index − 1) |
 | `Intrinsic_Flag` + `Print_Integer_Stdout` | Synthesized decimal format + WASI 0.3 stdout write (locals, stores, stream/future builtins) |
 | `Native_Flag` (`@native`) | Empty noop core body (FFI not wired yet) |
 
@@ -186,7 +190,7 @@ Each failure carries a UTF-8 `Detail` string.
 - Browser / core-module-only default format
 - Alexandria doc embedding in artifacts
 - Linking LIR `Dependencies`
-- Variable reads / stores / expressions beyond declare+flatten (synthesized print still uses its own core locals)
+- Operators / control-flow beyond what LIR already lowers (assignment / local get-set are in this slice)
 
 ## Tests
 

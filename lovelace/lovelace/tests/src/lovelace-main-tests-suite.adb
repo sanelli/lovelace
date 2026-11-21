@@ -50,6 +50,10 @@ package body Lovelace.Main.Tests.Suite is
             Lovelace.Main.Tests.Build.Test_No_Warnings_List'Access));
       Result.Add_Test
         (Build_Caller.Create
+           ("build: warning policy CLI",
+            Lovelace.Main.Tests.Build.Test_Warning_Policy_Cli'Access));
+      Result.Add_Test
+        (Build_Caller.Create
            ("build: output format values",
             Lovelace.Main.Tests.Build.Test_Output_Format_Values'Access));
       Result.Add_Test

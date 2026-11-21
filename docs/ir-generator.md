@@ -2,7 +2,7 @@
 
 `Lovelace.Compiler.Ir_Generator` lowers a frontend AST module into a LIR module. It lives in crate `lovelace_compiler`, which depends on `lovelace_lir`. Frontend AST and types stay separate from LIR; only this package (and tests) reference `Lovelace.Lir.*`.
 
-The CLI (`lovelace build`) calls Tokenize → Parse → `Generate` → `Lir.Binary.Write`, then the backends; see [cli.md](cli.md).
+The CLI (`lovelace build`) calls Tokenize → Parse → **Semantics** → `Generate` → `Lir.Binary.Write`, then the backends; see [cli.md](cli.md). Semantics (environment, definite assignment, typecheck, call-target resolve, unused warnings) runs **before** IR and owns `LV00014` / `LV00017` / `LV00018` / `LV00026`–`LV00029` / `LV00031` — rules: [semantics.md](semantics.md). IR assumes a resolved, well-typed AST and only lowers.
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). AST input comes from [parser.md](parser.md). LIR shapes and codecs: [lir.md](lir.md). Source locations: [source-locations.md](source-locations.md).
 
@@ -13,19 +13,19 @@ Multi-unit loading (roadmap [1.001](roadmap/1.001-roadmap-print-integer-wasi.md)
 | Package | Role |
 | --- | --- |
 | `Lovelace.Compiler.Module_Path` | Dotted name → mixed slash/dot `.love` candidates; search roots; Augusta slot |
-| `Lovelace.Compiler.Unit_Graph` | Transitive import closure (`Load`); cycles / unknown / ambiguous diagnostics |
+| `Lovelace.Compiler.Unit_Graph` | Transitive using closure (`Load`); cycles / unknown / ambiguous diagnostics |
 
-Path candidates for `a.b.c`: `a/b/c.love`, `a/b.c.love`, `a.b/c.love`, `a.b.c.love` (stable mask order). Search roots and Augusta env vars are documented in [cli.md](cli.md). Cross-module call lowering still lands in a later step of the same milestone; same-unit resolve below remains the current `Generate` behavior.
+Path candidates for `a.b.c`: `a/b/c.love`, `a/b.c.love`, `a.b/c.love`, `a.b.c.love` (stable mask order). Search roots and Augusta env vars are documented in [cli.md](cli.md). The unit graph collects **all** usings in the AST (unit-leading **and** nested block usings).
 
 ## Pipeline
 
 ```text
-UTF-8 .love  →  Tokenize  →  Parse  →  Ast.Module  →  Generate  →  Lir.Modules.Module
-                                                                        ↓
-                                                              Backend (WASM / WAT / WIT)
+UTF-8 .love  →  Tokenize  →  Parse  →  Semantics  →  Generate  →  Lir.Modules.Module
+                                                                              ↓
+                                                                    Backend (WASM / WAT / WIT)
 ```
 
-Callers parse first. `Generate` does not call `Tokenize` or `Parse`. Codegen from LIR: [codegen.md](codegen.md).
+Callers parse and run semantics first. `Generate` does not call `Tokenize` or `Parse`. Codegen from LIR: [codegen.md](codegen.md).
 
 ## API
 
@@ -60,7 +60,7 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | `Unit_Kind` | not stored in LIR (frontend only) |
 | `Full_Name` | not stored in LIR (frontend only; LIR keeps the unqualified procedure name) |
 | Module flags | flags `0` |
-| Ordered `Import_Declaration` list | `Append_Dependency` for each imported module name (source order) |
+| All usings in the unit (unit-leading + nested; unique module names) | `Append_Dependency` for each used module name |
 | Each subroutine | `Subroutines.Create` + body instructions + `Append_Subroutine` |
 | Subroutine name | `Signature.Name` (unqualified) |
 | Subroutine name span, filename | `Subroutines.Set_Origin` (`Subroutine_Origin`) |
@@ -72,17 +72,20 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | `@intrinsic` | LIR `Set_Intrinsic` after closed-table match (empty body; no statement lower) |
 | Empty statement body | empty instruction sequence (no `noop`) |
 | Block locals (including nested `declare`) | Flattened into LIR `Append_Local` in DFS / preorder (nested scopes disappear) |
-| Same-unit `MODULE.SUBROUTINE(…)` | `Constant_I32` × N then `Call` (1-based subroutine index) |
+| Assignment `id := expr` | Evaluate RHS then `Local_Set` (1-based; params first, then flattened locals) |
+| Identifier expression | `Local_Get` (same 1-based index map) |
+| Integer / boolean literal expression | `Constant_I32` |
+| Same-unit / cross-module `MODULE.SUBROUTINE(…)` | Push args then `Call` (1-based subroutine index); **resolve already done in semantics** |
 
 ### Intrinsics (this slice)
 
 Closed table (`Lovelace.Compiler.Intrinsics`): only `augusta.std.io` / `print` / one `integer` param / `Unit` → `Print_Integer_Stdout`. Unknown `@intrinsic` → `Unknown_Intrinsic` (`LV00025`). The backend synthesizes the WASI 0.3 stdout body for that kind (see [codegen.md](codegen.md)). `@native` stores library/function metadata only (FFI invoke later).
 
-### Call resolution (this slice)
+### Call lowering (this slice)
 
-- Same-unit: `UnitName.ProcedureName` where `UnitName` equals the calling unit; export not required.
-- Cross-module: `import M;` required on the caller; callee must exist on `M` with `Export_Flag`. Failures → `Call_Without_Import` (`LV00017`), `Not_Exported` (`LV00018`), or `Unresolved_Call` (`LV00014`).
-- Argument count must match formals. **Integer** formals (signed/unsigned size ≤ 32) take integer literals as `Constant_I32` (negative literals rejected for unsigned). **`boolean`** formals take only `true` / `false` → `Constant_I32` **1** / **0**. Cross-kind args (integer literal to `boolean`, or `true`/`false` to integer) fail. Failures → `Invalid_Arguments` (`LV00015`).
+Call-target resolve (module in scope via `using`, subroutine exists, `Export_Flag` for cross-module) is **semantics**, not IR. Failures there → `Call_Without_Using` (`LV00017`), `Not_Exported` (`LV00018`), or `Unresolved_Call` (`LV00014`).
+
+IR still checks argument lowering details where needed. **Integer** formals (signed/unsigned size ≤ 32) take integer literals as `Constant_I32` (negative literals rejected for unsigned). **`boolean`** formals take only `true` / `false` → `Constant_I32` **1** / **0**. Identifier args lower via `Local_Get`. Failures → `Invalid_Arguments` (`LV00015`) where still emitted from IR.
 
 ### Type map
 
@@ -100,7 +103,7 @@ Closed table (`Lovelace.Compiler.Intrinsics`): only `augusta.std.io` / `print` /
 | `float` / `float<32>` | `F32` |
 | `float<64>` | `F64` |
 
-Empty Lovelace modules (`module Name; end.`) lower to LIR modules with **zero** subroutines. Leading `import` names become LIR `Dependencies` (backend still ignores them).
+Empty Lovelace modules (`module Name; end.`) lower to LIR modules with **zero** subroutines. Using names (all usings in the unit) become LIR `Dependencies` (backend still ignores them).
 
 Origins use [`Lovelace.Common.Source`](source-locations.md). They are copied onto LIR modules and subroutines and **persisted** in `.lir` / `.tlir` (format version numbers remain **1.0**; see [lir.md](lir.md)).
 
@@ -109,16 +112,15 @@ Origins use [`Lovelace.Common.Source`](source-locations.md). They are copied ont
 | Code | LV | Meaning |
 | --- | --- | --- |
 | `Internal_Error` | `LV00001` | Compiler bug (e.g. LIR `Validate` failed after lowering) |
-| `Unresolved_Call` | `LV00014` | Call target is not a same-unit / imported procedure |
 | `Invalid_Arguments` | `LV00015` | Wrong arity, out-of-range literal, or unsupported formal |
-| `Call_Without_Import` | `LV00017` | Callee module prefix is not imported by the caller |
-| `Not_Exported` | `LV00018` | Imported procedure exists but lacks `Export_Flag` |
 | `Unknown_Intrinsic` | `LV00025` | `@intrinsic` signature is not in the closed intrinsic table |
+
+Call resolve diagnostics (`LV00014` / `LV00017` / `LV00018`) and name/type/DA/unused codes are **not** produced by IR — see [diagnostics.md](diagnostics.md) (Semantics stage).
 
 ## Out of scope
 
 - Emitting `No_Operation` for empty bodies
-- Assignment / variable reads / non-literal arguments (roadmap 1.002 step 6+)
-- Analysis and optimization
+- Operators / general expressions beyond literal + identifier
+- Analysis and optimization (beyond what semantics already did)
 
 WASM / WAT / WIT emission from LIR (including native intrinsic synthesis) is implemented separately; see [codegen.md](codegen.md).

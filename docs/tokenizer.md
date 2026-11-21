@@ -48,19 +48,19 @@ Empty source, whitespace-only source, and comment-only source succeed with an em
 
 | `Token_Kind` | Subtype | This slice |
 | --- | --- | --- |
-| `Keyword` | `Keyword_Subtype` | `program`, `module`, `begin`, `end`, `declare`, `export`, `import`, `procedure`, `integer`, `float`, `signed`, `unsigned`, `boolean`, `true`, `false` |
-| `Identifier` | (none) | Names, including `@foo`, `café`, emoji |
-| `Punctuation` | `Punctuation_Subtype` | `;` `.` `(` `)` `,` `:` `<` `>` `=` |
+| `Keyword` | `Keyword_Subtype` | `program`, `module`, `begin`, `end`, `declare`, `export`, `using`, `procedure`, `integer`, `float`, `signed`, `unsigned`, `boolean`, `true`, `false` |
+| `Identifier` | (none) | Names, including `@foo`, `café`, emoji; also lexemes `import` and `native` (not keywords) |
+| `Punctuation` | `Punctuation_Subtype` | `;` `.` `(` `)` `,` `:` `:=` `<` `>` `=` |
 | `Integer_Literal` | (none) | Optional sign, `0b`/`0o`/`0x` or decimal, optional `s`/`u` size (see [token-grammar.md](token-grammar.md)) |
 | `Float_Literal` | (none) | Decimal forms with `.`, exponent, and/or `f32`/`f64` width |
 | `Directive` | `Directive_Subtype` | `#if`, `#elsif`, `#else`, `#end` |
 | `String_Literal` | (none) | `"…"` with no escapes; Lexeme includes both quotes |
 
-Keywords are **case-sensitive**. `Program`, `Module`, `BEGIN`, `Procedure`, `Export`, `Native`, and `End` are identifiers. `#end` is a **directive**, distinct from keyword `end`.
+Keywords are **case-sensitive**. `Program`, `Module`, `BEGIN`, `Procedure`, `Export`, `Native`, `Import`, and `End` are identifiers. `#end` is a **directive**, distinct from keyword `end`. Lexeme `import` is **not** a keyword (ordinary identifier); module visibility uses keyword `using`.
 
 The scanner matches a full identifier first, then classifies. `programmer` is one identifier, not `program` plus `mer`. `programbegin`, `modulex`, and `exporter` are identifiers.
 
-Longest-match scan order: float → integer → directive → string → identifier → punctuation. Exact directive forms (`#if`, …) still match; old `#BASE#` integer spellings fail tokenization.
+Longest-match scan order: float → integer → directive → string → identifier → punctuation. Exact directive forms (`#if`, …) still match; old `#BASE#` integer spellings fail tokenization. Punctuation `:=` is one token (longest match over bare `:`).
 
 Float literal patterns are tried **before** integer patterns so `1.0`, `1e3`, and `7f32` are each a single `Float_Literal`.
 

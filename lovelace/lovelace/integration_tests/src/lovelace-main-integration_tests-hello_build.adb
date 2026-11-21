@@ -9,6 +9,64 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
 
    use type Helpers.Tool_Status;
 
+   procedure Test_Assignment_Build_Validate_And_Run
+     (The_Test : in out Fixture)
+   is
+      pragma Unreferenced (The_Test);
+      Test_Name       : constant String :=
+        "build: validate and run program Assignment";
+      Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
+      Sample_Path     : constant String :=
+        Helpers.Locate_Sample ("assignment", "Assignment.love");
+      Output_Root     : constant String :=
+        Helpers.Locate_Output_Root ("assignment");
+      Augusta_Root    : constant String :=
+        Helpers.Compose_Under
+          (Helpers.Compose_Under (Helpers.Locate_Repository_Root, "augusta"),
+           "lovelace");
+      Validate_Status : Helpers.Tool_Status;
+      Run_Status      : Helpers.Tool_Status;
+      Outcome         : Helpers.Test_Outcome := Helpers.Ok;
+   begin
+      AUnit.Assertions.Assert
+        (Lovelace_Path'Length > 0, "lovelace executable present");
+
+      Helpers.Reset_Output_Root (Output_Root);
+      Helpers.Build_Sample
+        (Lovelace_Path => Lovelace_Path,
+         Sample_Path   => Sample_Path,
+         Output_Root   => Output_Root,
+         Message       => "Assignment",
+         Include_Path  => Augusta_Root);
+      Helpers.Assert_Build_Artifacts
+        (Output_Root => Output_Root,
+         Unit_Name   => "Assignment",
+         Message     => "Assignment");
+
+      Helpers.Validate_Unit_Artifacts
+        (Output_Root => Output_Root,
+         Unit_Name   => "Assignment",
+         Message     => "Assignment",
+         Status      => Validate_Status);
+      Helpers.Run_Unit_Entrypoint
+        (Output_Root     => Output_Root,
+         Unit_Name       => "Assignment",
+         Message         => "Assignment",
+         Status          => Run_Status,
+         Expected_Stdout => "7");
+
+      if Validate_Status = Helpers.Missing or else Run_Status = Helpers.Missing
+      then
+         Outcome := Helpers.Inconclusive;
+      end if;
+
+      Helpers.Report_Test_Result (Test_Name, Outcome);
+   exception
+      when Error : others =>
+         Helpers.Report_Test_Result (Test_Name, Helpers.Fail);
+         Ada.Exceptions.Reraise_Occurrence (Error);
+   end Test_Assignment_Build_Validate_And_Run;
+
    procedure Test_Build_Validate_And_Run (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Test_Name       : constant String :=
@@ -182,17 +240,21 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
          Ada.Exceptions.Reraise_Occurrence (Error);
    end Test_Hello_Print_Build_Validate_And_Run;
 
-   procedure Test_Import_Decl_Build_Validate_And_Run
+   procedure Test_Nested_Using_Build_Validate_And_Run
      (The_Test : in out Fixture)
    is
       pragma Unreferenced (The_Test);
       Test_Name       : constant String :=
-        "build: validate and run program ImportDecl";
+        "build: validate and run program NestedUsing";
       Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
       Sample_Path     : constant String :=
-        Helpers.Locate_Sample ("import", "ImportDecl.love");
+        Helpers.Locate_Sample ("nested-using", "NestedUsing.love");
       Output_Root     : constant String :=
-        Helpers.Locate_Output_Root ("import");
+        Helpers.Locate_Output_Root ("nested-using");
+      Augusta_Root    : constant String :=
+        Helpers.Compose_Under
+          (Helpers.Compose_Under (Helpers.Locate_Repository_Root, "augusta"),
+           "lovelace");
       Validate_Status : Helpers.Tool_Status;
       Run_Status      : Helpers.Tool_Status;
       Outcome         : Helpers.Test_Outcome := Helpers.Ok;
@@ -205,22 +267,24 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Sample_Path,
          Output_Root   => Output_Root,
-         Message       => "ImportDecl");
+         Message       => "NestedUsing",
+         Include_Path  => Augusta_Root);
       Helpers.Assert_Build_Artifacts
         (Output_Root => Output_Root,
-         Unit_Name   => "ImportDecl",
-         Message     => "ImportDecl");
+         Unit_Name   => "NestedUsing",
+         Message     => "NestedUsing");
 
       Helpers.Validate_Unit_Artifacts
         (Output_Root => Output_Root,
-         Unit_Name   => "ImportDecl",
-         Message     => "ImportDecl",
+         Unit_Name   => "NestedUsing",
+         Message     => "NestedUsing",
          Status      => Validate_Status);
       Helpers.Run_Unit_Entrypoint
-        (Output_Root => Output_Root,
-         Unit_Name   => "ImportDecl",
-         Message     => "ImportDecl",
-         Status      => Run_Status);
+        (Output_Root     => Output_Root,
+         Unit_Name       => "NestedUsing",
+         Message         => "NestedUsing",
+         Status          => Run_Status,
+         Expected_Stdout => "1");
 
       if Validate_Status = Helpers.Missing or else Run_Status = Helpers.Missing
       then
@@ -232,7 +296,7 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
       when Error : others =>
          Helpers.Report_Test_Result (Test_Name, Helpers.Fail);
          Ada.Exceptions.Reraise_Occurrence (Error);
-   end Test_Import_Decl_Build_Validate_And_Run;
+   end Test_Nested_Using_Build_Validate_And_Run;
 
    procedure Test_Resolve_Caller_Build_Validate_And_Run
      (The_Test : in out Fixture)
@@ -288,6 +352,58 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
          Helpers.Report_Test_Result (Test_Name, Helpers.Fail);
          Ada.Exceptions.Reraise_Occurrence (Error);
    end Test_Resolve_Caller_Build_Validate_And_Run;
+
+   procedure Test_Using_Decl_Build_Validate_And_Run
+     (The_Test : in out Fixture)
+   is
+      pragma Unreferenced (The_Test);
+      Test_Name       : constant String :=
+        "build: validate and run program UsingDecl";
+      Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
+      Sample_Path     : constant String :=
+        Helpers.Locate_Sample ("using", "UsingDecl.love");
+      Output_Root     : constant String :=
+        Helpers.Locate_Output_Root ("using");
+      Validate_Status : Helpers.Tool_Status;
+      Run_Status      : Helpers.Tool_Status;
+      Outcome         : Helpers.Test_Outcome := Helpers.Ok;
+   begin
+      AUnit.Assertions.Assert
+        (Lovelace_Path'Length > 0, "lovelace executable present");
+
+      Helpers.Reset_Output_Root (Output_Root);
+      Helpers.Build_Sample
+        (Lovelace_Path => Lovelace_Path,
+         Sample_Path   => Sample_Path,
+         Output_Root   => Output_Root,
+         Message       => "UsingDecl");
+      Helpers.Assert_Build_Artifacts
+        (Output_Root => Output_Root,
+         Unit_Name   => "UsingDecl",
+         Message     => "UsingDecl");
+
+      Helpers.Validate_Unit_Artifacts
+        (Output_Root => Output_Root,
+         Unit_Name   => "UsingDecl",
+         Message     => "UsingDecl",
+         Status      => Validate_Status);
+      Helpers.Run_Unit_Entrypoint
+        (Output_Root => Output_Root,
+         Unit_Name   => "UsingDecl",
+         Message     => "UsingDecl",
+         Status      => Run_Status);
+
+      if Validate_Status = Helpers.Missing or else Run_Status = Helpers.Missing
+      then
+         Outcome := Helpers.Inconclusive;
+      end if;
+
+      Helpers.Report_Test_Result (Test_Name, Outcome);
+   exception
+      when Error : others =>
+         Helpers.Report_Test_Result (Test_Name, Helpers.Fail);
+         Ada.Exceptions.Reraise_Occurrence (Error);
+   end Test_Using_Decl_Build_Validate_And_Run;
 
    procedure Test_Variables_Build_Validate_And_Run (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);

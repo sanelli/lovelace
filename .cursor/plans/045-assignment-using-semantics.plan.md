@@ -34,10 +34,10 @@ todos:
     status: completed
   - id: "11"
     content: "11. Docs + lock roadmap 1.002 step 6; mass import→using doc/sample renames."
-    status: pending
+    status: completed
   - id: "12"
     content: "12. Samples (assignment + nested using) + integration tests."
-    status: pending
+    status: completed
   - id: "13"
     content: "13. Run scripts/run-tests.ps1."
     status: pending

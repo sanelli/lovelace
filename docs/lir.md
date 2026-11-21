@@ -68,8 +68,10 @@ Opcodes in this slice:
 | `No_Operation` | `0` | `noop` | none |
 | `Constant_I32` | `1` | `i32.const <n>` | little-endian `i32` (4 bytes) |
 | `Call` | `2` | `call <index>` | little-endian `u32` **1-based** subroutine index (4 bytes) |
+| `Local_Get` | `3` | `local.get <index>` | little-endian `u32` **1-based** local index (params first, then flattened locals) |
+| `Local_Set` | `4` | `local.set <index>` | little-endian `u32` **1-based** local index (params first, then flattened locals) |
 
-`Validate` rejects `Call` when `Target_Index` is `0` or greater than `Subroutine_Count` (`Invalid_Call_Target`). See native rules above.
+`Validate` rejects `Call` when `Target_Index` is `0` or greater than `Subroutine_Count` (`Invalid_Call_Target`). `Local_Get` / `Local_Set` reject `Local_Index` `0` or past `Param_Count + Local_Count` (`Invalid_Local_Index`). See native rules above. The backend lowers these to 0-based Wasm `local.get` / `local.set` ([codegen.md](codegen.md)).
 
 ## Ada packages
 
@@ -93,6 +95,7 @@ Builders allow temporarily invalid modules (for example two entrypoints while ap
 - self-dependency (a depend name equals the module name)
 - more than one `Entrypoint` flag
 - `Call` with `Target_Index` outside `1 .. Subroutine_Count`
+- `Local_Get` / `Local_Set` with `Local_Index` outside `1 .. Param_Count + Local_Count`
 
 Decode applies the same checks plus format errors (bad magic, truncated input, unknown type code, and so on). Handle both success and failure on every `Result`-shaped return (see the Result rule).
 

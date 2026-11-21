@@ -120,6 +120,8 @@ Then follow exactly `subroutine_count` subroutine records in preamble order (no 
 | `No_Operation` | `0x0000` | 0 | 2 bytes |
 | `Constant_I32` | `0x0001` | 4 bytes little-endian `i32` | 6 bytes |
 | `Call` | `0x0002` | 4 bytes little-endian `u32` (1-based subroutine index) | 6 bytes |
+| `Local_Get` | `0x0003` | 4 bytes little-endian `u32` (1-based local index) | 6 bytes |
+| `Local_Set` | `0x0004` | 4 bytes little-endian `u32` (1-based local index) | 6 bytes |
 
 Unknown opcode word → `Unknown_Opcode` (length is a closed table; the decoder cannot skip).
 

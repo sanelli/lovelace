@@ -1,0 +1,10 @@
+program NestedUsing;
+begin
+   using augusta.std.io;
+   declare
+      Foo : integer;
+   begin
+      Foo := 1;
+      augusta.std.io.print(Foo);
+   end;
+end.

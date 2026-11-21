@@ -1,0 +1,8 @@
+using augusta.std.io;
+program Assignment;
+declare
+   Value : integer;
+begin
+   Value := 7;
+   augusta.std.io.print(Value);
+end.

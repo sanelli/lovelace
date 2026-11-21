@@ -43,12 +43,28 @@ package body Lovelace.Main.Integration_Tests.Suite is
               .Test_Hello_Print_Build_Validate_And_Run'Access));
       Result.Add_Test
         (Hello_Caller.Create
-           ("build: validate and run program ImportDecl",
+           ("build: validate and run program NestedUsing",
             Lovelace
               .Main
               .Integration_Tests
               .Hello_Build
-              .Test_Import_Decl_Build_Validate_And_Run'Access));
+              .Test_Nested_Using_Build_Validate_And_Run'Access));
+      Result.Add_Test
+        (Hello_Caller.Create
+           ("build: validate and run program UsingDecl",
+            Lovelace
+              .Main
+              .Integration_Tests
+              .Hello_Build
+              .Test_Using_Decl_Build_Validate_And_Run'Access));
+      Result.Add_Test
+        (Hello_Caller.Create
+           ("build: validate and run program Assignment",
+            Lovelace
+              .Main
+              .Integration_Tests
+              .Hello_Build
+              .Test_Assignment_Build_Validate_And_Run'Access));
       Result.Add_Test
         (Hello_Caller.Create
            ("build: validate and run program Caller",

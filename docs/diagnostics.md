@@ -4,7 +4,7 @@ User-facing compiler messages use stable codes of the form **`LV` + five zero-pa
 
 Host **internal** failures (`Lovelace.Common.Internal_Error` / `Result`) are not this format — see the result-and-internal-errors rule. CLI usage mistakes (unknown flags, missing `.love`, bad `--output-format`) print a plain `[err]` block **without** an `LV#####` line.
 
-CLI overview: [cli.md](cli.md).
+CLI overview: [cli.md](cli.md). Semantic rules (scopes, DA, types, resolve, unused): [semantics.md](semantics.md).
 
 ## Located format
 
@@ -17,12 +17,14 @@ Located diagnostics are written to **stderr** as:
 [LVxxxxx] {description}
 ```
 
+Warnings use `[warning]` instead of `[err]` on the first line (and on the `[LVxxxxx]` line styling when colour is on).
+
 Rules:
 
 - `{row}` and `{column}` come from the span’s `First` position (1-based).
 - The source line is taken from the UTF-8 buffer using that span.
 - The caret line pads to `Column`, then uses `^` for a single column or repeated `^` across `First` … `Last` when the span covers more than one column.
-- Colour (when enabled): `[err]` and the `[LVxxxxx]` line are red; the printer itself emits no ANSI escapes.
+- Colour (when enabled): `[err]` / error `[LVxxxxx]` are red; `[warning]` lines use the warning style; the printer itself emits no ANSI escapes beyond those markers.
 
 Example (`LV00009` for a program; modules use the same code with a `module identifier …` description):
 
@@ -33,7 +35,7 @@ program Hello; begin end.
 [LV00009] program identifier 'Hello' does not match file stem 'Other'
 ```
 
-Multiple errors: each block is printed in order; the process exits non-zero if any error occurred.
+Multiple diagnostics: each block is printed in order. The process exits non-zero if any remaining **error** occurred (including warnings promoted by `--warning-as-errors`). Warnings alone → exit 0.
 
 ## Unlocated / CLI shape
 
@@ -46,7 +48,20 @@ When there is no useful source span (or for CLI usage errors):
 {description}
 ```
 
-`{context}` is a short label such as `command line` or `build`. There is **no** `[LVxxxxx]` line for pure CLI errors.
+`{context}` is a short label such as `command line` or `build`. There is **no** `[LVxxxxx]` line for pure CLI errors (except when a stable code is emitted for invalid warning suppression — see `LV00030`).
+
+## Severity
+
+| Severity | Role |
+| --- | --- |
+| `Error` | Fails the build (non-zero exit) |
+| `Warning` | Printed by default; does not fail the build unless promoted |
+
+| CLI flag | Behavior |
+| --- | --- |
+| `--warning-as-errors` | Every warning is promoted to error (counts toward failure; printed as errors) |
+| `--no-warnings LV00028,LV00029` | Comma-separated list (one argv value). Those **warning** codes are suppressed (not printed; not promoted). Requires ≥1 id |
+| Invalid `--no-warnings` entry | Unknown code **or** code that is not a warning → hard error `Invalid_Warning_Suppression` (`LV00030`) |
 
 ## Code table
 
@@ -62,16 +77,16 @@ When there is no useful source span (or for CLI usage errors):
 | `LV00008` | Invalid_Module | Backend / LIR validate surfaced to the user |
 | `LV00009` | Program_Name_Filename_Mismatch | Build (program/module id vs `.love` stem) |
 | `LV00010` | Source_File_Io | Build (missing or unreadable source) |
-| `LV00011` | Name_Clash | Parser (duplicate or conflicting procedure/parameter/import name; self-import) |
+| `LV00011` | Name_Clash | Parser (duplicate or conflicting procedure/parameter/using/local name; self-using; using shadow) |
 | `LV00012` | Invalid_Flavor_Condition | Parser (`#if`/`#elsif` flavor string not wasi/native/web) |
 | `LV00013` | Unterminated_String_Literal | Tokenizer (opening `"` without a matching closer) |
-| `LV00014` | Unresolved_Call | IR Generator (call target not a same-unit / imported procedure) |
-| `LV00015` | Invalid_Arguments | IR Generator (call arity / literal / formal mismatch) |
-| `LV00016` | Unknown_Module | Unit graph (import name has no candidate `.love` on search roots) |
-| `LV00017` | Call_Without_Import | IR Generator (callee module prefix not imported by the caller) |
-| `LV00018` | Not_Exported | IR Generator (imported procedure exists but lacks `Export_Flag`) |
-| `LV00019` | Circular_Import | Unit graph (import cycle among compilation units) |
-| `LV00020` | Ambiguous_Module_Path | Unit graph (two or more distinct `.love` files match one import) |
+| `LV00014` | Unresolved_Call | Semantics (call target not a same-unit / used procedure) |
+| `LV00015` | Invalid_Arguments | IR Generator (call arity / literal / formal mismatch still lowered here where applicable) |
+| `LV00016` | Unknown_Module | Unit graph (using name has no candidate `.love` on search roots) |
+| `LV00017` | Call_Without_Using | Semantics (callee module prefix not brought in by a `using` in scope) |
+| `LV00018` | Not_Exported | Semantics (used procedure exists but lacks `Export_Flag`) |
+| `LV00019` | Circular_Import | Unit graph (using cycle among compilation units; enum name is historical) |
+| `LV00020` | Ambiguous_Module_Path | Unit graph (two or more distinct `.love` files match one using) |
 | `LV00021` | Unknown_Native_Binding | *Retired* — old `native(target, key)` closed wasi set; no longer emitted |
 | `LV00022` | Unterminated_Comment | Tokenizer (opening `{` without a matching `}`) |
 | `LV00023` | Nested_Comment | Tokenizer (`{` inside an open `{` … `}` comment) |
@@ -79,15 +94,20 @@ When there is no useful source span (or for CLI usage errors):
 | `LV00025` | Unknown_Intrinsic | IR Generator (`@intrinsic` signature not in the closed intrinsic table) |
 | `LV00026` | Use_Before_Assignment | Semantics (read of a local that is not definitely assigned) |
 | `LV00027` | Type_Mismatch | Semantics (assignment or call actual not assignable) |
-| `LV00028` | Unused_Variable | Warning: local never read |
-| `LV00029` | Unused_Assignment | Warning: store whose value is never read before overwrite/end |
+| `LV00028` | Unused_Variable | Warning: local never read (assignment alone is not a use) |
+| `LV00029` | Unused_Assignment | Warning: store whose value is never read before overwrite/end (only when the local is read at least once elsewhere) |
 | `LV00030` | Invalid_Warning_Suppression | CLI/build: `--no-warnings` entry unknown or not a warning |
+| `LV00031` | Unresolved_Name | Semantics (identifier does not name a visible local or parameter) |
 
-Stage-local enums (tokenizer, parser, IR generator, unit graph, …) map to these labels at report time via `Lovelace.Compiler.Reporting` (unit-graph failures also expose `Unit_Graph.Surface_Error_Code`).
+Stage-local enums (tokenizer, parser, semantics, IR generator, unit graph, …) map to these labels at report time via `Lovelace.Compiler.Reporting` (unit-graph failures also expose `Unit_Graph.Surface_Error_Code`).
 
-## Warnings (not yet in this slice)
+## Warnings
 
-The diagnostics **rule** reserves warnings-as-errors, suppressions, and style warnings for later. This slice emits **errors only**.
+Warning codes today: `Unused_Variable` (`LV00028`), `Unused_Assignment` (`LV00029`).
+
+**Priority:** if a local is never read → only **Unused_Variable** (even if assigned). If a local is read at least once → emit **Unused_Assignment** for any `:=` whose value is not read before overwrite/end. Parameters never get Unused_Variable. Full semantic rules: [semantics.md](semantics.md).
+
+See CLI flags under Severity above.
 
 ## Origins on LIR
 

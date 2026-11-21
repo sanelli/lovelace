@@ -72,6 +72,8 @@ Instruction tokens (lowercase; one instruction per line in the canonical writer)
 | `noop` | `No_Operation` |
 | `i32.const <decimal>` | `Constant_I32` (signed decimal, no leading `+`) |
 | `call <index>` | `Call` (1-based subroutine index, decimal) |
+| `local.get <index>` | `Local_Get` (1-based; params first, then flattened locals) |
+| `local.set <index>` | `Local_Set` (1-based; params first, then flattened locals) |
 
 ## Quoted strings
 

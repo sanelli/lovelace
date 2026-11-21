@@ -11,7 +11,7 @@
 | [`augusta/libaugusta/`](../augusta/libaugusta/) | Freestanding Ada native library (future; `--flavor native`) |
 | [`augusta/libaugusta-js/`](../augusta/libaugusta-js/) | JavaScript glue (future; `--flavor web`) |
 
-Search roots treat the module name as a relative path under each root (mixed slash/dot forms). With `AUGUSTA_HOME` set to the in-tree [`augusta/lovelace/`](../augusta/lovelace/) directory, `import augusta.std.io;` resolves to `augusta.std.io.love` in that folder (the all-dot candidate). Nested `augusta/std/io.love` is the same module if present instead — exactly one existing form must match.
+Search roots treat the module name as a relative path under each root (mixed slash/dot forms). With `AUGUSTA_HOME` set to the in-tree [`augusta/lovelace/`](../augusta/lovelace/) directory, `using augusta.std.io;` resolves to `augusta.std.io.love` in that folder (the all-dot candidate). Nested `augusta/std/io.love` is the same module if present instead — exactly one existing form must match.
 
 ## Finding Augusta (`AUGUSTA_HOME`)
 
@@ -48,7 +48,7 @@ export procedure print(value : integer);
 Example:
 
 ```love
-import augusta.std.io;
+using augusta.std.io;
 program HelloPrint;
 begin
    augusta.std.io.print(42);

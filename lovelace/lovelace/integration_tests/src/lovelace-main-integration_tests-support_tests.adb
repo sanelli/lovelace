@@ -15,10 +15,14 @@ package body Lovelace.Main.Integration_Tests.Support_Tests is
         "support: locate lovelace and compose paths";
       Sample_Path     : constant String :=
         Helpers.Locate_Sample ("program", "Hello.love");
-      Import_Path     : constant String :=
-        Helpers.Locate_Sample ("import", "ImportDecl.love");
-      Import_Lib_Path : constant String :=
-        Helpers.Locate_Sample ("import", "ImportLib.love");
+      Using_Path      : constant String :=
+        Helpers.Locate_Sample ("using", "UsingDecl.love");
+      Using_Lib_Path  : constant String :=
+        Helpers.Locate_Sample ("using", "UsingLib.love");
+      Assignment_Path : constant String :=
+        Helpers.Locate_Sample ("assignment", "Assignment.love");
+      Nested_Using    : constant String :=
+        Helpers.Locate_Sample ("nested-using", "NestedUsing.love");
       Module_Path     : constant String :=
         Helpers.Locate_Sample ("module", "Empty.love");
       Comments_Path   : constant String :=
@@ -41,11 +45,16 @@ package body Lovelace.Main.Integration_Tests.Support_Tests is
       AUnit.Assertions.Assert
         (Ada.Directories.Exists (Sample_Path), "program Hello.love present");
       AUnit.Assertions.Assert
-        (Ada.Directories.Exists (Import_Path),
-         "import ImportDecl.love present");
+        (Ada.Directories.Exists (Using_Path), "using UsingDecl.love present");
       AUnit.Assertions.Assert
-        (Ada.Directories.Exists (Import_Lib_Path),
-         "import ImportLib.love present");
+        (Ada.Directories.Exists (Using_Lib_Path),
+         "using UsingLib.love present");
+      AUnit.Assertions.Assert
+        (Ada.Directories.Exists (Assignment_Path),
+         "assignment Assignment.love present");
+      AUnit.Assertions.Assert
+        (Ada.Directories.Exists (Nested_Using),
+         "nested-using NestedUsing.love present");
       AUnit.Assertions.Assert
         (Ada.Directories.Exists (Module_Path), "module Empty.love present");
       AUnit.Assertions.Assert

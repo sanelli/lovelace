@@ -19,4 +19,9 @@ package Lovelace.Main.Tests.Build is
    --  @param The_Test Unused fixture.
    procedure Test_Output_Format_Values (The_Test : in out Fixture);
 
+   --  Spawned build: unread local surfaces LV00028 (exit 0); --warning-as-errors
+   --  fails; --no-warnings LV00027 fails with LV00030.
+   --  @param The_Test Unused fixture.
+   procedure Test_Warning_Policy_Cli (The_Test : in out Fixture);
+
 end Lovelace.Main.Tests.Build;

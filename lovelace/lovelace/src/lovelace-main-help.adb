@@ -56,7 +56,7 @@ package body Lovelace.Main.Help is
       Put_Line (File, "");
       Put_Line
         (File,
-         "Imports resolve under: root-file dir, cwd, each -I, then one Augusta slot");
+         "Usings resolve under: root-file dir, cwd, each -I, then one Augusta slot");
       Put_Line
         (File, "(AUGUSTA_HOME, else LOVELACE_HOME/lib/augusta/<version>,");
       Put_Line

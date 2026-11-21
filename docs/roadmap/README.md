@@ -6,8 +6,8 @@ Ordered planning docs. Filenames use `{series}.{nnn}-roadmap-….md`.
 
 | Id | Doc | Summary |
 | --- | --- | --- |
-| 1.001 | [print integer (WASI)](1.001-roadmap-print-integer-wasi.md) | Flavor `#if`, import/export, multi-unit, synthesized WASI print, HelloPrint E2E |
-| 1.002 | [replace synthesized print](1.002-roadmap-replace-synthesized-print.md) | Comments, `@intrinsic`/`@native`, literals, boolean, `:=` + **resolve/scope** + **definite assignment** + **typechecker**/`Lovelace_Type`, exprs, ops, if, loop, `unsigned integer<8>` + minimal casts, Lovelace `print` |
+| 1.001 | [print integer (WASI)](1.001-roadmap-print-integer-wasi.md) | Flavor `#if`, export, multi-unit, synthesized WASI print, HelloPrint E2E (historical `import` keyword → `using` in 1.002) |
+| 1.002 | [replace synthesized print](1.002-roadmap-replace-synthesized-print.md) | Comments, `@intrinsic`/`@native`, literals, boolean, `:=` + **`using`** (unit + block) + **resolve/scope** + **definite assignment** + **typechecker**/`Lovelace_Type` + warnings CLI, exprs, ops, if, loop, `unsigned integer<8>` + minimal casts, Lovelace `print` |
 | 1.003 | [web print integer](1.003-roadmap-print-integer-web.md) | `--flavor web` console integer print; flavor-keyed `@intrinsic` table |
 | 1.004 | [native print + libaugusta](1.004-roadmap-print-integer-native.md) | wasmtime embed, freestanding `libaugusta` on Linux/Windows/macOS |
 
@@ -15,7 +15,7 @@ Ordered planning docs. Filenames use `{series}.{nnn}-roadmap-….md`.
 
 | Id | Doc | Summary |
 | --- | --- | --- |
-| 2.001 | [more language features](2.001-roadmap-more-language-features.md) | More loops, switch/case, expression blocks, import as / unqualified use, remaining `integer<N>`/`float<N>`, cast matrix, … |
+| 2.001 | [more language features](2.001-roadmap-more-language-features.md) | More loops, switch/case, expression blocks, `using … as …` / unqualified use (block `using` already in 1.002), remaining `integer<N>`/`float<N>`, cast matrix, … |
 | 2.002 | [arrays & type records](2.002-roadmap-arrays-type-records.md) | Arrays, type records; `PrintUTF8String(unsigned integer<8>[])` stream shim |
 | 2.003 | [allocation, pointers, modes](2.003-roadmap-allocation-pointers.md) | Alloc/free, pointers, `in`/`out`/`inout`, multi-return |
 | 2.004 | [residual numerics](2.004-roadmap-floats-integer-types.md) | Soft-float / decimal / leftover numeric polish (types+casts → 2.001) |

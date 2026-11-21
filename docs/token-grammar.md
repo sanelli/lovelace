@@ -6,11 +6,10 @@ Lexical grammar recognized by [`Lovelace.Compiler.Tokenizer`](tokenizer.md). Not
 tokens        = { whitespace | comment | token | error } ;
 token         = keyword | identifier | punctuation | integer_literal
               | float_literal | directive | string_literal ;
-keyword       = "program" | "module" | "begin" | "end" | "declare" | "export" | "import"
-              | "native" | "procedure" | "integer" | "float" | "signed" | "unsigned"
+keyword       = "program" | "module" | "begin" | "end" | "declare" | "export" | "using"
+              | "procedure" | "integer" | "float" | "signed" | "unsigned"
               | "boolean" | "true" | "false" ;
-              (* case-sensitive *)
-punctuation   = ";" | "." | "(" | ")" | "," | ":" | "<" | ">" | "=" ;
+punctuation   = ";" | "." | "(" | ")" | "," | ":" | ":=" | "<" | ">" | "=" ;
 directive     = "#if" | "#elsif" | "#else" | "#end" ;
 string_literal = '"' , { string_character } , '"' ;
 (* no escape sequences in this slice; Lexeme includes both quotes *)
@@ -50,7 +49,7 @@ error         = unrecognized_symbol | invalid_utf_8 | unterminated_string_litera
 
 `identifier_first` / `identifier_continue` are Unicode-scalar predicates documented in [tokenizer.md](tokenizer.md). `_` is allowed; ASCII digits may continue an identifier but must not start one (except after `@`).
 
-Scan order (longest match): float → integer → directive → string → identifier → punctuation. Exact directive lexemes (`#if`, …) still match; old Ada-style `#BASE#` integer spellings are not tokens (ordinary tokenization failure).
+Scan order (longest match): float → integer → directive → string → identifier → punctuation. Exact directive lexemes (`#if`, …) still match; old Ada-style `#BASE#` integer spellings are not tokens (ordinary tokenization failure). Punctuation `:=` is a single token (longest match over `:`).
 
 Float forms are tried before integer forms so `1.0`, `1e3`, and `7f32` are each one `Float_Literal`. Hex prefixes win over float suffixes (`0xf` / `0xF32` are integers).
 
@@ -60,12 +59,13 @@ Examples:
 | --- | --- |
 | `program begin end.` | `program` `begin` `end` `.` |
 | `declare X : integer;` | `declare` `X` `:` `integer` `;` |
+| `X := 7;` | `X` `:=` `7` `;` |
 | `module Foo.Bar; end.` | `module` `Foo` `.` `Bar` `;` `end` `.` |
 | `procedure P(x : integer);` | `procedure` `P` `(` `x` `:` `integer` `)` `;` |
 | `export procedure Print(Value : integer);` | `export` `procedure` `Print` `(` `Value` `:` `integer` `)` `;` |
 | `export @intrinsic procedure print(value : integer);` | `export` `@intrinsic` `procedure` … |
 | `export @native("libx", "print_fn") procedure print(value : integer);` | `export` `@native` `(` `"libx"` `,` `"print_fn"` `)` `procedure` … |
-| `import Foo.Bar;` | `import` `Foo` `.` `Bar` `;` |
+| `using Foo.Bar;` | `using` `Foo` `.` `Bar` `;` |
 | `42` `-3u16` `0xFFs32` `0b1010` `0o755` | integer literals |
 | `3.14` `7.` `1e3` `7f32` `2.3f64` | float literals |
 | `boolean` `true` `false` | keywords |
