@@ -137,18 +137,66 @@ package body Lovelace.Compiler.Semantics.Typecheck is
 
          when Ast.Integer_Literal =>
             declare
-               Evaluated : constant Literals.Integer_32_Results.Result := Literals.To_Integer_32 (Lexeme);
+               Interpreted : constant Literals.Integer_Literal_Results.Result := Literals.Interpret_Integer (Lexeme);
             begin
-               case Evaluated.Ok is
-                  when True  =>
-                     return (Ok => True, The_Type => Lovelace_Types.Integer_Literal_Type (Evaluated.Value));
-
+               case Interpreted.Ok is
                   when False =>
                      return
                        (Ok     => False,
                         Detail =>
                           Ada.Strings.Unbounded.To_Unbounded_String
-                            ("invalid integer literal: " & Ada.Strings.Unbounded.To_String (Evaluated.Error.Detail)));
+                            ("invalid integer literal: "
+                             & Ada.Strings.Unbounded.To_String (Interpreted.Error.Detail)));
+
+                  when True  =>
+                     declare
+                        Evaluated : constant Literals.Integer_32_Results.Result :=
+                          Literals.To_Integer_32 (Interpreted.Value);
+                     begin
+                        case Evaluated.Ok is
+                           when False =>
+                              return
+                                (Ok     => False,
+                                 Detail =>
+                                   Ada.Strings.Unbounded.To_Unbounded_String
+                                     ("invalid integer literal: "
+                                      & Ada.Strings.Unbounded.To_String (Evaluated.Error.Detail)));
+
+                           when True  =>
+                              --  Trailing signedness/size pins a concrete integer type (disambiguates overloads).
+                              --  Bare literals stay Integer_Literal_Class and match by range fit.
+                              if Interpreted.Value.Has_Signedness or else Interpreted.Value.Has_Size then
+                                 declare
+                                    The_Signedness : constant Types.Signedness :=
+                                      (if Interpreted.Value.Has_Signedness
+                                       then Interpreted.Value.The_Signedness
+                                       else Types.Signed);
+                                    The_Size       : constant Types.Integer_Size :=
+                                      (if Interpreted.Value.Has_Size
+                                       then Interpreted.Value.The_Size
+                                       else Types.Bits_32);
+                                    Expression     : constant Types.Type_Expression :=
+                                      Types.Integer_Type (The_Signedness, The_Size);
+                                    Fit            : constant Assign_Result :=
+                                      Literal_Fits_Integer (Expression, Evaluated.Value);
+                                 begin
+                                    if not Fit.Ok then
+                                       return
+                                         (Ok     => False,
+                                          Detail => Fit.Detail);
+                                    end if;
+
+                                    return
+                                      (Ok      => True,
+                                       The_Type => Lovelace_Types.From_Expression (Expression));
+                                 end;
+                              end if;
+
+                              return
+                                (Ok      => True,
+                                 The_Type => Lovelace_Types.Integer_Literal_Type (Evaluated.Value));
+                        end case;
+                     end;
                end case;
             end;
 

@@ -289,7 +289,7 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
                  (Modules.Get_Subroutine (Ok_Result.The_Module, 2))
                  .Name)
             = "Lib.Sink",
-            "mangled name");
+            "qualified dep name");
          AUnit.Assertions.Assert
            (Lovelace.Lir.Instructions.Element (Caller_Body, 2).Target_Index
             = 2,
@@ -777,6 +777,38 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
         (Unknown_Intrinsic.Code = Ir_Gen.Unknown_Intrinsic,
          "unknown intrinsic code");
    end Test_Native_Binding;
+
+   procedure Test_Overload_Calls (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String :=
+        "module Calls;"
+        & ASCII.LF
+        & "procedure Sink(Value : integer); begin end;"
+        & ASCII.LF
+        & "procedure Sink(Flag : boolean); begin end;"
+        & ASCII.LF
+        & "procedure Run(); begin Calls.Sink(1); Calls.Sink(true); end;"
+        & ASCII.LF
+        & "end.";
+      The_Ast     : constant Ast.Module := Support.Must_Parse (Source_Text, "overload calls");
+      The_Lir     : constant Modules.Module := Support.Must_Generate (The_Ast, "overload calls");
+      Int_Sink    : constant Subroutines.Subroutine := Modules.Get_Subroutine (The_Lir, 1);
+      Bool_Sink   : constant Subroutines.Subroutine := Modules.Get_Subroutine (The_Lir, 2);
+      Run_Body    : constant Lovelace.Lir.Instructions.Instruction_Sequence :=
+        Subroutines.Get_Instructions (Modules.Get_Subroutine (The_Lir, 3));
+      Int_Name    : constant String :=
+        Ada.Strings.Unbounded.To_String (Subroutines.Get_Signature (Int_Sink).Name);
+      Bool_Name   : constant String :=
+        Ada.Strings.Unbounded.To_String (Subroutines.Get_Signature (Bool_Sink).Name);
+   begin
+      AUnit.Assertions.Assert (Modules.Subroutine_Count (The_Lir) = 3, "three subroutines");
+      AUnit.Assertions.Assert (Int_Name = "Sink", "integer overload keeps source name");
+      AUnit.Assertions.Assert (Bool_Name = "Sink", "boolean overload keeps source name");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Instructions.Element (Run_Body, 2).Target_Index = 1, "integer call to first Sink");
+      AUnit.Assertions.Assert
+        (Lovelace.Lir.Instructions.Element (Run_Body, 4).Target_Index = 2, "boolean call to second Sink");
+   end Test_Overload_Calls;
 
    procedure Test_Parameter_Type_Mapping (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);

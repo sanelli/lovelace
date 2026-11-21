@@ -34,6 +34,8 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Unused_Assignment Warning: a store whose value is never read before overwrite/end (LV00029).
    --  @enum Invalid_Warning_Suppression CLI/build: `--no-warnings` entry is unknown or not a warning (LV00030).
    --  @enum Unresolved_Name Semantics: identifier does not name a visible local or parameter (LV00031).
+   --  @enum Unused_Using Warning: a `using M;` was never required for call resolve (LV00032).
+   --  @enum Ambiguous_Call Semantics: two or more overloads match a call equally (LV00033).
    type Error_Code is
      (Internal_Error,
       Unrecognized_Symbol,
@@ -65,9 +67,11 @@ package Lovelace.Compiler.Error_Codes is
       Unused_Variable,
       Unused_Assignment,
       Invalid_Warning_Suppression,
-      Unresolved_Name);
+      Unresolved_Name,
+      Unused_Using,
+      Ambiguous_Call);
 
-   --  Diagnostic severity for Code (warnings are Unused_Variable / Unused_Assignment).
+   --  Diagnostic severity for Code (warnings include Unused_Variable / Unused_Assignment / Unused_Using).
    --  @enum Error Fatal or hard diagnostic (default for almost all codes).
    --  @enum Warning Non-fatal; may be promoted or suppressed by the build CLI.
    type Severity is (Error, Warning);

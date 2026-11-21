@@ -105,9 +105,9 @@ Keywords are case-sensitive. The unit terminator after a unit-level `end` is onl
 - Using module names unique in a scope; using name ≠ unit module name (self-using); nested using must not shadow an enclosing using
 - Parameter names unique within a procedure
 - Parameter name ≠ module name; ≠ any procedure name in the module
-- Procedure name ≠ module name; procedure names unique in the module
+- Procedure name ≠ module name; same procedure name allowed when **parameter type sequences** differ (return type ignored); identical name + identical param types → `Name_Clash`
 - Local names unique within a declare part; must not shadow enclosing locals/parameters; must not reuse the unit name or any subroutine name in the unit
-- Clash rules for procedures apply to the **selected** set only (two procedures in mutually exclusive arms may share a name)
+- Clash rules for procedure **signatures** apply to the **selected** set only (two identical signatures in mutually exclusive arms may share a name; different param types may overload even in the same arm)
 - Violations → `Name_Clash` ([`LV00011`](diagnostics.md))
 
 Spans cover names and the whole unit (first token through the final `.`). Optional filenames come from tokenization ([source-locations.md](source-locations.md)).
@@ -120,7 +120,7 @@ Spans cover names and the whole unit (first token through the final `.`). Option
 | `Unexpected_End_Of_Input` | A token was required but the cursor was at end |
 | `Unexpected_Token` | Wrong kind/subtype at the cursor (including bad type sizes such as `float<16>`, or `#if` / `#elsif` / `#else` / `#end` misplaced; also misuse of identifier `import`) |
 | `Unexpected_Trailing` | Tokens remain after a complete unit |
-| `Name_Clash` | Duplicate or conflicting procedure/parameter/using/local name (selected set only; includes self-using and no-shadow usings/locals) |
+| `Name_Clash` | Duplicate or conflicting procedure/parameter/using/local name (selected set only; includes self-using, no-shadow usings/locals, and identical procedure signatures) |
 | `Invalid_Flavor_Condition` | Flavor string is not exactly `wasi` / `native` / `web` ([`LV00012`](diagnostics.md)) |
 
 Empty input / empty token list reports `Unexpected_End_Of_Input` at a synthetic span `(1,1,1)` when nothing was consumed.

@@ -4,7 +4,7 @@ Version **1.0** of the Lovelace Intermediate Representation text file. Owned by 
 
 UTF-8, no BOM. WAT-inspired S-expressions (LIR sits next to WASM, not Pascal). This slice **writes and prints only**; there is **no `.tlir` parser**.
 
-The subroutine name+offset **preamble** exists only in `.lir`, not in `.tlir`.
+The binary `.lir` file also stores a subroutine **index** (id + signature + file offset). `.tlir` emits the same index as an `(index …)` form (no offsets).
 
 ## Canonical writer
 
@@ -29,7 +29,22 @@ Inside the module, in order:
 3. `(flags <decimal-u32>)` always present (v1 examples use `0`)
 4. Optional `(origin …)` when a module origin is present (see below)
 5. Zero or more `(depend "Name")` in insertion order
-6. Zero or more `(subroutine …)` in insertion order
+6. Optional `(index …)` when there is at least one subroutine (see below)
+7. Zero or more `(subroutine …)` in insertion order
+
+### Index form
+
+Lists every subroutine’s **1-based id** (same as `call <index>`), source name, parameters, and result. Names may repeat for overloads.
+
+```text
+(index
+  (1 "Sink" (param "V" i32) (result unit))
+  (2 "Sink" (param "Flag" i32) (result unit))
+  (3 "Run" (result unit))
+)
+```
+
+Omit `(param …)` when there are zero parameters. Omit the whole `(index …)` when `subroutine_count` is 0.
 
 Inside a subroutine, in order:
 
@@ -98,6 +113,9 @@ Other Unicode scalars (including emoji) are raw UTF-8 inside the quotes.
   (name "example")
   (flags 0)
   (depend "other")
+  (index
+    (1 "Main" (param "x" i32 "y" f64) (result i32))
+    (2 "Init" (result unit)))
   (subroutine
     (name "Main")
     (param "x" i32 "y" f64)

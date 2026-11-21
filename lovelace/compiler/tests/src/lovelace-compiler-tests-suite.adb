@@ -242,6 +242,10 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Parser.Test_Flavor_Active_Clash'Access));
       Result.Add_Test
         (Parser_Caller.Create
+           ("parser: overload signatures",
+            Lovelace.Compiler.Tests.Parser.Test_Overload_Signatures'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
            ("parser: flavor exclusive names",
             Lovelace
               .Compiler
@@ -494,6 +498,10 @@ package body Lovelace.Compiler.Tests.Suite is
         (Ir_Generator_Caller.Create
            ("ir generator: same-unit calls",
             Lovelace.Compiler.Tests.Ir_Generator.Test_Same_Unit_Calls'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
+           ("ir generator: overload calls",
+            Lovelace.Compiler.Tests.Ir_Generator.Test_Overload_Calls'Access));
 
       Result.Add_Test
         (Backend_Caller.Create
@@ -675,6 +683,14 @@ package body Lovelace.Compiler.Tests.Suite is
         (Semantics_Caller.Create
            ("semantics: unused priority",
             Lovelace.Compiler.Tests.Semantics.Test_Unused_Priority'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: unused using",
+            Lovelace.Compiler.Tests.Semantics.Test_Unused_Using'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: overload resolve",
+            Lovelace.Compiler.Tests.Semantics.Test_Overload_Resolve'Access));
       Result.Add_Test
         (Semantics_Caller.Create
            ("semantics: scoped using visibility",

@@ -29,6 +29,12 @@ package body Lovelace.Main.Integration_Tests.Support_Tests is
         Helpers.Locate_Sample ("comments", "Comments.love");
       Calls_Path      : constant String :=
         Helpers.Locate_Sample ("calls", "SameModuleCall.love");
+      Overload_Path   : constant String :=
+        Helpers.Locate_Sample ("overload", "Overload.love");
+      Overload_Lib    : constant String :=
+        Helpers.Locate_Sample ("overload", "OverloadLib.love");
+      Overload_Caller : constant String :=
+        Helpers.Locate_Sample ("overload", "OverloadCaller.love");
       Resolve_Caller  : constant String :=
         Helpers.Locate_Sample ("resolve", "Caller.love");
       Resolve_Lib     : constant String :=
@@ -63,6 +69,15 @@ package body Lovelace.Main.Integration_Tests.Support_Tests is
       AUnit.Assertions.Assert
         (Ada.Directories.Exists (Calls_Path),
          "calls SameModuleCall.love present");
+      AUnit.Assertions.Assert
+        (Ada.Directories.Exists (Overload_Path),
+         "overload Overload.love present");
+      AUnit.Assertions.Assert
+        (Ada.Directories.Exists (Overload_Lib),
+         "overload OverloadLib.love present");
+      AUnit.Assertions.Assert
+        (Ada.Directories.Exists (Overload_Caller),
+         "overload OverloadCaller.love present");
       AUnit.Assertions.Assert
         (Ada.Directories.Exists (Resolve_Caller),
          "resolve Caller.love present");

@@ -109,6 +109,22 @@ package body Lovelace.Lir.Tests.Support is
       end case;
    end Assert_Validate_Error;
 
+   procedure Assert_Validate_Ok (The_Module : Modules.Module; Message : String) is
+      Result : constant Errors.Validation_Results.Result := Modules.Validate (The_Module);
+   begin
+      case Result.Ok is
+         when True  =>
+            null;
+
+         when False =>
+            AUnit.Assertions.Assert
+              (False,
+               Message
+               & ": unexpected validate failure "
+               & Errors.Error_Code'Image (Result.Error));
+      end case;
+   end Assert_Validate_Ok;
+
    function Make_Subroutine
      (Name        : String;
       Return_Type : Types.Value_Type;

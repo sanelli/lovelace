@@ -5,6 +5,8 @@ with Interfaces;
 
 with Lovelace.Compiler.Intrinsics;
 with Lovelace.Compiler.Literals;
+with Lovelace.Compiler.Semantics.Lovelace_Types;
+with Lovelace.Compiler.Semantics.Typecheck;
 with Lovelace.Compiler.Types;
 with Lovelace.Lir.Errors;
 with Lovelace.Lir.Opcodes;
@@ -35,10 +37,20 @@ package body Lovelace.Compiler.Ir_Generator is
        (Index_Type   => Positive,
         Element_Type => Flat_Symbol);
 
-   --  One name Ã¢ÂÂ 1-based LIR local slot binding in a scope frame.
+   package Lovelace_Types renames Lovelace.Compiler.Semantics.Lovelace_Types;
+   package Typecheck renames Lovelace.Compiler.Semantics.Typecheck;
+
+   package Actual_Type_Vectors is new
+     Ada.Containers.Vectors
+       (Index_Type   => Positive,
+        Element_Type => Lovelace_Types.Lovelace_Type,
+        "="          => Lovelace_Types."=");
+
+   --  One name -> 1-based LIR local slot binding in a scope frame.
    type Local_Binding is record
-      Name  : Ada.Strings.Unbounded.Unbounded_String;
-      Index : Positive;
+      Name       : Ada.Strings.Unbounded.Unbounded_String;
+      Index      : Positive;
+      Value_Type : Lovelace_Types.Lovelace_Type;
    end record;
 
    package Binding_Vectors is new
@@ -52,7 +64,7 @@ package body Lovelace.Compiler.Ir_Generator is
         Element_Type => Binding_Vectors.Vector,
         "="          => Binding_Vectors."=");
 
-   --  Scoped nameÃ¢ÂÂslot map; params occupy 1 .. Param_Count, then flattened locals.
+   --  Scoped name->slot map; params occupy 1 .. Param_Count, then flattened locals.
    type Local_Map is record
       Scopes    : Scope_Vectors.Vector;
       Next_Slot : Positive := 1;
@@ -67,19 +79,37 @@ package body Lovelace.Compiler.Ir_Generator is
      (The_Block : Ast.Block; Into : in out Ast.Using_Sequence);
 
    procedure Bind_Local
-     (The_Map : in out Local_Map; Name : String; Index : Positive);
+     (The_Map    : in out Local_Map;
+      Name       : String;
+      Index      : Positive;
+      Value_Type : Lovelace_Types.Lovelace_Type);
 
    function Collect_Unique_Dependencies
      (The_Module : Ast.Module) return Ast.Using_Sequence;
 
+   function Expression_Type
+     (The_Expression : Ast.Expression; Locals : Local_Map)
+      return Lovelace_Types.Lovelace_Type;
+
    function Find_Local
      (The_Map : Local_Map; Name : String; Index : out Positive) return Boolean;
+
+   function Find_Local
+     (The_Map    : Local_Map;
+      Name       : String;
+      Index      : out Positive;
+      Value_Type : out Lovelace_Types.Lovelace_Type) return Boolean;
 
    function Find_Symbol
      (Callee_Name  : String;
       Symbols      : Flat_Symbol_Vectors.Vector;
+      Actual_Types : Actual_Type_Vectors.Vector;
       Target_Index : out Positive;
       Callee_Ast   : out Ast.Subroutine) return Boolean;
+
+   function Formals_Match
+     (The_Subroutine : Ast.Subroutine;
+      Actual_Types   : Actual_Type_Vectors.Vector) return Boolean;
 
    function Lower_Call
      (The_Call       : Ast.Call_Statement;
@@ -147,7 +177,10 @@ package body Lovelace.Compiler.Ir_Generator is
    end Append_Usings_From_Block;
 
    procedure Bind_Local
-     (The_Map : in out Local_Map; Name : String; Index : Positive)
+     (The_Map    : in out Local_Map;
+      Name       : String;
+      Index      : Positive;
+      Value_Type : Lovelace_Types.Lovelace_Type)
    is
       Last_Index : constant Positive := The_Map.Scopes.Last_Index;
       Frame      : Binding_Vectors.Vector :=
@@ -155,8 +188,9 @@ package body Lovelace.Compiler.Ir_Generator is
    begin
       Frame.Append
         (Local_Binding'
-           (Name  => Ada.Strings.Unbounded.To_Unbounded_String (Name),
-            Index => Index));
+           (Name       => Ada.Strings.Unbounded.To_Unbounded_String (Name),
+            Index      => Index,
+            Value_Type => Value_Type));
       The_Map.Scopes.Replace_Element (Last_Index, Frame);
    end Bind_Local;
 
@@ -200,6 +234,45 @@ package body Lovelace.Compiler.Ir_Generator is
       return Result;
    end Collect_Unique_Dependencies;
 
+   function Expression_Type
+     (The_Expression : Ast.Expression; Locals : Local_Map)
+      return Lovelace_Types.Lovelace_Type
+   is
+      Lexeme : constant String :=
+        Ada.Strings.Unbounded.To_String (The_Expression.Lexeme);
+   begin
+      case The_Expression.Kind is
+         when Ast.Boolean_Literal =>
+            return Lovelace_Types.Boolean_Type;
+
+         when Ast.Integer_Literal =>
+            declare
+               Evaluated : constant Literals.Integer_32_Results.Result :=
+                 Literals.To_Integer_32 (Lexeme);
+            begin
+               case Evaluated.Ok is
+                  when True  =>
+                     return
+                       Lovelace_Types.Integer_Literal_Type (Evaluated.Value);
+
+                  when False =>
+                     return Lovelace_Types.Unknown_Type;
+               end case;
+            end;
+
+         when Ast.Name_Reference  =>
+            declare
+               Slot       : Positive;
+               Value_Type : Lovelace_Types.Lovelace_Type;
+            begin
+               if Find_Local (Locals, Lexeme, Slot, Value_Type) then
+                  return Value_Type;
+               end if;
+               return Lovelace_Types.Unknown_Type;
+            end;
+      end case;
+   end Expression_Type;
+
    function Failure
      (Code   : Ir_Generator_Error_Code;
       Span   : Source.Source_Span;
@@ -216,8 +289,19 @@ package body Lovelace.Compiler.Ir_Generator is
    function Find_Local
      (The_Map : Local_Map; Name : String; Index : out Positive) return Boolean
    is
+      Value_Type : Lovelace_Types.Lovelace_Type;
+   begin
+      return Find_Local (The_Map, Name, Index, Value_Type);
+   end Find_Local;
+
+   function Find_Local
+     (The_Map    : Local_Map;
+      Name       : String;
+      Index      : out Positive;
+      Value_Type : out Lovelace_Types.Lovelace_Type) return Boolean is
    begin
       Index := 1;
+      Value_Type := Lovelace_Types.Unknown_Type;
       for Scope_Index in reverse 1 .. Natural (The_Map.Scopes.Length) loop
          declare
             Frame : constant Binding_Vectors.Vector :=
@@ -230,6 +314,7 @@ package body Lovelace.Compiler.Ir_Generator is
                begin
                   if Ada.Strings.Unbounded.To_String (Binding.Name) = Name then
                      Index := Binding.Index;
+                     Value_Type := Binding.Value_Type;
                      return True;
                   end if;
                end;
@@ -243,11 +328,13 @@ package body Lovelace.Compiler.Ir_Generator is
    function Find_Symbol
      (Callee_Name  : String;
       Symbols      : Flat_Symbol_Vectors.Vector;
+      Actual_Types : Actual_Type_Vectors.Vector;
       Target_Index : out Positive;
       Callee_Ast   : out Ast.Subroutine) return Boolean
    is
       Module_Prefix  : Ada.Strings.Unbounded.Unbounded_String;
       Procedure_Name : Ada.Strings.Unbounded.Unbounded_String;
+      Match_Count    : Natural := 0;
    begin
       Target_Index := 1;
       if not Split_Callee (Callee_Name, Module_Prefix, Procedure_Name) then
@@ -260,16 +347,45 @@ package body Lovelace.Compiler.Ir_Generator is
          begin
             if Symbol.Module_Name = Module_Prefix
               and then Symbol.Procedure_Name = Procedure_Name
+              and then Formals_Match (Symbol.The_Subroutine, Actual_Types)
             then
+               Match_Count := Match_Count + 1;
                Target_Index := Index;
                Callee_Ast := Symbol.The_Subroutine;
-               return True;
             end if;
          end;
       end loop;
 
-      return False;
+      return Match_Count = 1;
    end Find_Symbol;
+
+   function Formals_Match
+     (The_Subroutine : Ast.Subroutine;
+      Actual_Types   : Actual_Type_Vectors.Vector) return Boolean
+   is
+      Formals : constant Ast.Parameter_Sequence :=
+        Ast.Parameters (The_Subroutine);
+   begin
+      if Ast.Length (Formals) /= Natural (Actual_Types.Length) then
+         return False;
+      end if;
+
+      for Index in 1 .. Ast.Length (Formals) loop
+         declare
+            Formal_Type : constant Lovelace_Types.Lovelace_Type :=
+              Lovelace_Types.From_Expression
+                (Ast.Element (Formals, Index).Parameter_Type);
+         begin
+            if not Typecheck.Is_Assignable
+                     (Formal_Type, Actual_Types.Element (Index))
+            then
+               return False;
+            end if;
+         end;
+      end loop;
+
+      return True;
+   end Formals_Match;
 
    function Generate (The_Module : Ast.Module) return Generate_Result is
       Units : Unit_Graph.Compilation_Set;
@@ -324,9 +440,8 @@ package body Lovelace.Compiler.Ir_Generator is
 
       for Unit_Index in 1 .. Natural (Units.Length) loop
          declare
-            Loaded  : constant Unit_Graph.Loaded_Unit :=
+            Loaded : constant Unit_Graph.Loaded_Unit :=
               Units.Element (Unit_Index);
-            Is_Root : constant Boolean := Unit_Index = 1;
          begin
             for Local_Index in 1 .. Ast.Subroutine_Count (Loaded.The_Module)
             loop
@@ -335,10 +450,6 @@ package body Lovelace.Compiler.Ir_Generator is
                     Ast.Get_Subroutine (Loaded.The_Module, Local_Index);
                   Proc_Name : constant String := Ast.Name (Ast_Sub);
                   Mod_Name  : constant String := Ast.Name (Loaded.The_Module);
-                  Lir_Name  : constant String :=
-                    (if Is_Root
-                     then Proc_Name
-                     else Mod_Name & "." & Proc_Name);
                begin
                   Symbols.Append
                     (Flat_Symbol'
@@ -350,12 +461,31 @@ package body Lovelace.Compiler.Ir_Generator is
                           Ada.Strings.Unbounded.To_Unbounded_String
                             (Proc_Name),
                         Lir_Name       =>
-                          Ada.Strings.Unbounded.To_Unbounded_String (Lir_Name),
+                          Ada.Strings.Unbounded.Null_Unbounded_String,
                         Exported       =>
                           Ast.Has_Export (Ast.Get_Flags (Ast_Sub)),
                         The_Subroutine => Ast_Sub));
                end;
             end loop;
+         end;
+      end loop;
+
+      for Symbol_Index in 1 .. Natural (Symbols.Length) loop
+         declare
+            Symbol    : Flat_Symbol := Symbols.Element (Symbol_Index);
+            Mod_Name  : constant String :=
+              Ada.Strings.Unbounded.To_String (Symbol.Module_Name);
+            Proc_Name : constant String :=
+              Ada.Strings.Unbounded.To_String (Symbol.Procedure_Name);
+            Is_Root   : constant Boolean := Symbol.Unit_Index = 1;
+            --  Source names (overloads share a name); Call targets are by index.
+            --  Non-root units keep Module.Proc so flattened deps stay distinct by module.
+            Lir_Name  : constant String :=
+              (if Is_Root then Proc_Name else Mod_Name & "." & Proc_Name);
+         begin
+            Symbol.Lir_Name :=
+              Ada.Strings.Unbounded.To_Unbounded_String (Lir_Name);
+            Symbols.Replace_Element (Symbol_Index, Symbol);
          end;
       end loop;
 
@@ -474,7 +604,9 @@ package body Lovelace.Compiler.Ir_Generator is
                              (Locals,
                               Ada.Strings.Unbounded.To_String
                                 (The_Parameter.Parameter_Name),
-                              Param_Index);
+                              Param_Index,
+                              Lovelace_Types.From_Expression
+                                (The_Parameter.Parameter_Type));
                         end;
                      end loop;
                      Locals.Next_Slot := Param_Count + 1;
@@ -530,11 +662,20 @@ package body Lovelace.Compiler.Ir_Generator is
    is
       Callee_Text  : constant String :=
         Ada.Strings.Unbounded.To_String (The_Call.Callee_Name);
+      Actual_Types : Actual_Type_Vectors.Vector;
       Target_Index : Positive;
       Callee_Ast   : Ast.Subroutine;
    begin
-      --  Semantics already resolved and typed this call; the lookup only recovers the flat index.
-      if not Find_Symbol (Callee_Text, Symbols, Target_Index, Callee_Ast) then
+      for Arg_Index in 1 .. Ast.Length (The_Call.Arguments) loop
+         Actual_Types.Append
+           (Expression_Type
+              (Ast.Element (The_Call.Arguments, Arg_Index), Locals));
+      end loop;
+
+      --  Semantics already resolved and typed this call; the lookup recovers the flat overload index.
+      if not Find_Symbol
+               (Callee_Text, Symbols, Actual_Types, Target_Index, Callee_Ast)
+      then
          return
            Failure
              (Internal_Error,
@@ -543,18 +684,7 @@ package body Lovelace.Compiler.Ir_Generator is
               & Callee_Text
               & "' was not resolved by semantic analysis");
       end if;
-
-      if Ast.Length (The_Call.Arguments)
-        /= Ast.Length (Ast.Parameters (Callee_Ast))
-      then
-         return
-           Failure
-             (Internal_Error,
-              The_Call.Name_Span,
-              "call '"
-              & Callee_Text
-              & "' has an arity semantic analysis rejected");
-      end if;
+      pragma Unreferenced (Callee_Ast);
 
       for Arg_Index in 1 .. Ast.Length (The_Call.Arguments) loop
          declare
@@ -675,7 +805,8 @@ package body Lovelace.Compiler.Ir_Generator is
             Bind_Local
               (Locals,
                Ada.Strings.Unbounded.To_String (The_Local.Parameter_Name),
-               Slot);
+               Slot,
+               Lovelace_Types.From_Expression (The_Local.Parameter_Type));
             Locals.Next_Slot := Slot + 1;
          end;
       end loop;

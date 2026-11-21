@@ -19,6 +19,10 @@ package Lovelace.Compiler.Tests.Semantics is
    --  @param The_Test Unused fixture.
    procedure Test_Missing_And_Not_Exported_Callees (The_Test : in out Fixture);
 
+   --  Overload resolve by parameter types; Ambiguous_Call; export visibility of overloads.
+   --  @param The_Test Unused fixture.
+   procedure Test_Overload_Resolve (The_Test : in out Fixture);
+
    --  Semantic codes map to the stable LV labels and severities.
    --  @param The_Test Unused fixture.
    procedure Test_Reporting_Mapping (The_Test : in out Fixture);
@@ -38,6 +42,10 @@ package Lovelace.Compiler.Tests.Semantics is
    --  Unused_Variable vs Unused_Assignment priority, parameters, and nested scopes.
    --  @param The_Test Unused fixture.
    procedure Test_Unused_Priority (The_Test : in out Fixture);
+
+   --  Unused_Using for unit and block usings; independence from Unused_Variable.
+   --  @param The_Test Unused fixture.
+   procedure Test_Unused_Using (The_Test : in out Fixture);
 
    --  Warnings never fail Analyze; errors in a dependency carry that unit's index.
    --  @param The_Test Unused fixture.

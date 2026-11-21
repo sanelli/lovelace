@@ -298,6 +298,69 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
          Ada.Exceptions.Reraise_Occurrence (Error);
    end Test_Nested_Using_Build_Validate_And_Run;
 
+   procedure Test_Overload_Caller_Build_Validate_And_Run
+     (The_Test : in out Fixture)
+   is
+      pragma Unreferenced (The_Test);
+      Test_Name       : constant String :=
+        "build: validate and run program OverloadCaller";
+      Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
+      Sample_Path     : constant String :=
+        Helpers.Locate_Sample ("overload", "OverloadCaller.love");
+      Output_Root     : constant String :=
+        Helpers.Locate_Output_Root ("overload");
+      Validate_Status : Helpers.Tool_Status;
+      Run_Status      : Helpers.Tool_Status;
+      Outcome         : Helpers.Test_Outcome := Helpers.Ok;
+   begin
+      AUnit.Assertions.Assert
+        (Lovelace_Path'Length > 0, "lovelace executable present");
+
+      Helpers.Reset_Output_Root (Output_Root);
+      Helpers.Build_Sample
+        (Lovelace_Path => Lovelace_Path,
+         Sample_Path   => Sample_Path,
+         Output_Root   => Output_Root,
+         Message       => "OverloadCaller");
+      Helpers.Assert_Build_Artifacts
+        (Output_Root => Output_Root,
+         Unit_Name   => "OverloadCaller",
+         Message     => "OverloadCaller");
+      --  LIR '.' → WAT _2e; shared name gets _<index>.
+      Helpers.Assert_Wat_Contains
+        (Output_Root => Output_Root,
+         Unit_Name   => "OverloadCaller",
+         Fragment    => "call $OverloadLib_2eSink_2",
+         Message     => "OverloadCaller integer overload");
+      Helpers.Assert_Wat_Contains
+        (Output_Root => Output_Root,
+         Unit_Name   => "OverloadCaller",
+         Fragment    => "call $OverloadLib_2eSink_3",
+         Message     => "OverloadCaller boolean overload");
+
+      Helpers.Validate_Unit_Artifacts
+        (Output_Root => Output_Root,
+         Unit_Name   => "OverloadCaller",
+         Message     => "OverloadCaller",
+         Status      => Validate_Status);
+      Helpers.Run_Unit_Entrypoint
+        (Output_Root => Output_Root,
+         Unit_Name   => "OverloadCaller",
+         Message     => "OverloadCaller",
+         Status      => Run_Status);
+
+      if Validate_Status = Helpers.Missing or else Run_Status = Helpers.Missing
+      then
+         Outcome := Helpers.Inconclusive;
+      end if;
+
+      Helpers.Report_Test_Result (Test_Name, Outcome);
+   exception
+      when Error : others =>
+         Helpers.Report_Test_Result (Test_Name, Helpers.Fail);
+         Ada.Exceptions.Reraise_Occurrence (Error);
+   end Test_Overload_Caller_Build_Validate_And_Run;
+
    procedure Test_Resolve_Caller_Build_Validate_And_Run
      (The_Test : in out Fixture)
    is

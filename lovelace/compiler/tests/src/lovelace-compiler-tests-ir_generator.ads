@@ -59,6 +59,10 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  @param The_Test Unused fixture.
    procedure Test_Native_Binding (The_Test : in out Fixture);
 
+   --  Overloads select distinct Call targets; LIR names stay the source name.
+   --  @param The_Test Unused fixture.
+   procedure Test_Overload_Calls (The_Test : in out Fixture);
+
    --  Integer/float/boolean formals map to matching LIR Value_Type (boolean -> I32).
    --  @param The_Test Unused fixture.
    procedure Test_Parameter_Type_Mapping (The_Test : in out Fixture);

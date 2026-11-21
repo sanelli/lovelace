@@ -16,6 +16,10 @@ package body Lovelace.Lir.Text is
 
    package Source renames Lovelace.Common.Source;
 
+   procedure Append_Index
+     (Buffer     : in out Ada.Strings.Unbounded.Unbounded_String;
+      The_Module : Modules.Module);
+   --  Header index: 1-based id, name, params, result (Call targets use the id).
    procedure Append_Line
      (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; Text : String);
    procedure Append_Module_Origin
@@ -39,6 +43,58 @@ package body Lovelace.Lir.Text is
    function Instruction_Token (Item : Instructions.Instruction) return String;
    function Type_Token (The_Type : Types.Value_Type) return String;
    function Unsigned_Image (Value : Interfaces.Unsigned_32) return String;
+
+   procedure Append_Index
+     (Buffer     : in out Ada.Strings.Unbounded.Unbounded_String;
+      The_Module : Modules.Module)
+   is
+      Count : constant Natural := Modules.Subroutine_Count (The_Module);
+   begin
+      if Count = 0 then
+         return;
+      end if;
+
+      Append_Line (Buffer, Indent (1) & "(index");
+      for Subroutine_Index in 1 .. Count loop
+         declare
+            The_Subroutine  : constant Subroutines.Subroutine :=
+              Modules.Get_Subroutine (The_Module, Subroutine_Index);
+            The_Signature   : constant Subroutines.Signature :=
+              Subroutines.Get_Signature (The_Subroutine);
+            Parameter_Count : constant Natural :=
+              Types.Length (The_Signature.Parameters);
+            Id_Image        : constant String :=
+              Unsigned_Image (Interfaces.Unsigned_32 (Subroutine_Index));
+         begin
+            Ada.Strings.Unbounded.Append
+              (Buffer, Indent (2) & "(" & Id_Image & " ");
+            Append_Quoted
+              (Buffer, Ada.Strings.Unbounded.To_String (The_Signature.Name));
+            if Parameter_Count > 0 then
+               Ada.Strings.Unbounded.Append (Buffer, " (param");
+               for Parameter_Index in 1 .. Parameter_Count loop
+                  declare
+                     The_Parameter : constant Types.Parameter :=
+                       Types.Element
+                         (The_Signature.Parameters, Parameter_Index);
+                  begin
+                     Ada.Strings.Unbounded.Append (Buffer, " ");
+                     Append_Quoted
+                       (Buffer,
+                        Ada.Strings.Unbounded.To_String (The_Parameter.Name));
+                     Ada.Strings.Unbounded.Append
+                       (Buffer, " " & Type_Token (The_Parameter.The_Type));
+                  end;
+               end loop;
+               Ada.Strings.Unbounded.Append (Buffer, ")");
+            end if;
+            Append_Line
+              (Buffer,
+               " (result " & Type_Token (The_Signature.Return_Type) & "))");
+         end;
+      end loop;
+      Append_Line (Buffer, Indent (1) & ")");
+   end Append_Index;
 
    procedure Append_Line
      (Buffer : in out Ada.Strings.Unbounded.Unbounded_String; Text : String) is
@@ -289,6 +345,8 @@ package body Lovelace.Lir.Text is
               (Buffer, Modules.Dependency_Name (The_Module, Dependency_Index));
             Append_Line (Buffer, ")");
          end loop;
+
+         Append_Index (Buffer, The_Module);
 
          for Subroutine_Index in 1 .. Modules.Subroutine_Count (The_Module)
          loop

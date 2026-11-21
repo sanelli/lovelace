@@ -87,11 +87,19 @@ package body Lovelace.Lir.Tests.Text_Format is
              (Support.Must_To_Text (Flagged, "flags"));
       begin
          Support.Assert_Contains (Unit_Text, "(result unit)", "result unit");
+         Support.Assert_Contains
+           (Unit_Text, "(index" & ASCII.LF & "    (1 ""P"" (result unit))", "unit index");
          Support.Assert_Not_Contains (Unit_Text, "(param", "no param form");
          Support.Assert_Contains (I32_Text, "(result i32)", "result i32");
          Support.Assert_Contains
+           (I32_Text, "(1 ""F"" (result i32))", "i32 index entry");
+         Support.Assert_Contains
            (Param_Text, "(param ""a"" i8 ""b"" u8 ""c"" f32)", "param list");
          Support.Assert_Contains (Param_Text, "(result unit)", "param result");
+         Support.Assert_Contains
+           (Param_Text,
+            "(1 ""G"" (param ""a"" i8 ""b"" u8 ""c"" f32) (result unit))",
+            "param index entry");
          Support.Assert_Not_Contains (Param_Text, "(local", "no local form");
          Support.Assert_Contains (Flag_Text, "export", "export");
          Support.Assert_Contains (Flag_Text, "entrypoint", "entrypoint");

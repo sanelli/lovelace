@@ -182,21 +182,7 @@ package body Lovelace.Lir.Modules is
                  Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
             end if;
 
-            for Prior_Index in 1 .. Subroutine_Index - 1 loop
-               declare
-                  Prior_Signature : constant Subroutines.Signature :=
-                    Subroutines.Get_Signature
-                      (Get_Subroutine (The_Module, Prior_Index));
-               begin
-                  if Ada.Strings.Unbounded.To_String (Prior_Signature.Name)
-                    = Subroutine_Name_Text
-                  then
-                     return
-                       Errors.Validation_Results.From_Failure
-                         (Errors.Duplicate_Name);
-                  end if;
-               end;
-            end loop;
+            --  Duplicate subroutine names are allowed (overloads); Call uses index.
 
             for Parameter_Index in 1 .. Types.Length (The_Signature.Parameters)
             loop

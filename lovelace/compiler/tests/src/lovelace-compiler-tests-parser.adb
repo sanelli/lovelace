@@ -877,6 +877,30 @@ package body Lovelace.Compiler.Tests.Parser is
         (Nested_Preamble, 1, Lovelace.Compiler.Parser.Unexpected_Token, "obsolete import nested code");
    end Test_Obsolete_Import;
 
+   procedure Test_Overload_Signatures (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Different : constant Ast.Module :=
+        Support.Must_Parse
+          ("module M; procedure Sink(V : integer); begin end; "
+           & "procedure Sink(V : boolean); begin end; end.",
+           "different param types");
+      Identical : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module M; procedure Sink(V : integer); begin end; "
+           & "procedure Sink(X : integer); begin end; end.",
+           "identical param types");
+      Zero_Dup  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module M; procedure Sink(); begin end; procedure Sink(); begin end; end.",
+           "duplicate nullary");
+   begin
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (Different) = 2, "two overloads parsed");
+      AUnit.Assertions.Assert (Ast.Name (Ast.Get_Subroutine (Different, 1)) = "Sink", "first Sink");
+      AUnit.Assertions.Assert (Ast.Name (Ast.Get_Subroutine (Different, 2)) = "Sink", "second Sink");
+      Support.Assert_Parser_Error_Code (Identical, 1, Lovelace.Compiler.Parser.Name_Clash, "identical types");
+      Support.Assert_Parser_Error_Code (Zero_Dup, 1, Lovelace.Compiler.Parser.Name_Clash, "duplicate nullary");
+   end Test_Overload_Signatures;
+
    procedure Test_Qualified_Calls (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Module_Source  : constant String :=

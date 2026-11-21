@@ -181,6 +181,8 @@ package body Lovelace.Compiler.Parser is
    function Step_End_Of_Input (The_Cursor : Cursor; Detail : String) return Step_Result;
    function String_Literal_Content (Source_Text : String; The_Token : Tokens.Token) return String;
    function Subroutine_Name_Exists (Subroutines : Ast.Subroutine_Sequence; Name : String) return Boolean;
+   function Subroutine_Signature_Exists
+     (Subroutines : Ast.Subroutine_Sequence; Name : String; Parameters : Ast.Parameter_Sequence) return Boolean;
    function To_Parse_Result (First_Span : Source.Source_Span; The_Unit : Unit_Parse) return Parse_Result;
 
    procedure Advance (The_Cursor : in out Cursor) is
@@ -2283,24 +2285,13 @@ package body Lovelace.Compiler.Parser is
       declare
          Name : constant String := Ada.Strings.Unbounded.To_String (Procedure_Name);
       begin
-         if Keep_Declarations then
-            if Name = Module_Name then
-               return
-                 Make_Failure
-                   (Code     => Name_Clash,
-                    Span     => Name_Token.Span,
-                    Filename => Name_Token.Filename,
-                    Detail   => "procedure name """ & Name & """ conflicts with the module name");
-            end if;
-
-            if Subroutine_Name_Exists (The_Unit.Subroutines, Name) then
-               return
-                 Make_Failure
-                   (Code     => Name_Clash,
-                    Span     => Name_Token.Span,
-                    Filename => Name_Token.Filename,
-                    Detail   => "procedure name """ & Name & """ is duplicated in this module");
-            end if;
+         if Keep_Declarations and then Name = Module_Name then
+            return
+              Make_Failure
+                (Code     => Name_Clash,
+                 Span     => Name_Token.Span,
+                 Filename => Name_Token.Filename,
+                 Detail   => "procedure name """ & Name & """ conflicts with the module name");
          end if;
       end;
 
@@ -2358,6 +2349,22 @@ package body Lovelace.Compiler.Parser is
          when True  =>
             null;
       end case;
+
+      if Keep_Declarations then
+         declare
+            Name : constant String := Ada.Strings.Unbounded.To_String (Procedure_Name);
+         begin
+            if Subroutine_Signature_Exists (The_Unit.Subroutines, Name, Parameters) then
+               return
+                 Make_Failure
+                   (Code     => Name_Clash,
+                    Span     => Name_Token.Span,
+                    Filename => Name_Token.Filename,
+                    Detail   =>
+                      "procedure """ & Name & """ with this parameter type sequence is duplicated in this module");
+            end if;
+         end;
+      end if;
 
       Step :=
         Expect_Punctuation
@@ -2734,6 +2741,40 @@ package body Lovelace.Compiler.Parser is
 
       return False;
    end Subroutine_Name_Exists;
+
+   function Subroutine_Signature_Exists
+     (Subroutines : Ast.Subroutine_Sequence; Name : String; Parameters : Ast.Parameter_Sequence) return Boolean
+   is
+      use type Types.Type_Expression;
+   begin
+      for Index in 1 .. Ast.Length (Subroutines) loop
+         declare
+            Existing : constant Ast.Subroutine := Ast.Element (Subroutines, Index);
+            Formals  : constant Ast.Parameter_Sequence := Ast.Parameters (Existing);
+         begin
+            if Ast.Name (Existing) = Name and then Ast.Length (Formals) = Ast.Length (Parameters) then
+               declare
+                  Same_Types : Boolean := True;
+               begin
+                  for Param_Index in 1 .. Ast.Length (Parameters) loop
+                     if Ast.Element (Formals, Param_Index).Parameter_Type
+                       /= Ast.Element (Parameters, Param_Index).Parameter_Type
+                     then
+                        Same_Types := False;
+                        exit;
+                     end if;
+                  end loop;
+
+                  if Same_Types then
+                     return True;
+                  end if;
+               end;
+            end if;
+         end;
+      end loop;
+
+      return False;
+   end Subroutine_Signature_Exists;
 
    function To_Parse_Result (First_Span : Source.Source_Span; The_Unit : Unit_Parse) return Parse_Result is
       Unit_Span   : constant Source.Source_Span := (First => First_Span.First, Last => The_Unit.Stop_Span.Last);

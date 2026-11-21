@@ -1,0 +1,7 @@
+{ Cross-module overload selection: integer literal vs boolean literal. }
+using OverloadLib;
+program OverloadCaller;
+begin
+   OverloadLib.Sink(7);
+   OverloadLib.Sink(false);
+end.

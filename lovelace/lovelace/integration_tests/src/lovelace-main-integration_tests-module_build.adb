@@ -50,7 +50,7 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
    procedure Test_Build_And_Validate (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Test_Name         : constant String :=
-        "build: validate modules Empty, Foo.Bar, Procedures, ExportProcedures, SameModuleCall, emoji";
+        "build: validate modules Empty, Foo.Bar, Procedures, ExportProcedures, SameModuleCall, Overload, emoji";
       Lovelace_Path     : constant String := Helpers.Locate_Lovelace;
       Output_Root       : constant String := Helpers.Locate_Output_Root ("modules");
       Empty_Sample      : constant String := Helpers.Locate_Sample ("module", "Empty.love");
@@ -58,6 +58,7 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
       Procedures_Sample : constant String := Helpers.Locate_Sample ("module", "Procedures.love");
       Export_Sample     : constant String := Helpers.Locate_Sample ("module", "ExportProcedures.love");
       Calls_Sample      : constant String := Helpers.Locate_Sample ("calls", "SameModuleCall.love");
+      Overload_Sample   : constant String := Helpers.Locate_Sample ("overload", "Overload.love");
       --  U+1F680 ROCKET as UTF-8 (emoji module stem).
       Rocket            : constant String :=
         [1 => Character'Val (16#F0#),
@@ -142,6 +143,25 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
          Unit_Name   => "SameModuleCall",
          Fragment    => "call $Sink",
          Message     => "SameModuleCall call");
+
+      Build_Validate_Unit
+        (Lovelace_Path => Lovelace_Path,
+         Sample_Path   => Overload_Sample,
+         Output_Root   => Output_Root,
+         Unit_Name     => "Overload",
+         Message       => "Overload",
+         Status        => Aggregate_Status);
+      --  Shared LIR name "Sink" → WAT $Sink_<1-based index>.
+      Helpers.Assert_Wat_Contains
+        (Output_Root => Output_Root,
+         Unit_Name   => "Overload",
+         Fragment    => "call $Sink_1",
+         Message     => "Overload integer call");
+      Helpers.Assert_Wat_Contains
+        (Output_Root => Output_Root,
+         Unit_Name   => "Overload",
+         Fragment    => "call $Sink_2",
+         Message     => "Overload boolean call");
 
       Build_Validate_Unit
         (Lovelace_Path => Lovelace_Path,

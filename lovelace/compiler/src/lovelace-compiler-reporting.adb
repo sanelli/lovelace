@@ -16,7 +16,8 @@ package body Lovelace.Compiler.Reporting is
       end if;
 
       Finish := Path'Last;
-      if Finish - Start + 1 >= 5 and then Path (Finish - 4 .. Finish) = ".love" then
+      if Finish - Start + 1 >= 5 and then Path (Finish - 4 .. Finish) = ".love"
+      then
          Finish := Finish - 5;
       end if;
 
@@ -26,7 +27,8 @@ package body Lovelace.Compiler.Reporting is
       return Path (Start .. Finish);
    end Love_Basename;
 
-   function To_Error_Code (Code : Backend.Backend_Error_Code) return Error_Codes.Error_Code is
+   function To_Error_Code
+     (Code : Backend.Backend_Error_Code) return Error_Codes.Error_Code is
    begin
       case Code is
          when Backend.Internal_Error   =>
@@ -40,7 +42,9 @@ package body Lovelace.Compiler.Reporting is
       end case;
    end To_Error_Code;
 
-   function To_Error_Code (Code : Ir_Generator.Ir_Generator_Error_Code) return Error_Codes.Error_Code is
+   function To_Error_Code
+     (Code : Ir_Generator.Ir_Generator_Error_Code)
+      return Error_Codes.Error_Code is
    begin
       case Code is
          when Ir_Generator.Internal_Error         =>
@@ -54,7 +58,8 @@ package body Lovelace.Compiler.Reporting is
       end case;
    end To_Error_Code;
 
-   function To_Error_Code (Code : Semantics.Semantics_Error_Code) return Error_Codes.Error_Code is
+   function To_Error_Code
+     (Code : Semantics.Semantics_Error_Code) return Error_Codes.Error_Code is
    begin
       case Code is
          when Semantics.Internal_Error        =>
@@ -81,15 +86,22 @@ package body Lovelace.Compiler.Reporting is
          when Semantics.Unresolved_Name       =>
             return Error_Codes.Unresolved_Name;
 
+         when Semantics.Ambiguous_Call        =>
+            return Error_Codes.Ambiguous_Call;
+
          when Semantics.Unused_Variable       =>
             return Error_Codes.Unused_Variable;
 
          when Semantics.Unused_Assignment     =>
             return Error_Codes.Unused_Assignment;
+
+         when Semantics.Unused_Using          =>
+            return Error_Codes.Unused_Using;
       end case;
    end To_Error_Code;
 
-   function To_Error_Code (Code : Parser.Parser_Error_Code) return Error_Codes.Error_Code is
+   function To_Error_Code
+     (Code : Parser.Parser_Error_Code) return Error_Codes.Error_Code is
    begin
       case Code is
          when Parser.Internal_Error           =>
@@ -113,7 +125,8 @@ package body Lovelace.Compiler.Reporting is
       end case;
    end To_Error_Code;
 
-   function To_Error_Code (Code : Tokenizer.Tokenizer_Error_Code) return Error_Codes.Error_Code is
+   function To_Error_Code
+     (Code : Tokenizer.Tokenizer_Error_Code) return Error_Codes.Error_Code is
    begin
       case Code is
          when Tokenizer.Internal_Error              =>
@@ -150,7 +163,8 @@ package body Lovelace.Compiler.Reporting is
       end case;
    end Unit_Kind_Label;
 
-   function Unit_Name_Matches_File (The_Module : Ast.Module; Source_Path : String) return Boolean is
+   function Unit_Name_Matches_File
+     (The_Module : Ast.Module; Source_Path : String) return Boolean is
    begin
       return Ast.Name (The_Module) = Love_Basename (Source_Path);
    end Unit_Name_Matches_File;

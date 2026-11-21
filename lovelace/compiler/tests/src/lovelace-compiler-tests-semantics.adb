@@ -6,6 +6,7 @@ with Interfaces;
 with Lovelace.Common.Source;
 with Lovelace.Compiler.Ast;
 with Lovelace.Compiler.Error_Codes;
+with Lovelace.Compiler.Parser;
 with Lovelace.Compiler.Reporting;
 with Lovelace.Compiler.Semantics;
 with Lovelace.Compiler.Semantics.Environment;
@@ -138,7 +139,8 @@ package body Lovelace.Compiler.Tests.Semantics is
          Value_Type       => Lovelace_Types.Unknown_Type,
          Variable_Id      => Variable_Id,
          Unit_Index       => 0,
-         Subroutine_Index => 0);
+         Subroutine_Index => 0,
+         Used             => False);
    end Make_Entity;
 
    procedure Test_Definite_Assignment (The_Test : in out Fixture) is
@@ -268,6 +270,57 @@ package body Lovelace.Compiler.Tests.Semantics is
         (Count_Code (Cascade.Errors, Compiler_Semantics.Use_Before_Assignment) = 1, "cascade: actual still checked");
    end Test_Missing_And_Not_Exported_Callees;
 
+   procedure Test_Overload_Resolve (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Overloads     : constant String :=
+        "module M; export procedure Sink(V : integer); begin end; "
+        & "export procedure Sink(V : boolean); begin end; end.";
+      Pick_Bool     : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Pair ("using M; program Caller; begin M.Sink(true); end.", Overloads, "pick boolean");
+      Pick_Int      : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Pair ("using M; program Caller; begin M.Sink(1); end.", Overloads, "pick integer");
+      Wrong_Arity   : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Pair ("using M; program Caller; begin M.Sink(1, true); end.", Overloads, "wrong arity");
+      Width_Overloads : constant String :=
+        "module Calls; procedure Sink(V : integer); begin end; "
+        & "procedure Sink(V : integer<8>); begin end; ";
+      Ambiguous       : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Text
+          (Width_Overloads & "procedure Run(); begin Calls.Sink(1); end; end.", "ambiguous literal");
+      Suffix_I8       : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Text
+          (Width_Overloads & "procedure Run(); begin Calls.Sink(1s8); end; end.", "suffix picks i8");
+      Suffix_I32      : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Text
+          (Width_Overloads & "procedure Run(); begin Calls.Sink(1s32); end; end.", "suffix picks i32");
+      Suffix_Bad      : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Text
+          (Width_Overloads & "procedure Run(); begin Calls.Sink(300s8); end; end.", "suffix out of range");
+      Export_Mix      : constant String :=
+        "module Lib; export procedure Sink(V : boolean); begin end; "
+        & "procedure Sink(V : integer); begin end; end.";
+      Export_Ok       : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Pair ("using Lib; program Caller; begin Lib.Sink(true); end.", Export_Mix, "exported overload");
+      Export_Hidden   : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Pair ("using Lib; program Caller; begin Lib.Sink(1); end.", Export_Mix, "non-exported overload");
+      Same_Sig        : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module M; procedure Sink(V : integer); begin end; "
+           & "procedure Sink(V : integer); begin end; end.",
+           "identical signature");
+   begin
+      Assert_Clean (Pick_Bool, "pick boolean");
+      Assert_Clean (Pick_Int, "pick integer");
+      Assert_Only_Error (Wrong_Arity, Compiler_Semantics.Unresolved_Call, "wrong arity");
+      Assert_Only_Error (Ambiguous, Compiler_Semantics.Ambiguous_Call, "ambiguous literal");
+      Assert_Clean (Suffix_I8, "suffix picks i8");
+      Assert_Clean (Suffix_I32, "suffix picks i32");
+      Assert_Only_Error (Suffix_Bad, Compiler_Semantics.Type_Mismatch, "suffix out of range");
+      Assert_Clean (Export_Ok, "exported overload");
+      Assert_Only_Error (Export_Hidden, Compiler_Semantics.Unresolved_Call, "non-exported overload");
+      Support.Assert_Parser_Error_Code (Same_Sig, 1, Lovelace.Compiler.Parser.Name_Clash, "identical signature");
+   end Test_Overload_Resolve;
+
    procedure Test_Reporting_Mapping (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
    begin
@@ -290,13 +343,27 @@ package body Lovelace.Compiler.Tests.Semantics is
       AUnit.Assertions.Assert
         (Error_Codes.Label (Reporting.To_Error_Code (Compiler_Semantics.Unresolved_Name)) = "LV00031", "LV00031");
       AUnit.Assertions.Assert
+        (Error_Codes.Label (Reporting.To_Error_Code (Compiler_Semantics.Unused_Using)) = "LV00032", "LV00032");
+      AUnit.Assertions.Assert
+        (Error_Codes.Label (Reporting.To_Error_Code (Compiler_Semantics.Ambiguous_Call)) = "LV00033", "LV00033");
+      AUnit.Assertions.Assert
         (Reporting.To_Error_Code (Compiler_Semantics.Internal_Error) = Error_Codes.Internal_Error, "internal error");
+      AUnit.Assertions.Assert
+        (Compiler_Semantics.Is_Warning (Compiler_Semantics.Unused_Using), "Unused_Using is warning");
+      AUnit.Assertions.Assert
+        (not Compiler_Semantics.Is_Warning (Compiler_Semantics.Ambiguous_Call), "Ambiguous_Call is error");
 
       for Code in Compiler_Semantics.Semantics_Error_Code loop
-         AUnit.Assertions.Assert
-           ((Error_Codes.Default_Severity (Reporting.To_Error_Code (Code)) = Error_Codes.Warning)
-            = Compiler_Semantics.Is_Warning (Code),
-            "severity agrees with Is_Warning for " & Compiler_Semantics.Semantics_Error_Code'Image (Code));
+         declare
+            Message : constant String :=
+              "severity agrees with Is_Warning for "
+              & Compiler_Semantics.Semantics_Error_Code'Image (Code);
+         begin
+            AUnit.Assertions.Assert
+              ((Error_Codes.Default_Severity (Reporting.To_Error_Code (Code)) = Error_Codes.Warning)
+               = Compiler_Semantics.Is_Warning (Code),
+               Message);
+         end;
       end loop;
    end Test_Reporting_Mapping;
 
@@ -414,16 +481,13 @@ package body Lovelace.Compiler.Tests.Semantics is
       Assert_Only_Error (Wide_Literal, Compiler_Semantics.Type_Mismatch, "literal into 64-bit");
       Assert_Only_Error (Narrowing, Compiler_Semantics.Type_Mismatch, "no implicit narrowing");
       Assert_Clean (Assign_Ok, "well-typed assignments");
-      Assert_Only_Error (Call_Int_Bool, Compiler_Semantics.Type_Mismatch, "boolean literal to integer formal");
-      Assert_Only_Error (Call_Bool_Int, Compiler_Semantics.Type_Mismatch, "integer literal to boolean formal");
-      Assert_Only_Error (Call_Unsigned, Compiler_Semantics.Type_Mismatch, "negative literal to unsigned formal");
-      Assert_Only_Error (Call_Wide, Compiler_Semantics.Type_Mismatch, "literal to 64-bit formal");
-      Assert_Only_Error (Call_Var, Compiler_Semantics.Type_Mismatch, "integer variable to boolean formal");
-      Assert_Only_Error (Call_Arity, Compiler_Semantics.Invalid_Arguments, "arity mismatch");
-      AUnit.Assertions.Assert
-        (Count_Code (Call_Two_Wrong.Errors, Compiler_Semantics.Type_Mismatch) = 2
-         and then Natural (Call_Two_Wrong.Errors.Length) = 2,
-         "two wrong actuals: one error each");
+      Assert_Only_Error (Call_Int_Bool, Compiler_Semantics.Unresolved_Call, "boolean literal to integer formal");
+      Assert_Only_Error (Call_Bool_Int, Compiler_Semantics.Unresolved_Call, "integer literal to boolean formal");
+      Assert_Only_Error (Call_Unsigned, Compiler_Semantics.Unresolved_Call, "negative literal to unsigned formal");
+      Assert_Only_Error (Call_Wide, Compiler_Semantics.Unresolved_Call, "literal to 64-bit formal");
+      Assert_Only_Error (Call_Var, Compiler_Semantics.Unresolved_Call, "integer variable to boolean formal");
+      Assert_Only_Error (Call_Arity, Compiler_Semantics.Unresolved_Call, "arity mismatch");
+      Assert_Only_Error (Call_Two_Wrong, Compiler_Semantics.Unresolved_Call, "two wrong actuals");
       Assert_Clean (Call_Ok, "well-typed calls");
    end Test_Type_Mismatch;
 
@@ -452,6 +516,16 @@ package body Lovelace.Compiler.Tests.Semantics is
          Lexeme   => Ada.Strings.Unbounded.To_Unbounded_String ("42"),
          Span     => Origin,
          Filename => Source.Absent_Filename);
+      Suffixed_I8     : constant Ast.Expression :=
+        (Kind     => Ast.Integer_Literal,
+         Lexeme   => Ada.Strings.Unbounded.To_Unbounded_String ("1s8"),
+         Span     => Origin,
+         Filename => Source.Absent_Filename);
+      Suffixed_U8     : constant Ast.Expression :=
+        (Kind     => Ast.Integer_Literal,
+         Lexeme   => Ada.Strings.Unbounded.To_Unbounded_String ("255u8"),
+         Span     => Origin,
+         Filename => Source.Absent_Filename);
       Invalid_Literal : constant Ast.Expression :=
         (Kind     => Ast.Integer_Literal,
          Lexeme   => Ada.Strings.Unbounded.To_Unbounded_String ("99999999999"),
@@ -463,6 +537,8 @@ package body Lovelace.Compiler.Tests.Semantics is
          Span     => Origin,
          Filename => Source.Absent_Filename);
       Valid_Result    : constant Typecheck.Type_Result := Typecheck.Type_Of_Literal (Valid_Literal);
+      Suffixed_I8_Res : constant Typecheck.Type_Result := Typecheck.Type_Of_Literal (Suffixed_I8);
+      Suffixed_U8_Res : constant Typecheck.Type_Result := Typecheck.Type_Of_Literal (Suffixed_U8);
       Invalid_Result  : constant Typecheck.Type_Result := Typecheck.Type_Of_Literal (Invalid_Literal);
       Boolean_Result  : constant Typecheck.Type_Result := Typecheck.Type_Of_Literal (Boolean_Literal);
    begin
@@ -502,6 +578,17 @@ package body Lovelace.Compiler.Tests.Semantics is
          and then Valid_Result.The_Type.Class = Lovelace_Types.Integer_Literal_Class
          and then Valid_Result.The_Type.Literal_Value = 42,
          "literal 42 typed");
+      AUnit.Assertions.Assert
+        (Suffixed_I8_Res.Ok
+         and then Suffixed_I8_Res.The_Type.Class = Lovelace_Types.Integer_Class
+         and then Typecheck.Is_Assignable (Int_8, Suffixed_I8_Res.The_Type)
+         and then not Typecheck.Is_Assignable (Int_32, Suffixed_I8_Res.The_Type),
+         "1s8 is concrete integer<8>");
+      AUnit.Assertions.Assert
+        (Suffixed_U8_Res.Ok
+         and then Suffixed_U8_Res.The_Type.Class = Lovelace_Types.Integer_Class
+         and then Typecheck.Is_Assignable (Uint_8, Suffixed_U8_Res.The_Type),
+         "255u8 is concrete unsigned integer<8>");
       AUnit.Assertions.Assert (not Invalid_Result.Ok, "out-of-range literal rejected");
       AUnit.Assertions.Assert
         (Boolean_Result.Ok and then Boolean_Result.The_Type.Class = Lovelace_Types.Boolean_Class, "true is boolean");
@@ -560,6 +647,55 @@ package body Lovelace.Compiler.Tests.Semantics is
       Assert_Warnings (Nested_Unread, 1, 0, "nested local never read");
       Assert_Warnings (Nested_Dead, 0, 1, "store dead at nested block end");
    end Test_Unused_Priority;
+
+   procedure Test_Unused_Using (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Lib_Text       : constant String := "module Lib; export procedure Sink(Value : integer); begin end; end.";
+      Unit_Unused    : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Pair ("using Lib; program Caller; begin end.", Lib_Text, "unit using unused");
+      Unit_Used      : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Pair ("using Lib; program Caller; begin Lib.Sink(1); end.", Lib_Text, "unit using used");
+      Block_Unused   : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Pair
+          ("program Caller; begin using Lib; begin end; end.", Lib_Text, "block using unused");
+      Sibling_Blocks : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Pair
+          ("program Caller; begin using Lib; begin Lib.Sink(1); end; using Lib; begin end; end.",
+           Lib_Text,
+           "sibling unused independent");
+      With_Variable  : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Pair
+          ("using Lib; program Caller; declare X : integer; begin X := 1; end.",
+           Lib_Text,
+           "unused using and unused variable");
+      Same_Unit      : constant Compiler_Semantics.Analysis_Result :=
+        Analyze_Text
+          ("using Lib; module Calls; procedure Sink(V : integer); begin end; "
+           & "procedure Run(); begin Calls.Sink(1); end; end.",
+           "same-unit call does not use using");
+   begin
+      AUnit.Assertions.Assert (Compiler_Semantics.Succeeded (Unit_Unused), "unit unused: no errors");
+      AUnit.Assertions.Assert
+        (Count_Code (Unit_Unused.Warnings, Compiler_Semantics.Unused_Using) = 1, "unit unused: one Unused_Using");
+      Assert_Clean (Unit_Used, "unit using used");
+      AUnit.Assertions.Assert (Unit_Used.Warnings.Is_Empty, "unit using used: no warnings");
+      AUnit.Assertions.Assert (Compiler_Semantics.Succeeded (Block_Unused), "block unused: no errors");
+      AUnit.Assertions.Assert
+        (Count_Code (Block_Unused.Warnings, Compiler_Semantics.Unused_Using) = 1, "block unused: one Unused_Using");
+      AUnit.Assertions.Assert (Compiler_Semantics.Succeeded (Sibling_Blocks), "siblings: no errors");
+      AUnit.Assertions.Assert
+        (Count_Code (Sibling_Blocks.Warnings, Compiler_Semantics.Unused_Using) = 1,
+         "siblings: only the unused block using");
+      AUnit.Assertions.Assert (Compiler_Semantics.Succeeded (With_Variable), "combined: no errors");
+      AUnit.Assertions.Assert
+        (Count_Code (With_Variable.Warnings, Compiler_Semantics.Unused_Using) = 1, "combined: Unused_Using");
+      AUnit.Assertions.Assert
+        (Count_Code (With_Variable.Warnings, Compiler_Semantics.Unused_Variable) = 1, "combined: Unused_Variable");
+      AUnit.Assertions.Assert (Compiler_Semantics.Succeeded (Same_Unit), "same-unit: no errors");
+      AUnit.Assertions.Assert
+        (Count_Code (Same_Unit.Warnings, Compiler_Semantics.Unused_Using) = 1,
+         "same-unit call does not mark using used");
+   end Test_Unused_Using;
 
    procedure Test_Warnings_Do_Not_Fail (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);

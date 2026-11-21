@@ -127,7 +127,7 @@ lovelace build samples/program/Hello.love --generate-tlir
 lovelace build samples/program/Hello.love --output-format wasm,wat --output-folder /tmp/out
 lovelace build samples/program/Hello.love --no-wit --output-format wat
 lovelace build samples/variables/Variables.love --warning-as-errors
-lovelace build samples/variables/Variables.love --no-warnings LV00028,LV00029
+lovelace build samples/variables/Variables.love --no-warnings LV00028,LV00029,LV00032
 ```
 
 Samples: [`samples/program/Hello.love`](../samples/program/Hello.love) (program), [`samples/module/Empty.love`](../samples/module/Empty.love) and [`samples/module/Foo.Bar.love`](../samples/module/Foo.Bar.love) (modules), [`samples/directives/FlavorSelect.love`](../samples/directives/FlavorSelect.love) (flavor `#if`). Policy: [samples.md](samples.md).

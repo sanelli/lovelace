@@ -80,8 +80,8 @@ When there is no useful source span (or for CLI usage errors):
 | `LV00011` | Name_Clash | Parser (duplicate or conflicting procedure/parameter/using/local name; self-using; using shadow) |
 | `LV00012` | Invalid_Flavor_Condition | Parser (`#if`/`#elsif` flavor string not wasi/native/web) |
 | `LV00013` | Unterminated_String_Literal | Tokenizer (opening `"` without a matching closer) |
-| `LV00014` | Unresolved_Call | Semantics (call target not a same-unit / used procedure) |
-| `LV00015` | Invalid_Arguments | IR Generator (call arity / literal / formal mismatch still lowered here where applicable) |
+| `LV00014` | Unresolved_Call | Semantics (no matching overload / missing procedure) |
+| `LV00015` | Invalid_Arguments | Historical; call arity mismatches are reported as `Unresolved_Call` when no overload matches |
 | `LV00016` | Unknown_Module | Unit graph (using name has no candidate `.love` on search roots) |
 | `LV00017` | Call_Without_Using | Semantics (callee module prefix not brought in by a `using` in scope) |
 | `LV00018` | Not_Exported | Semantics (used procedure exists but lacks `Export_Flag`) |
@@ -98,14 +98,16 @@ When there is no useful source span (or for CLI usage errors):
 | `LV00029` | Unused_Assignment | Warning: store whose value is never read before overwrite/end (only when the local is read at least once elsewhere) |
 | `LV00030` | Invalid_Warning_Suppression | CLI/build: `--no-warnings` entry unknown or not a warning |
 | `LV00031` | Unresolved_Name | Semantics (identifier does not name a visible local or parameter) |
+| `LV00032` | Unused_Using | Warning: a `using M;` was never required for call resolve |
+| `LV00033` | Ambiguous_Call | Semantics (two or more overloads match a call equally) |
 
 Stage-local enums (tokenizer, parser, semantics, IR generator, unit graph, …) map to these labels at report time via `Lovelace.Compiler.Reporting` (unit-graph failures also expose `Unit_Graph.Surface_Error_Code`).
 
 ## Warnings
 
-Warning codes today: `Unused_Variable` (`LV00028`), `Unused_Assignment` (`LV00029`).
+Warning codes today: `Unused_Variable` (`LV00028`), `Unused_Assignment` (`LV00029`), `Unused_Using` (`LV00032`).
 
-**Priority:** if a local is never read → only **Unused_Variable** (even if assigned). If a local is read at least once → emit **Unused_Assignment** for any `:=` whose value is not read before overwrite/end. Parameters never get Unused_Variable. Full semantic rules: [semantics.md](semantics.md).
+**Priority:** if a local is never read → only **Unused_Variable** (even if assigned). If a local is read at least once → emit **Unused_Assignment** for any `:=` whose value is not read before overwrite/end. Parameters never get Unused_Variable. Unused_Using is independent. Full semantic rules: [semantics.md](semantics.md).
 
 See CLI flags under Severity above.
 

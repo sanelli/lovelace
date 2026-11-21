@@ -3,10 +3,10 @@ package body Lovelace.Compiler.Error_Codes is
    function Default_Severity (Code : Error_Code) return Severity is
    begin
       case Code is
-         when Unused_Variable | Unused_Assignment =>
+         when Unused_Variable | Unused_Assignment | Unused_Using =>
             return Warning;
 
-         when others                              =>
+         when others                                             =>
             return Error;
       end case;
    end Default_Severity;
@@ -106,6 +106,12 @@ package body Lovelace.Compiler.Error_Codes is
 
          when Unresolved_Name                =>
             return "LV00031";
+
+         when Unused_Using                   =>
+            return "LV00032";
+
+         when Ambiguous_Call                 =>
+            return "LV00033";
       end case;
    end Label;
 

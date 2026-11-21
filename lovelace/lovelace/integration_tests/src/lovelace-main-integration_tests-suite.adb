@@ -51,6 +51,14 @@ package body Lovelace.Main.Integration_Tests.Suite is
               .Test_Nested_Using_Build_Validate_And_Run'Access));
       Result.Add_Test
         (Hello_Caller.Create
+           ("build: validate and run program OverloadCaller",
+            Lovelace
+              .Main
+              .Integration_Tests
+              .Hello_Build
+              .Test_Overload_Caller_Build_Validate_And_Run'Access));
+      Result.Add_Test
+        (Hello_Caller.Create
            ("build: validate and run program UsingDecl",
             Lovelace
               .Main

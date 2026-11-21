@@ -23,8 +23,9 @@ package body Lovelace.Lir.Tests.Validation is
         (Dup_Module, Support.Make_Subroutine ("S", Types.Unit));
       Modules.Append_Subroutine
         (Dup_Module, Support.Make_Subroutine ("S", Types.I32));
-      Support.Assert_Validate_Error
-        (Dup_Module, Errors.Duplicate_Name, "duplicate subroutine");
+      Support.Assert_Validate_Ok
+        (Dup_Module, "duplicate subroutine names (overloads) allowed");
+      Support.Assert_Binary_Round_Trip (Dup_Module, "overload names round-trip");
 
       Modules.Append_Subroutine
         (Two_Entry,

@@ -46,6 +46,8 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Unused_Assignment) = "LV00029", "LV00029");
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Invalid_Warning_Suppression) = "LV00030", "LV00030");
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Unresolved_Name) = "LV00031", "LV00031");
+      AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Unused_Using) = "LV00032", "LV00032");
+      AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Ambiguous_Call) = "LV00033", "LV00033");
    end Test_Error_Code_Labels;
 
    procedure Test_Format_Shape (The_Test : in out Fixture) is
@@ -112,6 +114,9 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert
         (Error_Codes.Default_Severity (Error_Codes.Unused_Variable) = Error_Codes.Warning,
          "unused variable is warning");
+      AUnit.Assertions.Assert
+        (Error_Codes.Default_Severity (Error_Codes.Unused_Using) = Error_Codes.Warning,
+         "unused using is warning");
       AUnit.Assertions.Assert
         (Error_Codes.Default_Severity (Error_Codes.Unused_Assignment) = Error_Codes.Warning,
          "unused assignment is warning");

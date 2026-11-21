@@ -91,7 +91,7 @@ Builders allow temporarily invalid modules (for example two entrypoints while ap
 
 - empty module, dependency, subroutine, parameter, or local name
 - invalid UTF-8 in any name (including parameter and local names)
-- duplicate dependency, subroutine, parameter, or local names (parameters and locals unique within a subroutine; locals also must not reuse a parameter name)
+- duplicate dependency, parameter, or local names (parameters and locals unique within a subroutine; locals also must not reuse a parameter name). **Subroutine names may repeat** (overloads); `Call` targets are by 1-based index, and `.lir` / `.tlir` carry an index of id + name + params + result for reference
 - self-dependency (a depend name equals the module name)
 - more than one `Entrypoint` flag
 - `Call` with `Target_Index` outside `1 .. Subroutine_Count`

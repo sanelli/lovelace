@@ -15,15 +15,17 @@ package Lovelace.Compiler.Semantics is
 
    --  Why a semantic diagnostic was produced (map via Reporting to LV labels).
    --  @enum Internal_Error Compiler bug or impossible state (LV00001).
-   --  @enum Unresolved_Call Callee subroutine does not exist in a visible module (LV00014).
+   --  @enum Unresolved_Call Callee subroutine does not exist / no matching overload (LV00014).
    --  @enum Invalid_Arguments Call arity differs from the callee's formal count (LV00015).
    --  @enum Call_Without_Using Callee module prefix is neither the unit itself nor in scope via using (LV00017).
    --  @enum Not_Exported Cross-module callee exists but lacks Export_Flag (LV00018).
    --  @enum Use_Before_Assignment Read of a local that is not definitely assigned (LV00026).
    --  @enum Type_Mismatch Assignment or call actual is not assignable to the expected type (LV00027).
    --  @enum Unresolved_Name Identifier does not name a visible local or parameter (LV00031).
+   --  @enum Ambiguous_Call Two or more overloads match a call equally (LV00033).
    --  @enum Unused_Variable Warning: local is never read (LV00028).
    --  @enum Unused_Assignment Warning: store whose value is never read (LV00029).
+   --  @enum Unused_Using Warning: a using was never required for call resolve (LV00032).
    type Semantics_Error_Code is
      (Internal_Error,
       Unresolved_Call,
@@ -33,15 +35,14 @@ package Lovelace.Compiler.Semantics is
       Use_Before_Assignment,
       Type_Mismatch,
       Unresolved_Name,
+      Ambiguous_Call,
       Unused_Variable,
-      Unused_Assignment);
+      Unused_Assignment,
+      Unused_Using);
 
-   --  Codes that are warnings (non-fatal) rather than errors.
-   subtype Warning_Code is Semantics_Error_Code range Unused_Variable .. Unused_Assignment;
-
-   --  True when Code is a warning code.
+   --  True when Code is a warning code (explicit cases; not a contiguous subtype range).
    --  @param Code Semantic diagnostic kind.
-   --  @return True iff Code is Unused_Variable or Unused_Assignment.
+   --  @return True iff Code is Unused_Variable, Unused_Assignment, or Unused_Using.
    function Is_Warning (Code : Semantics_Error_Code) return Boolean;
 
    --  One semantic diagnostic (error or warning, by Code).
@@ -56,7 +57,10 @@ package Lovelace.Compiler.Semantics is
       Unit_Index : Positive := 1;
    end record;
 
-   package Diagnostic_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Diagnostic);
+   package Diagnostic_Vectors is new
+     Ada.Containers.Vectors
+       (Index_Type   => Positive,
+        Element_Type => Diagnostic);
 
    --  Ordered list of diagnostics.
    subtype Diagnostic_Sequence is Diagnostic_Vectors.Vector;
@@ -77,7 +81,8 @@ package Lovelace.Compiler.Semantics is
    --  Analyse every unit in Units (root first) after parse and before IR.
    --  @param Units Compilation set from Unit_Graph.Load.
    --  @return Errors and warnings in deterministic order (unit order, then source order).
-   function Analyze (Units : Unit_Graph.Compilation_Set) return Analysis_Result;
+   function Analyze
+     (Units : Unit_Graph.Compilation_Set) return Analysis_Result;
 
    --  Analyse a single already-parsed unit (thin wrap over the multi-unit API).
    --  @param The_Module Frontend compilation-unit AST.

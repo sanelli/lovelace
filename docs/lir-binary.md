@@ -73,18 +73,21 @@ Three `u32` fields: `Byte_Index`, `Line`, `Column` (each must be ≥ 1).
 
 `First` position, then `Last` position.
 
-### Subroutine preamble (binary only)
+### Subroutine index preamble (binary only)
 
-Not present in `.tlir`. After metadata, before subroutine records. Intended for future import scanning: list names and jump to definitions without parsing every record.
+After metadata, before subroutine records. 1-based position in this table is the **subroutine id** used by `Call` immediates. Rows may share a name (overloads). Intended so tools can list id → signature and jump to definitions without parsing every record body.
 
 1. `subroutine_count` — `u32`
-2. For each subroutine, in order:
-   - name (encoded string; must match the name in the record at `offset`)
+2. For each subroutine, in order (id = 1 .. count):
+   - name (encoded string)
+   - return type — encoded `Value_Type`
+   - `parameter_count` — `u32`
+   - `parameter_count` parameters, each: name (encoded string) + type (`Value_Type`)
    - `offset` — `u32` absolute 0-based file offset to the first byte of that subroutine record
 
-Offsets must be strictly increasing when there are two or more entries. When a record is about to be read, the decoder’s current file position must equal the preamble offset, and the record name must match. Mismatch → `Invalid_Offset`.
+Offsets must be strictly increasing when there are two or more entries. When a record is about to be read, the decoder’s current file position must equal the preamble offset, and the record’s name / result / parameters must match the index row. Mismatch → `Invalid_Offset`.
 
-Then follow exactly `subroutine_count` subroutine records in preamble order (no second count).
+Then follow exactly `subroutine_count` subroutine records in preamble order (no second count). The record still repeats the signature (name, result, params) after the index for a self-contained body parse.
 
 ### Subroutine record
 

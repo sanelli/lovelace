@@ -37,12 +37,15 @@ package Lovelace.Compiler.Semantics.Typecheck is
    end record;
 
    --  Type of a literal expression (integer or boolean literal).
+   --  Bare integer literals are Integer_Literal_Class (match targets by range).
+   --  Integer lexemes with a signedness and/or size suffix (`1s8`, `255u8`, `2s`) are
+   --  typed as that concrete Integer_Class when the value fits (else failure).
    --  @param The_Expression Expression with Kind Integer_Literal or Boolean_Literal.
    --  @return Literal type, or failure when the lexeme is not a valid literal.
    function Type_Of_Literal (The_Expression : Ast.Expression) return Type_Result;
 
    --  Check whether a value of type Source may be stored into Target.
-   --  Rules: identical concrete types; Unknown on either side; integer literal into a
+   --  Rules: identical concrete types; Unknown on either side; unsuffixed integer literal into a
    --  signed/unsigned integer of at most 32 bits when the value fits.
    --  @param Target Expected type (variable or formal).
    --  @param Source Type of the right-hand side or actual.

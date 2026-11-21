@@ -17,6 +17,7 @@ Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md
 | `…Semantics.Lovelace_Types` | Semantic type model (`Lovelace_Type`) |
 | `…Semantics.Typecheck` | Assignability / implicit-cast queries |
 | `…Semantics.Unused` | Unused_Variable / Unused_Assignment |
+| (environment `Used` flag) | Unused_Using for module bindings via `using` |
 
 ```ada
 function Analyze (Units : Unit_Graph.Compilation_Set) return Analysis_Result;
@@ -58,16 +59,33 @@ Call sites use the environment **at the call**, not only unit-leading usings. Le
 
 ## Call-target resolve
 
-Callees remain **qualified**: `MODULE.SUBROUTINE(…)`. Resolve runs here (not in IR).
+Callees remain **qualified**: `MODULE.SUBROUTINE(…)`. Resolve runs here (not in IR). Actual expressions are typed **before** resolve so overloads can be selected by parameter types.
+
+### Overload by parameter types
+
+Multiple procedures may share a **name** in one module when their **ordered parameter type sequences** differ. **Return type is not part of the signature.** Identical name + identical param types → parser `Name_Clash` (`LV00011`).
+
+Resolution:
+
+1. Split `MODULE.SUBROUTINE`.
+2. Same-unit prefix **or** module in scope via `using` (mark that using **used**); else `Call_Without_Using` (`LV00017`).
+3. Collect same-name procedures (cross-module: only `export`ed).
+4. Keep candidates where arity matches **and** each actual is assignable to the corresponding formal (`Typecheck.Is_Assignable`).
+5. **0** fully matching candidates → `Unresolved_Call` (`LV00014`); **1** → use it; **≥2** → `Ambiguous_Call` (`LV00033`).
+6. If cross-module same-name procedures exist but none are exported → `Not_Exported` (`LV00018`).
+
+Bare integer literals (`1`) are `Integer_Literal` and match by range, so `Sink(integer)` vs `Sink(integer<8>)` is ambiguous for `Sink(1)`. A trailing signedness/size suffix pins a concrete integer type (`1s8` → `integer<8>`, `1s32` / `1s` → `integer`) and removes that ambiguity — see [literals.md](literals.md).
+
+Same-unit calls do **not** mark usings used. Unqualified calls stay illegal at parse.
 
 | Situation | Code |
 | --- | --- |
 | Module prefix is neither the current unit nor in scope via `using` | `Call_Without_Using` (`LV00017`) |
-| Module in scope (or same-unit prefix), procedure missing | `Unresolved_Call` (`LV00014`) |
-| Cross-module procedure exists but lacks `export` | `Not_Exported` (`LV00018`) |
-| Arity differs from formals | `Invalid_Arguments` (`LV00015`) |
+| No matching overload (wrong arity/types) or procedure missing | `Unresolved_Call` (`LV00014`) |
+| Two or more overloads match equally | `Ambiguous_Call` (`LV00033`) |
+| Cross-module: same name exists but none exported | `Not_Exported` (`LV00018`) |
 
-Same-unit calls still require the subroutine to exist. Unqualified calls stay illegal at parse.
+Samples: [`samples/overload/Overload.love`](../samples/overload/Overload.love) (same-module), [`OverloadCaller.love`](../samples/overload/OverloadCaller.love) + [`OverloadLib.love`](../samples/overload/OverloadLib.love) (cross-module).
 
 ## Definite assignment
 
@@ -106,18 +124,21 @@ Syntactic `Types.Type_Expression` is lifted into a semantic `Lovelace_Type` with
 
 No implicit narrowing between distinct integer widths. No boolean ↔ integer. Explicit casts are out of scope for this slice (roadmap later steps).
 
-Integer literals are typed as `Integer_Literal_Class` until checked against a target; they are not a free-standing “default integer” expression type beyond that check.
+Bare integer literals are typed as `Integer_Literal_Class` until checked against a target. Literals with a signedness/size suffix are typed as a concrete `Integer_Class` (and must fit that width).
 
 ## Unused analysis (warnings)
 
-Runs after resolve / DA / types on a successful-enough walk. Codes are warnings (`LV00028` / `LV00029`); see [diagnostics.md](diagnostics.md) for CLI promote/suppress.
+Runs after resolve / DA / types on a successful-enough walk. Codes are warnings (`LV00028` / `LV00029` / `LV00032`); see [diagnostics.md](diagnostics.md) for CLI promote/suppress.
 
 | Code | When |
 | --- | --- |
 | `Unused_Variable` (`LV00028`) | Local **never read** (assignment alone is not a use) |
 | `Unused_Assignment` (`LV00029`) | A specific `:=` whose value is never read before overwrite/end — only if the local is read at least once elsewhere |
+| `Unused_Using` (`LV00032`) | A `using M;` (unit-leading or block) was never required for call resolve — `Lookup_Module` never found that binding for a call |
 
-**Priority:** never-read local → only `Unused_Variable` (do not also emit Unused_Assignment for that name). Parameters never get `Unused_Variable`.
+A using is marked **used** when call resolve successfully finds that module in scope (even if the procedure is later missing / not exported). Same-unit calls do not use usings. Nested block usings are checked at block end; remaining unit-level usings after all subroutines.
+
+**Priority:** never-read local → only `Unused_Variable` (do not also emit Unused_Assignment for that name). Parameters never get `Unused_Variable`. Unused_Using is independent of Unused_Variable.
 
 ## Out of scope (here)
 

@@ -54,6 +54,11 @@ package Lovelace.Lir.Tests.Support is
    --  @param Message Assertion message.
    procedure Assert_Validate_Error (The_Module : Modules.Module; Expected : Errors.Error_Code; Message : String);
 
+   --  Require Validate success.
+   --  @param The_Module Module to validate.
+   --  @param Message Assertion message.
+   procedure Assert_Validate_Ok (The_Module : Modules.Module; Message : String);
+
    --  Require To_Text success and return the text.
    --  @param The_Module Module to render.
    --  @param Message Assertion message on failure.

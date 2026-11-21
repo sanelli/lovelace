@@ -2,7 +2,7 @@
 
 `Lovelace.Compiler.Ir_Generator` lowers a frontend AST module into a LIR module. It lives in crate `lovelace_compiler`, which depends on `lovelace_lir`. Frontend AST and types stay separate from LIR; only this package (and tests) reference `Lovelace.Lir.*`.
 
-The CLI (`lovelace build`) calls Tokenize → Parse → **Semantics** → `Generate` → `Lir.Binary.Write`, then the backends; see [cli.md](cli.md). Semantics (environment, definite assignment, typecheck, call-target resolve, unused warnings) runs **before** IR and owns `LV00014` / `LV00017` / `LV00018` / `LV00026`–`LV00029` / `LV00031` — rules: [semantics.md](semantics.md). IR assumes a resolved, well-typed AST and only lowers.
+The CLI (`lovelace build`) calls Tokenize → Parse → **Semantics** → `Generate` → `Lir.Binary.Write`, then the backends; see [cli.md](cli.md). Semantics (environment, definite assignment, typecheck, call-target / overload resolve, unused warnings) runs **before** IR and owns `LV00014` / `LV00017` / `LV00018` / `LV00026`–`LV00029` / `LV00031`–`LV00033` — rules: [semantics.md](semantics.md). IR assumes a resolved, well-typed AST and only lowers.
 
 Public Ada APIs stay on the package specs (GNATdoc); see [gnatdoc.md](gnatdoc.md). AST input comes from [parser.md](parser.md). LIR shapes and codecs: [lir.md](lir.md). Source locations: [source-locations.md](source-locations.md).
 
@@ -75,7 +75,8 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | Assignment `id := expr` | Evaluate RHS then `Local_Set` (1-based; params first, then flattened locals) |
 | Identifier expression | `Local_Get` (same 1-based index map) |
 | Integer / boolean literal expression | `Constant_I32` |
-| Same-unit / cross-module `MODULE.SUBROUTINE(…)` | Push args then `Call` (1-based subroutine index); **resolve already done in semantics** |
+| Same-unit / cross-module `MODULE.SUBROUTINE(…)` | Push args then `Call` (1-based subroutine index); select overload by name + argument types (assignability); **semantics already resolved** |
+| Procedure LIR name | Source name on the root unit (`Proc`); dependency procedures `Module.Proc`. Overloads **share** the name; distinction is the index (see LIR/TLIR `(index)` / binary preamble) |
 
 ### Intrinsics (this slice)
 

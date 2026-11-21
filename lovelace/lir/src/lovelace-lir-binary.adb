@@ -1,4 +1,3 @@
-with Ada.Containers.Indefinite_Vectors;
 with Ada.Strings.Unbounded;
 with Ada.Unchecked_Conversion;
 with GNAT.OS_Lib;
@@ -15,6 +14,7 @@ package body Lovelace.Lir.Binary is
    use type Interfaces.Unsigned_32;
    use type GNAT.OS_Lib.File_Descriptor;
    use type Ada.Strings.Unbounded.Unbounded_String;
+   use type Types.Value_Type;
 
    package Source renames Lovelace.Common.Source;
 
@@ -46,6 +46,9 @@ package body Lovelace.Lir.Binary is
      (Buffer : in out Byte_Sequence; The_Module : Modules.Module);
    procedure Append_Position
      (Buffer : in out Byte_Sequence; The_Position : Source.Source_Position);
+   procedure Append_Signature_Index
+     (Buffer : in out Byte_Sequence; The_Signature : Subroutines.Signature);
+   --  Preamble index row: name, return type, parameters (no offset).
    procedure Append_Span
      (Buffer : in out Byte_Sequence; The_Span : Source.Source_Span);
    procedure Append_String (Buffer : in out Byte_Sequence; Text : String);
@@ -59,6 +62,15 @@ package body Lovelace.Lir.Binary is
      (Buffer : in out Byte_Sequence; Value : Interfaces.Unsigned_16);
    procedure Append_U32
      (Buffer : in out Byte_Sequence; Value : Interfaces.Unsigned_32);
+   function Read_Signature_Index
+     (Bytes         : Byte_Sequence;
+      Cursor        : in out Natural;
+      The_Signature : out Subroutines.Signature;
+      Code          : out Errors.Error_Code) return Boolean;
+   --  Read preamble signature fields (name / result / params).
+   function Signatures_Match
+     (Left : Subroutines.Signature; Right : Subroutines.Signature)
+      return Boolean;
    function Parse_Module_Origin
      (Bytes      : Byte_Sequence;
       Cursor     : in out Natural;
@@ -161,6 +173,27 @@ package body Lovelace.Lir.Binary is
       Append_U32 (Buffer, Interfaces.Unsigned_32 (The_Position.Column));
    end Append_Position;
 
+   procedure Append_Signature_Index
+     (Buffer : in out Byte_Sequence; The_Signature : Subroutines.Signature)
+   is
+      Params : constant Types.Parameter_Sequence := The_Signature.Parameters;
+   begin
+      Append_String
+        (Buffer, Ada.Strings.Unbounded.To_String (The_Signature.Name));
+      Append_Byte (Buffer, Types.To_Code (The_Signature.Return_Type));
+      Append_U32 (Buffer, Interfaces.Unsigned_32 (Types.Length (Params)));
+      for Parameter_Index in 1 .. Types.Length (Params) loop
+         declare
+            The_Parameter : constant Types.Parameter :=
+              Types.Element (Params, Parameter_Index);
+         begin
+            Append_String
+              (Buffer, Ada.Strings.Unbounded.To_String (The_Parameter.Name));
+            Append_Byte (Buffer, Types.To_Code (The_Parameter.The_Type));
+         end;
+      end loop;
+   end Append_Signature_Index;
+
    procedure Append_Span
      (Buffer : in out Byte_Sequence; The_Span : Source.Source_Span) is
    begin
@@ -182,27 +215,12 @@ package body Lovelace.Lir.Binary is
    is
       The_Signature : constant Subroutines.Signature :=
         Subroutines.Get_Signature (The_Subroutine);
-      Params        : constant Types.Parameter_Sequence :=
-        The_Signature.Parameters;
       Locals        : constant Types.Parameter_Sequence :=
         Subroutines.Get_Locals (The_Subroutine);
       Body_Instrs   : constant Instructions.Instruction_Sequence :=
         Subroutines.Get_Instructions (The_Subroutine);
    begin
-      Append_String
-        (Buffer, Ada.Strings.Unbounded.To_String (The_Signature.Name));
-      Append_Byte (Buffer, Types.To_Code (The_Signature.Return_Type));
-      Append_U32 (Buffer, Interfaces.Unsigned_32 (Types.Length (Params)));
-      for Parameter_Index in 1 .. Types.Length (Params) loop
-         declare
-            The_Parameter : constant Types.Parameter :=
-              Types.Element (Params, Parameter_Index);
-         begin
-            Append_String
-              (Buffer, Ada.Strings.Unbounded.To_String (The_Parameter.Name));
-            Append_Byte (Buffer, Types.To_Code (The_Parameter.The_Type));
-         end;
-      end loop;
+      Append_Signature_Index (Buffer, The_Signature);
       Append_U32 (Buffer, Interfaces.Unsigned_32 (Types.Length (Locals)));
       for Local_Index in 1 .. Types.Length (Locals) loop
          declare
@@ -299,10 +317,11 @@ package body Lovelace.Lir.Binary is
           (Index_Type   => Positive,
            Element_Type => Interfaces.Unsigned_32);
 
-      package Name_Vectors is new
-        Ada.Containers.Indefinite_Vectors
+      package Signature_Vectors is new
+        Ada.Containers.Vectors
           (Index_Type   => Positive,
-           Element_Type => Ada.Strings.Unbounded.Unbounded_String);
+           Element_Type => Subroutines.Signature,
+           "="          => Signatures_Match);
 
       Cursor             : Natural := 1;
       Byte_0             : Interfaces.Unsigned_8;
@@ -312,7 +331,7 @@ package body Lovelace.Lir.Binary is
       Major              : Interfaces.Unsigned_16;
       Minor              : Interfaces.Unsigned_16;
       Subroutine_Total   : Interfaces.Unsigned_32;
-      Preamble_Names     : Name_Vectors.Vector;
+      Preamble_Sigs      : Signature_Vectors.Vector;
       Preamble_Offsets   : Offset_Vectors.Vector;
       Module_Name_Text   : Ada.Strings.Unbounded.Unbounded_String;
       Module_Flags_Value : Interfaces.Unsigned_32;
@@ -385,16 +404,19 @@ package body Lovelace.Lir.Binary is
       end if;
       for Unused in 1 .. Natural (Subroutine_Total) loop
          declare
-            Entry_Name   : Ada.Strings.Unbounded.Unbounded_String;
-            Entry_Offset : Interfaces.Unsigned_32;
+            Entry_Signature : Subroutines.Signature;
+            Entry_Offset    : Interfaces.Unsigned_32;
+            Sig_Code        : Errors.Error_Code;
          begin
-            if not Read_String (Bytes, Cursor, Entry_Name) then
-               return (Ok => False, Error => Errors.Truncated);
+            if not Read_Signature_Index
+                     (Bytes, Cursor, Entry_Signature, Sig_Code)
+            then
+               return (Ok => False, Error => Sig_Code);
             end if;
             if not Read_U32 (Bytes, Cursor, Entry_Offset) then
                return (Ok => False, Error => Errors.Truncated);
             end if;
-            Preamble_Names.Append (Entry_Name);
+            Preamble_Sigs.Append (Entry_Signature);
             Preamble_Offsets.Append (Entry_Offset);
          end;
       end loop;
@@ -407,7 +429,7 @@ package body Lovelace.Lir.Binary is
               Interfaces.Unsigned_32 (Cursor - 1);
             The_Subroutine      : Subroutines.Subroutine;
             Parse_Code          : Errors.Error_Code;
-            Parsed_Name         : Ada.Strings.Unbounded.Unbounded_String;
+            Parsed_Signature    : Subroutines.Signature;
          begin
             if Expected_Offset /= Current_File_Offset then
                return (Ok => False, Error => Errors.Invalid_Offset);
@@ -424,8 +446,11 @@ package body Lovelace.Lir.Binary is
                return (Ok => False, Error => Parse_Code);
             end if;
 
-            Parsed_Name := Subroutines.Get_Signature (The_Subroutine).Name;
-            if Parsed_Name /= Preamble_Names.Element (Subroutine_Index) then
+            Parsed_Signature := Subroutines.Get_Signature (The_Subroutine);
+            if not Signatures_Match
+                     (Preamble_Sigs.Element (Subroutine_Index),
+                      Parsed_Signature)
+            then
                return (Ok => False, Error => Errors.Invalid_Offset);
             end if;
 
@@ -520,9 +545,8 @@ package body Lovelace.Lir.Binary is
                The_Signature  : constant Subroutines.Signature :=
                  Subroutines.Get_Signature (The_Subroutine);
             begin
-               Append_String
-                 (Buffer,
-                  Ada.Strings.Unbounded.To_String (The_Signature.Name));
+               --  Index id is 1-based position (same as Call Target_Index).
+               Append_Signature_Index (Buffer, The_Signature);
                Offset_Slots.Append (Length (Buffer) + 1);
                Append_U32 (Buffer, 0);
             end;
@@ -1031,6 +1055,75 @@ package body Lovelace.Lir.Binary is
       return True;
    end Read_Byte;
 
+   function Read_Signature_Index
+     (Bytes         : Byte_Sequence;
+      Cursor        : in out Natural;
+      The_Signature : out Subroutines.Signature;
+      Code          : out Errors.Error_Code) return Boolean
+   is
+      Name_Text       : Ada.Strings.Unbounded.Unbounded_String;
+      Return_Code     : Interfaces.Unsigned_8;
+      Parameter_Count : Interfaces.Unsigned_32;
+      Parameters      : Types.Parameter_Sequence := Types.Empty_Sequence;
+      Return_Option   : Types.Value_Type_Options.Option;
+   begin
+      if not Read_String (Bytes, Cursor, Name_Text) then
+         Code := Errors.Truncated;
+         return False;
+      end if;
+      if not Read_Byte (Bytes, Cursor, Return_Code) then
+         Code := Errors.Truncated;
+         return False;
+      end if;
+      Return_Option := Types.From_Code (Return_Code);
+      case Return_Option.Present is
+         when False =>
+            Code := Errors.Unknown_Type;
+            return False;
+
+         when True  =>
+            null;
+      end case;
+      if not Read_U32 (Bytes, Cursor, Parameter_Count) then
+         Code := Errors.Truncated;
+         return False;
+      end if;
+      for Unused in 1 .. Natural (Parameter_Count) loop
+         declare
+            Parameter_Name : Ada.Strings.Unbounded.Unbounded_String;
+            Type_Code      : Interfaces.Unsigned_8;
+            Type_Option    : Types.Value_Type_Options.Option;
+         begin
+            if not Read_String (Bytes, Cursor, Parameter_Name) then
+               Code := Errors.Truncated;
+               return False;
+            end if;
+            if not Read_Byte (Bytes, Cursor, Type_Code) then
+               Code := Errors.Truncated;
+               return False;
+            end if;
+            Type_Option := Types.From_Code (Type_Code);
+            case Type_Option.Present is
+               when False =>
+                  Code := Errors.Unknown_Type;
+                  return False;
+
+               when True  =>
+                  Types.Append
+                    (Parameters,
+                     Ada.Strings.Unbounded.To_String (Parameter_Name),
+                     Type_Option.Value);
+            end case;
+         end;
+      end loop;
+      The_Signature :=
+        (Name        => Name_Text,
+         Return_Type => Return_Option.Value,
+         Parameters  => Parameters);
+      Code := Errors.Internal_Error;
+      return True;
+   end Read_Signature_Index;
+
    function Read_String
      (Bytes  : Byte_Sequence;
       Cursor : in out Natural;
@@ -1108,6 +1201,34 @@ package body Lovelace.Lir.Binary is
       end if;
       return Length (Bytes) - Cursor + 1;
    end Remaining;
+
+   function Signatures_Match
+     (Left : Subroutines.Signature; Right : Subroutines.Signature)
+      return Boolean
+   is
+   begin
+      if Left.Name /= Right.Name
+        or else Left.Return_Type /= Right.Return_Type
+        or else Types.Length (Left.Parameters) /= Types.Length (Right.Parameters)
+      then
+         return False;
+      end if;
+      for Index in 1 .. Types.Length (Left.Parameters) loop
+         declare
+            Left_Param  : constant Types.Parameter :=
+              Types.Element (Left.Parameters, Index);
+            Right_Param : constant Types.Parameter :=
+              Types.Element (Right.Parameters, Index);
+         begin
+            if Left_Param.Name /= Right_Param.Name
+              or else Left_Param.The_Type /= Right_Param.The_Type
+            then
+               return False;
+            end if;
+         end;
+      end loop;
+      return True;
+   end Signatures_Match;
 
    function Write
      (The_Module : Modules.Module; Path : String) return Write_Result

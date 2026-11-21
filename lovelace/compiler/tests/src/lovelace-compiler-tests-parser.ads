@@ -95,6 +95,10 @@ package Lovelace.Compiler.Tests.Parser is
    --  @param The_Test Unused fixture.
    procedure Test_Obsolete_Import (The_Test : in out Fixture);
 
+   --  Same name + same parameter types -> Name_Clash; different parameter types -> OK.
+   --  @param The_Test Unused fixture.
+   procedure Test_Overload_Signatures (The_Test : in out Fixture);
+
    --  Block usings with declare/nesting, clashes, and sibling reuse.
    --  @param The_Test Unused fixture.
    procedure Test_Block_Usings (The_Test : in out Fixture);

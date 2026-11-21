@@ -31,6 +31,11 @@ package Lovelace.Main.Integration_Tests.Hello_Build is
    procedure Test_Nested_Using_Build_Validate_And_Run
      (The_Test : in out Fixture);
 
+   --  Build overload/OverloadCaller.love (cross-module Sink overloads via OverloadLib).
+   --  @param The_Test Unused fixture.
+   procedure Test_Overload_Caller_Build_Validate_And_Run
+     (The_Test : in out Fixture);
+
    --  Build resolve/Caller.love (multi-unit usings). File-dir search root finds
    --  Lib.love and pkg/Util.love beside Caller; -I may be needed once CLI exposes
    --  include paths for builds from other working directories.
