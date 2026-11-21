@@ -12,11 +12,11 @@ todos:
     content: "3. Save plan as .cursor/plans/<nnn>-assignment-using-semantics.plan.md with #<n>."
     status: completed
   - id: "4"
-    content: "4. Tokenizer: using keyword; :=; obsolete import path; AUnit; gnatformat."
+    content: "4. Tokenizer: using keyword; :=; import remains identifier; AUnit; gnatformat."
     status: completed
   - id: "5"
     content: "5. AST: block usings, expressions, assignment; rename Import→Using APIs; gnatformat."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Parser: block/unit usings, :=, expressions, scope clashes, reject import; AUnit; gnatformat."
     status: pending
@@ -24,10 +24,10 @@ todos:
     content: "7. Diagnostics severity + warning codes; AUnit; gnatformat."
     status: pending
   - id: "8"
-    content: "8. Semantics: environment, DA, Lovelace_Type, unused warnings; wire build; AUnit; gnatformat."
+    content: "8. Semantics: environment, DA, Lovelace_Type, call-target resolve (LV00014/17/18), unused warnings; wire build; AUnit; gnatformat."
     status: pending
   - id: "9"
-    content: "9. Unit graph nested usings; IR scoped resolve + Local_Get/Set; LIR opcodes; backend; AUnit; gnatformat."
+    content: "9. Unit graph nested usings; IR Local_Get/Set lowering (no call resolve); LIR opcodes; backend; AUnit; gnatformat."
     status: pending
   - id: "10"
     content: "10. CLI --warning-as-errors and --no-warnings; AUnit; gnatformat."
@@ -145,23 +145,23 @@ New compiler package(s) under `lovelace/compiler` (names locked in implementatio
 
 Parameters never get Unused_Variable. Unit names / procedures out of scope for these warnings.
 
-### Call target must exist
+### Call target must exist (semantics, not IR)
 
-Strengthen / keep IR (or semantics) resolve:
+Call resolution (module in scope via using, subroutine exists, cross-module export) is part of the **semantics** package — **before** IR generation. IR assumes a resolved, well-typed AST and only lowers; it does not re-decide LV00014 / LV00017 / LV00018.
 
 | Situation | Code |
 | --- | --- |
-| Module not in scope (no using) | LV00017 |
+| Module not in scope (no using) | LV00017 `Call_Without_Using` |
 | Module in scope, procedure missing | LV00014 `Unresolved_Call` |
-| Procedure exists, not exported (cross-module) | LV00018 |
+| Procedure exists, not exported (cross-module) | LV00018 `Not_Exported` |
 | Same-unit missing procedure | LV00014 |
 
-Same-unit and cross-module both require the subroutine to exist; unqualified calls still illegal at parse.
+Same-unit and cross-module both require the subroutine to exist; unqualified calls still illegal at parse. Migrate today’s IR-generator resolve checks into semantics (step 8); IR keeps only lowering.
 
 ### LIR / backend
 
 - Add LIR opcodes **`Local_Get`** / **`Local_Set`** (1-based local index after params, matching flat locals from step 5) + binary/text codecs + Validate.
-- IR: assignment → evaluate RHS then `Local_Set`; identifier expression → `Local_Get`; literals as today (`Constant_I32` for ints/bools).
+- IR: assignment → evaluate RHS then `Local_Set`; identifier expression → `Local_Get`; literals as today (`Constant_I32` for ints/bools). Call lowering uses indices already established by semantics.
 - Backend already has model `Local_Get` / `Local_Set` — wire lowering and WAT/WASM emission for them ([lovelace/compiler/src/lovelace-compiler-backend-model.ads](../../lovelace/compiler/src/lovelace-compiler-backend-model.ads)).
 - Parameter reads use the same local-index map (params occupy the first slots).
 
@@ -187,7 +187,8 @@ Update [docs/cli.md](../../docs/cli.md), [docs/diagnostics.md](../../docs/diagno
 
 - Parser / AST: [lovelace/compiler/src/lovelace-compiler-parser.adb](../../lovelace/compiler/src/lovelace-compiler-parser.adb), [lovelace-compiler-ast.ads](../../lovelace/compiler/src/lovelace-compiler-ast.ads) — block usings, expressions, `:=`.
 - Unit graph: [lovelace-compiler-unit_graph.adb](../../lovelace/compiler/src/lovelace-compiler-unit_graph.adb) — walk nested usings.
-- IR: [lovelace-compiler-ir_generator.adb](../../lovelace/compiler/src/lovelace-compiler-ir_generator.adb) — scoped visibility, expression lowering, Local_Get/Set.
+- Semantics: call-target / using-scope resolve (LV00014/17/18) before IR.
+- IR: [lovelace-compiler-ir_generator.adb](../../lovelace/compiler/src/lovelace-compiler-ir_generator.adb) — expression/assignment/call lowering, Local_Get/Set (no resolve).
 - LIR opcodes / codecs: [lovelace/lir/src/lovelace-lir-opcodes.ads](../../lovelace/lir/src/lovelace-lir-opcodes.ads), binary/text.
 - CLI: [lovelace/lovelace/src/lovelace-main-build.adb](../../lovelace/lovelace/src/lovelace-main-build.adb), arguments parsing.
 - Mass sample/doc rename `import` → `using` (including Augusta / HelloPrint / resolve samples).
@@ -230,14 +231,15 @@ Update [docs/cli.md](../../docs/cli.md), [docs/diagnostics.md](../../docs/diagno
 ### 8. Semantics package
 
 - Environment + definite assignment + Lovelace_Type + typecheck + unused warnings.
+- **Call-target resolve** here (scoped using visibility, subroutine exists, Not_Exported) — not in IR.
 - Wire into build after parse / before IR (fail on errors; collect warnings).
-- AUnit matrices: DA, types, unused priority, scoped using visibility for names.
+- AUnit matrices: DA, types, unused priority, scoped using visibility, missing/non-exported callees.
 - gnatformat.
 
 ### 9. Unit graph + IR + LIR + backend
 
 - Unit graph gathers nested usings; LIR Dependencies from all usings in unit (flattened unique module names as today).
-- IR: scoped Call_Without_Using; Unresolved_Call when proc missing; lower expressions/assignments; Local_Get/Set opcodes + codecs + backend emit.
+- IR: lower expressions/assignments/calls only (resolve already done); Local_Get/Set opcodes + codecs + backend emit.
 - AUnit across lir/compiler/backend as needed.
 - gnatformat.
 

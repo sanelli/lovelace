@@ -32,8 +32,7 @@ package body Lovelace.Compiler.Unit_Graph is
       Detail        : String;
       Filename      : String;
       Source_Text   : String;
-      Frontend_Code : Error_Codes.Error_Code := Error_Codes.Internal_Error)
-      return Load_Result;
+      Frontend_Code : Error_Codes.Error_Code := Error_Codes.Internal_Error) return Load_Result;
 
    function Load_Dependency
      (Module_Name    : String;
@@ -46,9 +45,7 @@ package body Lovelace.Compiler.Unit_Graph is
       Loaded_By_Name : in out Name_To_Index.Map;
       Units          : in out Compilation_Set) return Load_Result;
 
-   function Read_Entire_File
-     (Path : String; Contents : out Ada.Strings.Unbounded.Unbounded_String)
-      return Boolean;
+   function Read_Entire_File (Path : String; Contents : out Ada.Strings.Unbounded.Unbounded_String) return Boolean;
 
    function Failure
      (Code          : Unit_Graph_Error_Code;
@@ -56,20 +53,16 @@ package body Lovelace.Compiler.Unit_Graph is
       Detail        : String;
       Filename      : String;
       Source_Text   : String;
-      Frontend_Code : Error_Codes.Error_Code := Error_Codes.Internal_Error)
-      return Load_Result is
+      Frontend_Code : Error_Codes.Error_Code := Error_Codes.Internal_Error) return Load_Result is
    begin
       return
         (Ok    => False,
          Error =>
            (Code          => Code,
             Span          => Span,
-            Detail        =>
-              Ada.Strings.Unbounded.To_Unbounded_String (Detail),
-            Filename      =>
-              Ada.Strings.Unbounded.To_Unbounded_String (Filename),
-            Source_Text   =>
-              Ada.Strings.Unbounded.To_Unbounded_String (Source_Text),
+            Detail        => Ada.Strings.Unbounded.To_Unbounded_String (Detail),
+            Filename      => Ada.Strings.Unbounded.To_Unbounded_String (Filename),
+            Source_Text   => Ada.Strings.Unbounded.To_Unbounded_String (Source_Text),
             Frontend_Code => Frontend_Code));
    end Failure;
 
@@ -87,20 +80,16 @@ package body Lovelace.Compiler.Unit_Graph is
       Units.Append
         (Loaded_Unit'
            (The_Module  => Root_Module,
-            Source_Path =>
-              Ada.Strings.Unbounded.To_Unbounded_String (Root_Source_Path),
-            Source_Text =>
-              Ada.Strings.Unbounded.To_Unbounded_String (Root_Source_Text)));
+            Source_Path => Ada.Strings.Unbounded.To_Unbounded_String (Root_Source_Path),
+            Source_Text => Ada.Strings.Unbounded.To_Unbounded_String (Root_Source_Text)));
       Loaded_By_Name.Insert (Ast.Name (Root_Module), 1);
 
-      for Index in 1 .. Ast.Import_Count (Root_Module) loop
+      for Index in 1 .. Ast.Using_Count (Root_Module) loop
          declare
-            The_Import : constant Ast.Import_Declaration :=
-              Ast.Get_Import (Root_Module, Index);
+            The_Import : constant Ast.Using_Declaration := Ast.Get_Using (Root_Module, Index);
             Nested     : constant Load_Result :=
               Load_Dependency
-                (Module_Name    =>
-                   Ada.Strings.Unbounded.To_String (The_Import.Module_Name),
+                (Module_Name    => Ada.Strings.Unbounded.To_String (The_Import.Module_Name),
                  Import_Span    => The_Import.Name_Span,
                  Importer_Path  => Root_Source_Path,
                  Importer_Text  => Root_Source_Text,
@@ -147,30 +136,23 @@ package body Lovelace.Compiler.Unit_Graph is
       Visiting.Include (Module_Name);
 
       declare
-         Resolved : constant Module_Path.Resolve_Result :=
-           Module_Path.Resolve_Module_File (Module_Name, Search_Roots);
+         Resolved : constant Module_Path.Resolve_Result := Module_Path.Resolve_Module_File (Module_Name, Search_Roots);
       begin
          case Resolved.Status is
             when Module_Path.Not_Found =>
                Visiting.Exclude (Module_Name);
                return
                  Failure
-                   (Unknown_Module,
-                    Import_Span,
-                    "unknown module '" & Module_Name & "'",
-                    Importer_Path,
-                    Importer_Text);
+                   (Unknown_Module, Import_Span, "unknown module '" & Module_Name & "'", Importer_Path, Importer_Text);
 
             when Module_Path.Ambiguous =>
                declare
                   Detail : Ada.Strings.Unbounded.Unbounded_String :=
-                    Ada.Strings.Unbounded.To_Unbounded_String
-                      ("ambiguous module path for '" & Module_Name & "':");
+                    Ada.Strings.Unbounded.To_Unbounded_String ("ambiguous module path for '" & Module_Name & "':");
                begin
                   for Index in 1 .. Natural (Resolved.Matches.Length) loop
                      Ada.Strings.Unbounded.Append (Detail, " ");
-                     Ada.Strings.Unbounded.Append
-                       (Detail, Resolved.Matches.Element (Index));
+                     Ada.Strings.Unbounded.Append (Detail, Resolved.Matches.Element (Index));
                   end loop;
                   Visiting.Exclude (Module_Name);
                   return
@@ -184,8 +166,7 @@ package body Lovelace.Compiler.Unit_Graph is
 
             when Module_Path.Unique    =>
                declare
-                  Dep_Path : constant String :=
-                    Ada.Strings.Unbounded.To_String (Resolved.Path);
+                  Dep_Path : constant String := Ada.Strings.Unbounded.To_String (Resolved.Path);
                   Dep_Text : Ada.Strings.Unbounded.Unbounded_String;
                begin
                   if not Read_Entire_File (Dep_Path, Dep_Text) then
@@ -194,19 +175,14 @@ package body Lovelace.Compiler.Unit_Graph is
                        Failure
                          (Source_File_Io,
                           Import_Span,
-                          "cannot read module '"
-                          & Module_Name
-                          & "' from "
-                          & Dep_Path,
+                          "cannot read module '" & Module_Name & "' from " & Dep_Path,
                           Importer_Path,
                           Importer_Text);
                   end if;
 
                   declare
-                     Source_String : constant String :=
-                       Ada.Strings.Unbounded.To_String (Dep_Text);
-                     Token_Result  : constant Tokenizer.Tokenize_Result :=
-                       Tokenizer.Tokenize (Source_String, Dep_Path);
+                     Source_String : constant String := Ada.Strings.Unbounded.To_String (Dep_Text);
+                     Token_Result  : constant Tokenizer.Tokenize_Result := Tokenizer.Tokenize (Source_String, Dep_Path);
                   begin
                      if not Token_Result.Ok then
                         Visiting.Exclude (Module_Name);
@@ -218,8 +194,7 @@ package body Lovelace.Compiler.Unit_Graph is
                              Failure
                                (Frontend_Error,
                                 First_Error.Span,
-                                Ada.Strings.Unbounded.To_String
-                                  (First_Error.Detail),
+                                Ada.Strings.Unbounded.To_String (First_Error.Detail),
                                 Dep_Path,
                                 Source_String,
                                 Reporting.To_Error_Code (First_Error.Code));
@@ -228,60 +203,43 @@ package body Lovelace.Compiler.Unit_Graph is
 
                      declare
                         Parse_Result : constant Parser.Parse_Result :=
-                          Parser.Parse
-                            (Source_String,
-                             Token_Result.Tokens,
-                             Active_Flavor);
+                          Parser.Parse (Source_String, Token_Result.Tokens, Active_Flavor);
                      begin
                         if not Parse_Result.Ok then
                            Visiting.Exclude (Module_Name);
                            declare
-                              First_Error : constant Parser.Parser_Error :=
-                                Parser.Element (Parse_Result.Errors, 1);
+                              First_Error : constant Parser.Parser_Error := Parser.Element (Parse_Result.Errors, 1);
                            begin
                               return
                                 Failure
                                   (Frontend_Error,
                                    First_Error.Span,
-                                   Ada.Strings.Unbounded.To_String
-                                     (First_Error.Detail),
+                                   Ada.Strings.Unbounded.To_String (First_Error.Detail),
                                    Dep_Path,
                                    Source_String,
                                    (case First_Error.Code is
-                                      when Parser.Internal_Error            =>
-                                        Error_Codes.Internal_Error,
-                                      when Parser.Unexpected_End_Of_Input   =>
-                                        Error_Codes.Unexpected_End_Of_Input,
-                                      when Parser.Unexpected_Token          =>
-                                        Error_Codes.Unexpected_Token,
-                                      when Parser.Unexpected_Trailing       =>
-                                        Error_Codes.Unexpected_Trailing,
-                                      when Parser.Name_Clash                =>
-                                        Error_Codes.Name_Clash,
-                                      when Parser.Invalid_Flavor_Condition  =>
-                                        Error_Codes.Invalid_Flavor_Condition,
-                                      when Parser.Obsolete_Native_Modifier =>
-                                        Error_Codes.Obsolete_Native_Modifier));
+                                      when Parser.Internal_Error           => Error_Codes.Internal_Error,
+                                      when Parser.Unexpected_End_Of_Input  => Error_Codes.Unexpected_End_Of_Input,
+                                      when Parser.Unexpected_Token         => Error_Codes.Unexpected_Token,
+                                      when Parser.Unexpected_Trailing      => Error_Codes.Unexpected_Trailing,
+                                      when Parser.Name_Clash               => Error_Codes.Name_Clash,
+                                      when Parser.Invalid_Flavor_Condition => Error_Codes.Invalid_Flavor_Condition,
+                                      when Parser.Obsolete_Native_Modifier => Error_Codes.Obsolete_Native_Modifier));
                            end;
                         end if;
 
-                        if Ast.Kind (Parse_Result.The_Module)
-                          /= Ast.Module_Unit
-                        then
+                        if Ast.Kind (Parse_Result.The_Module) /= Ast.Module_Unit then
                            Visiting.Exclude (Module_Name);
                            return
                              Failure
                                (Not_A_Module,
                                 Import_Span,
-                                "imported unit '"
-                                & Module_Name
-                                & "' must be a module, not a program",
+                                "imported unit '" & Module_Name & "' must be a module, not a program",
                                 Importer_Path,
                                 Importer_Text);
                         end if;
 
-                        if Ast.Name (Parse_Result.The_Module) /= Module_Name
-                        then
+                        if Ast.Name (Parse_Result.The_Module) /= Module_Name then
                            Visiting.Exclude (Module_Name);
                            return
                              Failure
@@ -296,18 +254,13 @@ package body Lovelace.Compiler.Unit_Graph is
                                 Source_String);
                         end if;
 
-                        for Index in
-                          1 .. Ast.Import_Count (Parse_Result.The_Module)
-                        loop
+                        for Index in 1 .. Ast.Using_Count (Parse_Result.The_Module) loop
                            declare
-                              The_Import : constant Ast.Import_Declaration :=
-                                Ast.Get_Import
-                                  (Parse_Result.The_Module, Index);
+                              The_Import : constant Ast.Using_Declaration :=
+                                Ast.Get_Using (Parse_Result.The_Module, Index);
                               Nested     : constant Load_Result :=
                                 Load_Dependency
-                                  (Module_Name    =>
-                                     Ada.Strings.Unbounded.To_String
-                                       (The_Import.Module_Name),
+                                  (Module_Name    => Ada.Strings.Unbounded.To_String (The_Import.Module_Name),
                                    Import_Span    => The_Import.Name_Span,
                                    Importer_Path  => Dep_Path,
                                    Importer_Text  => Source_String,
@@ -327,16 +280,11 @@ package body Lovelace.Compiler.Unit_Graph is
                         Units.Append
                           (Loaded_Unit'
                              (The_Module  => Parse_Result.The_Module,
-                              Source_Path =>
-                                Ada.Strings.Unbounded.To_Unbounded_String
-                                  (Dep_Path),
+                              Source_Path => Ada.Strings.Unbounded.To_Unbounded_String (Dep_Path),
                               Source_Text => Dep_Text));
-                        Loaded_By_Name.Insert
-                          (Module_Name, Positive (Units.Length));
+                        Loaded_By_Name.Insert (Module_Name, Positive (Units.Length));
                         Visiting.Exclude (Module_Name);
-                        return
-                          (Ok    => True,
-                           Units => Loaded_Unit_Vectors.Empty_Vector);
+                        return (Ok => True, Units => Loaded_Unit_Vectors.Empty_Vector);
                      end;
                   end;
                end;
@@ -344,12 +292,8 @@ package body Lovelace.Compiler.Unit_Graph is
       end;
    end Load_Dependency;
 
-   function Read_Entire_File
-     (Path : String; Contents : out Ada.Strings.Unbounded.Unbounded_String)
-      return Boolean
-   is
-      Descriptor : constant GNAT.OS_Lib.File_Descriptor :=
-        GNAT.OS_Lib.Open_Read (Path, GNAT.OS_Lib.Binary);
+   function Read_Entire_File (Path : String; Contents : out Ada.Strings.Unbounded.Unbounded_String) return Boolean is
+      Descriptor : constant GNAT.OS_Lib.File_Descriptor := GNAT.OS_Lib.Open_Read (Path, GNAT.OS_Lib.Binary);
    begin
       Contents := Ada.Strings.Unbounded.Null_Unbounded_String;
       if Descriptor = GNAT.OS_Lib.Invalid_FD then
@@ -357,8 +301,7 @@ package body Lovelace.Compiler.Unit_Graph is
       end if;
 
       declare
-         File_Size : constant Long_Integer :=
-           GNAT.OS_Lib.File_Length (Descriptor);
+         File_Size : constant Long_Integer := GNAT.OS_Lib.File_Length (Descriptor);
       begin
          if File_Size < 0 then
             GNAT.OS_Lib.Close (Descriptor);
@@ -375,20 +318,14 @@ package body Lovelace.Compiler.Unit_Graph is
                  GNAT.OS_Lib.Read
                    (Descriptor,
                     Chunk'Address,
-                    Integer
-                      (Long_Integer'Min
-                         (Remaining_Bytes, Long_Integer (Chunk'Length))));
+                    Integer (Long_Integer'Min (Remaining_Bytes, Long_Integer (Chunk'Length))));
                if Bytes_Read <= 0 then
                   GNAT.OS_Lib.Close (Descriptor);
                   return False;
                end if;
                for Offset in 1 .. Bytes_Read loop
                   Ada.Strings.Unbounded.Append
-                    (Contents,
-                     Character'Val
-                       (Natural
-                          (Chunk
-                             (Ada.Streams.Stream_Element_Offset (Offset)))));
+                    (Contents, Character'Val (Natural (Chunk (Ada.Streams.Stream_Element_Offset (Offset)))));
                end loop;
                Remaining_Bytes := Remaining_Bytes - Long_Integer (Bytes_Read);
             end loop;
@@ -399,8 +336,7 @@ package body Lovelace.Compiler.Unit_Graph is
       return True;
    end Read_Entire_File;
 
-   function Surface_Error_Code
-     (Error : Unit_Graph_Error) return Error_Codes.Error_Code is
+   function Surface_Error_Code (Error : Unit_Graph_Error) return Error_Codes.Error_Code is
    begin
       case Error.Code is
          when Internal_Error        =>

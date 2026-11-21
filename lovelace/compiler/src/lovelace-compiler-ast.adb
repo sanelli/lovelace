@@ -5,9 +5,9 @@ package body Lovelace.Compiler.Ast is
       Sequence.Items.Append (The_Parameter);
    end Append;
 
-   procedure Append (Sequence : in out Argument_Sequence; The_Argument : Call_Argument) is
+   procedure Append (Sequence : in out Expression_Sequence; The_Expression : Expression) is
    begin
-      Sequence.Items.Append (The_Argument);
+      Sequence.Items.Append (The_Expression);
    end Append;
 
    procedure Append (Sequence : in out Statement_Sequence; The_Statement : Statement) is
@@ -20,10 +20,15 @@ package body Lovelace.Compiler.Ast is
       Sequence.Items.Append (The_Subroutine);
    end Append;
 
-   procedure Append (Sequence : in out Import_Sequence; The_Import : Import_Declaration) is
+   procedure Append (Sequence : in out Using_Sequence; The_Using : Using_Declaration) is
    begin
-      Sequence.Items.Append (The_Import);
+      Sequence.Items.Append (The_Using);
    end Append;
+
+   function Assignment_Of (The_Statement : Statement) return Assignment_Statement is
+   begin
+      return The_Statement.The_Assignment;
+   end Assignment_Of;
 
    function Block_Of (The_Statement : Statement) return Block is
    begin
@@ -35,9 +40,10 @@ package body Lovelace.Compiler.Ast is
       return The_Statement.The_Call;
    end Call_Of;
 
-   function Create_Block (Locals : Local_Sequence; Statements : Statement_Sequence) return Block is
+   function Create_Block
+     (Usings : Using_Sequence; Locals : Local_Sequence; Statements : Statement_Sequence) return Block is
    begin
-      return new Block_Data'(Locals_Value => Locals, Statements_Value => Statements);
+      return new Block_Data'(Usings_Value => Usings, Locals_Value => Locals, Statements_Value => Statements);
    end Create_Block;
 
    function Create_Module
@@ -46,7 +52,7 @@ package body Lovelace.Compiler.Ast is
       Filename    : Source.Filename_Option;
       Span        : Source.Source_Span;
       Kind        : Unit_Kind;
-      Imports     : Import_Sequence;
+      Usings      : Using_Sequence;
       Subroutines : Subroutine_Sequence) return Module is
    begin
       return
@@ -55,7 +61,7 @@ package body Lovelace.Compiler.Ast is
          Filename_Value  => Filename,
          Span_Value      => Span,
          Kind_Value      => Kind,
-         Imports         => Imports,
+         Usings          => Usings,
          Subroutines     => Subroutines);
    end Create_Module;
 
@@ -87,7 +93,7 @@ package body Lovelace.Compiler.Ast is
       return Sequence.Items.Element (Index);
    end Element;
 
-   function Element (Sequence : Argument_Sequence; Index : Positive) return Call_Argument is
+   function Element (Sequence : Expression_Sequence; Index : Positive) return Expression is
    begin
       return Sequence.Items.Element (Index);
    end Element;
@@ -102,19 +108,14 @@ package body Lovelace.Compiler.Ast is
       return Sequence.Items.Element (Index);
    end Element;
 
-   function Element (Sequence : Import_Sequence; Index : Positive) return Import_Declaration is
+   function Element (Sequence : Using_Sequence; Index : Positive) return Using_Declaration is
    begin
       return Sequence.Items.Element (Index);
    end Element;
 
-   function Empty_Argument_Sequence return Argument_Sequence is
-   begin
-      return (Items => Argument_Vectors.Empty_Vector);
-   end Empty_Argument_Sequence;
-
    function Empty_Block return Block is
    begin
-      return Create_Block (Empty_Local_Sequence, Empty_Body);
+      return Create_Block (Empty_Using_Sequence, Empty_Local_Sequence, Empty_Body);
    end Empty_Block;
 
    function Empty_Body return Statement_Sequence is
@@ -122,10 +123,10 @@ package body Lovelace.Compiler.Ast is
       return (Items => Statement_Vectors.Empty_Vector);
    end Empty_Body;
 
-   function Empty_Import_Sequence return Import_Sequence is
+   function Empty_Expression_Sequence return Expression_Sequence is
    begin
-      return (Items => Import_Vectors.Empty_Vector);
-   end Empty_Import_Sequence;
+      return (Items => Expression_Vectors.Empty_Vector);
+   end Empty_Expression_Sequence;
 
    function Empty_Local_Sequence return Local_Sequence is
    begin
@@ -141,6 +142,11 @@ package body Lovelace.Compiler.Ast is
    begin
       return (Items => Subroutine_Vectors.Empty_Vector);
    end Empty_Subroutine_Sequence;
+
+   function Empty_Using_Sequence return Using_Sequence is
+   begin
+      return (Items => Using_Vectors.Empty_Vector);
+   end Empty_Using_Sequence;
 
    function Filename (The_Module : Module) return Source.Filename_Option is
    begin
@@ -167,15 +173,15 @@ package body Lovelace.Compiler.Ast is
       return The_Subroutine.Flags_Value;
    end Get_Flags;
 
-   function Get_Import (The_Module : Module; Index : Positive) return Import_Declaration is
-   begin
-      return Element (The_Module.Imports, Index);
-   end Get_Import;
-
    function Get_Subroutine (The_Module : Module; Index : Positive) return Subroutine is
    begin
       return Element (The_Module.Subroutines, Index);
    end Get_Subroutine;
+
+   function Get_Using (The_Module : Module; Index : Positive) return Using_Declaration is
+   begin
+      return Element (The_Module.Usings, Index);
+   end Get_Using;
 
    function Has_Entrypoint (Flags : Subroutine_Flags) return Boolean is
    begin
@@ -197,11 +203,6 @@ package body Lovelace.Compiler.Ast is
       return (Flags and Native_Flag) /= 0;
    end Has_Native;
 
-   function Import_Count (The_Module : Module) return Natural is
-   begin
-      return Length (The_Module.Imports);
-   end Import_Count;
-
    function Kind (The_Module : Module) return Unit_Kind is
    begin
       return The_Module.Kind_Value;
@@ -217,7 +218,7 @@ package body Lovelace.Compiler.Ast is
       return Natural (Sequence.Items.Length);
    end Length;
 
-   function Length (Sequence : Argument_Sequence) return Natural is
+   function Length (Sequence : Expression_Sequence) return Natural is
    begin
       return Natural (Sequence.Items.Length);
    end Length;
@@ -232,7 +233,7 @@ package body Lovelace.Compiler.Ast is
       return Natural (Sequence.Items.Length);
    end Length;
 
-   function Length (Sequence : Import_Sequence) return Natural is
+   function Length (Sequence : Using_Sequence) return Natural is
    begin
       return Natural (Sequence.Items.Length);
    end Length;
@@ -244,6 +245,11 @@ package body Lovelace.Compiler.Ast is
       end if;
       return The_Block.Locals_Value;
    end Locals;
+
+   function Make_Assignment_Statement (The_Assignment : Assignment_Statement) return Statement is
+   begin
+      return (Kind_Value => Assignment, The_Assignment => The_Assignment);
+   end Make_Assignment_Statement;
 
    function Make_Call_Statement (The_Call : Call_Statement) return Statement is
    begin
@@ -307,5 +313,18 @@ package body Lovelace.Compiler.Ast is
    begin
       return Length (The_Module.Subroutines);
    end Subroutine_Count;
+
+   function Using_Count (The_Module : Module) return Natural is
+   begin
+      return Length (The_Module.Usings);
+   end Using_Count;
+
+   function Usings (The_Block : Block) return Using_Sequence is
+   begin
+      if The_Block = null then
+         return Empty_Using_Sequence;
+      end if;
+      return The_Block.Usings_Value;
+   end Usings;
 
 end Lovelace.Compiler.Ast;

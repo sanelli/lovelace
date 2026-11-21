@@ -210,9 +210,7 @@ package body Lovelace.Compiler.Tests.Support is
       end case;
    end Must_Fail;
 
-   function Must_Fail_Generate
-     (The_Module : Ast.Module; Message : String) return Ir_Generator.Ir_Generator_Error
-   is
+   function Must_Fail_Generate (The_Module : Ast.Module; Message : String) return Ir_Generator.Ir_Generator_Error is
       Result : constant Ir_Generator.Generate_Result := Ir_Generator.Generate (The_Module);
       Dummy  : constant Ir_Generator.Ir_Generator_Error :=
         (Code   => Ir_Generator.Internal_Error,
@@ -284,7 +282,7 @@ package body Lovelace.Compiler.Tests.Support is
                  Filename    => Source.Absent_Filename,
                  Span        => Origin,
                  Kind        => Ast.Program_Unit,
-                 Imports     => Ast.Empty_Import_Sequence,
+                 Usings      => Ast.Empty_Using_Sequence,
                  Subroutines => Ast.Empty_Subroutine_Sequence);
       end case;
    end Must_Parse;
@@ -312,7 +310,7 @@ package body Lovelace.Compiler.Tests.Support is
                  Filename    => Source.Absent_Filename,
                  Span        => Origin,
                  Kind        => Ast.Program_Unit,
-                 Imports     => Ast.Empty_Import_Sequence,
+                 Usings      => Ast.Empty_Using_Sequence,
                  Subroutines => Ast.Empty_Subroutine_Sequence);
       end case;
    end Must_Parse;
