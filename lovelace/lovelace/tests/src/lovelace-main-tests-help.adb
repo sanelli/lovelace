@@ -54,6 +54,16 @@ package body Lovelace.Main.Tests.Help is
            (Ada.Strings.Unbounded.To_String (Contents), "--generate-tlir")
          > 0,
          "help build mentions --generate-tlir");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Fixed.Index
+           (Ada.Strings.Unbounded.To_String (Contents), "--warning-as-errors")
+         > 0,
+         "help build mentions --warning-as-errors");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Fixed.Index
+           (Ada.Strings.Unbounded.To_String (Contents), "--no-warnings")
+         > 0,
+         "help build mentions --no-warnings");
    end Test_Help_Build_Topic;
 
    procedure Test_Help_Mentions_Build (The_Test : in out Fixture) is

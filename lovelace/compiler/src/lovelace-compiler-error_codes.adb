@@ -109,4 +109,18 @@ package body Lovelace.Compiler.Error_Codes is
       end case;
    end Label;
 
+   function Try_From_Label
+     (Text : String; Code : out Error_Code) return Boolean is
+   begin
+      for Candidate in Error_Code loop
+         if Label (Candidate) = Text then
+            Code := Candidate;
+            return True;
+         end if;
+      end loop;
+
+      Code := Internal_Error;
+      return False;
+   end Try_From_Label;
+
 end Lovelace.Compiler.Error_Codes;

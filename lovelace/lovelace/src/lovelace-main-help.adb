@@ -40,6 +40,9 @@ package body Lovelace.Main.Help is
          "  -I/--include-path <dir>  Extra module search root (repeatable)");
       Put_Line
         (File,
+         "  --no-warnings <ids>      Suppress warning codes (comma-separated LV ids)");
+      Put_Line
+        (File,
          "  --no-wit                 Do not write a companion .wit file");
       Put_Line
         (File,
@@ -47,15 +50,18 @@ package body Lovelace.Main.Help is
       Put_Line
         (File,
          "  --output-folder <path>   Replace the default .output directory");
+      Put_Line
+        (File,
+         "  --warning-as-errors      Promote warnings to errors (fail the build)");
       Put_Line (File, "");
       Put_Line
         (File,
          "Imports resolve under: root-file dir, cwd, each -I, then one Augusta slot");
       Put_Line
-        (File,
-         "(AUGUSTA_HOME, else LOVELACE_HOME/lib/augusta/<version>,");
+        (File, "(AUGUSTA_HOME, else LOVELACE_HOME/lib/augusta/<version>,");
       Put_Line
-        (File, " else ~/.lovelace/lib/augusta/<version>; version has no git hash).");
+        (File,
+         " else ~/.lovelace/lib/augusta/<version>; version has no git hash).");
       Put_Line (File, "");
       Put_Line (File, "Output layout under the output folder:");
       Put_Line (File, "  obj/<Unit>.lir");
@@ -79,6 +85,9 @@ package body Lovelace.Main.Help is
       Put_Line (File, "  lovelace build foo.love --generate-tlir");
       Put_Line (File, "  lovelace build foo.love -I libs --include-path more");
       Put_Line (File, "  lovelace build foo.love --no-wit");
+      Put_Line
+        (File, "  lovelace build foo.love --no-warnings LV00028,LV00029");
+      Put_Line (File, "  lovelace build foo.love --warning-as-errors");
       Put_Line
         (File, "  lovelace build foo.love --output-format wat --no-wit");
       Put_Line

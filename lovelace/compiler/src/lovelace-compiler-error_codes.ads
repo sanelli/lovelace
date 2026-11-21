@@ -25,7 +25,7 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Ambiguous_Module_Path Unit graph: two or more distinct .love files match one using (LV00020).
    --  @enum Unknown_Native_Binding Retired: old native(target, key) closed wasi set (LV00021); no longer emitted.
    --  @enum Unterminated_Comment Tokenizer: opening `{` without a matching `}` (LV00022).
-   --  @enum Nested_Comment Tokenizer: `{` inside an open `{` ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¦ `}` comment (LV00023).
+   --  @enum Nested_Comment Tokenizer: `{` inside an already open `{` ... `}` comment (LV00023).
    --  @enum Stray_Comment_Closer Tokenizer: `}` outside a comment (LV00024).
    --  @enum Unknown_Intrinsic IR Generator: `@intrinsic` signature not in the closed intrinsic table (LV00025).
    --  @enum Use_Before_Assignment Semantics: read of a local that is not definitely assigned (LV00026).
@@ -72,14 +72,21 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Warning Non-fatal; may be promoted or suppressed by the build CLI.
    type Severity is (Error, Warning);
 
+   --  Default severity for Code before promote/suppress policy.
+   --  @param Code Diagnostic kind.
+   --  @return Error or Warning.
+   function Default_Severity (Code : Error_Code) return Severity;
+
    --  Canonical LV##### label for Code.
    --  @param Code Diagnostic kind.
    --  @return Five-digit LV label such as LV00001.
    function Label (Code : Error_Code) return String;
 
-   --  Default severity for Code before promote/suppress policy.
-   --  @param Code Diagnostic kind.
-   --  @return Error or Warning.
-   function Default_Severity (Code : Error_Code) return Severity;
+   --  Resolve Text as a canonical LV##### label.
+   --  @param Text Label such as LV00028 (case-sensitive).
+   --  @param Code Filled when Text matches a known label.
+   --  @return True when Text is a known label.
+   function Try_From_Label
+     (Text : String; Code : out Error_Code) return Boolean;
 
 end Lovelace.Compiler.Error_Codes;

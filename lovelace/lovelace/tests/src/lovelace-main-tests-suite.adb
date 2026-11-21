@@ -46,6 +46,10 @@ package body Lovelace.Main.Tests.Suite is
 
       Result.Add_Test
         (Build_Caller.Create
+           ("build: no-warnings list",
+            Lovelace.Main.Tests.Build.Test_No_Warnings_List'Access));
+      Result.Add_Test
+        (Build_Caller.Create
            ("build: output format values",
             Lovelace.Main.Tests.Build.Test_Output_Format_Values'Access));
       Result.Add_Test

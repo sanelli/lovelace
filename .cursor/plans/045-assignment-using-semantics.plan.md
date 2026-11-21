@@ -31,7 +31,7 @@ todos:
     status: completed
   - id: "10"
     content: "10. CLI --warning-as-errors and --no-warnings; AUnit; gnatformat."
-    status: pending
+    status: completed
   - id: "11"
     content: "11. Docs + lock roadmap 1.002 step 6; mass import→using doc/sample renames."
     status: pending

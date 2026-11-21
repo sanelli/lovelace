@@ -1,11 +1,15 @@
 with AUnit.Test_Fixtures;
 
---  Tests for Lovelace.Main.Build.Try_Parse_Output_Format.
+--  Tests for Lovelace.Main.Build option helpers.
 
 package Lovelace.Main.Tests.Build is
 
    --  Fixture for build option helper tests.
    type Fixture is new AUnit.Test_Fixtures.Test_Fixture with null record;
+
+   --  --no-warnings accepts warning LV labels and rejects bad entries.
+   --  @param The_Test Unused fixture.
+   procedure Test_No_Warnings_List (The_Test : in out Fixture);
 
    --  Unknown format text is rejected.
    --  @param The_Test Unused fixture.

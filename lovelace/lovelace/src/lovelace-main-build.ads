@@ -1,3 +1,6 @@
+with Ada.Strings.Unbounded;
+
+with Lovelace.Compiler.Diagnostics;
 with Lovelace.Main.Arguments;
 
 --  lovelace build: compile .love through LIR to WASM/WAT/WIT.
@@ -18,6 +21,17 @@ package Lovelace.Main.Build is
    --  @return True when Text is a recognized format set.
    function Try_Parse_Output_Format
      (Text : String; Format_Set : out Output_Format_Set) return Boolean;
+
+   --  Apply a comma-separated `--no-warnings` value to The_Policy.
+   --  Each entry must be a known warning LV label (e.g. LV00028). Requires â¥1 id.
+   --  @param Text One argv value such as LV00028,LV00029.
+   --  @param The_Policy Policy updated with suppressions on success.
+   --  @param Detail Failure description when the function returns False.
+   --  @return True when every entry is a suppressible warning code.
+   function Try_Apply_No_Warnings
+     (Text       : String;
+      The_Policy : in out Lovelace.Compiler.Diagnostics.Policy;
+      Detail     : out Ada.Strings.Unbounded.Unbounded_String) return Boolean;
 
    --  Run the build command with Command_Arguments.
    --  @param Command_Arguments Tokens after 'build'.
