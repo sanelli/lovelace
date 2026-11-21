@@ -39,11 +39,11 @@ package Lovelace.Lir.Modules is
    --  One LIR module.
    type Module is private;
 
-   --  Default package-version string written into .lir / .tlir.
-   Default_Package_Version : constant String := "0.0.1";
+   --  Default module-version string written into .lir / .tlir.
+   Default_Module_Version : constant String := "0.0.1";
 
-   --  Build a module with Name, empty flags, no depends or subroutines, and
-   --  no origin. Package_Version starts as Default_Package_Version.
+   --  Build a module with Name, empty flags, no dependencies or subroutines, and
+   --  no origin. Module_Version starts as Default_Module_Version.
    --  @param Name UTF-8 module name.
    --  @return Module with Flags 0 and absent origin.
    function Create (Name : String) return Module;
@@ -53,15 +53,15 @@ package Lovelace.Lir.Modules is
    --  @param Flags New flag bitset.
    procedure Set_Flags (The_Module : in out Module; Flags : Module_Flags);
 
+   --  Set Module_Version on The_Module (UTF-8; empty rejected by Validate).
+   --  @param The_Module Module to update.
+   --  @param Version Module version string (default Create uses "0.0.1").
+   procedure Set_Module_Version (The_Module : in out Module; Version : String);
+
    --  Attach The_Origin to The_Module (replaces any previous origin).
    --  @param The_Module Module to update.
    --  @param The_Origin Source location metadata.
    procedure Set_Origin (The_Module : in out Module; The_Origin : Module_Origin);
-
-   --  Set Package_Version on The_Module (UTF-8; empty rejected by Validate).
-   --  @param The_Module Module to update.
-   --  @param Version Package version string (default Create uses "0.0.1").
-   procedure Set_Package_Version (The_Module : in out Module; Version : String);
 
    --  Append a dependency module name.
    --  @param The_Module Module to extend.
@@ -73,15 +73,15 @@ package Lovelace.Lir.Modules is
    --  @param The_Subroutine Subroutine to append.
    procedure Append_Subroutine (The_Module : in out Module; The_Subroutine : Subroutines.Subroutine);
 
+   --  UTF-8 module-version string (default "0.0.1").
+   --  @param The_Module Module to query.
+   --  @return Module version bytes.
+   function Module_Version (The_Module : Module) return String;
+
    --  UTF-8 module name.
    --  @param The_Module Module to query.
    --  @return Name bytes.
    function Name (The_Module : Module) return String;
-
-   --  UTF-8 package-version string (default "0.0.1").
-   --  @param The_Module Module to query.
-   --  @return Package version bytes.
-   function Package_Version (The_Module : Module) return String;
 
    --  Flag bitset of The_Module.
    --  @param The_Module Module to query.
@@ -135,8 +135,8 @@ private
 
    type Module is record
       Module_Name            : Ada.Strings.Unbounded.Unbounded_String;
-      Package_Version_Value  : Ada.Strings.Unbounded.Unbounded_String :=
-        Ada.Strings.Unbounded.To_Unbounded_String (Default_Package_Version);
+      Module_Version_Value   : Ada.Strings.Unbounded.Unbounded_String :=
+        Ada.Strings.Unbounded.To_Unbounded_String (Default_Module_Version);
       Flags_Value            : Module_Flags := 0;
       Origin_Value           : Origin_Option := (Present => False);
       Dependencies           : Dependency_Vectors.Vector;

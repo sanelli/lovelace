@@ -26,6 +26,11 @@ package Lovelace.Main.Integration_Tests.Hello_Compile is
    procedure Test_Hello_Print_Build_Validate_And_Run
      (The_Test : in out Fixture);
 
+   --  Compile samples/nested-call/NestedCall.love (program → Middle.Pass → print); assert "42".
+   --  @param The_Test Unused fixture.
+   procedure Test_Nested_Call_Build_Validate_And_Run
+     (The_Test : in out Fixture);
+
    --  Compile samples/nested-using/NestedUsing.love with -I Augusta; assert stdout "1".
    --  @param The_Test Unused fixture.
    procedure Test_Nested_Using_Build_Validate_And_Run

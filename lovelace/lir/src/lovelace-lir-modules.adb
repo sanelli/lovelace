@@ -28,8 +28,8 @@ package body Lovelace.Lir.Modules is
    begin
       return
         (Module_Name           => Ada.Strings.Unbounded.To_Unbounded_String (Name),
-         Package_Version_Value =>
-           Ada.Strings.Unbounded.To_Unbounded_String (Default_Package_Version),
+         Module_Version_Value  =>
+           Ada.Strings.Unbounded.To_Unbounded_String (Default_Module_Version),
          Flags_Value           => 0,
          Origin_Value          => (Present => False),
          Dependencies          => Dependency_Vectors.Empty_Vector,
@@ -60,6 +60,12 @@ package body Lovelace.Lir.Modules is
       return The_Module.Subroutines.Element (Index);
    end Get_Subroutine;
 
+   function Module_Version (The_Module : Module) return String is
+   begin
+      return
+        Ada.Strings.Unbounded.To_String (The_Module.Module_Version_Value);
+   end Module_Version;
+
    function Name (The_Module : Module) return String is
    begin
       return Ada.Strings.Unbounded.To_String (The_Module.Module_Name);
@@ -70,30 +76,24 @@ package body Lovelace.Lir.Modules is
       return The_Module.Origin_Value;
    end Origin;
 
-   function Package_Version (The_Module : Module) return String is
-   begin
-      return
-        Ada.Strings.Unbounded.To_String (The_Module.Package_Version_Value);
-   end Package_Version;
-
    procedure Set_Flags (The_Module : in out Module; Flags : Module_Flags) is
    begin
       The_Module.Flags_Value := Flags;
    end Set_Flags;
+
+   procedure Set_Module_Version
+     (The_Module : in out Module; Version : String)
+   is
+   begin
+      The_Module.Module_Version_Value :=
+        Ada.Strings.Unbounded.To_Unbounded_String (Version);
+   end Set_Module_Version;
 
    procedure Set_Origin
      (The_Module : in out Module; The_Origin : Module_Origin) is
    begin
       The_Module.Origin_Value := (Present => True, Value => The_Origin);
    end Set_Origin;
-
-   procedure Set_Package_Version
-     (The_Module : in out Module; Version : String)
-   is
-   begin
-      The_Module.Package_Version_Value :=
-        Ada.Strings.Unbounded.To_Unbounded_String (Version);
-   end Set_Package_Version;
 
    function Subroutine_Count (The_Module : Module) return Natural is
    begin
@@ -138,7 +138,7 @@ package body Lovelace.Lir.Modules is
       end Is_Valid_Utf_8;
 
       Module_Name_Text : constant String := Name (The_Module);
-      Package_Text     : constant String := Package_Version (The_Module);
+      Version_Text     : constant String := Module_Version (The_Module);
       Entrypoint_Count : Natural := 0;
    begin
       if Module_Name_Text'Length = 0 then
@@ -149,11 +149,11 @@ package body Lovelace.Lir.Modules is
          return Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
       end if;
 
-      if Package_Text'Length = 0 then
+      if Version_Text'Length = 0 then
          return Errors.Validation_Results.From_Failure (Errors.Empty_Name);
       end if;
 
-      if not Is_Valid_Utf_8 (Package_Text) then
+      if not Is_Valid_Utf_8 (Version_Text) then
          return Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
       end if;
 

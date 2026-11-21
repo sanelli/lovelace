@@ -21,6 +21,10 @@ package body Lovelace.Main.Integration_Tests.Support_Tests is
         Helpers.Locate_Sample ("using", "UsingLib.love");
       Assignment_Path : constant String :=
         Helpers.Locate_Sample ("assignment", "Assignment.love");
+      Nested_Call     : constant String :=
+        Helpers.Locate_Sample ("nested-call", "NestedCall.love");
+      Nested_Middle   : constant String :=
+        Helpers.Locate_Sample ("nested-call", "Middle.love");
       Nested_Using    : constant String :=
         Helpers.Locate_Sample ("nested-using", "NestedUsing.love");
       Module_Path     : constant String :=
@@ -58,6 +62,12 @@ package body Lovelace.Main.Integration_Tests.Support_Tests is
       AUnit.Assertions.Assert
         (Ada.Directories.Exists (Assignment_Path),
          "assignment Assignment.love present");
+      AUnit.Assertions.Assert
+        (Ada.Directories.Exists (Nested_Call),
+         "nested-call NestedCall.love present");
+      AUnit.Assertions.Assert
+        (Ada.Directories.Exists (Nested_Middle),
+         "nested-call Middle.love present");
       AUnit.Assertions.Assert
         (Ada.Directories.Exists (Nested_Using),
          "nested-using NestedUsing.love present");

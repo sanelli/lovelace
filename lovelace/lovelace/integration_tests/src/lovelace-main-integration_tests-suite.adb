@@ -43,6 +43,14 @@ package body Lovelace.Main.Integration_Tests.Suite is
               .Test_Hello_Print_Build_Validate_And_Run'Access));
       Result.Add_Test
         (Hello_Caller.Create
+           ("compile: validate and run program NestedCall",
+            Lovelace
+              .Main
+              .Integration_Tests
+              .Hello_Compile
+              .Test_Nested_Call_Build_Validate_And_Run'Access));
+      Result.Add_Test
+        (Hello_Caller.Create
            ("compile: validate and run program NestedUsing",
             Lovelace
               .Main

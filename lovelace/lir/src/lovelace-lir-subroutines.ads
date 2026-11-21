@@ -81,7 +81,7 @@ package Lovelace.Lir.Subroutines is
    --  Optional dependency-module tag when this subroutine was flattened from
    --  another compilation unit (not the root).
    --  @disc Present True when Module_Name is stored; False when absent.
-   --  @field Module_Name UTF-8 dependency module name (matches a `(depend …)`).
+   --  @field Module_Name UTF-8 dependency module name (matches a `(dependency …)`).
    type From_Dependency_Option (Present : Boolean := False) is record
       case Present is
          when True =>

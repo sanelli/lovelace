@@ -1,0 +1,8 @@
+{ Middle.Pass forwards an integer to Augusta print. }
+using augusta.std.io;
+module Middle;
+export procedure Pass(Value : integer);
+begin
+   augusta.std.io.print(Value);
+end;
+end.

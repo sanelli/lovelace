@@ -16,7 +16,7 @@ File offsets in the subroutine preamble are **0-based** from the first magic byt
 
 Wrong magic → `Invalid_Magic`. Any version other than major `1` / minor `0` → `Unsupported_Version`.
 
-After the version words: **package-version** — encoded string (default `"0.0.1"`).
+After the version words: **module-version** — encoded string (default `"0.0.1"`).
 
 ## Encoded string
 

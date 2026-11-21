@@ -391,9 +391,9 @@ package body Lovelace.Lir.Binary is
       end if;
 
       declare
-         Package_Version_Text : Ada.Strings.Unbounded.Unbounded_String;
+         Module_Version_Text : Ada.Strings.Unbounded.Unbounded_String;
       begin
-         if not Read_String (Bytes, Cursor, Package_Version_Text) then
+         if not Read_String (Bytes, Cursor, Module_Version_Text) then
             return (Ok => False, Error => Errors.Truncated);
          end if;
          if not Read_String (Bytes, Cursor, Module_Name_Text) then
@@ -408,9 +408,9 @@ package body Lovelace.Lir.Binary is
 
          The_Module :=
            Modules.Create (Ada.Strings.Unbounded.To_String (Module_Name_Text));
-         Modules.Set_Package_Version
+         Modules.Set_Module_Version
            (The_Module,
-            Ada.Strings.Unbounded.To_String (Package_Version_Text));
+            Ada.Strings.Unbounded.To_String (Module_Version_Text));
          Modules.Set_Flags
            (The_Module, Modules.Module_Flags (Module_Flags_Value));
       end;
@@ -560,7 +560,7 @@ package body Lovelace.Lir.Binary is
          Append_Byte (Buffer, Magic_3);
          Append_U16 (Buffer, Format_Major);
          Append_U16 (Buffer, Format_Minor);
-         Append_String (Buffer, Modules.Package_Version (The_Module));
+         Append_String (Buffer, Modules.Module_Version (The_Module));
 
          Append_String (Buffer, Modules.Name (The_Module));
          Append_U32

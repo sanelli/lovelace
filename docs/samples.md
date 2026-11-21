@@ -21,6 +21,8 @@ For **every** new user-facing feature, add at least one `.love` file under `samp
 | [`samples/using/UsingDecl.love`](../samples/using/UsingDecl.love) | File-leading `using UsingLib;` before an empty-body program (resolves same-folder module) |
 | [`samples/using/UsingLib.love`](../samples/using/UsingLib.love) | Empty module dependency for `UsingDecl` |
 | [`samples/nested-using/NestedUsing.love`](../samples/nested-using/NestedUsing.love) | Block-scoped `using` + declare + assign + print (needs Augusta) |
+| [`samples/nested-call/NestedCall.love`](../samples/nested-call/NestedCall.love) | Program → `Middle.Pass(42)` → `augusta.std.io.print` (needs Augusta + same-folder `Middle.love`) |
+| [`samples/nested-call/Middle.love`](../samples/nested-call/Middle.love) | Exported `Pass(integer)` that forwards to Augusta print |
 | [`samples/assignment/Assignment.love`](../samples/assignment/Assignment.love) | Declare, `:=`, read, print via Augusta |
 | [`samples/module/Empty.love`](../samples/module/Empty.love) | Minimal empty module (`module Empty; end.`) |
 | [`samples/module/Foo.Bar.love`](../samples/module/Foo.Bar.love) | Dotted module name (`module Foo.Bar; end.`) |

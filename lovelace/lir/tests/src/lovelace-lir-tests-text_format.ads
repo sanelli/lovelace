@@ -7,7 +7,7 @@ package Lovelace.Lir.Tests.Text_Format is
    --  Fixture for .tlir writer tests.
    type Fixture is new AUnit.Test_Fixtures.Test_Fixture with null record;
 
-   --  Empty module golden: flags 0, no depend or subroutine forms.
+   --  Empty module golden: flags 0, no dependency or subroutine forms.
    --  @param The_Test Unused fixture.
    procedure Test_Empty_Module_Golden (The_Test : in out Fixture);
 

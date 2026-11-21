@@ -30,7 +30,7 @@ package body Lovelace.Lir.Tests.Text_Format is
         & ASCII.LF
         & "  (lir-version 1 0)"
         & ASCII.LF
-        & "  (package-version ""0.0.1"")"
+        & "  (module-version ""0.0.1"")"
         & ASCII.LF
         & "  (name ""example"")"
         & ASCII.LF
@@ -39,7 +39,7 @@ package body Lovelace.Lir.Tests.Text_Format is
    begin
       AUnit.Assertions.Assert (Text = Expected, "empty module golden");
       Support.Assert_Not_Contains (Text, "(flags", "no zero flags");
-      Support.Assert_Not_Contains (Text, "(depend", "no depend");
+      Support.Assert_Not_Contains (Text, "(dependency", "no dependency");
       Support.Assert_Not_Contains (Text, "(subroutine", "no subroutine");
    end Test_Empty_Module_Golden;
 
@@ -94,13 +94,14 @@ package body Lovelace.Lir.Tests.Text_Format is
          Support.Assert_Contains
            (I32_Text, "(1 ""F"" (result i32))", "i32 index entry");
          Support.Assert_Contains
-           (Param_Text, "(param ""a"" i8 ""b"" u8 ""c"" f32)", "param list");
+           (Param_Text,
+            "(locals (1 ""a"" i8 param) (2 ""b"" u8 param) (3 ""c"" f32 param))",
+            "params in locals");
          Support.Assert_Contains (Param_Text, "(result unit)", "param result");
          Support.Assert_Contains
            (Param_Text,
             "(1 ""G"" (param ""a"" i8 ""b"" u8 ""c"" f32) (result unit))",
             "param index entry");
-         Support.Assert_Not_Contains (Param_Text, "(locals", "no locals form");
          Support.Assert_Contains
            (Flag_Text, "(flags export entrypoint)", "flags form");
          Support.Assert_Contains (Flag_Text, "(noop)", "noop");
@@ -121,6 +122,24 @@ package body Lovelace.Lir.Tests.Text_Format is
            (Ada.Strings.Unbounded.To_String (Local_Text),
             "(locals (1 ""tmp"" i32) (2 ""flag"" i32))",
             "locals list");
+         --  With a parameter first, slots stay local.get order and params tag.
+         declare
+            Mixed_Mod : Modules.Module := Modules.Create ("m");
+            Mixed_Params : Types.Parameter_Sequence := Types.Empty_Sequence;
+            Mixed_Sub : Subroutines.Subroutine;
+         begin
+            Types.Append (Mixed_Params, "V", Types.I32);
+            Mixed_Sub :=
+              Support.Make_Subroutine
+                ("P", Types.Unit, Parameters => Mixed_Params);
+            Subroutines.Append_Local (Mixed_Sub, "tmp", Types.I32);
+            Modules.Append_Subroutine (Mixed_Mod, Mixed_Sub);
+            Support.Assert_Contains
+              (Ada.Strings.Unbounded.To_String
+                 (Support.Must_To_Text (Mixed_Mod, "mixed")),
+               "(locals (1 ""V"" i32 param) (2 ""tmp"" i32))",
+               "param+local slots");
+         end;
          Support.Assert_Not_Contains
            (Ada.Strings.Unbounded.To_String (Local_Text),
             "(body",
@@ -241,7 +260,7 @@ package body Lovelace.Lir.Tests.Text_Format is
             Support.Assert_Contains
               (Ada.Strings.Unbounded.To_String
                  (Support.Must_To_Text (As_Param, "p")),
-               "(param ""p"" " & Token & ")",
+               "(locals (1 ""p"" " & Token & " param))",
                "param token " & Token);
             Support.Assert_Contains
               (Ada.Strings.Unbounded.To_String

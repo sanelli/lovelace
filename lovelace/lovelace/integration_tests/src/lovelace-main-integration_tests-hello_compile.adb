@@ -246,6 +246,69 @@ package body Lovelace.Main.Integration_Tests.Hello_Compile is
          Ada.Exceptions.Reraise_Occurrence (Error);
    end Test_Hello_Print_Build_Validate_And_Run;
 
+   procedure Test_Nested_Call_Build_Validate_And_Run
+     (The_Test : in out Fixture)
+   is
+      pragma Unreferenced (The_Test);
+      Test_Name       : constant String :=
+        "compile: validate and run program NestedCall";
+      Lovelace_Path   : constant String := Helpers.Locate_Lovelace;
+      Sample_Path     : constant String :=
+        Helpers.Locate_Sample ("nested-call", "NestedCall.love");
+      Output_Root     : constant String :=
+        Helpers.Locate_Output_Root ("nested-call");
+      Augusta_Root    : constant String :=
+        Helpers.Compose_Under
+          (Helpers.Compose_Under (Helpers.Locate_Repository_Root, "augusta"),
+           "lovelace");
+      Validate_Status : Helpers.Tool_Status;
+      Run_Status      : Helpers.Tool_Status;
+      Outcome         : Helpers.Test_Outcome := Helpers.Ok;
+   begin
+      AUnit.Assertions.Assert
+        (Lovelace_Path'Length > 0, "lovelace executable present");
+
+      Helpers.Reset_Output_Root (Output_Root);
+      Helpers.Compile_Sample
+        (Lovelace_Path => Lovelace_Path,
+         Sample_Path   => Sample_Path,
+         Output_Root   => Output_Root,
+         Message       => "NestedCall",
+         Include_Path  => Augusta_Root);
+      Helpers.Assert_Build_Artifacts
+        (Output_Root => Output_Root,
+         Unit_Name   => "NestedCall",
+         Message     => "NestedCall");
+      Helpers.Assert_Wat_Contains
+        (Output_Root => Output_Root,
+         Unit_Name   => "NestedCall",
+         Fragment    => "call $Middle_2ePass",
+         Message     => "NestedCall calls Middle.Pass");
+
+      Helpers.Validate_Unit_Artifacts
+        (Output_Root => Output_Root,
+         Unit_Name   => "NestedCall",
+         Message     => "NestedCall",
+         Status      => Validate_Status);
+      Helpers.Run_Unit_Entrypoint
+        (Output_Root     => Output_Root,
+         Unit_Name       => "NestedCall",
+         Message         => "NestedCall",
+         Status          => Run_Status,
+         Expected_Stdout => "42");
+
+      if Validate_Status = Helpers.Missing or else Run_Status = Helpers.Missing
+      then
+         Outcome := Helpers.Inconclusive;
+      end if;
+
+      Helpers.Report_Test_Result (Test_Name, Outcome);
+   exception
+      when Error : others =>
+         Helpers.Report_Test_Result (Test_Name, Helpers.Fail);
+         Ada.Exceptions.Reraise_Occurrence (Error);
+   end Test_Nested_Call_Build_Validate_And_Run;
+
    procedure Test_Nested_Using_Build_Validate_And_Run
      (The_Test : in out Fixture)
    is

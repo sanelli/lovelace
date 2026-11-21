@@ -188,7 +188,7 @@ package body Lovelace.Lir.Tests.Binary_Format is
          end;
       end;
 
-      --  After magic(4)+version(4)+package-version("0.0.1"=9) lies name length;
+      --  After magic(4)+version(4)+module-version("0.0.1"=9) lies name length;
       --  first name byte is at +21 for module "m".
       Support.Assert_Decode_Error
         (Support.Replace_Byte (Base, Base'First + 21, 16#FF#),

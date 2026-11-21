@@ -359,8 +359,8 @@ package body Lovelace.Lir.Text is
          Append_Line (Buffer, "(module");
          Append_Line (Buffer, Indent (1) & "(lir-version 1 0)");
          Ada.Strings.Unbounded.Append
-           (Buffer, Indent (1) & "(package-version ");
-         Append_Quoted (Buffer, Modules.Package_Version (The_Module));
+           (Buffer, Indent (1) & "(module-version ");
+         Append_Quoted (Buffer, Modules.Module_Version (The_Module));
          Append_Line (Buffer, ")");
          Ada.Strings.Unbounded.Append (Buffer, Indent (1) & "(name ");
          Append_Quoted (Buffer, Modules.Name (The_Module));
@@ -379,7 +379,8 @@ package body Lovelace.Lir.Text is
 
          for Dependency_Index in 1 .. Modules.Dependency_Count (The_Module)
          loop
-            Ada.Strings.Unbounded.Append (Buffer, Indent (1) & "(depend ");
+            Ada.Strings.Unbounded.Append
+              (Buffer, Indent (1) & "(dependency ");
             Append_Quoted
               (Buffer, Modules.Dependency_Name (The_Module, Dependency_Index));
             Append_Line (Buffer, ")");
@@ -413,26 +414,6 @@ package body Lovelace.Lir.Text is
 
                Append_From_Dependency (Buffer, The_Subroutine);
                Append_Subroutine_Origin (Buffer, The_Subroutine);
-
-               if Parameter_Count > 0 then
-                  Ada.Strings.Unbounded.Append (Buffer, Indent (2) & "(param");
-                  for Parameter_Index in 1 .. Parameter_Count loop
-                     declare
-                        The_Parameter : constant Types.Parameter :=
-                          Types.Element
-                            (The_Signature.Parameters, Parameter_Index);
-                     begin
-                        Ada.Strings.Unbounded.Append (Buffer, " ");
-                        Append_Quoted
-                          (Buffer,
-                           Ada.Strings.Unbounded.To_String
-                             (The_Parameter.Name));
-                        Ada.Strings.Unbounded.Append
-                          (Buffer, " " & Type_Token (The_Parameter.The_Type));
-                     end;
-                  end loop;
-                  Append_Line (Buffer, ")");
-               end if;
 
                Append_Line
                  (Buffer,
@@ -483,19 +464,44 @@ package body Lovelace.Lir.Text is
                   end case;
                end;
 
-               if Local_Count > 0 then
+               if Parameter_Count + Local_Count > 0 then
                   Ada.Strings.Unbounded.Append
                     (Buffer, Indent (2) & "(locals");
-                  for Local_Index in 1 .. Local_Count loop
+                  for Parameter_Index in 1 .. Parameter_Count loop
                      declare
-                        The_Local : constant Types.Parameter :=
-                          Types.Element (Locals, Local_Index);
+                        The_Parameter : constant Types.Parameter :=
+                          Types.Element
+                            (The_Signature.Parameters, Parameter_Index);
                      begin
                         Ada.Strings.Unbounded.Append
                           (Buffer,
                            " ("
                            & Unsigned_Image
-                               (Interfaces.Unsigned_32 (Local_Index))
+                               (Interfaces.Unsigned_32 (Parameter_Index))
+                           & " ");
+                        Append_Quoted
+                          (Buffer,
+                           Ada.Strings.Unbounded.To_String
+                             (The_Parameter.Name));
+                        Ada.Strings.Unbounded.Append
+                          (Buffer,
+                           " "
+                           & Type_Token (The_Parameter.The_Type)
+                           & " param)");
+                     end;
+                  end loop;
+                  for Local_Index in 1 .. Local_Count loop
+                     declare
+                        The_Local : constant Types.Parameter :=
+                          Types.Element (Locals, Local_Index);
+                        Slot      : constant Natural :=
+                          Parameter_Count + Local_Index;
+                     begin
+                        Ada.Strings.Unbounded.Append
+                          (Buffer,
+                           " ("
+                           & Unsigned_Image
+                               (Interfaces.Unsigned_32 (Slot))
                            & " ");
                         Append_Quoted
                           (Buffer,
