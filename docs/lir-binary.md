@@ -98,7 +98,8 @@ Then follow exactly `subroutine_count` subroutine records in preamble order (no 
    - name (encoded string)
    - type — encoded `Value_Type`
 5. `local_count` — `u32`
-6. `local_count` locals, each (same shape as a parameter):
+6. `local_count` locals, each:
+   - index — `u32` (1-based among locals; must equal position `1 .. local_count`, else `Invalid_Local_Index`)
    - name (encoded string)
    - type — encoded `Value_Type`
 7. `flags` — `u32` (bit 0 = export, bit 1 = entrypoint, bit 2 = native, bit 3 = intrinsic; other bits preserved like module flags)

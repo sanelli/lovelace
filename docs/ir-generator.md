@@ -56,14 +56,14 @@ After building, `Generate` calls `Lovelace.Lir.Modules.Validate`. A validation f
 | Frontend (`Ast` / `Types`) | LIR (`Modules` / `Subroutines` / `Types`) |
 | --- | --- |
 | Module name (including dotted names) | `Modules.Create` then append subroutines |
-| Module name span, unit span, filename | `Modules.Set_Origin` (`Module_Origin`) |
+| Module name span, unit span, filename | `Modules.Set_Origin` (`Module_Origin`); when `Loaded_Unit.Source_Path` is set, origin filename is that path absolutized (else the AST filename) |
 | `Unit_Kind` | not stored in LIR (frontend only) |
 | `Full_Name` | not stored in LIR (frontend only; LIR keeps the unqualified procedure name) |
 | Module flags | flags `0` |
 | All usings in the unit (unit-leading + nested; unique module names) | `Append_Dependency` for each used module name |
 | Each subroutine | `Subroutines.Create` + body instructions + `Append_Subroutine` |
 | Subroutine name | `Signature.Name` (unqualified) |
-| Subroutine name span, declaration span, filename | `Subroutines.Set_Origin` (`Subroutine_Origin`) |
+| Subroutine name span, declaration span, filename | `Subroutines.Set_Origin` (`Subroutine_Origin`); same absolutized `Source_Path` preference as the module origin |
 | Return type `Unit` | `Lir.Types.Unit` |
 | Parameters (name + type) | named LIR parameters (same order) |
 | `Integer` / `Float` / `Boolean` type expressions | LIR `I8`…`I64` / `U8`…`U64` / `F32` / `F64` / `I32` for boolean (see table below) |

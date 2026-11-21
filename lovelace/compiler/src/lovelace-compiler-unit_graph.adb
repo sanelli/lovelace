@@ -1,5 +1,6 @@
 with Ada.Containers.Indefinite_Hashed_Maps;
 with Ada.Containers.Indefinite_Hashed_Sets;
+with Ada.Directories;
 with Ada.Streams;
 with Ada.Strings.Hash;
 with GNAT.OS_Lib;
@@ -26,6 +27,9 @@ package body Lovelace.Compiler.Unit_Graph is
         Element_Type    => Positive,
         Hash            => Ada.Strings.Hash,
         Equivalent_Keys => "=");
+
+   function Absolute_Path (Path : String) return String;
+   --  Full_Name when resolvable; otherwise Path unchanged.
 
    function Failure
      (Code          : Unit_Graph_Error_Code;
@@ -58,6 +62,14 @@ package body Lovelace.Compiler.Unit_Graph is
    function Read_Entire_File
      (Path : String; Contents : out Ada.Strings.Unbounded.Unbounded_String)
       return Boolean;
+
+   function Absolute_Path (Path : String) return String is
+   begin
+      return Ada.Directories.Full_Name (Path);
+   exception
+      when Ada.Directories.Use_Error | Ada.Directories.Name_Error =>
+         return Path;
+   end Absolute_Path;
 
    procedure Append_Usings_From_Block
      (The_Block : Ast.Block; Into : in out Ast.Using_Sequence)
@@ -129,17 +141,18 @@ package body Lovelace.Compiler.Unit_Graph is
       Search_Roots     : Module_Path.Path_Sequence;
       Active_Flavor    : Flavor.Flavor) return Load_Result
    is
-      Units          : Compilation_Set;
-      Visiting       : Name_Sets.Set;
-      Loaded_By_Name : Name_To_Index.Map;
-      All_Usings     : constant Ast.Using_Sequence :=
+      Units            : Compilation_Set;
+      Visiting         : Name_Sets.Set;
+      Loaded_By_Name   : Name_To_Index.Map;
+      Absolute_Root    : constant String := Absolute_Path (Root_Source_Path);
+      All_Usings       : constant Ast.Using_Sequence :=
         Collect_Module_Usings (Root_Module);
    begin
       Units.Append
         (Loaded_Unit'
            (The_Module  => Root_Module,
             Source_Path =>
-              Ada.Strings.Unbounded.To_Unbounded_String (Root_Source_Path),
+              Ada.Strings.Unbounded.To_Unbounded_String (Absolute_Root),
             Source_Text =>
               Ada.Strings.Unbounded.To_Unbounded_String (Root_Source_Text)));
       Loaded_By_Name.Insert (Ast.Name (Root_Module), 1);
@@ -153,7 +166,7 @@ package body Lovelace.Compiler.Unit_Graph is
                 (Module_Name    =>
                    Ada.Strings.Unbounded.To_String (The_Import.Module_Name),
                  Import_Span    => The_Import.Name_Span,
-                 Importer_Path  => Root_Source_Path,
+                 Importer_Path  => Absolute_Root,
                  Importer_Text  => Root_Source_Text,
                  Search_Roots   => Search_Roots,
                  Active_Flavor  => Active_Flavor,

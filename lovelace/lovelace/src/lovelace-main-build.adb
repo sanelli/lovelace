@@ -376,7 +376,17 @@ package body Lovelace.Main.Build is
          return False;
       end if;
 
-      Source_Path := Options.Source_Path;
+      declare
+         Raw_Path : constant String :=
+           Ada.Strings.Unbounded.To_String (Options.Source_Path);
+      begin
+         Source_Path :=
+           Ada.Strings.Unbounded.To_Unbounded_String
+             (Ada.Directories.Full_Name (Raw_Path));
+      exception
+         when Ada.Directories.Use_Error | Ada.Directories.Name_Error =>
+            Source_Path := Options.Source_Path;
+      end;
       Output_Root := Options.Output_Root;
       Obj_Dir :=
         Ada.Strings.Unbounded.To_Unbounded_String

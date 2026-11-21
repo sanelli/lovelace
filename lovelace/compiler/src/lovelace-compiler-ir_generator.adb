@@ -1,4 +1,5 @@
 with Ada.Containers.Vectors;
+with Ada.Directories;
 with Ada.Strings;
 with Ada.Strings.Fixed;
 with Interfaces;
@@ -142,6 +143,11 @@ package body Lovelace.Compiler.Ir_Generator is
    function Map_Value_Type
      (The_Type : Lovelace.Compiler.Types.Type_Expression)
       return Lovelace.Lir.Types.Value_Type;
+
+   --  Prefer absolute Source_Path from the compilation set; else AST filename.
+   function Origin_Filename
+     (Unit     : Unit_Graph.Loaded_Unit;
+      Fallback : Source.Filename_Option) return Source.Filename_Option;
 
    procedure Pop_Scope (The_Map : in out Local_Map);
 
@@ -416,7 +422,9 @@ package body Lovelace.Compiler.Ir_Generator is
         (Lir_Module,
          (Name_Span => Ast.Name_Span (Root_Unit),
           Span      => Ast.Span (Root_Unit),
-          Filename  => Ast.Filename (Root_Unit)));
+          Filename  =>
+            Origin_Filename
+              (Units.Element (1), Ast.Filename (Root_Unit))));
 
       declare
          Dependencies : constant Ast.Using_Sequence :=
@@ -509,7 +517,10 @@ package body Lovelace.Compiler.Ir_Generator is
               (Lir_Subroutine,
                (Name_Span => Ast.Name_Span (Symbol.The_Subroutine),
                 Span      => Ast.Span (Symbol.The_Subroutine),
-                Filename  => Ast.Filename (Symbol.The_Subroutine)));
+                Filename  =>
+                  Origin_Filename
+                    (Units.Element (Symbol.Unit_Index),
+                     Ast.Filename (Symbol.The_Subroutine))));
 
             declare
                Sub_Flags : constant Ast.Subroutine_Flags :=
@@ -991,6 +1002,27 @@ package body Lovelace.Compiler.Ir_Generator is
             end case;
       end case;
    end Map_Value_Type;
+
+   function Origin_Filename
+     (Unit     : Unit_Graph.Loaded_Unit;
+      Fallback : Source.Filename_Option) return Source.Filename_Option
+   is
+      Path : constant String :=
+        Ada.Strings.Unbounded.To_String (Unit.Source_Path);
+   begin
+      if Path'Length = 0 then
+         return Fallback;
+      end if;
+
+      declare
+         Absolute : constant String := Ada.Directories.Full_Name (Path);
+      begin
+         return Source.Some_Filename (Source.From_Utf_8 (Absolute));
+      end;
+   exception
+      when Ada.Directories.Use_Error | Ada.Directories.Name_Error =>
+         return Source.Some_Filename (Source.From_Utf_8 (Path));
+   end Origin_Filename;
 
    procedure Pop_Scope (The_Map : in out Local_Map) is
    begin

@@ -32,13 +32,11 @@ package body Lovelace.Lir.Tests.Text_Format is
         & ASCII.LF
         & "  (name ""example"")"
         & ASCII.LF
-        & "  (flags 0)"
-        & ASCII.LF
         & ")"
         & ASCII.LF;
    begin
       AUnit.Assertions.Assert (Text = Expected, "empty module golden");
-      Support.Assert_Contains (Text, "(flags 0)", "flags");
+      Support.Assert_Not_Contains (Text, "(flags", "no zero flags");
       Support.Assert_Not_Contains (Text, "(depend", "no depend");
       Support.Assert_Not_Contains (Text, "(subroutine", "no subroutine");
    end Test_Empty_Module_Golden;
@@ -100,10 +98,10 @@ package body Lovelace.Lir.Tests.Text_Format is
            (Param_Text,
             "(1 ""G"" (param ""a"" i8 ""b"" u8 ""c"" f32) (result unit))",
             "param index entry");
-         Support.Assert_Not_Contains (Param_Text, "(local", "no local form");
-         Support.Assert_Contains (Flag_Text, "export", "export");
-         Support.Assert_Contains (Flag_Text, "entrypoint", "entrypoint");
-         Support.Assert_Contains (Flag_Text, "noop", "noop");
+         Support.Assert_Not_Contains (Param_Text, "(locals", "no locals form");
+         Support.Assert_Contains
+           (Flag_Text, "(flags export entrypoint)", "flags form");
+         Support.Assert_Contains (Flag_Text, "(noop)", "noop");
          Support.Assert_Contains (Flag_Text, "(body", "body");
       end;
 
@@ -119,8 +117,12 @@ package body Lovelace.Lir.Tests.Text_Format is
          Local_Text := Support.Must_To_Text (Local_Mod, "locals");
          Support.Assert_Contains
            (Ada.Strings.Unbounded.To_String (Local_Text),
-            "(local ""tmp"" i32 ""flag"" i32)",
-            "local list");
+            "(locals (1 ""tmp"" i32) (2 ""flag"" i32))",
+            "locals list");
+         Support.Assert_Not_Contains
+           (Ada.Strings.Unbounded.To_String (Local_Text),
+            "(body",
+            "empty body omitted");
          Support.Assert_Binary_Round_Trip (Local_Mod, "locals round-trip");
       end;
 
@@ -138,13 +140,13 @@ package body Lovelace.Lir.Tests.Text_Format is
               Ada.Strings.Unbounded.To_String
                 (Support.Must_To_Text (Native_Module, "native"));
          begin
-            Support.Assert_Contains (Text, "export", "native export");
-            Support.Assert_Contains (Text, "native", "native flag word");
+            Support.Assert_Contains
+              (Text, "(flags export native)", "native flags");
             Support.Assert_Contains
               (Text,
                "(native ""wasi"" ""native-print-integer"")",
                "native binding");
-            Support.Assert_Contains (Text, "(body))", "native empty body");
+            Support.Assert_Not_Contains (Text, "(body", "native empty body");
          end;
       end;
 
@@ -161,9 +163,10 @@ package body Lovelace.Lir.Tests.Text_Format is
               Ada.Strings.Unbounded.To_String
                 (Support.Must_To_Text (Intrinsic_Module, "intrinsic"));
          begin
-            Support.Assert_Contains (Text, "export", "intrinsic export");
-            Support.Assert_Contains (Text, "intrinsic", "intrinsic flag word");
-            Support.Assert_Contains (Text, "(body))", "intrinsic empty body");
+            Support.Assert_Contains
+              (Text, "(flags export intrinsic)", "intrinsic flags");
+            Support.Assert_Not_Contains
+              (Text, "(body", "intrinsic empty body");
          end;
       end;
 
@@ -191,19 +194,19 @@ package body Lovelace.Lir.Tests.Text_Format is
          Call_Text := Support.Must_To_Text (Call_Module, "call text");
          Support.Assert_Contains
            (Ada.Strings.Unbounded.To_String (Call_Text),
-            "i32.const 42",
+            "(i32.const 42)",
             "i32.const");
          Support.Assert_Contains
            (Ada.Strings.Unbounded.To_String (Call_Text),
-            "local.set 1",
+            "(local.set 1)",
             "local.set");
          Support.Assert_Contains
            (Ada.Strings.Unbounded.To_String (Call_Text),
-            "local.get 1",
+            "(local.get 1)",
             "local.get");
          Support.Assert_Contains
            (Ada.Strings.Unbounded.To_String (Call_Text),
-            "call 1",
+            "(call 1)",
             "call index");
       end;
 

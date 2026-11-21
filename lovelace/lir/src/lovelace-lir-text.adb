@@ -13,6 +13,8 @@ with Lovelace.Lir.Types;
 package body Lovelace.Lir.Text is
 
    use type GNAT.OS_Lib.File_Descriptor;
+   use type Modules.Module_Flags;
+   use type Subroutines.Subroutine_Flags;
 
    package Source renames Lovelace.Common.Source;
 
@@ -273,7 +275,7 @@ package body Lovelace.Lir.Text is
    begin
       case Item.Operation is
          when Opcodes.No_Operation =>
-            return "noop";
+            return "(noop)";
 
          when Opcodes.Constant_I32 =>
             declare
@@ -281,19 +283,24 @@ package body Lovelace.Lir.Text is
                  Interfaces.Integer_32'Image (Item.Immediate_I32);
             begin
                if Image'Length > 0 and then Image (Image'First) = ' ' then
-                  return "i32.const " & Image (Image'First + 1 .. Image'Last);
+                  return
+                    "(i32.const "
+                    & Image (Image'First + 1 .. Image'Last)
+                    & ")";
                end if;
-               return "i32.const " & Image;
+               return "(i32.const " & Image & ")";
             end;
 
          when Opcodes.Call         =>
-            return "call " & Unsigned_Image (Item.Target_Index);
+            return "(call " & Unsigned_Image (Item.Target_Index) & ")";
 
          when Opcodes.Local_Get    =>
-            return "local.get " & Unsigned_Image (Item.Local_Index);
+            return
+              "(local.get " & Unsigned_Image (Item.Local_Index) & ")";
 
          when Opcodes.Local_Set    =>
-            return "local.set " & Unsigned_Image (Item.Local_Index);
+            return
+              "(local.set " & Unsigned_Image (Item.Local_Index) & ")";
       end case;
    end Instruction_Token;
 
@@ -330,13 +337,15 @@ package body Lovelace.Lir.Text is
          Ada.Strings.Unbounded.Append (Buffer, Indent (1) & "(name ");
          Append_Quoted (Buffer, Modules.Name (The_Module));
          Append_Line (Buffer, ")");
-         Append_Line
-           (Buffer,
-            Indent (1)
-            & "(flags "
-            & Unsigned_Image
-                (Interfaces.Unsigned_32 (Modules.Flags (The_Module)))
-            & ")");
+         if Modules.Flags (The_Module) /= 0 then
+            Append_Line
+              (Buffer,
+               Indent (1)
+               & "(flags "
+               & Unsigned_Image
+                   (Interfaces.Unsigned_32 (Modules.Flags (The_Module)))
+               & ")");
+         end if;
 
          Append_Module_Origin (Buffer, The_Module);
 
@@ -403,17 +412,22 @@ package body Lovelace.Lir.Text is
                   & Type_Token (The_Signature.Return_Type)
                   & ")");
 
-               if Subroutines.Has_Export (Flags_Value) then
-                  Append_Line (Buffer, Indent (2) & "export");
-               end if;
-               if Subroutines.Has_Entrypoint (Flags_Value) then
-                  Append_Line (Buffer, Indent (2) & "entrypoint");
-               end if;
-               if Subroutines.Has_Native (Flags_Value) then
-                  Append_Line (Buffer, Indent (2) & "native");
-               end if;
-               if Subroutines.Has_Intrinsic (Flags_Value) then
-                  Append_Line (Buffer, Indent (2) & "intrinsic");
+               if Flags_Value /= 0 then
+                  Ada.Strings.Unbounded.Append
+                    (Buffer, Indent (2) & "(flags");
+                  if Subroutines.Has_Export (Flags_Value) then
+                     Ada.Strings.Unbounded.Append (Buffer, " export");
+                  end if;
+                  if Subroutines.Has_Entrypoint (Flags_Value) then
+                     Ada.Strings.Unbounded.Append (Buffer, " entrypoint");
+                  end if;
+                  if Subroutines.Has_Native (Flags_Value) then
+                     Ada.Strings.Unbounded.Append (Buffer, " native");
+                  end if;
+                  if Subroutines.Has_Intrinsic (Flags_Value) then
+                     Ada.Strings.Unbounded.Append (Buffer, " intrinsic");
+                  end if;
+                  Append_Line (Buffer, ")");
                end if;
 
                declare
@@ -441,26 +455,31 @@ package body Lovelace.Lir.Text is
                end;
 
                if Local_Count > 0 then
-                  Ada.Strings.Unbounded.Append (Buffer, Indent (2) & "(local");
+                  Ada.Strings.Unbounded.Append
+                    (Buffer, Indent (2) & "(locals");
                   for Local_Index in 1 .. Local_Count loop
                      declare
                         The_Local : constant Types.Parameter :=
                           Types.Element (Locals, Local_Index);
                      begin
-                        Ada.Strings.Unbounded.Append (Buffer, " ");
+                        Ada.Strings.Unbounded.Append
+                          (Buffer,
+                           " ("
+                           & Unsigned_Image
+                               (Interfaces.Unsigned_32 (Local_Index))
+                           & " ");
                         Append_Quoted
                           (Buffer,
                            Ada.Strings.Unbounded.To_String (The_Local.Name));
                         Ada.Strings.Unbounded.Append
-                          (Buffer, " " & Type_Token (The_Local.The_Type));
+                          (Buffer,
+                           " " & Type_Token (The_Local.The_Type) & ")");
                      end;
                   end loop;
                   Append_Line (Buffer, ")");
                end if;
 
-               if Instructions.Length (Body_Instrs) = 0 then
-                  Append_Line (Buffer, Indent (2) & "(body))");
-               else
+               if Instructions.Length (Body_Instrs) > 0 then
                   Append_Line (Buffer, Indent (2) & "(body");
                   for Instruction_Index in
                     1 .. Instructions.Length (Body_Instrs)
@@ -476,11 +495,12 @@ package body Lovelace.Lir.Text is
                         then
                            Append_Line (Buffer, Indent (3) & Token);
                         else
-                           Append_Line (Buffer, Indent (3) & Token & "))");
+                           Append_Line (Buffer, Indent (3) & Token & ")");
                         end if;
                      end;
                   end loop;
                end if;
+               Append_Line (Buffer, Indent (1) & ")");
             end;
          end loop;
 

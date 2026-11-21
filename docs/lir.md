@@ -57,7 +57,7 @@ A **subroutine** has:
 
 Locals are empty for `@native` / `@intrinsic`. `Validate` rejects empty local names, invalid UTF-8, duplicate local names within a subroutine, and local names that clash with a parameter name.
 
-Origins support diagnostics and frontend lowering. Codecs round-trip them when present (`origin_present = 0` / omit text form when absent). `Validate` does not require origins. Text form also emits bare `intrinsic` when `Intrinsic_Flag` is set. Shared position types live in [`Lovelace.Common.Source`](source-locations.md); the compiler copies them via the [IR Generator](ir-generator.md). The format **version fields remain 1.0**; layout includes origin fields, optional native binding, and named parameters. The CLI writes `.lir` under the build output `obj/` folder ([cli.md](cli.md)); pass `--generate-tlir` to also write `obj/<Unit>.tlir`. User diagnostics use `LV#####` codes ([diagnostics.md](diagnostics.md)).
+Origins support diagnostics and frontend lowering. Codecs round-trip them when present (`origin_present = 0` / omit text form when absent). `Validate` does not require origins. Text form emits optional `(flags …)` with named bits (`export`, `entrypoint`, `native`, `intrinsic`) when any are set, and parenthesized instructions; see [lir-text.md](lir-text.md). Shared position types live in [`Lovelace.Common.Source`](source-locations.md); the compiler copies them via the [IR Generator](ir-generator.md). The format **version fields remain 1.0**; layout includes origin fields, optional native binding, named parameters, and 1-based local indices in the binary local list. The CLI writes `.lir` under the build output `obj/` folder ([cli.md](cli.md)); pass `--generate-tlir` to also write `obj/<Unit>.tlir`. User diagnostics use `LV#####` codes ([diagnostics.md](diagnostics.md)).
 
 `Validate` rejects native/entrypoint together, intrinsic/entrypoint together, intrinsic+native together, `Native_Flag` without a binding (or the reverse), native/intrinsic with a non-empty instruction body, and empty library/function strings (`Invalid_Native_Binding` / `Empty_Name`).
 
@@ -65,11 +65,11 @@ Opcodes in this slice:
 
 | Opcode | Word | Text | Immediates |
 | --- | ---: | --- | --- |
-| `No_Operation` | `0` | `noop` | none |
-| `Constant_I32` | `1` | `i32.const <n>` | little-endian `i32` (4 bytes) |
-| `Call` | `2` | `call <index>` | little-endian `u32` **1-based** subroutine index (4 bytes) |
-| `Local_Get` | `3` | `local.get <index>` | little-endian `u32` **1-based** local index (params first, then flattened locals) |
-| `Local_Set` | `4` | `local.set <index>` | little-endian `u32` **1-based** local index (params first, then flattened locals) |
+| `No_Operation` | `0` | `(noop)` | none |
+| `Constant_I32` | `1` | `(i32.const <n>)` | little-endian `i32` (4 bytes) |
+| `Call` | `2` | `(call <index>)` | little-endian `u32` **1-based** subroutine index (4 bytes) |
+| `Local_Get` | `3` | `(local.get <index>)` | little-endian `u32` **1-based** local index (params first, then flattened locals) |
+| `Local_Set` | `4` | `(local.set <index>)` | little-endian `u32` **1-based** local index (params first, then flattened locals) |
 
 `Validate` rejects `Call` when `Target_Index` is `0` or greater than `Subroutine_Count` (`Invalid_Call_Target`). `Local_Get` / `Local_Set` reject `Local_Index` `0` or past `Param_Count + Local_Count` (`Invalid_Local_Index`). See native rules above. The backend lowers these to 0-based Wasm `local.get` / `local.set` ([codegen.md](codegen.md)).
 

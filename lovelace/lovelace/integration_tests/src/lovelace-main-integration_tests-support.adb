@@ -51,6 +51,21 @@ package body Lovelace.Main.Integration_Tests.Support is
          Message & ": " & Unit_Name & ".wit");
    end Assert_Build_Artifacts;
 
+   procedure Assert_Lir_Contains
+     (Output_Root : String;
+      Unit_Name   : String;
+      Fragment    : String;
+      Message     : String)
+   is
+      Lir_Path : constant String :=
+        Compose_Under (Compose_Under (Output_Root, "obj"), Unit_Name & ".lir");
+      Contents : constant String := Read_Exact_File (Lir_Path);
+   begin
+      AUnit.Assertions.Assert
+        (Ada.Strings.Fixed.Index (Contents, Fragment) > 0,
+         Message & ": missing `" & Fragment & "` in .lir");
+   end Assert_Lir_Contains;
+
    procedure Assert_Wat_Contains
      (Output_Root : String;
       Unit_Name   : String;

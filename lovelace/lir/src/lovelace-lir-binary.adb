@@ -227,6 +227,7 @@ package body Lovelace.Lir.Binary is
             The_Local : constant Types.Parameter :=
               Types.Element (Locals, Local_Index);
          begin
+            Append_U32 (Buffer, Interfaces.Unsigned_32 (Local_Index));
             Append_String
               (Buffer, Ada.Strings.Unbounded.To_String (The_Local.Name));
             Append_Byte (Buffer, Types.To_Code (The_Local.The_Type));
@@ -745,12 +746,21 @@ package body Lovelace.Lir.Binary is
          Code := Errors.Truncated;
          return False;
       end if;
-      for Unused in 1 .. Natural (Local_Count) loop
+      for Expected_Index in 1 .. Natural (Local_Count) loop
          declare
+            Local_Index : Interfaces.Unsigned_32;
             Local_Name  : Ada.Strings.Unbounded.Unbounded_String;
             Type_Code   : Interfaces.Unsigned_8;
             Type_Option : Types.Value_Type_Options.Option;
          begin
+            if not Read_U32 (Bytes, Cursor, Local_Index) then
+               Code := Errors.Truncated;
+               return False;
+            end if;
+            if Natural (Local_Index) /= Expected_Index then
+               Code := Errors.Invalid_Local_Index;
+               return False;
+            end if;
             if not Read_String (Bytes, Cursor, Local_Name) then
                Code := Errors.Truncated;
                return False;

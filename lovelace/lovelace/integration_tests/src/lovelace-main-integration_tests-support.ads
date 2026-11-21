@@ -77,6 +77,17 @@ package Lovelace.Main.Integration_Tests.Support is
    procedure Assert_Build_Artifacts
      (Output_Root : String; Unit_Name : String; Message : String);
 
+   --  Assert obj/Unit_Name.lir contains Fragment (raw bytes as String).
+   --  @param Output_Root Build output folder.
+   --  @param Unit_Name Unit stem.
+   --  @param Fragment Required UTF-8 substring.
+   --  @param Message Assertion prefix.
+   procedure Assert_Lir_Contains
+     (Output_Root : String;
+      Unit_Name   : String;
+      Fragment    : String;
+      Message     : String);
+
    --  Assert bin/Unit_Name.wat contains Fragment.
    --  @param Output_Root Build output folder.
    --  @param Unit_Name Unit stem.

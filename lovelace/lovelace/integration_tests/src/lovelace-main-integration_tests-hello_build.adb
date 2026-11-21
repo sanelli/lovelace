@@ -1,3 +1,4 @@
+with Ada.Directories;
 with Ada.Exceptions;
 with AUnit.Assertions;
 
@@ -90,6 +91,11 @@ package body Lovelace.Main.Integration_Tests.Hello_Build is
          Message       => "Hello");
       Helpers.Assert_Build_Artifacts
         (Output_Root => Output_Root, Unit_Name => "Hello", Message => "Hello");
+      Helpers.Assert_Lir_Contains
+        (Output_Root => Output_Root,
+         Unit_Name   => "Hello",
+         Fragment    => Ada.Directories.Full_Name (Sample_Path),
+         Message     => "Hello absolute origin");
 
       Helpers.Validate_Unit_Artifacts
         (Output_Root => Output_Root,

@@ -1,22 +1,8 @@
-# LIR textual format (`.tlir`)
+# LIR text format (`.tlir`)
 
-Version **1.0** of the Lovelace Intermediate Representation text file. Owned by crate `lovelace_lir` (`Lovelace.Lir.Text`). Overview of the IR: [lir.md](lir.md). Binary companion: [lir-binary.md](lir-binary.md).
+Version **1.0** textual companion to the [binary LIR](lir-binary.md). Owned by crate `lovelace_lir` (`Lovelace.Lir.Text`). Overview: [lir.md](lir.md).
 
-UTF-8, no BOM. WAT-inspired S-expressions (LIR sits next to WASM, not Pascal). This slice **writes and prints only**; there is **no `.tlir` parser**.
-
-The binary `.lir` file also stores a subroutine **index** (id + signature + file offset). `.tlir` emits the same index as an `(index …)` form (no offsets).
-
-## Canonical writer
-
-Stable for tests:
-
-- 2-space indent
-- `LF` newlines
-- no trailing spaces
-- final newline
-- no `;;` comments in the canonical writer (a future parser may allow them)
-
-`(version 1 0)` is required and is the **text format** version (same 1.0 as binary).
+UTF-8, LF newlines. The writer (`To_Text` / `Write` / `Print`) is the source of truth for layout; there is no text reader yet.
 
 ## Grammar (writer shape)
 
@@ -26,7 +12,7 @@ Inside the module, in order:
 
 1. `(version 1 0)`
 2. `(name "…")` once
-3. `(flags <decimal-u32>)` always present (v1 examples use `0`)
+3. Optional `(flags <decimal-u32>)` — omit when the module flag word is `0` (v1 has no named module bits yet)
 4. Optional `(origin …)` when a module origin is present (see below)
 5. Zero or more `(depend "Name")` in insertion order
 6. Optional `(index …)` when there is at least one subroutine (see below)
@@ -52,23 +38,25 @@ Inside a subroutine, in order:
 2. Optional `(origin …)` when a subroutine origin is present
 3. Optional `(param "name1" t1 "name2" t2 …)` — alternating quoted parameter name and type token; omit the whole form when there are zero parameters
 4. **Required** `(result t)` — always present; use `unit` for procedures
-5. Optional bare identifiers `export` and/or `entrypoint` and/or `native` and/or `intrinsic` (flag bits, not strings)
-6. Optional `(native "library" "function")` when a `@native` FFI binding is present (same strings as the LIR binding; emit together with bare `native`). `@intrinsic` emits bare `intrinsic` only — no `(native …)` form
-7. Optional `(local "name1" t1 "name2" t2 …)` — alternating quoted local name and type token; omit when there are zero locals
-8. `(body …)` — may be empty (must be empty for native or intrinsic subroutines)
+5. Optional `(flags …)` — space-separated flag names in this order when set: `export`, `entrypoint`, `native`, `intrinsic`. Omit the whole form when no bits are set
+6. Optional `(native "library" "function")` when a `@native` FFI binding is present (same strings as the LIR binding; emit together with `native` in `(flags …)`). `@intrinsic` sets `intrinsic` in `(flags …)` only — no `(native …)` form
+7. Optional `(locals (1 "name1" t1) (2 "name2" t2) …)` — 1-based index among locals (not the `local.get` slot), quoted name, type token; omit when there are zero locals
+8. Optional `(body …)` — omit when the instruction sequence is empty (native and intrinsic bodies are always empty)
 
 ### Origin forms
 
-Module origin (after `(flags …)`):
+Module origin (after `(flags …)` when present, else after `(name …)`):
 
 ```text
 (origin
-  (filename "path.love")
+  (filename "/absolute/path/to/unit.love")
   (name-span (position <byte> <line> <column>) (position <byte> <line> <column>))
   (span (position <byte> <line> <column>) (position <byte> <line> <column>)))
 ```
 
 Subroutine origin (after `(name …)`): same shape as the module origin — `(filename …)`, `(name-span …)`, and `(span …)` for the whole procedure declaration. Empty `(filename "")` means no filename was attached. Omit the whole `(origin …)` when the in-memory origin is absent.
+
+CLI builds absolutize the root `.love` path before tokenize / IR; dependency paths from module resolution are already absolute. Origin `(filename …)` therefore carries a full path for both the root module and imported units.
 
 `(version 1 0)` is unchanged; origin fields are part of the still-labeled 1.0 text layout.
 
@@ -80,15 +68,15 @@ Type tokens (canonical lowercase):
 
 Exactly one `(result …)` with a single type. **Never** invent a `void` token.
 
-Instruction tokens (lowercase; one instruction per line in the canonical writer):
+Instruction forms (lowercase; one parenthesized instruction per line in the canonical writer):
 
-| Token | Meaning |
+| Form | Meaning |
 | --- | --- |
-| `noop` | `No_Operation` |
-| `i32.const <decimal>` | `Constant_I32` (signed decimal, no leading `+`) |
-| `call <index>` | `Call` (1-based subroutine index, decimal) |
-| `local.get <index>` | `Local_Get` (1-based; params first, then flattened locals) |
-| `local.set <index>` | `Local_Set` (1-based; params first, then flattened locals) |
+| `(noop)` | `No_Operation` |
+| `(i32.const <decimal>)` | `Constant_I32` (signed decimal, no leading `+`) |
+| `(call <index>)` | `Call` (1-based subroutine index, decimal) |
+| `(local.get <index>)` | `Local_Get` (1-based; params first, then flattened locals) |
+| `(local.set <index>)` | `Local_Set` (1-based; params first, then flattened locals) |
 
 ## Quoted strings
 
@@ -111,7 +99,6 @@ Other Unicode scalars (including emoji) are raw UTF-8 inside the quotes.
 (module
   (version 1 0)
   (name "example")
-  (flags 0)
   (depend "other")
   (index
     (1 "Main" (param "x" i32 "y" f64) (result i32))
@@ -120,24 +107,23 @@ Other Unicode scalars (including emoji) are raw UTF-8 inside the quotes.
     (name "Main")
     (param "x" i32 "y" f64)
     (result i32)
-    export
-    entrypoint
+    (flags export entrypoint)
     (body
-      noop))
+      (noop))
+  )
   (subroutine
     (name "Init")
     (result unit)
-    (body))
+  )
 )
 ```
 
-Empty module (no depends, no subroutines):
+Empty module (no depends, no subroutines, zero flags):
 
 ```text
 (module
   (version 1 0)
   (name "example")
-  (flags 0)
 )
 ```
 
