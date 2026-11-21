@@ -36,6 +36,8 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Unresolved_Name Semantics: identifier does not name a visible local or parameter (LV00031).
    --  @enum Unused_Using Warning: a `using M;` was never required for call resolve (LV00032).
    --  @enum Ambiguous_Call Semantics: two or more overloads match a call equally (LV00033).
+   --  @enum Invalid_Module_Version Parser/unit graph/CLI: module version string is not
+   --  MAJOR.MINOR.BUILD[-preview[.N]] (LV00034).
    type Error_Code is
      (Internal_Error,
       Unrecognized_Symbol,
@@ -69,7 +71,8 @@ package Lovelace.Compiler.Error_Codes is
       Invalid_Warning_Suppression,
       Unresolved_Name,
       Unused_Using,
-      Ambiguous_Call);
+      Ambiguous_Call,
+      Invalid_Module_Version);
 
    --  Diagnostic severity for Code (warnings include Unused_Variable / Unused_Assignment / Unused_Using).
    --  @enum Error Fatal or hard diagnostic (default for almost all codes).

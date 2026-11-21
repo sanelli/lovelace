@@ -88,7 +88,8 @@ package body Lovelace.Compiler.Semantics is
         (Unit_Graph.Loaded_Unit'
            (The_Module  => The_Module,
             Source_Path => Ada.Strings.Unbounded.Null_Unbounded_String,
-            Source_Text => Ada.Strings.Unbounded.Null_Unbounded_String));
+            Source_Text => Ada.Strings.Unbounded.Null_Unbounded_String,
+            Version     => Ada.Strings.Unbounded.Null_Unbounded_String));
       return Analyze (Units);
    end Analyze;
 

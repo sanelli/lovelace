@@ -53,16 +53,19 @@ package body Lovelace.Compiler.Ast is
       Span        : Source.Source_Span;
       Kind        : Unit_Kind;
       Usings      : Using_Sequence;
-      Subroutines : Subroutine_Sequence) return Module is
+      Subroutines : Subroutine_Sequence;
+      Version     : String := "") return Module is
    begin
       return
-        (Module_Name     => Ada.Strings.Unbounded.To_Unbounded_String (Name),
-         Name_Span_Value => Name_Span,
-         Filename_Value  => Filename,
-         Span_Value      => Span,
-         Kind_Value      => Kind,
-         Usings          => Usings,
-         Subroutines     => Subroutines);
+        (Module_Name             => Ada.Strings.Unbounded.To_Unbounded_String (Name),
+         Name_Span_Value         => Name_Span,
+         Filename_Value          => Filename,
+         Span_Value              => Span,
+         Kind_Value              => Kind,
+         Usings                  => Usings,
+         Subroutines             => Subroutines,
+         Version_Attribute_Value =>
+           Ada.Strings.Unbounded.To_Unbounded_String (Version));
    end Create_Module;
 
    function Create_Subroutine
@@ -205,6 +208,12 @@ package body Lovelace.Compiler.Ast is
       return (Flags and Native_Flag) /= 0;
    end Has_Native;
 
+   function Has_Version_Attribute (The_Module : Module) return Boolean is
+   begin
+      return
+        Ada.Strings.Unbounded.Length (The_Module.Version_Attribute_Value) > 0;
+   end Has_Version_Attribute;
+
    function Kind (The_Module : Module) return Unit_Kind is
    begin
       return The_Module.Kind_Value;
@@ -333,5 +342,11 @@ package body Lovelace.Compiler.Ast is
       end if;
       return The_Block.Usings_Value;
    end Usings;
+
+   function Version_Attribute (The_Module : Module) return String is
+   begin
+      return
+        Ada.Strings.Unbounded.To_String (The_Module.Version_Attribute_Value);
+   end Version_Attribute;
 
 end Lovelace.Compiler.Ast;

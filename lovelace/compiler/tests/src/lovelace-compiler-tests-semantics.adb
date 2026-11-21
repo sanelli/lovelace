@@ -67,12 +67,14 @@ package body Lovelace.Compiler.Tests.Semantics is
         (Unit_Graph.Loaded_Unit'
            (The_Module  => Support.Must_Parse (Caller_Text, Message & ": caller"),
             Source_Path => Ada.Strings.Unbounded.To_Unbounded_String ("Caller.love"),
-            Source_Text => Ada.Strings.Unbounded.To_Unbounded_String (Caller_Text)));
+            Source_Text => Ada.Strings.Unbounded.To_Unbounded_String (Caller_Text),
+            Version     => Ada.Strings.Unbounded.To_Unbounded_String ("0.0.1")));
       Units.Append
         (Unit_Graph.Loaded_Unit'
            (The_Module  => Support.Must_Parse (Library_Text, Message & ": library"),
             Source_Path => Ada.Strings.Unbounded.To_Unbounded_String ("Lib.love"),
-            Source_Text => Ada.Strings.Unbounded.To_Unbounded_String (Library_Text)));
+            Source_Text => Ada.Strings.Unbounded.To_Unbounded_String (Library_Text),
+            Version     => Ada.Strings.Unbounded.To_Unbounded_String ("0.0.1")));
       return Compiler_Semantics.Analyze (Units);
    end Analyze_Pair;
 

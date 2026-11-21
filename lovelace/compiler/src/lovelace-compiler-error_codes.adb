@@ -112,6 +112,9 @@ package body Lovelace.Compiler.Error_Codes is
 
          when Ambiguous_Call                 =>
             return "LV00033";
+
+         when Invalid_Module_Version         =>
+            return "LV00034";
       end case;
    end Label;
 

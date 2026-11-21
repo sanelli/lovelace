@@ -25,13 +25,17 @@ package body Lovelace.Compiler.Backend.Model is
       The_Model.Functions.Append (The_Function);
    end Append_Function;
 
-   function Create (Name : String) return Component_Model is
+   function Create
+     (Name : String; Version : String := Default_Module_Version)
+      return Component_Model is
    begin
       return
-        (Module_Name_Value   => Ada.Strings.Unbounded.To_Unbounded_String (Name),
-         Functions           => Function_Vectors.Empty_Vector,
-         Exports             => Export_Vectors.Empty_Vector,
-         Wasi_Stdout_Enabled => False);
+        (Module_Name_Value    => Ada.Strings.Unbounded.To_Unbounded_String (Name),
+         Module_Version_Value =>
+           Ada.Strings.Unbounded.To_Unbounded_String (Version),
+         Functions            => Function_Vectors.Empty_Vector,
+         Exports              => Export_Vectors.Empty_Vector,
+         Wasi_Stdout_Enabled  => False);
    end Create;
 
    function Element (Sequence : Core_Parameter_Sequence; Index : Positive) return Core_Value_Type is
@@ -124,5 +128,10 @@ package body Lovelace.Compiler.Backend.Model is
    begin
       return Ada.Strings.Unbounded.To_String (The_Model.Module_Name_Value);
    end Module_Name;
+
+   function Module_Version (The_Model : Component_Model) return String is
+   begin
+      return Ada.Strings.Unbounded.To_String (The_Model.Module_Version_Value);
+   end Module_Version;
 
 end Lovelace.Compiler.Backend.Model;

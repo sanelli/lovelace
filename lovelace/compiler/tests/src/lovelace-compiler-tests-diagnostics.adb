@@ -48,6 +48,9 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Unresolved_Name) = "LV00031", "LV00031");
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Unused_Using) = "LV00032", "LV00032");
       AUnit.Assertions.Assert (Error_Codes.Label (Error_Codes.Ambiguous_Call) = "LV00033", "LV00033");
+      AUnit.Assertions.Assert
+        (Error_Codes.Label (Error_Codes.Invalid_Module_Version) = "LV00034",
+         "LV00034");
    end Test_Error_Code_Labels;
 
    procedure Test_Format_Shape (The_Test : in out Fixture) is

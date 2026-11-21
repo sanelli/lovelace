@@ -60,6 +60,7 @@ A `.love` path is **required** for now. Future builds may accept `.pjlove` / `.s
 | `--output-folder <path>` | Output root (default `.output` in the current working directory) |
 | `--flavor <name>` | Active compile-time flavor for `#if` selection: `wasi` (default), `native`, or `web`. See [directives.md](directives.md). |
 | `--include-path <dir>` / `-I <dir>` | Extra module search root (repeatable; `-Idir` glued form also accepted). See module search below. |
+| `--module-version <ver>` | Fallback module version for every loaded unit when no `@version` attribute and no library `.loveversion` applies (see [Module versions](#module-versions)). Must match `MAJOR.MINOR.BUILD[-preview-name[.preview-number]]`; otherwise a CLI `[err]` block. |
 | `--warning-as-errors` | Promote every warning to an error (fail the build) |
 | `--no-warnings <ids>` | Suppress warning codes (comma-separated `LV` ids, one argv value). Invalid / non-warning ids → [`LV00030`](diagnostics.md) |
 
@@ -82,6 +83,17 @@ Module names from `using` declarations are resolved under an ordered list of sea
 `<product-version>` is the Lovelace product version without the git hash (e.g. `0.0.1-alpha.1`). That slot is a normal search root: `using augusta.std.io;` looks for `augusta.std.io.love` / `augusta/std/io.love` (and the other mixed forms) **under** the slot. For the in-tree sources, set `AUGUSTA_HOME` to [`augusta/lovelace/`](../augusta/lovelace/) (or pass `-I augusta/lovelace`). Details: [augusta.md](augusta.md).
 
 For module `a.b.c`, every mixed slash/dot relative form is a candidate (`a/b/c.love`, `a/b.c.love`, `a.b/c.love`, `a.b.c.love`). Exactly one existing file must match; zero → [`LV00016`](diagnostics.md); two or more → [`LV00020`](diagnostics.md). See [ir-generator.md](ir-generator.md).
+
+#### Module versions
+
+Each loaded unit gets one version, recorded in the `.lir` module header (and per dependency) and used for the WIT package (`package love:<name>@<version>`). Priority, highest first:
+
+1. The unit's own `@version("…")` attribute (after its `using` declarations; see [compilation-unit-grammar.md](compilation-unit-grammar.md))
+2. A `.loveversion` file in the library search root that contains the unit's `.love` file (the longest matching root; the file holds exactly `@version("…")`)
+3. `--module-version <ver>`
+4. The default, `0.0.1`
+
+Invalid versions in source or in `.loveversion` → [`LV00034`](diagnostics.md). The in-tree Augusta library pins its version with [`augusta/lovelace/.loveversion`](../augusta/lovelace/.loveversion).
 
 #### Output layout
 

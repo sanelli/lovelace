@@ -40,6 +40,9 @@ package body Lovelace.Main.Help is
          "  -I/--include-path <dir>  Extra module search root (repeatable)");
       Put_Line
         (File,
+         "  --module-version <ver>   Fallback module version (@version and .loveversion win)");
+      Put_Line
+        (File,
          "  --no-warnings <ids>      Suppress warning codes (comma-separated LV ids)");
       Put_Line
         (File,
@@ -84,6 +87,7 @@ package body Lovelace.Main.Help is
       Put_Line (File, "  lovelace compile foo.love --force");
       Put_Line (File, "  lovelace compile foo.love --generate-tlir");
       Put_Line (File, "  lovelace compile foo.love -I libs --include-path more");
+      Put_Line (File, "  lovelace compile foo.love --module-version 1.2.3");
       Put_Line (File, "  lovelace compile foo.love --no-wit");
       Put_Line
         (File, "  lovelace compile foo.love --no-warnings LV00028,LV00029");

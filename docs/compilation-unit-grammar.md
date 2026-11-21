@@ -5,7 +5,8 @@ Syntactic grammar recognized by [`Lovelace.Compiler.Parser`](parser.md) for one 
 Lexical tokens come from [token-grammar.md](token-grammar.md). Whitespace between tokens is ignored by the tokenizer and does not appear in the token stream. Flavor directives: [directives.md](directives.md).
 
 ```ebnf
-compilation_unit     = { using_declaration } , ( program_unit | module_unit ) ;
+compilation_unit     = { using_declaration } , [ version_attribute ] , ( program_unit | module_unit ) ;
+version_attribute    = "@version" , "(" , string_literal , ")" ;
 using_declaration    = "using" , qualified_identifier , ";" ;
 program_unit         = program_header , block , "." ;
 program_header       = "program" , identifier , ";" ;
@@ -48,12 +49,15 @@ flavor_conditional    = "#if" , flavor_condition , { module_declaration } ,
 flavor_condition      = "flavor" , "=" , string_literal ;
 ```
 
+`string_literal` content for `@version` must be a module version, `MAJOR.MINOR.BUILD[-preview-name[.preview-number]]`: numeric parts are non-negative integers without leading zeroes, and the preview name is `[A-Za-z0-9-]+` ([`LV00034`](diagnostics.md) otherwise). The attribute is optional and, when present, comes after the leading usings and before `program` / `module`. Version priority: `@version`, then the library's `.loveversion`, then `lovelace compile --module-version`, then `0.0.1` ([cli.md](cli.md)).
+
 Defaults: omitted signedness → signed; omitted integer size → 32; omitted float size → 32.
 
 `string_literal` content for a flavor condition must be exactly `wasi`, `native`, or `web` ([`LV00012`](diagnostics.md) otherwise). Active flavor comes from `lovelace compile --flavor` (default `wasi`). Inactive arms are parsed for syntax but omitted from the AST.
 
 | Terminal | Token |
 | --- | --- |
+| `"@version"` | identifier token with lexeme `@version` |
 | `"program"` | keyword `program` |
 | `"module"` | keyword `module` |
 | `"using"` | keyword `using` |

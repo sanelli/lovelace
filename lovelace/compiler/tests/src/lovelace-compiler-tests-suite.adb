@@ -658,6 +658,10 @@ package body Lovelace.Compiler.Tests.Suite is
         (Unit_Graph_Caller.Create
            ("unit graph: load failures",
             Lovelace.Compiler.Tests.Unit_Graph.Test_Load_Failures'Access));
+      Result.Add_Test
+        (Unit_Graph_Caller.Create
+           ("unit graph: load versions",
+            Lovelace.Compiler.Tests.Unit_Graph.Test_Load_Versions'Access));
 
       Result.Add_Test
         (Semantics_Caller.Create

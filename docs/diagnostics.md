@@ -100,6 +100,7 @@ When there is no useful source span (or for CLI usage errors):
 | `LV00031` | Unresolved_Name | Semantics (identifier does not name a visible local or parameter) |
 | `LV00032` | Unused_Using | Warning: a `using M;` was never required for call resolve |
 | `LV00033` | Ambiguous_Call | Semantics (two or more overloads match a call equally) |
+| `LV00034` | Invalid_Module_Version | Parser / unit graph: `@version("…")` in a `.love` file or `.loveversion` is not `MAJOR.MINOR.BUILD[-preview-name[.preview-number]]` (`.loveversion` that is unreadable reports `LV00010`) |
 
 Stage-local enums (tokenizer, parser, semantics, IR generator, unit graph, …) map to these labels at report time via `Lovelace.Compiler.Reporting` (unit-graph failures also expose `Unit_Graph.Surface_Error_Code`).
 

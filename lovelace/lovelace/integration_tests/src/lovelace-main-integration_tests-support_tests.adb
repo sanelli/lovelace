@@ -46,6 +46,8 @@ package body Lovelace.Main.Integration_Tests.Support_Tests is
       Resolve_Util    : constant String :=
         Helpers.Compose_Under
           (Helpers.Locate_Sample ("resolve", "pkg"), "Util.love");
+      Versioned_Path  : constant String :=
+        Helpers.Locate_Sample ("version", "Versioned.love");
       Output_Root     : constant String := Helpers.Locate_Output_Root;
       Modules_Out     : constant String :=
         Helpers.Locate_Output_Root ("modules");
@@ -96,6 +98,9 @@ package body Lovelace.Main.Integration_Tests.Support_Tests is
       AUnit.Assertions.Assert
         (Ada.Directories.Exists (Resolve_Util),
          "resolve pkg/Util.love present");
+      AUnit.Assertions.Assert
+        (Ada.Directories.Exists (Versioned_Path),
+         "version Versioned.love present");
       AUnit.Assertions.Assert
         (Ada.Strings.Fixed.Index (Output_Root, "integration-tests") > 0,
          "output root segment");

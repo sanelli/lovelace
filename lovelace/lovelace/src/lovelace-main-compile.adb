@@ -19,6 +19,7 @@ with Lovelace.Compiler.Reporting;
 with Lovelace.Compiler.Semantics;
 with Lovelace.Compiler.Tokenizer;
 with Lovelace.Compiler.Unit_Graph;
+with Lovelace.Compiler.Versioning;
 with Lovelace.Lir.Binary;
 with Lovelace.Lir.Modules;
 with Lovelace.Lir.Text;
@@ -44,21 +45,23 @@ package body Lovelace.Main.Compile is
    package Semantics renames Lovelace.Compiler.Semantics;
    package Tokenizer renames Lovelace.Compiler.Tokenizer;
    package Unit_Graph renames Lovelace.Compiler.Unit_Graph;
+   package Versioning renames Lovelace.Compiler.Versioning;
    package Lir_Binary renames Lovelace.Lir.Binary;
    package Lir_Text renames Lovelace.Lir.Text;
    package Modules renames Lovelace.Lir.Modules;
 
    type Compile_Options is record
-      Source_Path   : Ada.Strings.Unbounded.Unbounded_String;
-      Output_Root   : Ada.Strings.Unbounded.Unbounded_String :=
+      Source_Path    : Ada.Strings.Unbounded.Unbounded_String;
+      Output_Root    : Ada.Strings.Unbounded.Unbounded_String :=
         Ada.Strings.Unbounded.To_Unbounded_String (".output");
-      No_Wit        : Boolean := False;
-      Force         : Boolean := False;
-      Generate_Tlir : Boolean := False;
-      Output_Format : Output_Format_Set;
-      The_Flavor    : Flavor.Flavor := Flavor.Default;
-      Include_Paths : Module_Path.Path_Sequence;
-      The_Policy    : Diagnostics.Policy := Diagnostics.Default_Policy;
+      No_Wit         : Boolean := False;
+      Force          : Boolean := False;
+      Generate_Tlir  : Boolean := False;
+      Output_Format  : Output_Format_Set;
+      The_Flavor     : Flavor.Flavor := Flavor.Default;
+      Include_Paths  : Module_Path.Path_Sequence;
+      The_Policy     : Diagnostics.Policy := Diagnostics.Default_Policy;
+      Module_Version : Versioning.Version_Option;
    end record;
 
    function Compose_Path (Left, Right : String) return String;
@@ -120,16 +123,17 @@ package body Lovelace.Main.Compile is
       Argument_Count : constant Natural := Natural (Command_Arguments.Length);
    begin
       Options :=
-        (Source_Path   => Ada.Strings.Unbounded.Null_Unbounded_String,
-         Output_Root   =>
+        (Source_Path    => Ada.Strings.Unbounded.Null_Unbounded_String,
+         Output_Root    =>
            Ada.Strings.Unbounded.To_Unbounded_String (".output"),
-         No_Wit        => False,
-         Force         => False,
-         Generate_Tlir => False,
-         Output_Format => (Want_Wasm => True, Want_Wat => False),
-         The_Flavor    => Flavor.Default,
-         Include_Paths => Module_Path.Path_Vectors.Empty_Vector,
-         The_Policy    => Diagnostics.Default_Policy);
+         No_Wit         => False,
+         Force          => False,
+         Generate_Tlir  => False,
+         Output_Format  => (Want_Wasm => True, Want_Wat => False),
+         The_Flavor     => Flavor.Default,
+         Include_Paths  => Module_Path.Path_Vectors.Empty_Vector,
+         The_Policy     => Diagnostics.Default_Policy,
+         Module_Version => (Present => False));
 
       while Index <= Argument_Count loop
          declare
@@ -203,6 +207,31 @@ package body Lovelace.Main.Compile is
                Options.Include_Paths.Append
                  (Token (Token'First + 2 .. Token'Last));
                Index := Index + 1;
+            elsif Token = "--module-version" then
+               if Index >= Argument_Count then
+                  Report_Cli_Error
+                    ("--module-version requires a version string");
+                  return False;
+               end if;
+               declare
+                  Version_Text : constant String :=
+                    Command_Arguments.Element (Index + 1);
+               begin
+                  if not Versioning.Is_Valid_Version (Version_Text) then
+                     Report_Cli_Error
+                       ("invalid --module-version '"
+                        & Version_Text
+                        & "'; expected MAJOR.MINOR.BUILD"
+                        & "[-preview-name[.preview-number]]");
+                     return False;
+                  end if;
+                  Options.Module_Version :=
+                    (Present => True,
+                     Value   =>
+                       Ada.Strings.Unbounded.To_Unbounded_String
+                         (Version_Text));
+               end;
+               Index := Index + 2;
             elsif Token = "--output-format" then
                if Index >= Argument_Count then
                   Report_Cli_Error ("--output-format requires a value");
@@ -594,7 +623,8 @@ package body Lovelace.Main.Compile is
                                   Ada.Strings.Unbounded.To_String
                                     (Source_Text),
                                 Search_Roots     => Search_Roots,
-                                Active_Flavor    => Options.The_Flavor);
+                                Active_Flavor    => Options.The_Flavor,
+                                Cli_Version      => Options.Module_Version);
                         begin
                            case Load_Result.Ok is
                               when False =>

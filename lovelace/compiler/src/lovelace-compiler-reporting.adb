@@ -122,6 +122,9 @@ package body Lovelace.Compiler.Reporting is
          when Parser.Invalid_Flavor_Condition =>
             return Error_Codes.Invalid_Flavor_Condition;
 
+         when Parser.Invalid_Module_Version   =>
+            return Error_Codes.Invalid_Module_Version;
+
       end case;
    end To_Error_Code;
 

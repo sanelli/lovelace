@@ -417,13 +417,19 @@ package body Lovelace.Lir.Binary is
 
       for Unused in 1 .. Natural (Dependency_Total) loop
          declare
-            Depend_Name : Ada.Strings.Unbounded.Unbounded_String;
+            Depend_Name    : Ada.Strings.Unbounded.Unbounded_String;
+            Depend_Version : Ada.Strings.Unbounded.Unbounded_String;
          begin
             if not Read_String (Bytes, Cursor, Depend_Name) then
                return (Ok => False, Error => Errors.Truncated);
             end if;
+            if not Read_String (Bytes, Cursor, Depend_Version) then
+               return (Ok => False, Error => Errors.Truncated);
+            end if;
             Modules.Append_Dependency
-              (The_Module, Ada.Strings.Unbounded.To_String (Depend_Name));
+              (The_Module,
+               Ada.Strings.Unbounded.To_String (Depend_Name),
+               Ada.Strings.Unbounded.To_String (Depend_Version));
          end;
       end loop;
 
@@ -572,6 +578,9 @@ package body Lovelace.Lir.Binary is
          loop
             Append_String
               (Buffer, Modules.Dependency_Name (The_Module, Dependency_Index));
+            Append_String
+              (Buffer,
+               Modules.Dependency_Version (The_Module, Dependency_Index));
          end loop;
          Append_Module_Origin (Buffer, The_Module);
 

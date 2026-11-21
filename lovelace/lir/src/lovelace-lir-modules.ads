@@ -1,4 +1,3 @@
-with Ada.Containers.Indefinite_Vectors;
 with Ada.Containers.Vectors;
 with Ada.Strings.Unbounded;
 
@@ -63,10 +62,14 @@ package Lovelace.Lir.Modules is
    --  @param The_Origin Source location metadata.
    procedure Set_Origin (The_Module : in out Module; The_Origin : Module_Origin);
 
-   --  Append a dependency module name.
+   --  Append a dependency module name and version.
    --  @param The_Module Module to extend.
    --  @param Dependency_Name UTF-8 name of a depended-on module.
-   procedure Append_Dependency (The_Module : in out Module; Dependency_Name : String);
+   --  @param Dependency_Version UTF-8 module version (default Default_Module_Version).
+   procedure Append_Dependency
+     (The_Module         : in out Module;
+      Dependency_Name    : String;
+      Dependency_Version : String := Default_Module_Version);
 
    --  Append The_Subroutine to The_Module.
    --  @param The_Module Module to extend.
@@ -104,6 +107,13 @@ package Lovelace.Lir.Modules is
    --  @return Dependency name bytes.
    function Dependency_Name (The_Module : Module; Index : Positive) return String;
 
+   --  Dependency version at Index (1 .. Dependency_Count).
+   --  @param The_Module Module to query.
+   --  @param Index 1-based index.
+   --  @return Dependency version bytes.
+   function Dependency_Version
+     (The_Module : Module; Index : Positive) return String;
+
    --  Number of subroutines.
    --  @param The_Module Module to query.
    --  @return Subroutine count.
@@ -127,8 +137,13 @@ private
    use type Ada.Strings.Unbounded.Unbounded_String;
    use type Subroutines.Subroutine;
 
+   type Dependency is record
+      Name    : Ada.Strings.Unbounded.Unbounded_String;
+      Version : Ada.Strings.Unbounded.Unbounded_String;
+   end record;
+
    package Dependency_Vectors is new
-     Ada.Containers.Indefinite_Vectors (Index_Type => Positive, Element_Type => Ada.Strings.Unbounded.Unbounded_String);
+     Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Dependency);
 
    package Subroutine_Vectors is new
      Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Subroutines.Subroutine);

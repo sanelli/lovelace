@@ -383,7 +383,11 @@ package body Lovelace.Lir.Text is
               (Buffer, Indent (1) & "(dependency ");
             Append_Quoted
               (Buffer, Modules.Dependency_Name (The_Module, Dependency_Index));
-            Append_Line (Buffer, ")");
+            Ada.Strings.Unbounded.Append (Buffer, " (version ");
+            Append_Quoted
+              (Buffer,
+               Modules.Dependency_Version (The_Module, Dependency_Index));
+            Append_Line (Buffer, "))");
          end loop;
 
          Append_Index (Buffer, The_Module);

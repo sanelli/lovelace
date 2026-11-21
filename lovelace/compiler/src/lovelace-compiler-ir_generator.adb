@@ -159,6 +159,10 @@ package body Lovelace.Compiler.Ir_Generator is
       Procedure_Name : out Ada.Strings.Unbounded.Unbounded_String)
       return Boolean;
 
+   --  Resolved version of the unit named Module_Name in Units, else the default.
+   function Unit_Version
+     (Units : Unit_Graph.Compilation_Set; Module_Name : String) return String;
+
    procedure Append_Usings_From_Block
      (The_Block : Ast.Block; Into : in out Ast.Using_Sequence)
    is
@@ -396,7 +400,12 @@ package body Lovelace.Compiler.Ir_Generator is
         (Unit_Graph.Loaded_Unit'
            (The_Module  => The_Module,
             Source_Path => Ada.Strings.Unbounded.Null_Unbounded_String,
-            Source_Text => Ada.Strings.Unbounded.Null_Unbounded_String));
+            Source_Text => Ada.Strings.Unbounded.Null_Unbounded_String,
+            Version     =>
+              Ada.Strings.Unbounded.To_Unbounded_String
+                (if Ast.Has_Version_Attribute (The_Module)
+                 then Ast.Version_Attribute (The_Module)
+                 else Lovelace.Lir.Modules.Default_Module_Version)));
       return Generate (Units);
    end Generate;
 
@@ -418,6 +427,8 @@ package body Lovelace.Compiler.Ir_Generator is
 
       Root_Unit := Units.Element (1).The_Module;
       Lir_Module := Lovelace.Lir.Modules.Create (Ast.Name (Root_Unit));
+      Lovelace.Lir.Modules.Set_Module_Version
+        (Lir_Module, Unit_Version (Units, Ast.Name (Root_Unit)));
       Lovelace.Lir.Modules.Set_Origin
         (Lir_Module,
          (Name_Span => Ast.Name_Span (Root_Unit),
@@ -437,7 +448,11 @@ package body Lovelace.Compiler.Ir_Generator is
             begin
                Lovelace.Lir.Modules.Append_Dependency
                  (Lir_Module,
-                  Ada.Strings.Unbounded.To_String (The_Import.Module_Name));
+                  Ada.Strings.Unbounded.To_String (The_Import.Module_Name),
+                  Unit_Version
+                    (Units,
+                     Ada.Strings.Unbounded.To_String
+                       (The_Import.Module_Name)));
             end;
          end loop;
       end;
@@ -1065,5 +1080,20 @@ package body Lovelace.Compiler.Ir_Generator is
           (Callee_Name (Dot + 1 .. Callee_Name'Last));
       return True;
    end Split_Callee;
+
+   function Unit_Version
+     (Units : Unit_Graph.Compilation_Set; Module_Name : String) return String
+   is
+   begin
+      for Unit of Units loop
+         if Ast.Name (Unit.The_Module) = Module_Name
+           and then Ada.Strings.Unbounded.Length (Unit.Version) > 0
+         then
+            return Ada.Strings.Unbounded.To_String (Unit.Version);
+         end if;
+      end loop;
+
+      return Lovelace.Lir.Modules.Default_Module_Version;
+   end Unit_Version;
 
 end Lovelace.Compiler.Ir_Generator;

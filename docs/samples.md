@@ -18,6 +18,7 @@ For **every** new user-facing feature, add at least one `.love` file under `samp
 | Path | Feature |
 | --- | --- |
 | [`samples/program/Hello.love`](../samples/program/Hello.love) | Minimal empty-body program for `lovelace compile` and wasmtime integration |
+| [`samples/version/Versioned.love`](../samples/version/Versioned.love) | Unit-level `@version("2.0.0-preview.1")` before `program` (WIT/LIR module-version) |
 | [`samples/using/UsingDecl.love`](../samples/using/UsingDecl.love) | File-leading `using UsingLib;` before an empty-body program (resolves same-folder module) |
 | [`samples/using/UsingLib.love`](../samples/using/UsingLib.love) | Empty module dependency for `UsingDecl` |
 | [`samples/nested-using/NestedUsing.love`](../samples/nested-using/NestedUsing.love) | Block-scoped `using` + declare + assign + print (needs Augusta) |

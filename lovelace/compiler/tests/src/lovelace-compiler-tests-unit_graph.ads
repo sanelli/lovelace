@@ -19,4 +19,8 @@ package Lovelace.Compiler.Tests.Unit_Graph is
    --  @param The_Test Unused fixture.
    procedure Test_Load_Nested_Using (The_Test : in out Fixture);
 
+   --  Resolved versions: @version, .loveversion, CLI fallback, invalid .loveversion.
+   --  @param The_Test Unused fixture.
+   procedure Test_Load_Versions (The_Test : in out Fixture);
+
 end Lovelace.Compiler.Tests.Unit_Graph;

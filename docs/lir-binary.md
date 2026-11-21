@@ -54,7 +54,7 @@ Any other byte → `Unknown_Type`. There is no `void` code. `I128`, `U128`, and 
 1. Module name (encoded string)
 2. `flags` — `u32` (v1 writers emit `0`; readers store the value as-is so future bits can round-trip; v1 does **not** reject nonzero flags)
 3. `dependency_count` — `u32`
-4. `dependency_count` encoded strings (depended-on **module names**, not paths)
+4. `dependency_count` pairs, each an encoded **module name** (not a path) followed by an encoded **module version** (default `"0.0.1"`)
 5. **Module origin** (see below)
 
 ### Module origin

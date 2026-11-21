@@ -269,13 +269,17 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
            (The_Module  => Caller_Ast,
             Source_Path =>
               Ada.Strings.Unbounded.To_Unbounded_String ("Caller.love"),
-            Source_Text => Ada.Strings.Unbounded.To_Unbounded_String ("")));
+            Source_Text => Ada.Strings.Unbounded.To_Unbounded_String (""),
+            Version     =>
+              Ada.Strings.Unbounded.To_Unbounded_String ("0.0.1")));
       Units.Append
         (Unit_Graph.Loaded_Unit'
            (The_Module  => Lib_Ast,
             Source_Path =>
               Ada.Strings.Unbounded.To_Unbounded_String ("Lib.love"),
-            Source_Text => Ada.Strings.Unbounded.To_Unbounded_String ("")));
+            Source_Text => Ada.Strings.Unbounded.To_Unbounded_String (""),
+            Version     =>
+              Ada.Strings.Unbounded.To_Unbounded_String ("0.0.1")));
       Ok_Result := Ir_Gen.Generate (Units);
       AUnit.Assertions.Assert (Ok_Result.Ok, "cross ok");
       declare

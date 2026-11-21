@@ -12,10 +12,18 @@ package body Lovelace.Lir.Modules is
    use type Interfaces.Unsigned_32;
 
    procedure Append_Dependency
-     (The_Module : in out Module; Dependency_Name : String) is
+     (The_Module         : in out Module;
+      Dependency_Name    : String;
+      Dependency_Version : String := Default_Module_Version)
+   is
    begin
       The_Module.Dependencies.Append
-        (Ada.Strings.Unbounded.To_Unbounded_String (Dependency_Name));
+        (Dependency'
+           (Name    =>
+              Ada.Strings.Unbounded.To_Unbounded_String (Dependency_Name),
+            Version =>
+              Ada.Strings.Unbounded.To_Unbounded_String
+                (Dependency_Version)));
    end Append_Dependency;
 
    procedure Append_Subroutine
@@ -46,8 +54,16 @@ package body Lovelace.Lir.Modules is
    begin
       return
         Ada.Strings.Unbounded.To_String
-          (The_Module.Dependencies.Element (Index));
+          (The_Module.Dependencies.Element (Index).Name);
    end Dependency_Name;
+
+   function Dependency_Version
+     (The_Module : Module; Index : Positive) return String is
+   begin
+      return
+        Ada.Strings.Unbounded.To_String
+          (The_Module.Dependencies.Element (Index).Version);
+   end Dependency_Version;
 
    function Flags (The_Module : Module) return Module_Flags is
    begin
@@ -159,15 +175,19 @@ package body Lovelace.Lir.Modules is
 
       for Dependency_Index in 1 .. Dependency_Count (The_Module) loop
          declare
-            Depend_Text : constant String :=
+            Depend_Text  : constant String :=
               Dependency_Name (The_Module, Dependency_Index);
+            Version_Text : constant String :=
+              Dependency_Version (The_Module, Dependency_Index);
          begin
-            if Depend_Text'Length = 0 then
+            if Depend_Text'Length = 0 or else Version_Text'Length = 0 then
                return
                  Errors.Validation_Results.From_Failure (Errors.Empty_Name);
             end if;
 
-            if not Is_Valid_Utf_8 (Depend_Text) then
+            if not Is_Valid_Utf_8 (Depend_Text)
+              or else not Is_Valid_Utf_8 (Version_Text)
+            then
                return
                  Errors.Validation_Results.From_Failure (Errors.Invalid_Utf_8);
             end if;

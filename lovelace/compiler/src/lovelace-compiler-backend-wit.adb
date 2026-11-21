@@ -53,7 +53,9 @@ package body Lovelace.Compiler.Backend.Wit is
         (Buffer,
          "package love:"
          & Sanitize_Package_Name (Model.Module_Name (The_Model))
-         & "@0.1.0;"
+         & "@"
+         & Model.Module_Version (The_Model)
+         & ";"
          & ASCII.LF);
       Ada.Strings.Unbounded.Append (Buffer, ASCII.LF);
       Ada.Strings.Unbounded.Append (Buffer, "world module {" & ASCII.LF);

@@ -425,6 +425,7 @@ package Lovelace.Compiler.Ast is
    --  @param Kind Program_Unit or Module_Unit.
    --  @param Usings Ordered unit-level using list (may be empty).
    --  @param Subroutines Ordered subroutine list (empty for empty modules).
+   --  @param Version Optional `@version("…")` attribute text (empty when absent).
    --  @return Module value.
    function Create_Module
      (Name        : String;
@@ -433,7 +434,8 @@ package Lovelace.Compiler.Ast is
       Span        : Source.Source_Span;
       Kind        : Unit_Kind;
       Usings      : Using_Sequence;
-      Subroutines : Subroutine_Sequence) return Module;
+      Subroutines : Subroutine_Sequence;
+      Version     : String := "") return Module;
 
    --  UTF-8 name of The_Module.
    --  @param The_Module Module to query.
@@ -459,6 +461,16 @@ package Lovelace.Compiler.Ast is
    --  @param The_Module Module to query.
    --  @return Unit span.
    function Span (The_Module : Module) return Source.Source_Span;
+
+   --  True when The_Module carries a source `@version("…")` attribute.
+   --  @param The_Module Module to query.
+   --  @return True iff Version is non-empty.
+   function Has_Version_Attribute (The_Module : Module) return Boolean;
+
+   --  UTF-8 `@version` attribute text (empty when absent).
+   --  @param The_Module Module to query.
+   --  @return Version attribute bytes.
+   function Version_Attribute (The_Module : Module) return String;
 
    --  Number of unit-level usings in The_Module.
    --  @param The_Module Module to query.
@@ -551,13 +563,14 @@ private
    end record;
 
    type Module is record
-      Module_Name     : Ada.Strings.Unbounded.Unbounded_String;
-      Name_Span_Value : Source.Source_Span;
-      Filename_Value  : Source.Filename_Option;
-      Span_Value      : Source.Source_Span;
-      Kind_Value      : Unit_Kind := Program_Unit;
-      Usings          : Using_Sequence;
-      Subroutines     : Subroutine_Sequence;
+      Module_Name              : Ada.Strings.Unbounded.Unbounded_String;
+      Name_Span_Value          : Source.Source_Span;
+      Filename_Value           : Source.Filename_Option;
+      Span_Value               : Source.Source_Span;
+      Kind_Value               : Unit_Kind := Program_Unit;
+      Usings                   : Using_Sequence;
+      Subroutines              : Subroutine_Sequence;
+      Version_Attribute_Value  : Ada.Strings.Unbounded.Unbounded_String;
    end record;
 
 end Lovelace.Compiler.Ast;

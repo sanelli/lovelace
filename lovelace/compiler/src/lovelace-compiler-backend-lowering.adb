@@ -121,7 +121,8 @@ package body Lovelace.Compiler.Backend.Lowering is
 
       declare
          The_Model        : Model.Component_Model :=
-           Model.Create (Modules.Name (The_Module));
+           Model.Create
+             (Modules.Name (The_Module), Modules.Module_Version (The_Module));
          Entrypoint_Index : Natural := 0;
          Entrypoint_Found : Boolean := False;
       begin

@@ -15,7 +15,7 @@ Inside the module, in order:
 3. `(name "…")` once
 4. Optional `(flags <decimal-u32>)` — omit when the module flag word is `0` (v1 has no named module bits yet)
 5. Optional `(origin …)` when a module origin is present (see below)
-6. Zero or more `(dependency "Name")` in insertion order
+6. Zero or more `(dependency "Name" (version "…"))` in insertion order (the version defaults to `"0.0.1"`)
 7. Optional `(index …)` when there is at least one subroutine (see below)
 8. Zero or more `(subroutine …)` in insertion order
 
@@ -103,7 +103,7 @@ Other Unicode scalars (including emoji) are raw UTF-8 inside the quotes.
   (lir-version 1 0)
   (module-version "0.0.1")
   (name "example")
-  (dependency "other")
+  (dependency "other" (version "0.0.1"))
   (index
     (1 "example.Main" (param "x" i32 "y" f64) (result i32))
     (2 "example.Init" (result unit)))

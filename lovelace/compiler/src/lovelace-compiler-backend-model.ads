@@ -225,6 +225,11 @@ package Lovelace.Compiler.Backend.Model is
    --  @return Module name bytes.
    function Module_Name (The_Model : Component_Model) return String;
 
+   --  Module version string (WIT package version).
+   --  @param The_Model Model to query.
+   --  @return Module version bytes.
+   function Module_Version (The_Model : Component_Model) return String;
+
    --  Number of core functions (LIR subroutines, then optional _start).
    --  @param The_Model Model to query.
    --  @return Core function count.
@@ -257,10 +262,16 @@ package Lovelace.Compiler.Backend.Model is
    --  @return True iff native-print-integer wiring is present.
    function Has_Wasi_Stdout (The_Model : Component_Model) return Boolean;
 
+   --  Module version used when Create is not given one.
+   Default_Module_Version : constant String := "0.0.1";
+
    --  Build an empty model with Module_Name and no functions or exports.
    --  @param Name UTF-8 LIR module name.
+   --  @param Version UTF-8 module version (WIT package version).
    --  @return Empty Component_Model.
-   function Create (Name : String) return Component_Model;
+   function Create
+     (Name : String; Version : String := Default_Module_Version)
+      return Component_Model;
 
    --  Append The_Function to The_Model.
    --  @param The_Model Model to extend.
@@ -301,10 +312,12 @@ private
    package Export_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Lifted_Export);
 
    type Component_Model is record
-      Module_Name_Value   : Ada.Strings.Unbounded.Unbounded_String;
-      Functions           : Function_Vectors.Vector;
-      Exports             : Export_Vectors.Vector;
-      Wasi_Stdout_Enabled : Boolean := False;
+      Module_Name_Value    : Ada.Strings.Unbounded.Unbounded_String;
+      Module_Version_Value : Ada.Strings.Unbounded.Unbounded_String :=
+        Ada.Strings.Unbounded.To_Unbounded_String (Default_Module_Version);
+      Functions            : Function_Vectors.Vector;
+      Exports              : Export_Vectors.Vector;
+      Wasi_Stdout_Enabled  : Boolean := False;
    end record;
 
 end Lovelace.Compiler.Backend.Model;

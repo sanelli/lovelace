@@ -138,7 +138,7 @@ In the component type section, bare `(result)` is a separate `defvaltype`; the `
 Shared printer (`Backend.Wit.To_Wit`). Example for module `Hello` with entrypoint + export `Helper`:
 
 ```wit
-package love:hello@0.1.0;
+package love:hello@0.0.1;
 
 world module {
   export helper: func();
@@ -148,7 +148,7 @@ world module {
 
 Rules:
 
-- Package name: `love:<sanitized-module-name>@0.1.0` (ASCII letters/digits lowercased; other bytes → `-`, consecutive dashes collapsed, edges stripped; empty → `module`).
+- Package name: `love:<sanitized-module-name>@<module-version>` (ASCII letters/digits lowercased; other bytes → `-`, consecutive dashes collapsed, edges stripped; empty → `module`).
 - `export wasi:cli/run@0.3.0;` only when an entrypoint exists.
 - One `export <kebab-name>: func();` per nullary `Export_Flag` subroutine (same sanitization; empty → `export`).
 - WAT `$` ids: ASCII letters/digits/`_`/`-` kept; other bytes → `_HH` so emoji unit names stay valid in text.
