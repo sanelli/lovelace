@@ -59,14 +59,14 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
       Export_Sample     : constant String := Helpers.Locate_Sample ("module", "ExportProcedures.love");
       Calls_Sample      : constant String := Helpers.Locate_Sample ("calls", "SameModuleCall.love");
       Overload_Sample   : constant String := Helpers.Locate_Sample ("overload", "Overload.love");
-      --  U+1F680 ROCKET as UTF-8 (emoji module stem).
-      Rocket            : constant String :=
+      --  U+1F6F8 FLYING SAUCER as UTF-8 (emoji module stem; distinct from program 🚀).
+      Saucer            : constant String :=
         [1 => Character'Val (16#F0#),
          2 => Character'Val (16#9F#),
-         3 => Character'Val (16#9A#),
-         4 => Character'Val (16#80#)];
+         3 => Character'Val (16#9B#),
+         4 => Character'Val (16#B8#)];
       Emoji_Sample      : constant String :=
-        Helpers.Locate_Sample ("emoji-module", Rocket & ".love");
+        Helpers.Locate_Sample ("emoji-module", Saucer & ".love");
       Aggregate_Status  : Helpers.Tool_Status := Helpers.Succeeded;
       Outcome           : Helpers.Test_Outcome := Helpers.Ok;
    begin
@@ -167,12 +167,12 @@ package body Lovelace.Main.Integration_Tests.Module_Build is
         (Lovelace_Path => Lovelace_Path,
          Sample_Path   => Emoji_Sample,
          Output_Root   => Output_Root,
-         Unit_Name     => Rocket,
+         Unit_Name     => Saucer,
          Message       => "emoji module",
          Status        => Aggregate_Status);
       Helpers.Assert_Wat_Contains
         (Output_Root => Output_Root,
-         Unit_Name   => Rocket,
+         Unit_Name   => Saucer,
          Fragment    => "(local i32)",
          Message     => "emoji module local");
 

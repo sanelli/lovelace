@@ -32,10 +32,10 @@ For **every** new user-facing feature, add at least one `.love` file under `samp
 | [`samples/boolean/Boolean.love`](../samples/boolean/Boolean.love) | `boolean` params and `true`/`false` call args |
 | [`samples/variables/Variables.love`](../samples/variables/Variables.love) | Nested `declare` / block statements (outer locals + nested + bare nested `begin`…`end;`; unused locals may warn) |
 | [`samples/emoji/🚀.love`](../samples/emoji/🚀.love) | Emoji program name + emoji local (`declare`) |
-| [`samples/emoji-module/🚀.love`](../samples/emoji-module/🚀.love) | Emoji module name, emoji procedure, emoji local |
+| [`samples/emoji-module/🛸.love`](../samples/emoji-module/🛸.love) | Emoji module name, emoji procedure, emoji local (🛸 so output basename differs from program 🚀) |
 | [`samples/directives/FlavorSelect.love`](../samples/directives/FlavorSelect.love) | Flavor `#if` / `#elsif` / `#else` / `#end` (default `--flavor wasi` keeps `WasiOnly`) |
 | [`samples/calls/SameModuleCall.love`](../samples/calls/SameModuleCall.love) | Same-unit qualified call with integer literal (`SameModuleCall.Sink(42)`) |
-| [`samples/overload/Overload.love`](../samples/overload/Overload.love) | Same-module overload: `Sink(integer)` / `Sink(boolean)` / `Sink(integer<8>)`; bare `42`/`true` plus `1s8` for the narrow form |
+| [`samples/overload/Overload.love`](../samples/overload/Overload.love) | Same-module overload: `Sink(integer)` / `Sink(boolean)` / `Sink(integer<8>)`; `42s32` / `true` / `1s8` (bare `42` would be ambiguous) |
 | [`samples/overload/OverloadLib.love`](../samples/overload/OverloadLib.love) | Exported `Sink` overloads for cross-module callers |
 | [`samples/overload/OverloadCaller.love`](../samples/overload/OverloadCaller.love) | `using OverloadLib;` then `Sink(7)` / `Sink(false)` (resolve by actual types) |
 | [`samples/resolve/Caller.love`](../samples/resolve/Caller.love) | Multi-unit program: `using Lib` / `using pkg.Util` and cross-module calls |

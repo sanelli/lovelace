@@ -242,25 +242,21 @@ package body Lovelace.Compiler.Ir_Generator is
         Ada.Strings.Unbounded.To_String (The_Expression.Lexeme);
    begin
       case The_Expression.Kind is
-         when Ast.Boolean_Literal =>
-            return Lovelace_Types.Boolean_Type;
-
-         when Ast.Integer_Literal =>
+         when Ast.Boolean_Literal | Ast.Integer_Literal =>
             declare
-               Evaluated : constant Literals.Integer_32_Results.Result :=
-                 Literals.To_Integer_32 (Lexeme);
+               Typed : constant Typecheck.Type_Result :=
+                 Typecheck.Type_Of_Literal (The_Expression);
             begin
-               case Evaluated.Ok is
+               case Typed.Ok is
                   when True  =>
-                     return
-                       Lovelace_Types.Integer_Literal_Type (Evaluated.Value);
+                     return Typed.The_Type;
 
                   when False =>
                      return Lovelace_Types.Unknown_Type;
                end case;
             end;
 
-         when Ast.Name_Reference  =>
+         when Ast.Name_Reference                       =>
             declare
                Slot       : Positive;
                Value_Type : Lovelace_Types.Lovelace_Type;
