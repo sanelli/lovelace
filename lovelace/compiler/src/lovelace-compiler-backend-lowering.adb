@@ -126,6 +126,14 @@ package body Lovelace.Compiler.Backend.Lowering is
          Entrypoint_Index : Natural := 0;
          Entrypoint_Found : Boolean := False;
       begin
+         for Dependency_Index in 1 .. Modules.Dependency_Count (The_Module)
+         loop
+            Model.Append_Dependency
+              (The_Model,
+               Modules.Dependency_Name (The_Module, Dependency_Index),
+               Modules.Dependency_Version (The_Module, Dependency_Index));
+         end loop;
+
          for Subroutine_Index in 1 .. Modules.Subroutine_Count (The_Module)
          loop
             declare

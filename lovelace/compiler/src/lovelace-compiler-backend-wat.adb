@@ -3,6 +3,7 @@ with Interfaces;
 
 with Lovelace.Compiler.Backend.Lowering;
 with Lovelace.Compiler.Backend.Model;
+with Lovelace.Compiler.Backend.Names;
 with Lovelace.Compiler.Backend.Wit;
 
 package body Lovelace.Compiler.Backend.Wat is
@@ -369,7 +370,10 @@ package body Lovelace.Compiler.Backend.Wat is
          Ada.Strings.Unbounded.Append (Buffer, Text & ASCII.LF);
       end Line;
    begin
-      Line ("(component");
+      Line
+        ("(component $"
+         & Names.Component_Identity
+             (Model.Module_Name (The_Model), Model.Module_Version (The_Model)));
 
       if Stdout then
          Line ("  (type $ty-types");
@@ -580,6 +584,20 @@ package body Lovelace.Compiler.Backend.Wat is
             end;
          end loop;
       end;
+
+      for Dependency_Index in 1 .. Model.Dependency_Count (The_Model) loop
+         declare
+            Dep : constant Model.Dependency :=
+              Model.Get_Dependency (The_Model, Dependency_Index);
+         begin
+            Line
+              ("  (@custom ""lovelace-dependency"" """
+               & Names.Component_Identity
+                   (Ada.Strings.Unbounded.To_String (Dep.Name),
+                    Ada.Strings.Unbounded.To_String (Dep.Version))
+               & """)");
+         end;
+      end loop;
 
       Ada.Strings.Unbounded.Append (Buffer, ")" & ASCII.LF);
       return Ada.Strings.Unbounded.To_String (Buffer);

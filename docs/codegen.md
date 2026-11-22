@@ -138,7 +138,7 @@ In the component type section, bare `(result)` is a separate `defvaltype`; the `
 Shared printer (`Backend.Wit.To_Wit`). Example for module `Hello` with entrypoint + export `Helper`:
 
 ```wit
-package love:hello@0.0.1;
+package lovelace:hello@0.0.1;
 
 world module {
   export helper: func();
@@ -148,7 +148,7 @@ world module {
 
 Rules:
 
-- Package name: `love:<sanitized-module-name>@<module-version>` (ASCII letters/digits lowercased; other bytes → `-`, consecutive dashes collapsed, edges stripped; empty → `module`).
+- Package identity: `lovelace:<segments>@<module-version>`. The LIR module name is split on `.`; each segment is sanitized (ASCII letters/digits lowercased; other bytes → `-`; empty → `module`). The first segment is the package name; further segments are the interface path. **WAT/WASM** use `/` between segments (`lovelace:augusta/std/io@1.0.0`, component name `$lovelace:…@…`, plus `@custom "lovelace-dependency"` for each LIR dependency). **WIT** `package` lines cannot contain `/`, so multi-segment names use `-` instead (`package lovelace:augusta-std-io@1.0.0;`). Single-segment names match in all three (`lovelace:assignment@0.0.1`).
 - `export wasi:cli/run@0.3.0;` only when an entrypoint exists.
 - One `export <kebab-name>: func();` per nullary `Export_Flag` subroutine (same sanitization; empty → `export`).
 - WAT `$` ids: ASCII letters/digits/`_`/`-` kept; other bytes → `_HH` so emoji unit names stay valid in text.

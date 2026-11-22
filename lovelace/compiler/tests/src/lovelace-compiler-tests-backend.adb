@@ -356,7 +356,7 @@ package body Lovelace.Compiler.Tests.Backend is
 
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text),
-         "package love:lib@0.0.1;",
+         "package lovelace:lib@0.0.1;",
          "export only wit");
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wit_Text),

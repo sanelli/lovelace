@@ -4,6 +4,7 @@ with Interfaces;
 with Lovelace.Compiler.Backend.Leb128;
 with Lovelace.Compiler.Backend.Lowering;
 with Lovelace.Compiler.Backend.Model;
+with Lovelace.Compiler.Backend.Names;
 with Lovelace.Compiler.Backend.Wit;
 
 package body Lovelace.Compiler.Backend.Wasm is
@@ -600,6 +601,49 @@ package body Lovelace.Compiler.Backend.Wasm is
             Append_Section (Component_Bytes, 11, Export_Contents);
          end;
       end if;
+
+      declare
+         Identity : constant String :=
+           Names.Component_Identity
+             (Model.Module_Name (The_Model), Model.Module_Version (The_Model));
+         Payload  : Byte_Sequence := Empty_Bytes;
+         Contents : Byte_Sequence := Empty_Bytes;
+      begin
+         --  Custom "component-name" section (same shape wasm-tools emits for
+         --  `(component $lovelace:…@…)`): subsection 0 + sized name.
+         Append (Payload, 16#00#);
+         declare
+            Name_Bytes : Byte_Sequence := Empty_Bytes;
+         begin
+            Append_Name (Name_Bytes, Identity);
+            Leb128.Append_Unsigned
+              (Payload, Interfaces.Unsigned_32 (Length (Name_Bytes)));
+            Append_Bytes (Payload, Name_Bytes);
+         end;
+         Append_Name (Contents, "component-name");
+         Append_Bytes (Contents, Payload);
+         Append_Section (Component_Bytes, 0, Contents);
+      end;
+
+      for Dependency_Index in 1 .. Model.Dependency_Count (The_Model) loop
+         declare
+            Dep      : constant Model.Dependency :=
+              Model.Get_Dependency (The_Model, Dependency_Index);
+            Identity : constant String :=
+              Names.Component_Identity
+                (Ada.Strings.Unbounded.To_String (Dep.Name),
+                 Ada.Strings.Unbounded.To_String (Dep.Version));
+            Contents : Byte_Sequence := Empty_Bytes;
+         begin
+            Append_Name (Contents, "lovelace-dependency");
+            for Index in Identity'Range loop
+               Append
+                 (Contents,
+                  Interfaces.Unsigned_8 (Character'Pos (Identity (Index))));
+            end loop;
+            Append_Section (Component_Bytes, 0, Contents);
+         end;
+      end loop;
 
       return Component_Bytes;
    end Encode_Component;

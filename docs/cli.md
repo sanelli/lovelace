@@ -86,7 +86,7 @@ For module `a.b.c`, every mixed slash/dot relative form is a candidate (`a/b/c.l
 
 #### Module versions
 
-Each loaded unit gets one version, recorded in the `.lir` module header (and per dependency) and used for the WIT package (`package love:<name>@<version>`). Priority, highest first:
+Each loaded unit gets one version, recorded in the `.lir` module header (and per dependency) and used for the guest package identity (`lovelace:<segments>@<version>` in WIT/WAT/WASM; see [codegen.md](codegen.md)). Priority, highest first:
 
 1. The unit's own `@version("…")` attribute (after its `using` declarations; see [compilation-unit-grammar.md](compilation-unit-grammar.md))
 2. A `.loveversion` file in the library search root that contains the unit's `.love` file (the longest matching root; the file holds exactly `@version("…")`)
