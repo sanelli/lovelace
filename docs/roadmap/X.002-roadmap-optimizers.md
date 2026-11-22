@@ -16,7 +16,7 @@ Prerequisite: [X.001](X.001-roadmap-analyzers.md).
 
 - Optimizer pass pipeline over LIR (or agreed IR stage)
 - Correctness tests (semantic equivalence) and selected performance/smoke checks
-- Clear interaction with debug info / source maps where applicable
+- Clear interaction with debug info / source maps where applicable ([1.002](1.002-roadmap-replace-synthesized-print.md) step 8 spans; [4.003](4.003-roadmap-debug-info-for-debugger.md) debugger export)
 
 ## Out of scope
 

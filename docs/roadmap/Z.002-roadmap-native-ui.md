@@ -2,7 +2,7 @@
 
 **Objective:** Add **native Augusta UI** libraries so Lovelace programs can build desktop (or similar) user interfaces on the native flavor.
 
-Prerequisite: [1.004](1.004-roadmap-print-integer-native.md), [3.003](3.003-roadmap-native-libraries.md); may use [Z.001](Z.001-roadmap-invoke-native-code.md) to wrap existing UI toolkits.
+Prerequisite: [1.004](1.004-roadmap-print-integer-native.md), [3.004](3.004-roadmap-native-libraries.md); may use [Z.001](Z.001-roadmap-invoke-native-code.md) to wrap existing UI toolkits.
 
 ## In scope
 
@@ -12,8 +12,8 @@ Prerequisite: [1.004](1.004-roadmap-print-integer-native.md), [3.003](3.003-road
 
 ## Out of scope
 
-- Web DOM UI → [3.002](3.002-roadmap-web-libraries.md)
-- Design of the package manager → [Y.001](Y.001-roadmap-package-manager.md)
+- Web DOM UI → [3.003](3.003-roadmap-web-libraries.md)
+- Design of the package manager → [4.002](4.002-roadmap-pack-and-package-manager.md)
 
 ## Status
 

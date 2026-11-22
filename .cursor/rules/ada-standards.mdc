@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Ada Coding Standards (Host)
 
-Applies to host folders `lovelace/compiler/`, `jit/`, `lovelace/common/`, `lovelace/lir/`, `lovelace/lovelace/`, `tooling/`, `hypatia/`, `alexandria/`, `format/`, and host test crates (crate names `lovelace_*`; see utf8-and-naming). Native Augusta Ada has extra ZFP constraints (see Augusta rules).
+Applies to host folders `lovelace/compiler/`, `jit/`, `lovelace/common/`, `lovelace/lir/`, `lovelace/lovelace/`, `lovelace/tooling/`, `hypatia/`, `alexandria/`, `format/`, and host test crates (crate names `lovelace_*`; see utf8-and-naming). Native Augusta Ada has extra ZFP constraints (see Augusta rules).
 
 ## Toolchain
 

@@ -40,10 +40,10 @@ todos:
     status: completed
   - id: "13"
     content: "13. Run scripts/run-tests.ps1."
-    status: pending
+    status: completed
   - id: "14"
     content: "14. Push and open PR."
-    status: pending
+    status: completed
 isProject: false
 ---
 

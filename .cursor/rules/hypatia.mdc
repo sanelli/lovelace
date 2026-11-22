@@ -1,6 +1,6 @@
 ---
 description: Hypatia package system — local and git dependencies
-globs: "{hypatia,tooling,lovelace}/**/*"
+globs: "{hypatia,lovelace/tooling,lovelace}/**/*"
 alwaysApply: false
 ---
 
@@ -21,12 +21,12 @@ alwaysApply: false
 A dependency is usable only if the repo/folder has:
 
 1. The required tree layout (exact layout TBC; do not invent it)
-2. A **`.pkglove`** at the package root describing the package (parsed via `tooling/`)
+2. A **`.pkglove`** at the package root describing the package (parsed via `lovelace/tooling/`)
 
 No `.pkglove` → not a package. Do not treat a raw git repo of `.love` files as a package.
 
 ## Layering
 
-- Hypatia uses `tooling` for `.pkglove` (and may read `.pjlove` / `.slnlove` through tooling).
+- Hypatia uses `lovelace/tooling` for `.pkglove` (and may read `.pjlove` / `.slnlove` through tooling).
 - `lovelace_hypatia` is the **only** crate that links libgit2.
 - `lovelace` CLI invokes Hypatia; do not fetch git deps from the compiler frontend.

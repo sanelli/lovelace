@@ -1,6 +1,6 @@
 ---
 description: lovelace_tooling crate owns pjlove, slnlove, and pkglove
-globs: "{tooling,lovelace,hypatia,format,compiler}/**/*"
+globs: "{lovelace/tooling,lovelace,hypatia,format,compiler}/**/*"
 alwaysApply: false
 ---
 
@@ -12,9 +12,9 @@ All code that reads, writes, validates, or interprets:
 - `.slnlove` — solution (XML, slnx-like; lists projects)
 - `.pkglove` — Hypatia package manifest (XML)
 
-belongs in **`tooling/`** (Alire crate `lovelace_tooling` / **static** library).
+belongs in **`lovelace/tooling/`** (Alire crate `lovelace_tooling` / **static** library).
 
-`lovelace/` and `hypatia/` **call** tooling; they must not parse these files themselves.
+`lovelace/lovelace/` and `hypatia/` **call** tooling; they must not parse these files themselves.
 
 ## Behavior owned here
 

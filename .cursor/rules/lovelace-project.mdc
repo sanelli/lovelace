@@ -17,7 +17,7 @@ The **only dynamic library** in the whole project is Augusta’s native backing 
 2. **`jit/`** — crate `lovelace_jit`; static library: JIT runtime; **only** crate that links Wasmtime C (planned).
 3. **`lovelace/lovelace/`** — crate `lovelace`; CLI executable (`lovelace compile`, `run`, `doc`, `format`, project/solution/package commands); statically links the host libraries.
 4. **`augusta/`** — standard library: `.love` under `augusta/lovelace/`, native Ada under `augusta/libaugusta/`, web glue under `augusta/libaugusta-js/`. Flavors `native` / `wasi` / `web`.
-5. **`tooling/`** — crate `lovelace_tooling`; static library: `.pjlove`, `.slnlove`, `.pkglove` files and their behavior (planned).
+5. **`lovelace/tooling/`** — crate `lovelace_tooling`; static library: `.pjlove`, `.slnlove`, `.pkglove` files and their behavior (planned).
 6. **`hypatia/`** — crate `lovelace_hypatia`; static library: **Hypatia** package system (planned).
 7. **`alexandria/`** — crate `lovelace_alexandria`; static library: parse Lovelace comments/doc-comments and generate documentation (planned).
 8. **`format/`** — crate `lovelace_format`; static library: reformat `.love` to the effective style (planned).
@@ -36,7 +36,7 @@ Shared Ada under **`lovelace/`**: **`common/`** (`lovelace_common`), **`lir/`** 
 | `lovelace/lovelace/` | CLI executable |
 | `lovelace/shared/` | Host GPR switch include + test helpers (not a crate) |
 | `jit/` | JIT static library (Wasmtime; planned) |
-| `tooling/` | Project / solution / package static library (planned) |
+| `lovelace/tooling/` | Project / solution / package static library (planned) |
 | `hypatia/` | Hypatia package manager (static; planned) |
 | `alexandria/` | Doc generation static library (planned) |
 | `format/` | Source formatter static library (planned) |
@@ -44,7 +44,7 @@ Shared Ada under **`lovelace/`**: **`common/`** (`lovelace_common`), **`lir/`** 
 | `augusta/libaugusta/` | Freestanding Ada native Augusta (**the only dynamic** library; planned) |
 | `augusta/libaugusta-js/` | Web JS glue (planned) |
 | `ide/lsp/` | Language Server Protocol for Lovelace and LIR (planned) |
-| `ide/textmate/` | Shared TextMate grammars for `.love` and LIR (planned) |
+| `ide/textmate/` | Shared TextMate grammars for `.love` and `.tlir` (planned; keep in sync with every language/TLIR surface change — see documentation rule) |
 | `ide/vscode/` | VS Code extension (LSP + TextMate + build/run/debug; planned) |
 | `ide/jetbrains/` | JetBrains plugin (WebStorm primary; planned) |
 | `samples/` | `.love` samples under **feature subfolders** only (`samples/<feature>/…`; see samples rule) |

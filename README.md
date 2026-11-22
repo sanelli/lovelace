@@ -36,7 +36,7 @@ The toolchain is one Ada **executable** (`lovelace`) plus **static** libraries i
 | **`lovelace/shared/`** | Shared GPR switches and test helpers |
 | **`lovelace/lovelace/`** | Executable CLI (`lovelace compile`, `run`, `doc`, project and solution commands) |
 | **`jit/`** | Static library: JIT runtime; binds and links the Wasmtime C library (planned) |
-| **`tooling/`** | Static library: `.pjlove`, `.slnlove`, and `.pkglove` formats and behaviour (planned) |
+| **`lovelace/tooling/`** | Static library: `.pjlove`, `.slnlove`, and `.pkglove` formats and behaviour (planned) |
 | **`hypatia/`** | Static library: Hypatia package manager (planned) |
 | **`alexandria/`** | Static library: documentation tooling (planned) |
 | **`augusta/lovelace/`** | Augusta `.love` modules (in-tree `AUGUSTA_HOME`) |

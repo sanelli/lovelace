@@ -2,7 +2,7 @@
 
 **Objective:** Give developers the ability to **invoke native code** — e.g. a **Rust**, **Ada**, or **C** library package — from Lovelace programs (FFI / binding mechanism TBC).
 
-Prerequisite: native host path from [1.004](1.004-roadmap-print-integer-native.md); package story may interact with [Y.001](Y.001-roadmap-package-manager.md).
+Prerequisite: native host path from [1.004](1.004-roadmap-print-integer-native.md); package story may interact with [4.002](4.002-roadmap-pack-and-package-manager.md).
 
 ## In scope
 
