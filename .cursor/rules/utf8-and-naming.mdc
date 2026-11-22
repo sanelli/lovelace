@@ -17,7 +17,7 @@ Every Alire crate name starts with `lovelace`, in any folder. The `.gpr` file na
 | `lovelace/common/tests` | `lovelace_common_tests` |
 | `lovelace/lir/` | `lovelace_lir` |
 | `lovelace/compiler/` | `lovelace_compiler` |
-| `tooling/` | `lovelace_tooling` |
+| `lovelace/tooling/` | `lovelace_tooling` |
 | `format/` | `lovelace_format` |
 | `alexandria/` | `lovelace_alexandria` |
 | `hypatia/` | `lovelace_hypatia` |

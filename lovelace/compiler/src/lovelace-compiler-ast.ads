@@ -63,29 +63,49 @@ package Lovelace.Compiler.Ast is
    --  Ordered list of parameters on a subroutine.
    type Parameter_Sequence is private;
 
-   --  One integer literal argument to a call.
-   --  @field Lexeme UTF-8 integer literal spelling from the tokenizer.
-   --  @field Span Source span of the literal token.
-   --  @field Filename Optional shared filename from the literal token.
-   type Call_Argument is record
+   --  Expression kind for this slice (literals + name references).
+   --  @enum Integer_Literal Integer literal token.
+   --  @enum Boolean_Literal `true` / `false`.
+   --  @enum Name_Reference Identifier (local / parameter).
+   type Expression_Kind is (Integer_Literal, Boolean_Literal, Name_Reference);
+
+   --  One expression node (shared by assignment RHS and call actuals).
+   --  @field Kind Which expression form.
+   --  @field Lexeme UTF-8 spelling (`42`, `true`, or the identifier).
+   --  @field Span Source span of the expression token.
+   --  @field Filename Optional shared filename from the token.
+   type Expression is record
+      Kind     : Expression_Kind;
       Lexeme   : Ada.Strings.Unbounded.Unbounded_String;
       Span     : Source.Source_Span;
       Filename : Source.Filename_Option;
    end record;
 
-   --  Ordered list of call arguments.
-   type Argument_Sequence is private;
+   --  Ordered list of expressions (call actuals).
+   type Expression_Sequence is private;
 
-   --  One qualified call statement (MODULE.SUBROUTINE with literal args).
+   --  One qualified call statement (MODULE.SUBROUTINE with expression args).
    --  @field Callee_Name UTF-8 dotted callee (at least one '.').
    --  @field Name_Span Source span of the whole callee name.
    --  @field Filename Optional shared filename from the callee name.
-   --  @field Arguments Ordered integer-literal arguments.
+   --  @field Arguments Ordered expression arguments.
    type Call_Statement is record
       Callee_Name : Ada.Strings.Unbounded.Unbounded_String;
       Name_Span   : Source.Source_Span;
       Filename    : Source.Filename_Option;
-      Arguments   : Argument_Sequence;
+      Arguments   : Expression_Sequence;
+   end record;
+
+   --  One assignment statement `Name := Expression;`.
+   --  @field Target_Name UTF-8 LHS identifier.
+   --  @field Name_Span Source span of the LHS name.
+   --  @field Filename Optional shared filename from the name token.
+   --  @field Value RHS expression.
+   type Assignment_Statement is record
+      Target_Name : Ada.Strings.Unbounded.Unbounded_String;
+      Name_Span   : Source.Source_Span;
+      Filename    : Source.Filename_Option;
+      Value       : Expression;
    end record;
 
    --  One local variable declaration (same shape as a parameter: name + type).
@@ -95,14 +115,15 @@ package Lovelace.Compiler.Ast is
    subtype Local_Sequence is Parameter_Sequence;
 
    --  Statement kind in a block body.
-   --  @enum Call Qualified call with optional literal arguments.
-   --  @enum Nested_Block Nested `[declare…] begin … end;` block statement.
-   type Statement_Kind is (Call, Nested_Block);
+   --  @enum Call Qualified call with optional expression arguments.
+   --  @enum Assignment `Name := Expression;`.
+   --  @enum Nested_Block Nested `{ using } [declareÃÂ¢ÃÂÃÂ¦] begin ÃÂ¢ÃÂÃÂ¦ end;` block statement.
+   type Statement_Kind is (Call, Assignment, Nested_Block);
 
-   --  One `begin`…`end` block with optional locals (may nest via Nested_Block statements).
+   --  One `begin`ÃÂ¢ÃÂÃÂ¦`end` block with optional usings/locals (may nest via Nested_Block).
    type Block is private;
 
-   --  One statement in a block body (call or nested block).
+   --  One statement in a block body (call, assignment, or nested block).
    type Statement is private;
 
    --  Ordered list of statements in a block body.
@@ -114,24 +135,24 @@ package Lovelace.Compiler.Ast is
    --  Ordered list of subroutines in a module.
    type Subroutine_Sequence is private;
 
-   --  One unit-level import declaration (module name only; no alias yet).
+   --  One `using` declaration (module name only; no alias yet).
    --  @field Module_Name UTF-8 dotted module name.
    --  @field Name_Span Source span of the whole qualified name.
    --  @field Filename Optional shared filename from the name token.
-   type Import_Declaration is record
+   type Using_Declaration is record
       Module_Name : Ada.Strings.Unbounded.Unbounded_String;
       Name_Span   : Source.Source_Span;
       Filename    : Source.Filename_Option;
    end record;
 
-   --  Ordered list of import declarations on a compilation unit.
-   type Import_Sequence is private;
+   --  Ordered list of using declarations (unit-level or block preamble).
+   type Using_Sequence is private;
 
    --  One compilation-unit module in the AST.
    type Module is private;
 
    --  Which surface form produced this compilation-unit AST.
-   --  @enum Program_Unit Source used program IDENTIFIER; begin â¦ end.
+   --  @enum Program_Unit Source used program IDENTIFIER; begin ÃÂ¢ÃÂÃÂ¦ end.
    --  @enum Module_Unit Source used module qualified_identifier; end.
    type Unit_Kind is (Program_Unit, Module_Unit);
 
@@ -183,11 +204,18 @@ package Lovelace.Compiler.Ast is
    --  @return Block with empty locals and statements.
    function Empty_Block return Block;
 
-   --  Build a block from Locals and Statements.
+   --  Build a block from Usings, Locals, and Statements.
+   --  @param Usings Ordered block-level using declarations (may be empty).
    --  @param Locals Ordered local declarations (may be empty).
    --  @param Statements Ordered statement list (may be empty).
    --  @return Block value.
-   function Create_Block (Locals : Local_Sequence; Statements : Statement_Sequence) return Block;
+   function Create_Block
+     (Usings : Using_Sequence; Locals : Local_Sequence; Statements : Statement_Sequence) return Block;
+
+   --  Usings declared on The_Block (block preamble only; not unit-leading).
+   --  @param The_Block Block to query.
+   --  @return Using sequence.
+   function Usings (The_Block : Block) return Using_Sequence;
 
    --  Locals declared on The_Block.
    --  @param The_Block Block to query.
@@ -204,6 +232,11 @@ package Lovelace.Compiler.Ast is
    --  @return Statement with Kind Call.
    function Make_Call_Statement (The_Call : Call_Statement) return Statement;
 
+   --  Build an assignment statement.
+   --  @param The_Assignment Assignment payload.
+   --  @return Statement with Kind Assignment.
+   function Make_Assignment_Statement (The_Assignment : Assignment_Statement) return Statement;
+
    --  Build a nested-block statement.
    --  @param The_Block Nested block.
    --  @return Statement with Kind Nested_Block.
@@ -211,7 +244,7 @@ package Lovelace.Compiler.Ast is
 
    --  Kind of The_Statement.
    --  @param The_Statement Statement to query.
-   --  @return Call or Nested_Block.
+   --  @return Call, Assignment, or Nested_Block.
    function Kind (The_Statement : Statement) return Statement_Kind;
 
    --  Call payload; requires Kind (The_Statement) = Call.
@@ -219,30 +252,35 @@ package Lovelace.Compiler.Ast is
    --  @return Call_Statement.
    function Call_Of (The_Statement : Statement) return Call_Statement;
 
+   --  Assignment payload; requires Kind (The_Statement) = Assignment.
+   --  @param The_Statement Assignment statement.
+   --  @return Assignment_Statement.
+   function Assignment_Of (The_Statement : Statement) return Assignment_Statement;
+
    --  Nested block; requires Kind (The_Statement) = Nested_Block.
    --  @param The_Statement Nested-block statement.
    --  @return Block.
    function Block_Of (The_Statement : Statement) return Block;
 
-   --  Empty argument sequence.
+   --  Empty expression sequence.
    --  @return Sequence with no elements.
-   function Empty_Argument_Sequence return Argument_Sequence;
+   function Empty_Expression_Sequence return Expression_Sequence;
 
-   --  Append The_Argument to the end of Sequence.
+   --  Append The_Expression to the end of Sequence.
    --  @param Sequence Sequence to extend.
-   --  @param The_Argument Argument to append.
-   procedure Append (Sequence : in out Argument_Sequence; The_Argument : Call_Argument);
+   --  @param The_Expression Expression to append.
+   procedure Append (Sequence : in out Expression_Sequence; The_Expression : Expression);
 
-   --  Number of arguments in Sequence.
-   --  @param Sequence Argument list.
+   --  Number of expressions in Sequence.
+   --  @param Sequence Expression list.
    --  @return Element count.
-   function Length (Sequence : Argument_Sequence) return Natural;
+   function Length (Sequence : Expression_Sequence) return Natural;
 
-   --  Argument at Index (1 .. Length (Sequence)).
-   --  @param Sequence Argument list.
+   --  Expression at Index (1 .. Length (Sequence)).
+   --  @param Sequence Expression list.
    --  @param Index 1-based index.
-   --  @return Argument at Index.
-   function Element (Sequence : Argument_Sequence; Index : Positive) return Call_Argument;
+   --  @return Expression at Index.
+   function Element (Sequence : Expression_Sequence; Index : Positive) return Expression;
 
    --  Empty statement sequence (no statements).
    --  @return Sequence with length 0.
@@ -270,6 +308,7 @@ package Lovelace.Compiler.Ast is
    --  @param Module_Name UTF-8 enclosing module name (may be dotted).
    --  @param Name_Span Source span of the name identifier.
    --  @param Filename Optional shared filename from the name token.
+   --  @param Span Source span covering the whole procedure declaration.
    --  @param Flags Flag bits (export, entrypoint, and others).
    --  @param Return_Type Frontend return type expression.
    --  @param Parameters Ordered parameter list.
@@ -281,6 +320,7 @@ package Lovelace.Compiler.Ast is
       Module_Name : String;
       Name_Span   : Source.Source_Span;
       Filename    : Source.Filename_Option;
+      Span        : Source.Source_Span;
       Flags       : Subroutine_Flags;
       Return_Type : Types.Type_Expression;
       Parameters  : Parameter_Sequence;
@@ -306,6 +346,11 @@ package Lovelace.Compiler.Ast is
    --  @param The_Subroutine Subroutine to query.
    --  @return Filename option from construction.
    function Filename (The_Subroutine : Subroutine) return Source.Filename_Option;
+
+   --  Source span of the whole procedure declaration (header through final `;`).
+   --  @param The_Subroutine Subroutine to query.
+   --  @return Declaration span.
+   function Span (The_Subroutine : Subroutine) return Source.Source_Span;
 
    --  Flag bits of The_Subroutine.
    --  @param The_Subroutine Subroutine to query.
@@ -352,34 +397,35 @@ package Lovelace.Compiler.Ast is
    --  @return Subroutine at Index.
    function Element (Sequence : Subroutine_Sequence; Index : Positive) return Subroutine;
 
-   --  Empty import sequence.
+   --  Empty using sequence.
    --  @return Sequence with no elements.
-   function Empty_Import_Sequence return Import_Sequence;
+   function Empty_Using_Sequence return Using_Sequence;
 
-   --  Append The_Import to the end of Sequence.
+   --  Append The_Using to the end of Sequence.
    --  @param Sequence Sequence to extend.
-   --  @param The_Import Import declaration to append.
-   procedure Append (Sequence : in out Import_Sequence; The_Import : Import_Declaration);
+   --  @param The_Using Using declaration to append.
+   procedure Append (Sequence : in out Using_Sequence; The_Using : Using_Declaration);
 
-   --  Number of imports in Sequence.
-   --  @param Sequence Import list.
+   --  Number of usings in Sequence.
+   --  @param Sequence Using list.
    --  @return Element count.
-   function Length (Sequence : Import_Sequence) return Natural;
+   function Length (Sequence : Using_Sequence) return Natural;
 
-   --  Import at Index (1 .. Length (Sequence)).
-   --  @param Sequence Import list.
+   --  Using at Index (1 .. Length (Sequence)).
+   --  @param Sequence Using list.
    --  @param Index 1-based index.
-   --  @return Import at Index.
-   function Element (Sequence : Import_Sequence; Index : Positive) return Import_Declaration;
+   --  @return Using at Index.
+   function Element (Sequence : Using_Sequence; Index : Positive) return Using_Declaration;
 
-   --  Build a module with Name, Kind, Imports, and Subroutines (may be empty).
+   --  Build a module with Name, Kind, Usings, and Subroutines (may be empty).
    --  @param Name UTF-8 module name (may be dotted for Module_Unit).
    --  @param Name_Span Source span of the name (whole qualified name).
    --  @param Filename Optional shared filename from the name token.
    --  @param Span Source span covering the whole compilation unit.
    --  @param Kind Program_Unit or Module_Unit.
-   --  @param Imports Ordered unit-level import list (may be empty).
+   --  @param Usings Ordered unit-level using list (may be empty).
    --  @param Subroutines Ordered subroutine list (empty for empty modules).
+   --  @param Version Optional `@version("…")` attribute text (empty when absent).
    --  @return Module value.
    function Create_Module
      (Name        : String;
@@ -387,8 +433,9 @@ package Lovelace.Compiler.Ast is
       Filename    : Source.Filename_Option;
       Span        : Source.Source_Span;
       Kind        : Unit_Kind;
-      Imports     : Import_Sequence;
-      Subroutines : Subroutine_Sequence) return Module;
+      Usings      : Using_Sequence;
+      Subroutines : Subroutine_Sequence;
+      Version     : String := "") return Module;
 
    --  UTF-8 name of The_Module.
    --  @param The_Module Module to query.
@@ -415,16 +462,26 @@ package Lovelace.Compiler.Ast is
    --  @return Unit span.
    function Span (The_Module : Module) return Source.Source_Span;
 
-   --  Number of imports in The_Module.
+   --  True when The_Module carries a source `@version("…")` attribute.
    --  @param The_Module Module to query.
-   --  @return Import count.
-   function Import_Count (The_Module : Module) return Natural;
+   --  @return True iff Version is non-empty.
+   function Has_Version_Attribute (The_Module : Module) return Boolean;
 
-   --  Import at Index (1 .. Import_Count (The_Module)).
+   --  UTF-8 `@version` attribute text (empty when absent).
+   --  @param The_Module Module to query.
+   --  @return Version attribute bytes.
+   function Version_Attribute (The_Module : Module) return String;
+
+   --  Number of unit-level usings in The_Module.
+   --  @param The_Module Module to query.
+   --  @return Using count.
+   function Using_Count (The_Module : Module) return Natural;
+
+   --  Using at Index (1 .. Using_Count (The_Module)).
    --  @param The_Module Module to query.
    --  @param Index 1-based index.
-   --  @return Import at Index.
-   function Get_Import (The_Module : Module; Index : Positive) return Import_Declaration;
+   --  @return Using at Index.
+   function Get_Using (The_Module : Module; Index : Positive) return Using_Declaration;
 
    --  Number of subroutines in The_Module.
    --  @param The_Module Module to query.
@@ -445,10 +502,10 @@ private
       Items : Parameter_Vectors.Vector;
    end record;
 
-   package Argument_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Call_Argument);
+   package Expression_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Expression);
 
-   type Argument_Sequence is record
-      Items : Argument_Vectors.Vector;
+   type Expression_Sequence is record
+      Items : Expression_Vectors.Vector;
    end record;
 
    type Block_Data;
@@ -458,6 +515,9 @@ private
       case Kind_Value is
          when Call =>
             The_Call : Call_Statement;
+
+         when Assignment =>
+            The_Assignment : Assignment_Statement;
 
          when Nested_Block =>
             The_Block : Block;
@@ -472,6 +532,7 @@ private
    end record;
 
    type Block_Data is record
+      Usings_Value     : Using_Sequence;
       Locals_Value     : Local_Sequence;
       Statements_Value : Statement_Sequence;
    end record;
@@ -481,6 +542,7 @@ private
       Full_Name_Value   : Ada.Strings.Unbounded.Unbounded_String;
       Name_Span_Value   : Source.Source_Span;
       Filename_Value    : Source.Filename_Option;
+      Span_Value        : Source.Source_Span;
       Flags_Value       : Subroutine_Flags := 0;
       Return_Type_Value : Types.Type_Expression := Types.Unit_Type;
       Parameters_Value  : Parameter_Sequence;
@@ -494,20 +556,21 @@ private
       Items : Subroutine_Vectors.Vector;
    end record;
 
-   package Import_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Import_Declaration);
+   package Using_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Using_Declaration);
 
-   type Import_Sequence is record
-      Items : Import_Vectors.Vector;
+   type Using_Sequence is record
+      Items : Using_Vectors.Vector;
    end record;
 
    type Module is record
-      Module_Name     : Ada.Strings.Unbounded.Unbounded_String;
-      Name_Span_Value : Source.Source_Span;
-      Filename_Value  : Source.Filename_Option;
-      Span_Value      : Source.Source_Span;
-      Kind_Value      : Unit_Kind := Program_Unit;
-      Imports         : Import_Sequence;
-      Subroutines     : Subroutine_Sequence;
+      Module_Name              : Ada.Strings.Unbounded.Unbounded_String;
+      Name_Span_Value          : Source.Source_Span;
+      Filename_Value           : Source.Filename_Option;
+      Span_Value               : Source.Source_Span;
+      Kind_Value               : Unit_Kind := Program_Unit;
+      Usings                   : Using_Sequence;
+      Subroutines              : Subroutine_Sequence;
+      Version_Attribute_Value  : Ada.Strings.Unbounded.Unbounded_String;
    end record;
 
 end Lovelace.Compiler.Ast;

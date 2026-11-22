@@ -1,5 +1,5 @@
-import Lib;
-import pkg.Util;
+using Lib;
+using pkg.Util;
 
 program Caller;
 begin

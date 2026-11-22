@@ -1,0 +1,5 @@
+{ Program with an explicit @version attribute. }
+@version("2.0.0-preview.1")
+program Versioned;
+begin
+end.

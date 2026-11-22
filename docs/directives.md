@@ -12,7 +12,7 @@ Related: [compilation-unit-grammar.md](compilation-unit-grammar.md), [tokenizer.
 | `native` | Host native / `love:` path (bodies later) |
 | `web` | Browser / web path (bodies later) |
 
-Select the active flavor with `lovelace build --flavor <name>` (default `wasi`). See [cli.md](cli.md).
+Select the active flavor with `lovelace compile --flavor <name>` (default `wasi`). See [cli.md](cli.md).
 
 ## Syntax
 

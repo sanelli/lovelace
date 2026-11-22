@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Integration tests (CLI + artifacts)
 
-Crate `lovelace_integration_tests` (`lovelace/lovelace/integration_tests`) builds [samples](../../samples/) with the `lovelace` CLI and checks generated artifacts. Shared helpers live in `Lovelace.Main.Integration_Tests.Support`.
+Crate `lovelace_integration_tests` (`lovelace/lovelace/integration_tests`) compiles [samples](../../samples/) with the `lovelace` CLI and checks generated artifacts. Shared helpers live in `Lovelace.Main.Integration_Tests.Support`.
 
 These tests may invoke **optional host tools on PATH**. Do **not** `depends-on`, vendor, or wrap those tools as Alire/crate dependencies (see dependencies rule). CI installs them via `bytecodealliance/actions` (`wasmtime/setup`, `wasm-tools/setup`).
 
@@ -22,11 +22,11 @@ tools:
 
 Missing either tool fails the suite immediately (integration tests are not meaningful without them).
 
-## Always: build + artifacts
+## Always: compile + artifacts
 
 For every sample under test:
 
-1. `lovelace build … --output-format wasm,wat --force`
+1. `lovelace compile … --output-format wasm,wat --force`
 2. Assert `obj/<Unit>.lir` and `bin/<Unit>.wasm` / `.wat` / `.wit` exist
 
 Discard child **stdout** when spawning `lovelace` / `wasm-tools` / `wasmtime` so `[info]` lines do not flood the suite. Keep **stderr** so `[err]` / `LV#####` diagnostics still appear.
@@ -62,15 +62,15 @@ Each test prints one status line (AUnit success chatter is suppressed):
 
 ```text
 support locate and compose           [OK]
-build validate and run Hello         [OK]
-build and validate modules           [OK]
+compile: validate and run program Hello  [OK]
+compile: validate modules Empty, …       [OK]
 ```
 
 Use `[FAIL]` on assertion failure and `[INCONCLUSIVE]` only when a tool step is unexpectedly missing after the preamble.
 
 ## Support API
 
-Prefer `Integration_Tests.Support` for locate/build/assert/validate/run/report so fixtures stay thin:
+Prefer `Integration_Tests.Support` for locate/compile/assert/validate/run/report so fixtures stay thin:
 
 - `Report_And_Require_Tools` — `wasm-tools` / `wasmtime` as status lines (`[OK]`/`[FAIL]`), then assert both on PATH
 - `Report_Test_Result` — `NAME [OK|FAIL|INCONCLUSIVE]` (OK green, FAIL red, INCONCLUSIVE gray via `Lovelace.Test_Status`)

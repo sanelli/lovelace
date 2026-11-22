@@ -16,19 +16,28 @@ package Lovelace.Compiler.Error_Codes is
    --  @enum Name_Clash Parser: duplicate or conflicting procedure/parameter name (LV00011).
    --  @enum Invalid_Flavor_Condition Parser: `#if`/`#elsif` flavor string is not wasi/native/web (LV00012).
    --  @enum Unterminated_String_Literal Tokenizer: opening `"` without a matching closer (LV00013).
-   --  @enum Unresolved_Call IR Generator: call target is not a same-unit procedure (LV00014).
+   --  @enum Unresolved_Call Semantics: call target subroutine does not exist (LV00014).
    --  @enum Invalid_Arguments IR Generator: call arity or argument/formal mismatch (LV00015).
    --  @enum Unknown_Module Unit graph: import name has no candidate .love on the search roots (LV00016).
-   --  @enum Call_Without_Import IR Generator: callee module prefix is not imported by the caller (LV00017).
-   --  @enum Not_Exported IR Generator: imported procedure exists but lacks Export_Flag (LV00018).
-   --  @enum Circular_Import Unit graph: import cycle among compilation units (LV00019).
-   --  @enum Ambiguous_Module_Path Unit graph: two or more distinct .love files match one import (LV00020).
+   --  @enum Call_Without_Using IR Generator/Semantics: callee module prefix is not brought in by a using (LV00017).
+   --  @enum Not_Exported IR Generator/Semantics: used procedure exists but lacks Export_Flag (LV00018).
+   --  @enum Circular_Import Unit graph: using cycle among compilation units (LV00019).
+   --  @enum Ambiguous_Module_Path Unit graph: two or more distinct .love files match one using (LV00020).
    --  @enum Unknown_Native_Binding Retired: old native(target, key) closed wasi set (LV00021); no longer emitted.
    --  @enum Unterminated_Comment Tokenizer: opening `{` without a matching `}` (LV00022).
-   --  @enum Nested_Comment Tokenizer: `{` inside an open `{` … `}` comment (LV00023).
+   --  @enum Nested_Comment Tokenizer: `{` inside an already open `{` ... `}` comment (LV00023).
    --  @enum Stray_Comment_Closer Tokenizer: `}` outside a comment (LV00024).
    --  @enum Unknown_Intrinsic IR Generator: `@intrinsic` signature not in the closed intrinsic table (LV00025).
-   --  @enum Obsolete_Native_Modifier Parser: keyword `native(…)` header; use `@intrinsic` / `@native` (LV00026).
+   --  @enum Use_Before_Assignment Semantics: read of a local that is not definitely assigned (LV00026).
+   --  @enum Type_Mismatch Semantics: assignment or call actual is not assignable to the expected type (LV00027).
+   --  @enum Unused_Variable Warning: local is never read (LV00028).
+   --  @enum Unused_Assignment Warning: a store whose value is never read before overwrite/end (LV00029).
+   --  @enum Invalid_Warning_Suppression CLI/compile: `--no-warnings` entry is unknown or not a warning (LV00030).
+   --  @enum Unresolved_Name Semantics: identifier does not name a visible local or parameter (LV00031).
+   --  @enum Unused_Using Warning: a `using M;` was never required for call resolve (LV00032).
+   --  @enum Ambiguous_Call Semantics: two or more overloads match a call equally (LV00033).
+   --  @enum Invalid_Module_Version Parser/unit graph/CLI: module version string is not
+   --  MAJOR.MINOR.BUILD[-preview[.N]] (LV00034).
    type Error_Code is
      (Internal_Error,
       Unrecognized_Symbol,
@@ -46,7 +55,7 @@ package Lovelace.Compiler.Error_Codes is
       Unresolved_Call,
       Invalid_Arguments,
       Unknown_Module,
-      Call_Without_Import,
+      Call_Without_Using,
       Not_Exported,
       Circular_Import,
       Ambiguous_Module_Path,
@@ -55,11 +64,36 @@ package Lovelace.Compiler.Error_Codes is
       Nested_Comment,
       Stray_Comment_Closer,
       Unknown_Intrinsic,
-      Obsolete_Native_Modifier);
+      Use_Before_Assignment,
+      Type_Mismatch,
+      Unused_Variable,
+      Unused_Assignment,
+      Invalid_Warning_Suppression,
+      Unresolved_Name,
+      Unused_Using,
+      Ambiguous_Call,
+      Invalid_Module_Version);
+
+   --  Diagnostic severity for Code (warnings include Unused_Variable / Unused_Assignment / Unused_Using).
+   --  @enum Error Fatal or hard diagnostic (default for almost all codes).
+   --  @enum Warning Non-fatal; may be promoted or suppressed by the build CLI.
+   type Severity is (Error, Warning);
+
+   --  Default severity for Code before promote/suppress policy.
+   --  @param Code Diagnostic kind.
+   --  @return Error or Warning.
+   function Default_Severity (Code : Error_Code) return Severity;
 
    --  Canonical LV##### label for Code.
    --  @param Code Diagnostic kind.
    --  @return Five-digit LV label such as LV00001.
    function Label (Code : Error_Code) return String;
+
+   --  Resolve Text as a canonical LV##### label.
+   --  @param Text Label such as LV00028 (case-sensitive).
+   --  @param Code Filled when Text matches a known label.
+   --  @return True when Text is a known label.
+   function Try_From_Label
+     (Text : String; Code : out Error_Code) return Boolean;
 
 end Lovelace.Compiler.Error_Codes;

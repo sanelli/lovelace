@@ -6,6 +6,7 @@ with Lovelace.Compiler.Ast;
 with Lovelace.Compiler.Error_Codes;
 with Lovelace.Compiler.Flavor;
 with Lovelace.Compiler.Module_Path;
+with Lovelace.Compiler.Versioning;
 
 --  Load a root compilation unit plus its transitive import closure.
 
@@ -52,10 +53,12 @@ package Lovelace.Compiler.Unit_Graph is
    --  @field The_Module Parsed AST.
    --  @field Source_Path Path of the .love file.
    --  @field Source_Text UTF-8 contents.
+   --  @field Version Resolved module version (attribute, .loveversion, CLI, or default).
    type Loaded_Unit is record
       The_Module  : Ast.Module;
       Source_Path : Ada.Strings.Unbounded.Unbounded_String;
       Source_Text : Ada.Strings.Unbounded.Unbounded_String;
+      Version     : Ada.Strings.Unbounded.Unbounded_String;
    end record;
 
    package Loaded_Unit_Vectors is new
@@ -90,12 +93,14 @@ package Lovelace.Compiler.Unit_Graph is
    --  @param Root_Source_Text UTF-8 contents of the root file.
    --  @param Search_Roots Module_Path search roots.
    --  @param Active_Flavor Flavor passed to Parse for every dependency.
+   --  @param Cli_Version Optional --module-version fallback for every unit.
    --  @return Compilation set (root first) or a located error.
    function Load
      (Root_Module      : Ast.Module;
       Root_Source_Path : String;
       Root_Source_Text : String;
       Search_Roots     : Module_Path.Path_Sequence;
-      Active_Flavor    : Flavor.Flavor) return Load_Result;
+      Active_Flavor    : Flavor.Flavor;
+      Cli_Version      : Versioning.Version_Option) return Load_Result;
 
 end Lovelace.Compiler.Unit_Graph;

@@ -16,6 +16,8 @@ File offsets in the subroutine preamble are **0-based** from the first magic byt
 
 Wrong magic → `Invalid_Magic`. Any version other than major `1` / minor `0` → `Unsupported_Version`.
 
+After the version words: **module-version** — encoded string (default `"0.0.1"`).
+
 ## Encoded string
 
 Every name uses the same encoding:
@@ -52,7 +54,7 @@ Any other byte → `Unknown_Type`. There is no `void` code. `I128`, `U128`, and 
 1. Module name (encoded string)
 2. `flags` — `u32` (v1 writers emit `0`; readers store the value as-is so future bits can round-trip; v1 does **not** reject nonzero flags)
 3. `dependency_count` — `u32`
-4. `dependency_count` encoded strings (depended-on **module names**, not paths)
+4. `dependency_count` pairs, each an encoded **module name** (not a path) followed by an encoded **module version** (default `"0.0.1"`)
 5. **Module origin** (see below)
 
 ### Module origin
@@ -73,18 +75,21 @@ Three `u32` fields: `Byte_Index`, `Line`, `Column` (each must be ≥ 1).
 
 `First` position, then `Last` position.
 
-### Subroutine preamble (binary only)
+### Subroutine index preamble (binary only)
 
-Not present in `.tlir`. After metadata, before subroutine records. Intended for future import scanning: list names and jump to definitions without parsing every record.
+After metadata, before subroutine records. 1-based position in this table is the **subroutine id** used by `Call` immediates. Rows may share a name (overloads). Intended so tools can list id → signature and jump to definitions without parsing every record body.
 
 1. `subroutine_count` — `u32`
-2. For each subroutine, in order:
-   - name (encoded string; must match the name in the record at `offset`)
+2. For each subroutine, in order (id = 1 .. count):
+   - name (encoded string)
+   - return type — encoded `Value_Type`
+   - `parameter_count` — `u32`
+   - `parameter_count` parameters, each: name (encoded string) + type (`Value_Type`)
    - `offset` — `u32` absolute 0-based file offset to the first byte of that subroutine record
 
-Offsets must be strictly increasing when there are two or more entries. When a record is about to be read, the decoder’s current file position must equal the preamble offset, and the record name must match. Mismatch → `Invalid_Offset`.
+Offsets must be strictly increasing when there are two or more entries. When a record is about to be read, the decoder’s current file position must equal the preamble offset, and the record’s name / result / parameters must match the index row. Mismatch → `Invalid_Offset`.
 
-Then follow exactly `subroutine_count` subroutine records in preamble order (no second count).
+Then follow exactly `subroutine_count` subroutine records in preamble order (no second count). The record still repeats the signature (name, result, params) after the index for a self-contained body parse.
 
 ### Subroutine record
 
@@ -95,18 +100,22 @@ Then follow exactly `subroutine_count` subroutine records in preamble order (no 
    - name (encoded string)
    - type — encoded `Value_Type`
 5. `local_count` — `u32`
-6. `local_count` locals, each (same shape as a parameter):
+6. `local_count` locals, each:
+   - index — `u32` (1-based among locals; must equal position `1 .. local_count`, else `Invalid_Local_Index`)
    - name (encoded string)
    - type — encoded `Value_Type`
 7. `flags` — `u32` (bit 0 = export, bit 1 = entrypoint, bit 2 = native, bit 3 = intrinsic; other bits preserved like module flags)
 8. **Subroutine origin:**
    - `origin_present` — `u8` (`0` / `1`; other → `Invalid_Presence`)
-   - when present: filename (encoded string; empty = absent), then `name_span` only (no unit span)
-9. **Native binding** (only when `Native_Flag`; absent for `@intrinsic`):
+   - when present: filename (encoded string; empty = absent), then `name_span`, then `span` (whole procedure declaration)
+9. **From-dependency:**
+   - `from_dependency_present` — `u8` (`0` / `1`; other → `Invalid_Presence`)
+   - when present: dependency module name (encoded string)
+10. **Native binding** (only when `Native_Flag`; absent for `@intrinsic`):
    - `native_present` — `u8` (`0` / `1`; other → `Invalid_Presence`)
    - when present: library (encoded string), then function name (encoded string)
-10. `instruction_count` — `u32` (number of instructions, not bytes)
-11. Instruction stream — concatenation of encoded instructions (no per-instruction length prefix)
+11. `instruction_count` — `u32` (number of instructions, not bytes)
+12. Instruction stream — concatenation of encoded instructions (no per-instruction length prefix)
 
 ### Instruction stream
 
@@ -120,6 +129,8 @@ Then follow exactly `subroutine_count` subroutine records in preamble order (no 
 | `No_Operation` | `0x0000` | 0 | 2 bytes |
 | `Constant_I32` | `0x0001` | 4 bytes little-endian `i32` | 6 bytes |
 | `Call` | `0x0002` | 4 bytes little-endian `u32` (1-based subroutine index) | 6 bytes |
+| `Local_Get` | `0x0003` | 4 bytes little-endian `u32` (1-based local index) | 6 bytes |
+| `Local_Set` | `0x0004` | 4 bytes little-endian `u32` (1-based local index) | 6 bytes |
 
 Unknown opcode word → `Unknown_Opcode` (length is a closed table; the decoder cannot skip).
 

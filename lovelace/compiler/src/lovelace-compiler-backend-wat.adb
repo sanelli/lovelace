@@ -3,6 +3,7 @@ with Interfaces;
 
 with Lovelace.Compiler.Backend.Lowering;
 with Lovelace.Compiler.Backend.Model;
+with Lovelace.Compiler.Backend.Names;
 with Lovelace.Compiler.Backend.Wit;
 
 package body Lovelace.Compiler.Backend.Wat is
@@ -15,6 +16,10 @@ package body Lovelace.Compiler.Backend.Wat is
 
    function Dollar_Name (Name : String) return String;
    --  WAT $Name form (Name is already a safe identifier in this slice).
+
+   function Function_Text
+     (The_Model : Model.Component_Model; Func_Index : Positive) return String;
+   --  "(func ...)" definition for core function Func_Index.
 
    function Image_Without_Leading_Space (Value : Integer) return String;
    --  Decimal image without the leading blank Ada puts on positive'Image.
@@ -29,11 +34,15 @@ package body Lovelace.Compiler.Backend.Wat is
    function Locals_Text (The_Function : Model.Core_Function) return String;
    --  Optional "(local ...)" line (LF-terminated); empty when there are no locals.
 
-   function Function_Text (The_Model : Model.Component_Model; The_Function : Model.Core_Function) return String;
-   --  "(func ...)" definition for The_Function inside a core module.
+   function Name_Count (The_Model : Model.Component_Model; Name : String) return Natural;
+   --  How many core functions share Name (overloads share a LIR name).
 
    function To_Wat (The_Model : Model.Component_Model) return String;
    --  Render The_Model as component WAT text.
+
+   function Wat_Func_Id
+     (The_Model : Model.Component_Model; Func_Index : Positive) return String;
+   --  Unique WAT $id for Func_Index; appends _<index> when the LIR name is shared.
 
    function Core_Func_Alias_Index (The_Model : Model.Component_Model; Core_Function_Index : Positive) return Natural is
       Alias_Index : Natural := 0;
@@ -123,11 +132,15 @@ package body Lovelace.Compiler.Backend.Wat is
       end case;
    end Emit_Wat;
 
-   function Function_Text (The_Model : Model.Component_Model; The_Function : Model.Core_Function) return String is
-      Buffer    : Ada.Strings.Unbounded.Unbounded_String;
-      Func_Name : constant String := Ada.Strings.Unbounded.To_String (The_Function.Name);
+   function Function_Text
+     (The_Model : Model.Component_Model; Func_Index : Positive) return String
+   is
+      Buffer       : Ada.Strings.Unbounded.Unbounded_String;
+      The_Function : constant Model.Core_Function :=
+        Model.Get_Function (The_Model, Func_Index);
    begin
-      Ada.Strings.Unbounded.Append (Buffer, "    (func " & Dollar_Name (Func_Name));
+      Ada.Strings.Unbounded.Append
+        (Buffer, "    (func " & Wat_Func_Id (The_Model, Func_Index));
 
       if Model.Length (The_Function.Parameter_Types) > 0 then
          Ada.Strings.Unbounded.Append (Buffer, " (param");
@@ -205,11 +218,7 @@ package body Lovelace.Compiler.Backend.Wat is
    begin
       case Item.Kind is
          when Model.Call_Function    =>
-            return
-              Plain
-                ("call "
-                 & Dollar_Name
-                     (Ada.Strings.Unbounded.To_String (Model.Get_Function (The_Model, Item.Target_Index).Name)));
+            return Plain ("call " & Wat_Func_Id (The_Model, Item.Target_Index));
 
          when Model.Call_Import      =>
             return Plain ("call " & Import_Name (Item.Import_Index));
@@ -326,6 +335,18 @@ package body Lovelace.Compiler.Backend.Wat is
       return Ada.Strings.Unbounded.To_String (Buffer);
    end Locals_Text;
 
+   function Name_Count (The_Model : Model.Component_Model; Name : String) return Natural is
+      Total : Natural := 0;
+   begin
+      for Index in 1 .. Model.Function_Count (The_Model) loop
+         if Ada.Strings.Unbounded.To_String (Model.Get_Function (The_Model, Index).Name) = Name
+         then
+            Total := Total + 1;
+         end if;
+      end loop;
+      return Total;
+   end Name_Count;
+
    function To_Wat (The_Model : Model.Component_Model) return String is
       Stdout                : constant Boolean := Model.Has_Wasi_Stdout (The_Model);
       Buffer                : Ada.Strings.Unbounded.Unbounded_String;
@@ -349,7 +370,10 @@ package body Lovelace.Compiler.Backend.Wat is
          Ada.Strings.Unbounded.Append (Buffer, Text & ASCII.LF);
       end Line;
    begin
-      Line ("(component");
+      Line
+        ("(component $"
+         & Names.Component_Identity
+             (Model.Module_Name (The_Model), Model.Module_Version (The_Model)));
 
       if Stdout then
          Line ("  (type $ty-types");
@@ -402,7 +426,7 @@ package body Lovelace.Compiler.Backend.Wat is
       end if;
 
       for Func_Index in 1 .. Model.Function_Count (The_Model) loop
-         Ada.Strings.Unbounded.Append (Buffer, Function_Text (The_Model, Model.Get_Function (The_Model, Func_Index)));
+         Ada.Strings.Unbounded.Append (Buffer, Function_Text (The_Model, Func_Index));
       end loop;
 
       for Func_Index in 1 .. Model.Function_Count (The_Model) loop
@@ -412,7 +436,13 @@ package body Lovelace.Compiler.Backend.Wat is
          begin
             if The_Function.Core_Exported then
                Ada.Strings.Unbounded.Append
-                 (Buffer, "    (export """ & Func_Name & """ (func " & Dollar_Name (Func_Name) & "))" & ASCII.LF);
+                 (Buffer,
+                  "    (export """
+                  & Func_Name
+                  & """ (func "
+                  & Wat_Func_Id (The_Model, Func_Index)
+                  & "))"
+                  & ASCII.LF);
             end if;
          end;
       end loop;
@@ -555,8 +585,36 @@ package body Lovelace.Compiler.Backend.Wat is
          end loop;
       end;
 
+      for Dependency_Index in 1 .. Model.Dependency_Count (The_Model) loop
+         declare
+            Dep : constant Model.Dependency :=
+              Model.Get_Dependency (The_Model, Dependency_Index);
+         begin
+            Line
+              ("  (@custom ""lovelace-dependency"" """
+               & Names.Component_Identity
+                   (Ada.Strings.Unbounded.To_String (Dep.Name),
+                    Ada.Strings.Unbounded.To_String (Dep.Version))
+               & """)");
+         end;
+      end loop;
+
       Ada.Strings.Unbounded.Append (Buffer, ")" & ASCII.LF);
       return Ada.Strings.Unbounded.To_String (Buffer);
    end To_Wat;
+
+   function Wat_Func_Id
+     (The_Model : Model.Component_Model; Func_Index : Positive) return String
+   is
+      Func_Name : constant String :=
+        Ada.Strings.Unbounded.To_String
+          (Model.Get_Function (The_Model, Func_Index).Name);
+      Base      : constant String := Dollar_Name (Func_Name);
+   begin
+      if Name_Count (The_Model, Func_Name) > 1 then
+         return Base & "_" & Image_Without_Leading_Space (Func_Index);
+      end if;
+      return Base;
+   end Wat_Func_Id;
 
 end Lovelace.Compiler.Backend.Wat;

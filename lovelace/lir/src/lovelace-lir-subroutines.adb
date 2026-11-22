@@ -15,13 +15,21 @@ package body Lovelace.Lir.Subroutines is
    function Create (The_Signature : Signature; Flags : Subroutine_Flags := 0) return Subroutine is
    begin
       return
-        (The_Signature    => The_Signature,
-         Locals           => Types.Empty_Sequence,
-         Flags            => Flags,
-         Origin_Value     => (Present => False),
-         Native_Value     => (Present => False),
-         Instruction_Body => Instructions.Empty_Sequence);
+        (The_Signature         => The_Signature,
+         Locals                => Types.Empty_Sequence,
+         Flags                 => Flags,
+         Origin_Value          => (Present => False),
+         From_Dependency_Value => (Present => False),
+         Native_Value          => (Present => False),
+         Instruction_Body      => Instructions.Empty_Sequence);
    end Create;
+
+   function From_Dependency
+     (The_Subroutine : Subroutine) return From_Dependency_Option
+   is
+   begin
+      return The_Subroutine.From_Dependency_Value;
+   end From_Dependency;
 
    function Get_Flags (The_Subroutine : Subroutine) return Subroutine_Flags is
    begin
@@ -72,6 +80,16 @@ package body Lovelace.Lir.Subroutines is
    begin
       return The_Subroutine.Origin_Value;
    end Origin;
+
+   procedure Set_From_Dependency
+     (The_Subroutine : in out Subroutine; Dependency_Module : String)
+   is
+   begin
+      The_Subroutine.From_Dependency_Value :=
+        (Present     => True,
+         Module_Name =>
+           Ada.Strings.Unbounded.To_Unbounded_String (Dependency_Module));
+   end Set_From_Dependency;
 
    procedure Set_Intrinsic (The_Subroutine : in out Subroutine) is
    begin

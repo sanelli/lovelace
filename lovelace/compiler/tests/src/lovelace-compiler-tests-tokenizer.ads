@@ -35,6 +35,10 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Ascii_Identifiers (The_Test : in out Fixture);
 
+   --  `:=` is Colon_Equals; lone `:` remains Colon; glued `X:=1` splits.
+   --  @param The_Test Unused fixture.
+   procedure Test_Assign_Punctuation (The_Test : in out Fixture);
+
    --  Leading ASCII digits form Integer_Literal tokens (2foo is two tokens).
    --  @param The_Test Unused fixture.
    procedure Test_Leading_Digits (The_Test : in out Fixture);
@@ -47,17 +51,21 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Export_Keyword (The_Test : in out Fixture);
 
-   --  import alone and import Foo.Bar; Import / importer are identifiers.
+   --  `import` is an ordinary identifier (not a keyword); Import / importer too.
    --  @param The_Test Unused fixture.
-   procedure Test_Import_Keyword (The_Test : in out Fixture);
+   procedure Test_Import_Identifier (The_Test : in out Fixture);
 
    --  native alone and before procedure; Native / nativeness are identifiers.
    --  @param The_Test Unused fixture.
-   procedure Test_Native_Keyword (The_Test : in out Fixture);
+   procedure Test_Native_Identifier (The_Test : in out Fixture);
 
    --  declare alone is the keyword; Declare / declared are identifiers.
    --  @param The_Test Unused fixture.
    procedure Test_Declare_Keyword (The_Test : in out Fixture);
+
+   --  using alone and using Foo.Bar; Using / usingx are identifiers.
+   --  @param The_Test Unused fixture.
+   procedure Test_Using_Keyword (The_Test : in out Fixture);
 
    --  Integer (0b/0o/0x) and float (f32/f64, bare . / exp) forms; old #base# fails.
    --  @param The_Test Unused fixture.

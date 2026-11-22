@@ -48,8 +48,8 @@ package body Lovelace.Main.Arguments is
          Command       : Command_Kind;
          Rest          : String_Vectors.Vector;
       begin
-         if Command_Token = "build" then
-            Command := Build;
+         if Command_Token = "compile" then
+            Command := Compile;
          elsif Command_Token = "help" then
             Command := Help;
          elsif Command_Token = "version" then

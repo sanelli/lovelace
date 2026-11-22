@@ -7,8 +7,9 @@ with Lovelace.Lir.Modules;
 
 --  Versioned binary .lir encode, decode, and file I/O.
 --  Layout: magic and version, module metadata, optional module origin,
---  subroutine preamble (name + absolute offset per subroutine), then
---  subroutine records (each with an optional origin after flags).
+--  subroutine index preamble (1-based id order: name, result, params,
+--  absolute offset per subroutine), then subroutine records (each with
+--  an optional origin after flags).
 
 package Lovelace.Lir.Binary is
 

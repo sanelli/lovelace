@@ -48,7 +48,7 @@ Local path pins, not separate repositories. Intended `depends-on` (do not add ed
 | `lovelace_common` (`lovelace/common/`) | — |
 | `lovelace_lir` (`lovelace/lir/`) | `lovelace_common` |
 | `lovelace_compiler` (`lovelace/compiler/`) | `lovelace_lir`, `lovelace_common` |
-| `lovelace_tooling` (`tooling/`) | `lovelace_common` |
+| `lovelace_tooling` (`lovelace/tooling/`) | `lovelace_common` |
 | `lovelace_format` (`format/`) | `lovelace_common`, `lovelace_tooling` |
 | `lovelace_alexandria` (`alexandria/`) | `lovelace_common` |
 | `lovelace_hypatia` (`hypatia/`) | `lovelace_tooling` (libgit2 only here) |

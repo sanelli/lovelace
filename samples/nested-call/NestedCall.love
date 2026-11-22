@@ -1,0 +1,6 @@
+{ Program calls Middle.Pass, which calls augusta.std.io.print. }
+using Middle;
+program NestedCall;
+begin
+   Middle.Pass(42);
+end.

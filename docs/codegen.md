@@ -23,7 +23,7 @@ Ast.Module  →  Ir_Generator.Generate  →  Lir.Modules.Module
                               Backend.Wit      Backend.Wit
 ```
 
-LIR ownership and codecs: [lir.md](lir.md). Frontend lowering into LIR: [ir-generator.md](ir-generator.md). End-to-end builds: [cli.md](cli.md). Diagnostics: [diagnostics.md](diagnostics.md).
+LIR ownership and codecs: [lir.md](lir.md). Frontend lowering into LIR: [ir-generator.md](ir-generator.md). End-to-end compiles: [cli.md](cli.md). Diagnostics: [diagnostics.md](diagnostics.md).
 
 ## Ada packages
 
@@ -69,11 +69,11 @@ Emission then attaches the WASI 0.3 import graph (`wasi:cli/types@0.3.0` + `wasi
 
 ## Exports
 
-`Export_Flag` on LIR means **Lovelace visibility** (for future `import` / cross-module calls). **WIT/component export** is emitted only when that subroutine also has **zero parameters**: it is canon-lifted under a **kebab-case** form of its LIR name (ASCII letters/digits lowercased; other bytes become `-`). Parameterized `Export_Flag` procedures lower to core functypes only (no `Core_Exported`, no WIT line) so Augusta-style `print(integer)` can exist without Canonical ABI export yet.
+`Export_Flag` on LIR means **Lovelace visibility** (for `using` / cross-module calls). **WIT/component export** is emitted only when that subroutine also has **zero parameters**: it is canon-lifted under a **kebab-case** form of its LIR name (ASCII letters/digits lowercased; other bytes become `-`). Parameterized `Export_Flag` procedures lower to core functypes only (no `Core_Exported`, no WIT line) so Augusta-style `print(integer)` can exist without Canonical ABI export yet.
 
-A nullary subroutine may be both entrypoint and export: then both `wasi:cli/run@0.3.0` and the named export appear. Core module export names keep the original LIR spelling.
+A nullary subroutine may be both entrypoint and export: then both `wasi:cli/run@0.3.0` and the named export appear. LIR names are always `Module.Proc`; core and component export strings use the kebab form (`Module.Proc` → `module-proc`). WAT `$` labels sanitize non-id bytes on the core function name (``.`` → `_2e`, or kebab `-` kept); when several LIR functions share a name (overloads), the label appends `_<1-based-index>` (e.g. `$Overload_2eSink_1`). Binary `call` remains by function index.
 
-Component Model `externname`s must be kebab-case; PascalCase LIR identifiers such as `Hello` become `hello`. Pure non-ASCII names (e.g. emoji) sanitize to `export` / package `module` after dash collapse.
+Component Model `externname`s must be kebab-case. Pure non-ASCII names (e.g. emoji) sanitize to `export` after dash collapse.
 
 ## Types (this slice)
 
@@ -116,6 +116,8 @@ LIR **locals** (flat list after parameters) lower to Wasm core locals after para
 )
 ```
 
+LIR `Local_Get` / `Local_Set` use **1-based** indices (parameters occupy the first slots, then flattened locals). The backend emits Wasm **`local.get` / `local.set` with 0-based indices** (`Local_Index - 1`).
+
 In the component type section, bare `(result)` is a separate `defvaltype`; the `run` functype references it by type index (inline `0x6a` is not a valid `valtype`).
 
 ## Instructions (this slice)
@@ -126,6 +128,8 @@ In the component type section, bare `(result)` is a separate `defvaltype`; the `
 | `No_Operation` | Skipped (not emitted) |
 | `Constant_I32` | `i32.const` (core) |
 | `Call` | `call` to the 1-based core function with the same index |
+| `Local_Get` | `local.get` (0-based Wasm index = LIR index − 1) |
+| `Local_Set` | `local.set` (0-based Wasm index = LIR index − 1) |
 | `Intrinsic_Flag` + `Print_Integer_Stdout` | Synthesized decimal format + WASI 0.3 stdout write (locals, stores, stream/future builtins) |
 | `Native_Flag` (`@native`) | Empty noop core body (FFI not wired yet) |
 
@@ -134,7 +138,7 @@ In the component type section, bare `(result)` is a separate `defvaltype`; the `
 Shared printer (`Backend.Wit.To_Wit`). Example for module `Hello` with entrypoint + export `Helper`:
 
 ```wit
-package love:hello@0.1.0;
+package lovelace:hello@0.0.1;
 
 world module {
   export helper: func();
@@ -144,7 +148,7 @@ world module {
 
 Rules:
 
-- Package name: `love:<sanitized-module-name>@0.1.0` (ASCII letters/digits lowercased; other bytes → `-`, consecutive dashes collapsed, edges stripped; empty → `module`).
+- Package identity: `lovelace:<segments>@<module-version>`. The LIR module name is split on `.`; each segment is sanitized (ASCII letters/digits lowercased; other bytes → `-`; empty → `module`). The first segment is the package name; further segments are the interface path. **WAT/WASM** use `/` between segments (`lovelace:augusta/std/io@1.0.0`, component name `$lovelace:…@…`, plus `@custom "lovelace-dependency"` for each LIR dependency). **WIT** `package` lines cannot contain `/`, so multi-segment names use `-` instead (`package lovelace:augusta-std-io@1.0.0;`). Single-segment names match in all three (`lovelace:assignment@0.0.1`).
 - `export wasi:cli/run@0.3.0;` only when an entrypoint exists.
 - One `export <kebab-name>: func();` per nullary `Export_Flag` subroutine (same sanitization; empty → `export`).
 - WAT `$` ids: ASCII letters/digits/`_`/`-` kept; other bytes → `_HH` so emoji unit names stay valid in text.
@@ -186,10 +190,10 @@ Each failure carries a UTF-8 `Detail` string.
 - Browser / core-module-only default format
 - Alexandria doc embedding in artifacts
 - Linking LIR `Dependencies`
-- Variable reads / stores / expressions beyond declare+flatten (synthesized print still uses its own core locals)
+- Operators / control-flow beyond what LIR already lowers (assignment / local get-set are in this slice)
 
 ## Tests
 
 Nested crate `lovelace_compiler_tests` covers export-only, entrypoint, both flags, two exports, noop bodies, const+call bodies, typed core parameters, print-integer intrinsic stdout synthesis, unsupported types, invalid modules, component preamble bytes, and Wasm/Wat WIT equality. Run with `alr -C lovelace/compiler/tests run`.
 
-End-to-end CLI checks live in `lovelace/lovelace/integration_tests`: build samples, optionally `wasm-tools validate` every `.wasm`/`.wat`, and run entrypoint programs with `wasmtime` when present.
+End-to-end CLI checks live in `lovelace/lovelace/integration_tests`: compile samples, optionally `wasm-tools validate` every `.wasm`/`.wat`, and run entrypoint programs with `wasmtime` when present.

@@ -11,11 +11,11 @@
 | [`augusta/libaugusta/`](../augusta/libaugusta/) | Freestanding Ada native library (future; `--flavor native`) |
 | [`augusta/libaugusta-js/`](../augusta/libaugusta-js/) | JavaScript glue (future; `--flavor web`) |
 
-Search roots treat the module name as a relative path under each root (mixed slash/dot forms). With `AUGUSTA_HOME` set to the in-tree [`augusta/lovelace/`](../augusta/lovelace/) directory, `import augusta.std.io;` resolves to `augusta.std.io.love` in that folder (the all-dot candidate). Nested `augusta/std/io.love` is the same module if present instead — exactly one existing form must match.
+Search roots treat the module name as a relative path under each root (mixed slash/dot forms). With `AUGUSTA_HOME` set to the in-tree [`augusta/lovelace/`](../augusta/lovelace/) directory, `using augusta.std.io;` resolves to `augusta.std.io.love` in that folder (the all-dot candidate). Nested `augusta/std/io.love` is the same module if present instead — exactly one existing form must match.
 
 ## Finding Augusta (`AUGUSTA_HOME`)
 
-`lovelace build` appends exactly one Augusta slot after the root-file directory, cwd, and each `-I` path (see [cli.md](cli.md)):
+`lovelace compile` appends exactly one Augusta slot after the root-file directory, cwd, and each `-I` path (see [cli.md](cli.md)):
 
 1. `AUGUSTA_HOME` if set
 2. else `LOVELACE_HOME/lib/augusta/<product-version>` if `LOVELACE_HOME` is set
@@ -48,7 +48,7 @@ export procedure print(value : integer);
 Example:
 
 ```love
-import augusta.std.io;
+using augusta.std.io;
 program HelloPrint;
 begin
    augusta.std.io.print(42);
@@ -58,6 +58,6 @@ end.
 Build with Augusta visible, then run:
 
 ```text
-AUGUSTA_HOME=./augusta/lovelace lovelace build samples/io/HelloPrint.love --force
+AUGUSTA_HOME=./augusta/lovelace lovelace compile samples/io/HelloPrint.love --force
 wasmtime run -Sp3 -W component-model-async=y .output/bin/HelloPrint.wasm
 ```

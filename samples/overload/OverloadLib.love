@@ -1,0 +1,9 @@
+{ Exported overloads for cross-module resolve (only export is visible to callers). }
+module OverloadLib;
+export procedure Sink(Value : integer);
+begin
+end;
+export procedure Sink(Flag : boolean);
+begin
+end;
+end.

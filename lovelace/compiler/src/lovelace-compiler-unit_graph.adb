@@ -1,5 +1,6 @@
 with Ada.Containers.Indefinite_Hashed_Maps;
 with Ada.Containers.Indefinite_Hashed_Sets;
+with Ada.Directories;
 with Ada.Streams;
 with Ada.Strings.Hash;
 with GNAT.OS_Lib;
@@ -11,6 +12,7 @@ with Lovelace.Compiler.Tokenizer;
 package body Lovelace.Compiler.Unit_Graph is
 
    use type GNAT.OS_Lib.File_Descriptor;
+   use type Ast.Statement_Kind;
    use type Ast.Unit_Kind;
 
    package Name_Sets is new
@@ -26,6 +28,9 @@ package body Lovelace.Compiler.Unit_Graph is
         Hash            => Ada.Strings.Hash,
         Equivalent_Keys => "=");
 
+   function Absolute_Path (Path : String) return String;
+   --  Full_Name when resolvable; otherwise Path unchanged.
+
    function Failure
      (Code          : Unit_Graph_Error_Code;
       Span          : Source.Source_Span;
@@ -35,6 +40,14 @@ package body Lovelace.Compiler.Unit_Graph is
       Frontend_Code : Error_Codes.Error_Code := Error_Codes.Internal_Error)
       return Load_Result;
 
+   procedure Append_Usings_From_Block
+     (The_Block : Ast.Block; Into : in out Ast.Using_Sequence);
+   --  Append The_Block's usings and recurse into Nested_Block statements.
+
+   function Collect_Module_Usings
+     (The_Module : Ast.Module) return Ast.Using_Sequence;
+   --  Unit-level usings plus every nested block using in subroutine bodies.
+
    function Load_Dependency
      (Module_Name    : String;
       Import_Span    : Source.Source_Span;
@@ -42,6 +55,7 @@ package body Lovelace.Compiler.Unit_Graph is
       Importer_Text  : String;
       Search_Roots   : Module_Path.Path_Sequence;
       Active_Flavor  : Flavor.Flavor;
+      Cli_Version    : Versioning.Version_Option;
       Visiting       : in out Name_Sets.Set;
       Loaded_By_Name : in out Name_To_Index.Map;
       Units          : in out Compilation_Set) return Load_Result;
@@ -49,6 +63,71 @@ package body Lovelace.Compiler.Unit_Graph is
    function Read_Entire_File
      (Path : String; Contents : out Ada.Strings.Unbounded.Unbounded_String)
       return Boolean;
+
+   procedure Resolve_Unit_Version
+     (The_Module    : Ast.Module;
+      Source_Path   : String;
+      Search_Roots  : Module_Path.Path_Sequence;
+      Cli_Version   : Versioning.Version_Option;
+      Version       : out Ada.Strings.Unbounded.Unbounded_String;
+      Ok            : out Boolean;
+      Detail        : out Ada.Strings.Unbounded.Unbounded_String);
+   --  Resolve The_Module's version from @version, .loveversion, then Cli_Version.
+
+   function Version_Failure
+     (The_Module  : Ast.Module;
+      Detail      : String;
+      Source_Path : String;
+      Source_Text : String) return Load_Result;
+   --  Failure for a Resolve_Unit_Version error (Source_File_Io or Invalid_Module_Version).
+
+   function Absolute_Path (Path : String) return String is
+   begin
+      return Ada.Directories.Full_Name (Path);
+   exception
+      when Ada.Directories.Use_Error | Ada.Directories.Name_Error =>
+         return Path;
+   end Absolute_Path;
+
+   procedure Append_Usings_From_Block
+     (The_Block : Ast.Block; Into : in out Ast.Using_Sequence)
+   is
+      Block_Usings : constant Ast.Using_Sequence := Ast.Usings (The_Block);
+      Statements   : constant Ast.Statement_Sequence :=
+        Ast.Statements (The_Block);
+   begin
+      for Index in 1 .. Ast.Length (Block_Usings) loop
+         Ast.Append (Into, Ast.Element (Block_Usings, Index));
+      end loop;
+
+      for Index in 1 .. Ast.Length (Statements) loop
+         declare
+            The_Statement : constant Ast.Statement :=
+              Ast.Element (Statements, Index);
+         begin
+            if Ast.Kind (The_Statement) = Ast.Nested_Block then
+               Append_Usings_From_Block (Ast.Block_Of (The_Statement), Into);
+            end if;
+         end;
+      end loop;
+   end Append_Usings_From_Block;
+
+   function Collect_Module_Usings
+     (The_Module : Ast.Module) return Ast.Using_Sequence
+   is
+      Result : Ast.Using_Sequence := Ast.Empty_Using_Sequence;
+   begin
+      for Index in 1 .. Ast.Using_Count (The_Module) loop
+         Ast.Append (Result, Ast.Get_Using (The_Module, Index));
+      end loop;
+
+      for Sub_Index in 1 .. Ast.Subroutine_Count (The_Module) loop
+         Append_Usings_From_Block
+           (Ast.Get_Body (Ast.Get_Subroutine (The_Module, Sub_Index)), Result);
+      end loop;
+
+      return Result;
+   end Collect_Module_Usings;
 
    function Failure
      (Code          : Unit_Graph_Error_Code;
@@ -78,34 +157,60 @@ package body Lovelace.Compiler.Unit_Graph is
       Root_Source_Path : String;
       Root_Source_Text : String;
       Search_Roots     : Module_Path.Path_Sequence;
-      Active_Flavor    : Flavor.Flavor) return Load_Result
+      Active_Flavor    : Flavor.Flavor;
+      Cli_Version      : Versioning.Version_Option) return Load_Result
    is
-      Units          : Compilation_Set;
-      Visiting       : Name_Sets.Set;
-      Loaded_By_Name : Name_To_Index.Map;
+      Units            : Compilation_Set;
+      Visiting         : Name_Sets.Set;
+      Loaded_By_Name   : Name_To_Index.Map;
+      Absolute_Root    : constant String := Absolute_Path (Root_Source_Path);
+      All_Usings       : constant Ast.Using_Sequence :=
+        Collect_Module_Usings (Root_Module);
+      Root_Version     : Ada.Strings.Unbounded.Unbounded_String;
+      Version_Ok       : Boolean;
+      Version_Detail   : Ada.Strings.Unbounded.Unbounded_String;
    begin
+      Resolve_Unit_Version
+        (The_Module   => Root_Module,
+         Source_Path  => Absolute_Root,
+         Search_Roots => Search_Roots,
+         Cli_Version  => Cli_Version,
+         Version      => Root_Version,
+         Ok           => Version_Ok,
+         Detail       => Version_Detail);
+      if not Version_Ok then
+         return
+           Version_Failure
+             (Root_Module,
+              Ada.Strings.Unbounded.To_String (Version_Detail),
+              Absolute_Root,
+              Root_Source_Text);
+      end if;
+
       Units.Append
         (Loaded_Unit'
            (The_Module  => Root_Module,
             Source_Path =>
-              Ada.Strings.Unbounded.To_Unbounded_String (Root_Source_Path),
+              Ada.Strings.Unbounded.To_Unbounded_String (Absolute_Root),
             Source_Text =>
-              Ada.Strings.Unbounded.To_Unbounded_String (Root_Source_Text)));
+              Ada.Strings.Unbounded.To_Unbounded_String (Root_Source_Text),
+            Version     => Root_Version));
       Loaded_By_Name.Insert (Ast.Name (Root_Module), 1);
 
-      for Index in 1 .. Ast.Import_Count (Root_Module) loop
+      for Index in 1 .. Ast.Length (All_Usings) loop
          declare
-            The_Import : constant Ast.Import_Declaration :=
-              Ast.Get_Import (Root_Module, Index);
+            The_Import : constant Ast.Using_Declaration :=
+              Ast.Element (All_Usings, Index);
             Nested     : constant Load_Result :=
               Load_Dependency
                 (Module_Name    =>
                    Ada.Strings.Unbounded.To_String (The_Import.Module_Name),
                  Import_Span    => The_Import.Name_Span,
-                 Importer_Path  => Root_Source_Path,
+                 Importer_Path  => Absolute_Root,
                  Importer_Text  => Root_Source_Text,
                  Search_Roots   => Search_Roots,
                  Active_Flavor  => Active_Flavor,
+                 Cli_Version    => Cli_Version,
                  Visiting       => Visiting,
                  Loaded_By_Name => Loaded_By_Name,
                  Units          => Units);
@@ -126,6 +231,7 @@ package body Lovelace.Compiler.Unit_Graph is
       Importer_Text  : String;
       Search_Roots   : Module_Path.Path_Sequence;
       Active_Flavor  : Flavor.Flavor;
+      Cli_Version    : Versioning.Version_Option;
       Visiting       : in out Name_Sets.Set;
       Loaded_By_Name : in out Name_To_Index.Map;
       Units          : in out Compilation_Set) return Load_Result is
@@ -232,6 +338,7 @@ package body Lovelace.Compiler.Unit_Graph is
                             (Source_String,
                              Token_Result.Tokens,
                              Active_Flavor);
+                        Dep_Version  : Ada.Strings.Unbounded.Unbounded_String;
                      begin
                         if not Parse_Result.Ok then
                            Visiting.Exclude (Module_Name);
@@ -247,21 +354,7 @@ package body Lovelace.Compiler.Unit_Graph is
                                      (First_Error.Detail),
                                    Dep_Path,
                                    Source_String,
-                                   (case First_Error.Code is
-                                      when Parser.Internal_Error            =>
-                                        Error_Codes.Internal_Error,
-                                      when Parser.Unexpected_End_Of_Input   =>
-                                        Error_Codes.Unexpected_End_Of_Input,
-                                      when Parser.Unexpected_Token          =>
-                                        Error_Codes.Unexpected_Token,
-                                      when Parser.Unexpected_Trailing       =>
-                                        Error_Codes.Unexpected_Trailing,
-                                      when Parser.Name_Clash                =>
-                                        Error_Codes.Name_Clash,
-                                      when Parser.Invalid_Flavor_Condition  =>
-                                        Error_Codes.Invalid_Flavor_Condition,
-                                      when Parser.Obsolete_Native_Modifier =>
-                                        Error_Codes.Obsolete_Native_Modifier));
+                                   Reporting.To_Error_Code (First_Error.Code));
                            end;
                         end if;
 
@@ -296,33 +389,62 @@ package body Lovelace.Compiler.Unit_Graph is
                                 Source_String);
                         end if;
 
-                        for Index in
-                          1 .. Ast.Import_Count (Parse_Result.The_Module)
-                        loop
-                           declare
-                              The_Import : constant Ast.Import_Declaration :=
-                                Ast.Get_Import
-                                  (Parse_Result.The_Module, Index);
-                              Nested     : constant Load_Result :=
-                                Load_Dependency
-                                  (Module_Name    =>
-                                     Ada.Strings.Unbounded.To_String
-                                       (The_Import.Module_Name),
-                                   Import_Span    => The_Import.Name_Span,
-                                   Importer_Path  => Dep_Path,
-                                   Importer_Text  => Source_String,
-                                   Search_Roots   => Search_Roots,
-                                   Active_Flavor  => Active_Flavor,
-                                   Visiting       => Visiting,
-                                   Loaded_By_Name => Loaded_By_Name,
-                                   Units          => Units);
-                           begin
-                              if not Nested.Ok then
-                                 Visiting.Exclude (Module_Name);
-                                 return Nested;
-                              end if;
-                           end;
-                        end loop;
+                        declare
+                           Dep_Version_Ok     : Boolean;
+                           Dep_Version_Detail :
+                             Ada.Strings.Unbounded.Unbounded_String;
+                        begin
+                           Resolve_Unit_Version
+                             (The_Module   => Parse_Result.The_Module,
+                              Source_Path  => Dep_Path,
+                              Search_Roots => Search_Roots,
+                              Cli_Version  => Cli_Version,
+                              Version      => Dep_Version,
+                              Ok           => Dep_Version_Ok,
+                              Detail       => Dep_Version_Detail);
+                           if not Dep_Version_Ok then
+                              Visiting.Exclude (Module_Name);
+                              return
+                                Version_Failure
+                                  (Parse_Result.The_Module,
+                                   Ada.Strings.Unbounded.To_String
+                                     (Dep_Version_Detail),
+                                   Dep_Path,
+                                   Source_String);
+                           end if;
+
+                        end;
+
+                        declare
+                           Dep_Usings : constant Ast.Using_Sequence :=
+                             Collect_Module_Usings (Parse_Result.The_Module);
+                        begin
+                           for Index in 1 .. Ast.Length (Dep_Usings) loop
+                              declare
+                                 The_Import : constant Ast.Using_Declaration :=
+                                   Ast.Element (Dep_Usings, Index);
+                                 Nested     : constant Load_Result :=
+                                   Load_Dependency
+                                     (Module_Name    =>
+                                        Ada.Strings.Unbounded.To_String
+                                          (The_Import.Module_Name),
+                                      Import_Span    => The_Import.Name_Span,
+                                      Importer_Path  => Dep_Path,
+                                      Importer_Text  => Source_String,
+                                      Search_Roots   => Search_Roots,
+                                      Active_Flavor  => Active_Flavor,
+                                      Cli_Version    => Cli_Version,
+                                      Visiting       => Visiting,
+                                      Loaded_By_Name => Loaded_By_Name,
+                                      Units          => Units);
+                              begin
+                                 if not Nested.Ok then
+                                    Visiting.Exclude (Module_Name);
+                                    return Nested;
+                                 end if;
+                              end;
+                           end loop;
+                        end;
 
                         Units.Append
                           (Loaded_Unit'
@@ -330,7 +452,8 @@ package body Lovelace.Compiler.Unit_Graph is
                               Source_Path =>
                                 Ada.Strings.Unbounded.To_Unbounded_String
                                   (Dep_Path),
-                              Source_Text => Dep_Text));
+                              Source_Text => Dep_Text,
+                              Version     => Dep_Version));
                         Loaded_By_Name.Insert
                           (Module_Name, Positive (Units.Length));
                         Visiting.Exclude (Module_Name);
@@ -399,6 +522,34 @@ package body Lovelace.Compiler.Unit_Graph is
       return True;
    end Read_Entire_File;
 
+   procedure Resolve_Unit_Version
+     (The_Module    : Ast.Module;
+      Source_Path   : String;
+      Search_Roots  : Module_Path.Path_Sequence;
+      Cli_Version   : Versioning.Version_Option;
+      Version       : out Ada.Strings.Unbounded.Unbounded_String;
+      Ok            : out Boolean;
+      Detail        : out Ada.Strings.Unbounded.Unbounded_String)
+   is
+      File_Version : constant Versioning.Version_Option :=
+        (if Ast.Has_Version_Attribute (The_Module)
+         then
+           (Present => True,
+            Value   =>
+              Ada.Strings.Unbounded.To_Unbounded_String
+                (Ast.Version_Attribute (The_Module)))
+         else (Present => False));
+   begin
+      Versioning.Resolve_Version
+        (File_Version => File_Version,
+         Library_Root =>
+           Versioning.Library_Root_For (Source_Path, Search_Roots),
+         Cli_Version  => Cli_Version,
+         Version      => Version,
+         Ok           => Ok,
+         Detail       => Detail);
+   end Resolve_Unit_Version;
+
    function Surface_Error_Code
      (Error : Unit_Graph_Error) return Error_Codes.Error_Code is
    begin
@@ -428,5 +579,29 @@ package body Lovelace.Compiler.Unit_Graph is
             return Error.Frontend_Code;
       end case;
    end Surface_Error_Code;
+
+   function Version_Failure
+     (The_Module  : Ast.Module;
+      Detail      : String;
+      Source_Path : String;
+      Source_Text : String) return Load_Result
+   is
+      Read_Prefix : constant String := "cannot read ";
+   begin
+      return
+        Failure
+          (Frontend_Error,
+           Ast.Name_Span (The_Module),
+           Detail,
+           Source_Path,
+           Source_Text,
+           (if Detail'Length >= Read_Prefix'Length
+              and then Detail
+                         (Detail'First
+                          .. Detail'First + Read_Prefix'Length - 1)
+                       = Read_Prefix
+            then Error_Codes.Source_File_Io
+            else Error_Codes.Invalid_Module_Version));
+   end Version_Failure;
 
 end Lovelace.Compiler.Unit_Graph;

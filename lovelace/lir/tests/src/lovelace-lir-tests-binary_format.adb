@@ -27,27 +27,38 @@ package body Lovelace.Lir.Tests.Binary_Format is
    begin
       for The_Type in Types.Value_Type loop
          declare
-            Params           : Types.Parameter_Sequence := Types.Empty_Sequence;
+            Params           : Types.Parameter_Sequence :=
+              Types.Empty_Sequence;
             As_Param_Module  : Modules.Module := Modules.Create ("m");
             As_Result_Module : Modules.Module := Modules.Create ("m");
          begin
             Types.Append (Params, "p", The_Type);
             Modules.Append_Subroutine
-              (As_Param_Module, Support.Make_Subroutine (Name => "P", Return_Type => Types.Unit, Parameters => Params));
+              (As_Param_Module,
+               Support.Make_Subroutine
+                 (Name        => "P",
+                  Return_Type => Types.Unit,
+                  Parameters  => Params));
             Modules.Append_Subroutine
-              (As_Result_Module, Support.Make_Subroutine (Name => "R", Return_Type => The_Type));
-            Support.Assert_Binary_Round_Trip (As_Param_Module, "param " & Types.Value_Type'Image (The_Type));
-            Support.Assert_Binary_Round_Trip (As_Result_Module, "result " & Types.Value_Type'Image (The_Type));
+              (As_Result_Module,
+               Support.Make_Subroutine (Name => "R", Return_Type => The_Type));
+            Support.Assert_Binary_Round_Trip
+              (As_Param_Module, "param " & Types.Value_Type'Image (The_Type));
+            Support.Assert_Binary_Round_Trip
+              (As_Result_Module,
+               "result " & Types.Value_Type'Image (The_Type));
 
             declare
                As_Local_Module : Modules.Module := Modules.Create ("m");
                Local_Sub       : Subroutines.Subroutine :=
-                 Support.Make_Subroutine (Name => "L", Return_Type => Types.Unit);
+                 Support.Make_Subroutine
+                   (Name => "L", Return_Type => Types.Unit);
             begin
                Subroutines.Append_Local (Local_Sub, "v", The_Type);
                Modules.Append_Subroutine (As_Local_Module, Local_Sub);
                Support.Assert_Binary_Round_Trip
-                 (As_Local_Module, "local " & Types.Value_Type'Image (The_Type));
+                 (As_Local_Module,
+                  "local " & Types.Value_Type'Image (The_Type));
             end;
          end;
       end loop;
@@ -56,31 +67,63 @@ package body Lovelace.Lir.Tests.Binary_Format is
    procedure Test_Const_And_Call_Encoding (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       The_Module : Modules.Module := Modules.Create ("m");
-      Sink       : constant Subroutines.Subroutine := Support.Make_Subroutine ("Sink", Types.Unit);
-      Caller     : Subroutines.Subroutine := Support.Make_Subroutine ("Caller", Types.Unit);
+      Sink       : constant Subroutines.Subroutine :=
+        Support.Make_Subroutine ("Sink", Types.Unit);
+      Caller     : Subroutines.Subroutine :=
+        Support.Make_Subroutine ("Caller", Types.Unit);
    begin
+      Subroutines.Append_Local (Caller, "x", Types.I32);
       Subroutines.Append_Instruction
-        (Caller, (Operation => Opcodes.Constant_I32, Immediate_I32 => Interfaces.Integer_32'(-42)));
-      Subroutines.Append_Instruction (Caller, (Operation => Opcodes.Call, Target_Index => 1));
+        (Caller,
+         (Operation     => Opcodes.Constant_I32,
+          Immediate_I32 => Interfaces.Integer_32'(-42)));
+      Subroutines.Append_Instruction
+        (Caller, (Operation => Opcodes.Local_Set, Local_Index => 1));
+      Subroutines.Append_Instruction
+        (Caller, (Operation => Opcodes.Local_Get, Local_Index => 1));
+      Subroutines.Append_Instruction
+        (Caller, (Operation => Opcodes.Call, Target_Index => 1));
       Modules.Append_Subroutine (The_Module, Sink);
       Modules.Append_Subroutine (The_Module, Caller);
-      Support.Assert_Binary_Round_Trip (The_Module, "const and call");
+      Support.Assert_Binary_Round_Trip (The_Module, "const call local");
 
       declare
          Decoded     : constant Modules.Module :=
-           Support.Must_Decode (Support.Must_Encode (The_Module, "encode"), "decode");
+           Support.Must_Decode
+             (Support.Must_Encode (The_Module, "encode"), "decode");
          Body_Instrs : constant Instructions.Instruction_Sequence :=
            Subroutines.Get_Instructions (Modules.Get_Subroutine (Decoded, 2));
       begin
-         AUnit.Assertions.Assert (Instructions.Length (Body_Instrs) = 2, "body length");
          AUnit.Assertions.Assert
-           (Instructions.Element (Body_Instrs, 1).Operation = Opcodes.Constant_I32, "const opcode");
+           (Instructions.Length (Body_Instrs) = 4, "body length");
          AUnit.Assertions.Assert
-           (Instructions.Element (Body_Instrs, 1).Immediate_I32 = Interfaces.Integer_32'(-42), "const value");
+           (Instructions.Element (Body_Instrs, 1).Operation
+            = Opcodes.Constant_I32,
+            "const opcode");
          AUnit.Assertions.Assert
-           (Instructions.Element (Body_Instrs, 2).Operation = Opcodes.Call, "call opcode");
+           (Instructions.Element (Body_Instrs, 1).Immediate_I32
+            = Interfaces.Integer_32'(-42),
+            "const value");
          AUnit.Assertions.Assert
-           (Instructions.Element (Body_Instrs, 2).Target_Index = 1, "call target");
+           (Instructions.Element (Body_Instrs, 2).Operation
+            = Opcodes.Local_Set,
+            "local.set opcode");
+         AUnit.Assertions.Assert
+           (Instructions.Element (Body_Instrs, 2).Local_Index = 1,
+            "local.set index");
+         AUnit.Assertions.Assert
+           (Instructions.Element (Body_Instrs, 3).Operation
+            = Opcodes.Local_Get,
+            "local.get opcode");
+         AUnit.Assertions.Assert
+           (Instructions.Element (Body_Instrs, 3).Local_Index = 1,
+            "local.get index");
+         AUnit.Assertions.Assert
+           (Instructions.Element (Body_Instrs, 4).Operation = Opcodes.Call,
+            "call opcode");
+         AUnit.Assertions.Assert
+           (Instructions.Element (Body_Instrs, 4).Target_Index = 1,
+            "call target");
       end;
    end Test_Const_And_Call_Encoding;
 
@@ -88,43 +131,69 @@ package body Lovelace.Lir.Tests.Binary_Format is
       pragma Unreferenced (The_Test);
       Base_Module : constant Modules.Module := Modules.Create ("m");
       With_Noop   : Modules.Module := Modules.Create ("m");
-      Base        : constant Ada.Streams.Stream_Element_Array := Support.Must_Encode (Base_Module, "base");
+      Base        : constant Ada.Streams.Stream_Element_Array :=
+        Support.Must_Encode (Base_Module, "base");
    begin
-      Modules.Append_Subroutine (With_Noop, Support.Make_Subroutine ("S", Types.Unit, Noop_Count => 1));
+      Modules.Append_Subroutine
+        (With_Noop,
+         Support.Make_Subroutine ("S", Types.Unit, Noop_Count => 1));
 
       declare
-         Noop_Bytes : constant Ada.Streams.Stream_Element_Array := Support.Must_Encode (With_Noop, "noop module");
+         Noop_Bytes : constant Ada.Streams.Stream_Element_Array :=
+           Support.Must_Encode (With_Noop, "noop module");
       begin
          Support.Assert_Decode_Error
-           (Support.Replace_Byte (Base, Base'First, 16#00#), Errors.Invalid_Magic, "bad magic");
+           (Support.Replace_Byte (Base, Base'First, 16#00#),
+            Errors.Invalid_Magic,
+            "bad magic");
 
          Support.Assert_Decode_Error
-           (Support.Replace_Byte (Base, Base'First + 4, 16#02#), Errors.Unsupported_Version, "version 2.0");
-
-         Support.Assert_Decode_Error (Support.Truncate (Base, Base'Length - 1), Errors.Truncated, "truncated");
-
-         Support.Assert_Decode_Error (Support.Append_Byte (Base, 16#FF#), Errors.Trailing_Bytes, "trailing");
+           (Support.Replace_Byte (Base, Base'First + 4, 16#02#),
+            Errors.Unsupported_Version,
+            "version 2.0");
 
          Support.Assert_Decode_Error
-           (Support.Replace_Byte (Noop_Bytes, Noop_Bytes'Last - 1, 16#FF#), Errors.Unknown_Opcode, "unknown opcode");
+           (Support.Truncate (Base, Base'Length - 1),
+            Errors.Truncated,
+            "truncated");
+
+         Support.Assert_Decode_Error
+           (Support.Append_Byte (Base, 16#FF#),
+            Errors.Trailing_Bytes,
+            "trailing");
+
+         Support.Assert_Decode_Error
+           (Support.Replace_Byte (Noop_Bytes, Noop_Bytes'Last - 1, 16#FF#),
+            Errors.Unknown_Opcode,
+            "unknown opcode");
       end;
 
       declare
          Typed : Modules.Module := Modules.Create ("m");
       begin
-         Modules.Append_Subroutine (Typed, Support.Make_Subroutine ("S", Types.I32));
+         Modules.Append_Subroutine
+           (Typed, Support.Make_Subroutine ("S", Types.I32));
          declare
-            Typed_Bytes : constant Ada.Streams.Stream_Element_Array := Support.Must_Encode (Typed, "typed");
+            Typed_Bytes : constant Ada.Streams.Stream_Element_Array :=
+              Support.Must_Encode (Typed, "typed");
          begin
-            --  Return type is 18 bytes before end:
-            --  param_count + local_count + flags + origin + native + instr_count.
+            --  Return type is 19 bytes before end:
+            --  param_count + local_count + flags + origin + from-dep + native
+            --  + instr_count.
             Support.Assert_Decode_Error
-              (Support.Replace_Byte (Typed_Bytes, Typed_Bytes'Last - 18, 16#FF#), Errors.Unknown_Type, "unknown type");
+              (Support.Replace_Byte
+                 (Typed_Bytes, Typed_Bytes'Last - 19, 16#FF#),
+               Errors.Unknown_Type,
+               "unknown type");
          end;
       end;
 
+      --  After magic(4)+version(4)+module-version("0.0.1"=9) lies name length;
+      --  first name byte is at +21 for module "m".
       Support.Assert_Decode_Error
-        (Support.Replace_Byte (Base, Base'First + 12, 16#FF#), Errors.Invalid_Utf_8, "invalid utf-8 name");
+        (Support.Replace_Byte (Base, Base'First + 21, 16#FF#),
+         Errors.Invalid_Utf_8,
+         "invalid utf-8 name");
    end Test_Decode_Failures;
 
    procedure Test_Empty_Module_File (The_Test : in out Fixture) is
@@ -138,22 +207,30 @@ package body Lovelace.Lir.Tests.Binary_Format is
       Written := Binary.Write (The_Module, Path);
       case Written.Ok is
          when False =>
-            AUnit.Assertions.Assert (False, "write failed " & Errors.Error_Code'Image (Written.Error));
+            AUnit.Assertions.Assert
+              (False,
+               "write failed " & Errors.Error_Code'Image (Written.Error));
 
          when True  =>
             Loaded := Binary.Read (Path);
             case Loaded.Ok is
                when False =>
-                  AUnit.Assertions.Assert (False, "read failed " & Errors.Error_Code'Image (Loaded.Error));
+                  AUnit.Assertions.Assert
+                    (False,
+                     "read failed " & Errors.Error_Code'Image (Loaded.Error));
 
                when True  =>
                   declare
-                     Before : constant Ada.Strings.Unbounded.Unbounded_String :=
-                       Support.Must_To_Text (The_Module, "before");
-                     After  : constant Ada.Strings.Unbounded.Unbounded_String :=
-                       Support.Must_To_Text (Loaded.Value, "after");
+                     Before :
+                       constant Ada.Strings.Unbounded.Unbounded_String :=
+                         Support.Must_To_Text (The_Module, "before");
+                     After  :
+                       constant Ada.Strings.Unbounded.Unbounded_String :=
+                         Support.Must_To_Text (Loaded.Value, "after");
                   begin
-                     AUnit.Assertions.Assert (Ada.Strings.Unbounded."=" (Before, After), "file round-trip To_Text");
+                     AUnit.Assertions.Assert
+                       (Ada.Strings.Unbounded."=" (Before, After),
+                        "file round-trip To_Text");
                   end;
             end case;
       end case;
@@ -169,7 +246,8 @@ package body Lovelace.Lir.Tests.Binary_Format is
 
    procedure Test_Magic_And_Version (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Bytes : constant Ada.Streams.Stream_Element_Array := Support.Must_Encode (Modules.Create ("m"), "magic");
+      Bytes : constant Ada.Streams.Stream_Element_Array :=
+        Support.Must_Encode (Modules.Create ("m"), "magic");
    begin
       Support.Assert_Byte_Count (Bytes, Natural (Bytes'Length), "non-empty");
       AUnit.Assertions.Assert (Bytes'Length >= 8, "header length");
@@ -187,10 +265,14 @@ package body Lovelace.Lir.Tests.Binary_Format is
       pragma Unreferenced (The_Test);
       The_Module : Modules.Module := Modules.Create ("m");
    begin
-      AUnit.Assertions.Assert (Opcodes.Encoded_Length (Opcodes.No_Operation) = 2, "Encoded_Length");
-      Modules.Append_Subroutine (The_Module, Support.Make_Subroutine ("S", Types.Unit, Noop_Count => 1));
+      AUnit.Assertions.Assert
+        (Opcodes.Encoded_Length (Opcodes.No_Operation) = 2, "Encoded_Length");
+      Modules.Append_Subroutine
+        (The_Module,
+         Support.Make_Subroutine ("S", Types.Unit, Noop_Count => 1));
       declare
-         Bytes : constant Ada.Streams.Stream_Element_Array := Support.Must_Encode (The_Module, "noop");
+         Bytes : constant Ada.Streams.Stream_Element_Array :=
+           Support.Must_Encode (The_Module, "noop");
       begin
          Support.Assert_Byte (Bytes, Bytes'Last - 1, 16#00#, "noop low");
          Support.Assert_Byte (Bytes, Bytes'Last, 16#00#, "noop high");
@@ -207,84 +289,121 @@ package body Lovelace.Lir.Tests.Binary_Format is
       Types.Append (Params, "b", Types.U8);
       Types.Append (Params, "c", Types.F32);
 
-      Modules.Append_Subroutine (The_Module, Support.Make_Subroutine ("Empty", Types.Unit));
-      Modules.Append_Subroutine (The_Module, Support.Make_Subroutine ("One", Types.I32, Noop_Count => 1));
-      Modules.Append_Subroutine (The_Module, Support.Make_Subroutine ("Many", Types.Unit, Noop_Count => 3));
       Modules.Append_Subroutine
-        (The_Module, Support.Make_Subroutine ("Exp", Types.Unit, Flags => Subroutines.Export_Flag, Noop_Count => 0));
+        (The_Module, Support.Make_Subroutine ("Empty", Types.Unit));
       Modules.Append_Subroutine
         (The_Module,
-         Support.Make_Subroutine ("Entry", Types.Unit, Flags => Subroutines.Entrypoint_Flag, Noop_Count => 0));
+         Support.Make_Subroutine ("One", Types.I32, Noop_Count => 1));
+      Modules.Append_Subroutine
+        (The_Module,
+         Support.Make_Subroutine ("Many", Types.Unit, Noop_Count => 3));
+      Modules.Append_Subroutine
+        (The_Module,
+         Support.Make_Subroutine
+           ("Exp",
+            Types.Unit,
+            Flags      => Subroutines.Export_Flag,
+            Noop_Count => 0));
+      Modules.Append_Subroutine
+        (The_Module,
+         Support.Make_Subroutine
+           ("Entry",
+            Types.Unit,
+            Flags      => Subroutines.Entrypoint_Flag,
+            Noop_Count => 0));
       Modules.Append_Subroutine
         (The_Module,
          Support.Make_Subroutine
            ("Both",
             Types.Unit,
             Parameters => Params,
-            Flags      => Subroutines.Export_Flag or Subroutines.Entrypoint_Flag,
+            Flags      =>
+              Subroutines.Export_Flag or Subroutines.Entrypoint_Flag,
             Noop_Count => 1));
 
       --  Duplicate entrypoint would fail Validate; replace Entry with non-entry
-      --  before the Both that also has entrypoint â Both alone is one entrypoint.
+      --  before the Both that also has entrypoint Ã¢ÂÂ Both alone is one entrypoint.
       --  Rebuild without two entrypoints:
       declare
          Clean : Modules.Module := Modules.Create ("mod");
       begin
          Modules.Append_Dependency (Clean, "other");
-         Modules.Append_Subroutine (Clean, Support.Make_Subroutine ("Empty", Types.Unit));
-         Modules.Append_Subroutine (Clean, Support.Make_Subroutine ("One", Types.I32, Noop_Count => 1));
-         Modules.Append_Subroutine (Clean, Support.Make_Subroutine ("Many", Types.Unit, Noop_Count => 3));
          Modules.Append_Subroutine
-           (Clean, Support.Make_Subroutine ("Exp", Types.Unit, Flags => Subroutines.Export_Flag));
+           (Clean, Support.Make_Subroutine ("Empty", Types.Unit));
+         Modules.Append_Subroutine
+           (Clean,
+            Support.Make_Subroutine ("One", Types.I32, Noop_Count => 1));
+         Modules.Append_Subroutine
+           (Clean,
+            Support.Make_Subroutine ("Many", Types.Unit, Noop_Count => 3));
+         Modules.Append_Subroutine
+           (Clean,
+            Support.Make_Subroutine
+              ("Exp", Types.Unit, Flags => Subroutines.Export_Flag));
          Modules.Append_Subroutine
            (Clean,
             Support.Make_Subroutine
               ("Both",
                Types.Unit,
                Parameters => Params,
-               Flags      => Subroutines.Export_Flag or Subroutines.Entrypoint_Flag,
+               Flags      =>
+                 Subroutines.Export_Flag or Subroutines.Entrypoint_Flag,
                Noop_Count => 1));
          Support.Assert_Binary_Round_Trip (Clean, "subroutines and flags");
       end;
 
       declare
-         Native_Module : Modules.Module := Modules.Create ("io");
-         Print_Sub     : Subroutines.Subroutine :=
+         Native_Module  : Modules.Module := Modules.Create ("io");
+         Print_Sub      : Subroutines.Subroutine :=
            Support.Make_Subroutine
              ("print",
               Types.Unit,
               Parameters => Params,
               Flags      => Subroutines.Export_Flag);
-         Decoded       : Modules.Module;
-         Decoded_Sub   : Subroutines.Subroutine;
+         Decoded        : Modules.Module;
+         Decoded_Sub    : Subroutines.Subroutine;
          Decoded_Native : Subroutines.Native_Binding_Option;
       begin
-         Subroutines.Set_Native_Binding (Print_Sub, "wasi", "native-print-integer");
+         Subroutines.Set_Native_Binding
+           (Print_Sub, "wasi", "native-print-integer");
          Modules.Append_Subroutine (Native_Module, Print_Sub);
          Support.Assert_Binary_Round_Trip (Native_Module, "native binding");
-         Decoded := Support.Must_Decode (Support.Must_Encode (Native_Module, "native encode"), "native decode");
+         Decoded :=
+           Support.Must_Decode
+             (Support.Must_Encode (Native_Module, "native encode"),
+              "native decode");
          Decoded_Sub := Modules.Get_Subroutine (Decoded, 1);
          Decoded_Native := Subroutines.Native (Decoded_Sub);
          AUnit.Assertions.Assert
-           (Subroutines.Has_Native (Subroutines.Get_Flags (Decoded_Sub)), "native flag");
+           (Subroutines.Has_Native (Subroutines.Get_Flags (Decoded_Sub)),
+            "native flag");
          AUnit.Assertions.Assert (Decoded_Native.Present, "native present");
          AUnit.Assertions.Assert
-           (Ada.Strings.Unbounded.To_String (Decoded_Native.Value.Library) = "wasi", "native library");
+           (Ada.Strings.Unbounded.To_String (Decoded_Native.Value.Library)
+            = "wasi",
+            "native library");
          AUnit.Assertions.Assert
-           (Ada.Strings.Unbounded.To_String (Decoded_Native.Value.Function_Name) = "native-print-integer",
+           (Ada.Strings.Unbounded.To_String
+              (Decoded_Native.Value.Function_Name)
+            = "native-print-integer",
             "native function");
          AUnit.Assertions.Assert
-           (Instructions.Length (Subroutines.Get_Instructions (Decoded_Sub)) = 0, "native empty body");
+           (Instructions.Length (Subroutines.Get_Instructions (Decoded_Sub))
+            = 0,
+            "native empty body");
       end;
    end Test_Subroutines_And_Flags;
 
    procedure Test_Unicode_Names (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Cafe       : constant String := "caf" & Support.To_Utf_8 (Wide_Wide_Character'Val (16#00E9#));
-      Rocket     : constant String := Support.To_Utf_8 (Wide_Wide_Character'Val (16#1F680#));
+      Cafe       : constant String :=
+        "caf" & Support.To_Utf_8 (Wide_Wide_Character'Val (16#00E9#));
+      Rocket     : constant String :=
+        Support.To_Utf_8 (Wide_Wide_Character'Val (16#1F680#));
       The_Module : Modules.Module := Modules.Create (Cafe);
    begin
-      Modules.Append_Subroutine (The_Module, Support.Make_Subroutine (Rocket, Types.Unit));
+      Modules.Append_Subroutine
+        (The_Module, Support.Make_Subroutine (Rocket, Types.Unit));
       Support.Assert_Binary_Round_Trip (The_Module, "unicode names");
    end Test_Unicode_Names;
 

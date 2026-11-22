@@ -5,6 +5,6 @@ Editor and IDE integrations for Lovelace (`.love`) and LIR (`.lir` / `.tlir`). N
 | Path | Role |
 | --- | --- |
 | [`lsp/`](lsp/) | Language Server Protocol for Lovelace and LIR |
-| [`textmate/`](textmate/) | Shared TextMate grammars (syntax coloring for `.love` and LIR) |
+| [`textmate/`](textmate/) | Shared TextMate grammars (`.love` / `.tlir`; keep in sync with every language/TLIR change) |
 | [`vscode/`](vscode/) | Visual Studio Code extension (LSP + TextMate + build/run/debug; optional WIT/WAT viewers) |
 | [`jetbrains/`](jetbrains/) | JetBrains plugin (same goals; WebStorm is the primary target) |

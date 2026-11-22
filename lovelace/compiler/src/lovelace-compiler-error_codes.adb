@@ -1,5 +1,16 @@
 package body Lovelace.Compiler.Error_Codes is
 
+   function Default_Severity (Code : Error_Code) return Severity is
+   begin
+      case Code is
+         when Unused_Variable | Unused_Assignment | Unused_Using =>
+            return Warning;
+
+         when others                                             =>
+            return Error;
+      end case;
+   end Default_Severity;
+
    function Label (Code : Error_Code) return String is
    begin
       case Code is
@@ -51,7 +62,7 @@ package body Lovelace.Compiler.Error_Codes is
          when Unknown_Module                 =>
             return "LV00016";
 
-         when Call_Without_Import            =>
+         when Call_Without_Using             =>
             return "LV00017";
 
          when Not_Exported                   =>
@@ -78,9 +89,47 @@ package body Lovelace.Compiler.Error_Codes is
          when Unknown_Intrinsic              =>
             return "LV00025";
 
-         when Obsolete_Native_Modifier        =>
+         when Use_Before_Assignment          =>
             return "LV00026";
+
+         when Type_Mismatch                  =>
+            return "LV00027";
+
+         when Unused_Variable                =>
+            return "LV00028";
+
+         when Unused_Assignment              =>
+            return "LV00029";
+
+         when Invalid_Warning_Suppression    =>
+            return "LV00030";
+
+         when Unresolved_Name                =>
+            return "LV00031";
+
+         when Unused_Using                   =>
+            return "LV00032";
+
+         when Ambiguous_Call                 =>
+            return "LV00033";
+
+         when Invalid_Module_Version         =>
+            return "LV00034";
       end case;
    end Label;
+
+   function Try_From_Label
+     (Text : String; Code : out Error_Code) return Boolean is
+   begin
+      for Candidate in Error_Code loop
+         if Label (Candidate) = Text then
+            Code := Candidate;
+            return True;
+         end if;
+      end loop;
+
+      Code := Internal_Error;
+      return False;
+   end Try_From_Label;
 
 end Lovelace.Compiler.Error_Codes;

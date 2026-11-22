@@ -1,4 +1,0 @@
-import ImportLib;
-program ImportDecl;
-begin
-end.

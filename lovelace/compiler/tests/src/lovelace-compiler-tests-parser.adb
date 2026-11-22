@@ -10,6 +10,7 @@ with Lovelace.Compiler.Types;
 
 package body Lovelace.Compiler.Tests.Parser is
 
+   use type Lovelace.Compiler.Ast.Expression_Kind;
    use type Lovelace.Compiler.Ast.Statement_Kind;
    use type Lovelace.Compiler.Ast.Unit_Kind;
    use type Lovelace.Compiler.Parser.Parser_Error_Code;
@@ -27,7 +28,7 @@ package body Lovelace.Compiler.Tests.Parser is
    begin
       AUnit.Assertions.Assert (Ast.Kind (The_Module) = Ast.Module_Unit, Message & ": module unit");
       AUnit.Assertions.Assert (Ast.Name (The_Module) = Expected_Name, Message & ": module name");
-      AUnit.Assertions.Assert (Ast.Import_Count (The_Module) = 0, Message & ": no imports");
+      AUnit.Assertions.Assert (Ast.Using_Count (The_Module) = 0, Message & ": no usings");
       AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 0, Message & ": no subroutines");
       AUnit.Assertions.Assert
         (Ast.Span (The_Module).Last.Byte_Index >= Ast.Span (The_Module).First.Byte_Index,
@@ -38,7 +39,7 @@ package body Lovelace.Compiler.Tests.Parser is
    begin
       AUnit.Assertions.Assert (Ast.Kind (The_Module) = Ast.Program_Unit, Message & ": program unit");
       AUnit.Assertions.Assert (Ast.Name (The_Module) = Expected_Name, Message & ": module name");
-      AUnit.Assertions.Assert (Ast.Import_Count (The_Module) = 0, Message & ": no imports");
+      AUnit.Assertions.Assert (Ast.Using_Count (The_Module) = 0, Message & ": no usings");
       AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 1, Message & ": one subroutine");
       declare
          The_Subroutine : constant Ast.Subroutine := Ast.Get_Subroutine (The_Module, 1);
@@ -52,13 +53,55 @@ package body Lovelace.Compiler.Tests.Parser is
          AUnit.Assertions.Assert (Ast.Has_Export (Flags), Message & ": export");
          AUnit.Assertions.Assert (Ast.Has_Entrypoint (Flags), Message & ": entrypoint");
          AUnit.Assertions.Assert
-           (Ast.Length (Ast.Statements (Ast.Get_Body (The_Subroutine))) = 0,
-            Message & ": empty body");
+           (Ast.Length (Ast.Statements (Ast.Get_Body (The_Subroutine))) = 0, Message & ": empty body");
          AUnit.Assertions.Assert
            (Ast.Span (The_Module).Last.Byte_Index >= Ast.Span (The_Module).First.Byte_Index,
             Message & ": unit span bounds");
       end;
    end Assert_Entrypoint_Module;
+
+   procedure Test_Assignment_Statements (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text  : constant String :=
+        "program P; declare X, Y : integer; F : boolean; begin X := 42; F := true; Y := X; Lib.Put(X, 7, false); end.";
+      The_Module   : constant Ast.Module := Support.Must_Parse (Source_Text, "assignments");
+      Missing_Rhs  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("program P; declare X : integer; begin X := ; end.", "assignment missing rhs");
+      Missing_Semi : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("program P; declare X : integer; begin X := 1 end.", "assignment missing semicolon");
+   begin
+      declare
+         Statements : constant Ast.Statement_Sequence :=
+           Ast.Statements (Ast.Get_Body (Ast.Get_Subroutine (The_Module, 1)));
+      begin
+         AUnit.Assertions.Assert (Ast.Length (Statements) = 4, "assignments: statement count");
+         AUnit.Assertions.Assert (Ast.Kind (Ast.Element (Statements, 1)) = Ast.Assignment, "assignments: first kind");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String (Ast.Assignment_Of (Ast.Element (Statements, 1)).Target_Name) = "X",
+            "assignments: first target");
+         AUnit.Assertions.Assert
+           (Ast.Assignment_Of (Ast.Element (Statements, 1)).Value.Kind = Ast.Integer_Literal,
+            "assignments: integer rhs");
+         AUnit.Assertions.Assert
+           (Ast.Assignment_Of (Ast.Element (Statements, 2)).Value.Kind = Ast.Boolean_Literal,
+            "assignments: boolean rhs");
+         AUnit.Assertions.Assert
+           (Ast.Assignment_Of (Ast.Element (Statements, 3)).Value.Kind = Ast.Name_Reference, "assignments: name rhs");
+         AUnit.Assertions.Assert (Ast.Kind (Ast.Element (Statements, 4)) = Ast.Call, "assignments: call kind");
+         AUnit.Assertions.Assert
+           (Ast.Length (Ast.Call_Of (Ast.Element (Statements, 4)).Arguments) = 3, "assignments: call args");
+         AUnit.Assertions.Assert
+           (Ast.Element (Ast.Call_Of (Ast.Element (Statements, 4)).Arguments, 1).Kind = Ast.Name_Reference,
+            "assignments: name argument");
+      end;
+
+      Support.Assert_Parser_Error_Count (Missing_Rhs, 1, "assignment missing rhs");
+      Support.Assert_Parser_Error_Code
+        (Missing_Rhs, 1, Lovelace.Compiler.Parser.Unexpected_Token, "assignment missing rhs code");
+      Support.Assert_Parser_Error_Count (Missing_Semi, 1, "assignment missing semicolon");
+      Support.Assert_Parser_Error_Code
+        (Missing_Semi, 1, Lovelace.Compiler.Parser.Unexpected_Token, "assignment missing semicolon code");
+   end Test_Assignment_Statements;
 
    procedure Test_Bad_Type_Size (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -72,6 +115,96 @@ package body Lovelace.Compiler.Tests.Parser is
       Support.Assert_Parser_Error_Count (Int_128, 1, "integer 128");
       Support.Assert_Parser_Error_Code (Int_128, 1, Lovelace.Compiler.Parser.Unexpected_Token, "integer 128 code");
    end Test_Bad_Type_Size;
+
+   procedure Test_Block_Usings (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Nested_Source   : constant String :=
+        "using A;"
+        & ASCII.LF
+        & "program P;"
+        & ASCII.LF
+        & "using B;"
+        & ASCII.LF
+        & "declare X : integer; begin"
+        & ASCII.LF
+        & "   using C; declare Y : integer; begin"
+        & ASCII.LF
+        & "      Y := 1;"
+        & ASCII.LF
+        & "   end;"
+        & ASCII.LF
+        & "end.";
+      Sibling_Source  : constant String := "program P; begin using Lib; begin end; using Lib; begin end; end.";
+      Proc_Source     : constant String :=
+        "using A; module M; procedure Run(); using B; begin using C; begin end; end; end.";
+      Nested_Module   : constant Ast.Module := Support.Must_Parse (Nested_Source, "nested using + declare");
+      Sibling_Module  : constant Ast.Module := Support.Must_Parse (Sibling_Source, "sibling blocks");
+      Proc_Module     : constant Ast.Module := Support.Must_Parse (Proc_Source, "procedure block usings");
+      Nested_Visible  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("program P; using Lib; begin using Lib; begin end; end.", "nested using of visible module");
+      Unit_Visible    : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("using Lib; program P; using Lib; begin end.", "block using of unit using");
+      Proc_Visible    : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("using Lib; module M; procedure Run(); using Lib; begin end; end.", "procedure block using of unit using");
+      Duplicate_Block : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("program P; using Lib; using Lib; begin end.", "duplicate block using");
+      Self_Block      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("program P; using P; begin end.", "self block using");
+      Local_Clash     : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("program P; using Lib; declare Lib : integer; begin end.", "local named like using");
+   begin
+      declare
+         Prog_Block : constant Ast.Block := Ast.Get_Body (Ast.Get_Subroutine (Nested_Module, 1));
+         Inner      : constant Ast.Block := Ast.Block_Of (Ast.Element (Ast.Statements (Prog_Block), 1));
+      begin
+         AUnit.Assertions.Assert (Ast.Using_Count (Nested_Module) = 1, "nested: unit using count");
+         AUnit.Assertions.Assert (Ast.Length (Ast.Usings (Prog_Block)) = 1, "nested: outer block using count");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String (Ast.Element (Ast.Usings (Prog_Block), 1).Module_Name) = "B",
+            "nested: outer block using name");
+         AUnit.Assertions.Assert (Ast.Length (Ast.Locals (Prog_Block)) = 1, "nested: outer local");
+         AUnit.Assertions.Assert (Ast.Length (Ast.Usings (Inner)) = 1, "nested: inner using count");
+         AUnit.Assertions.Assert
+           (Ada.Strings.Unbounded.To_String (Ast.Element (Ast.Usings (Inner), 1).Module_Name) = "C",
+            "nested: inner using name");
+         AUnit.Assertions.Assert (Ast.Length (Ast.Locals (Inner)) = 1, "nested: inner local");
+         AUnit.Assertions.Assert (Ast.Length (Ast.Statements (Inner)) = 1, "nested: inner statement");
+      end;
+
+      declare
+         Statements : constant Ast.Statement_Sequence :=
+           Ast.Statements (Ast.Get_Body (Ast.Get_Subroutine (Sibling_Module, 1)));
+      begin
+         AUnit.Assertions.Assert (Ast.Length (Statements) = 2, "sibling: two nested blocks");
+         AUnit.Assertions.Assert
+           (Ast.Length (Ast.Usings (Ast.Block_Of (Ast.Element (Statements, 1)))) = 1, "sibling: first using");
+         AUnit.Assertions.Assert
+           (Ast.Length (Ast.Usings (Ast.Block_Of (Ast.Element (Statements, 2)))) = 1, "sibling: second using");
+      end;
+
+      AUnit.Assertions.Assert
+        (Ast.Length (Ast.Usings (Ast.Get_Body (Ast.Get_Subroutine (Proc_Module, 1)))) = 1, "procedure block using");
+
+      Support.Assert_Parser_Error_Count (Nested_Visible, 1, "nested using of visible module");
+      Support.Assert_Parser_Error_Code
+        (Nested_Visible, 1, Lovelace.Compiler.Parser.Name_Clash, "nested using of visible module code");
+      Support.Assert_Parser_Error_Count (Unit_Visible, 1, "block using of unit using");
+      Support.Assert_Parser_Error_Code
+        (Unit_Visible, 1, Lovelace.Compiler.Parser.Name_Clash, "block using of unit using code");
+      Support.Assert_Parser_Error_Count (Proc_Visible, 1, "procedure block using of unit using");
+      Support.Assert_Parser_Error_Code
+        (Proc_Visible, 1, Lovelace.Compiler.Parser.Name_Clash, "procedure block using of unit using code");
+      Support.Assert_Parser_Error_Count (Duplicate_Block, 1, "duplicate block using");
+      Support.Assert_Parser_Error_Code
+        (Duplicate_Block, 1, Lovelace.Compiler.Parser.Name_Clash, "duplicate block using code");
+      Support.Assert_Parser_Error_Count (Self_Block, 1, "self block using");
+      Support.Assert_Parser_Error_Code (Self_Block, 1, Lovelace.Compiler.Parser.Name_Clash, "self block using code");
+      Support.Assert_Parser_Error_Count (Local_Clash, 1, "local named like using");
+      Support.Assert_Parser_Error_Code
+        (Local_Clash, 1, Lovelace.Compiler.Parser.Name_Clash, "local named like using code");
+   end Test_Block_Usings;
 
    procedure Test_Boolean_Type (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -93,31 +226,25 @@ package body Lovelace.Compiler.Tests.Parser is
         & "end.";
       The_Module  : constant Ast.Module := Support.Must_Parse (Source_Text, "boolean type");
       Signed_Bool : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse
-          ("module M; procedure P(x : signed boolean); begin end; end.", "signed boolean");
+        Support.Must_Fail_Parse ("module M; procedure P(x : signed boolean); begin end; end.", "signed boolean");
       Sized_Bool  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse
-          ("module M; procedure P(x : boolean<32>); begin end; end.", "boolean size");
+        Support.Must_Fail_Parse ("module M; procedure P(x : boolean<32>); begin end; end.", "boolean size");
    begin
       AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 2, "two procedures");
       declare
-         Sink_Params : constant Ast.Parameter_Sequence :=
-           Ast.Parameters (Ast.Get_Subroutine (The_Module, 1));
+         Sink_Params : constant Ast.Parameter_Sequence := Ast.Parameters (Ast.Get_Subroutine (The_Module, 1));
          Run_Body    : constant Ast.Statement_Sequence :=
            Ast.Statements (Ast.Get_Body (Ast.Get_Subroutine (The_Module, 2)));
       begin
          AUnit.Assertions.Assert (Ast.Length (Sink_Params) = 1, "one param");
-         AUnit.Assertions.Assert
-           (Ast.Element (Sink_Params, 1).Parameter_Type.Kind = Types.Boolean, "boolean param");
+         AUnit.Assertions.Assert (Ast.Element (Sink_Params, 1).Parameter_Type.Kind = Types.Boolean, "boolean param");
          AUnit.Assertions.Assert (Ast.Length (Run_Body) = 2, "two calls");
          AUnit.Assertions.Assert
-           (Ada.Strings.Unbounded.To_String
-              (Ast.Element (Ast.Call_Of (Ast.Element (Run_Body, 1)).Arguments, 1).Lexeme)
+           (Ada.Strings.Unbounded.To_String (Ast.Element (Ast.Call_Of (Ast.Element (Run_Body, 1)).Arguments, 1).Lexeme)
             = "true",
             "true lexeme");
          AUnit.Assertions.Assert
-           (Ada.Strings.Unbounded.To_String
-              (Ast.Element (Ast.Call_Of (Ast.Element (Run_Body, 2)).Arguments, 1).Lexeme)
+           (Ada.Strings.Unbounded.To_String (Ast.Element (Ast.Call_Of (Ast.Element (Run_Body, 2)).Arguments, 1).Lexeme)
             = "false",
             "false lexeme");
       end;
@@ -126,8 +253,7 @@ package body Lovelace.Compiler.Tests.Parser is
       Support.Assert_Parser_Error_Code
         (Signed_Bool, 1, Lovelace.Compiler.Parser.Unexpected_Token, "signed boolean code");
       Support.Assert_Parser_Error_Count (Sized_Bool, 1, "boolean size");
-      Support.Assert_Parser_Error_Code
-        (Sized_Bool, 1, Lovelace.Compiler.Parser.Unexpected_Token, "boolean size code");
+      Support.Assert_Parser_Error_Code (Sized_Bool, 1, Lovelace.Compiler.Parser.Unexpected_Token, "boolean size code");
    end Test_Boolean_Type;
 
    procedure Test_Canonical_Module (The_Test : in out Fixture) is
@@ -183,7 +309,7 @@ package body Lovelace.Compiler.Tests.Parser is
 
    procedure Test_Declare_Locals (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Rocket : constant String := Support.To_Utf_8 (Wide_Wide_Character'Val (16#1F680#));
+      Rocket         : constant String := Support.To_Utf_8 (Wide_Wide_Character'Val (16#1F680#));
       Program_Source : constant String :=
         "program Demo;"
         & ASCII.LF
@@ -208,7 +334,7 @@ package body Lovelace.Compiler.Tests.Parser is
         & "   end;"
         & ASCII.LF
         & "end.";
-      Module_Source : constant String :=
+      Module_Source  : constant String :=
         "module Lib;"
         & ASCII.LF
         & "procedure Run(Value : integer);"
@@ -222,7 +348,7 @@ package body Lovelace.Compiler.Tests.Parser is
         & "end;"
         & ASCII.LF
         & "end.";
-      Emoji_Program : constant String :=
+      Emoji_Program  : constant String :=
         "program "
         & Rocket
         & ";"
@@ -236,7 +362,7 @@ package body Lovelace.Compiler.Tests.Parser is
         & "begin"
         & ASCII.LF
         & "end.";
-      Emoji_Module : constant String :=
+      Emoji_Module   : constant String :=
         "module "
         & Rocket
         & ";"
@@ -256,24 +382,22 @@ package body Lovelace.Compiler.Tests.Parser is
         & "end;"
         & ASCII.LF
         & "end.";
-      The_Program : constant Ast.Module := Support.Must_Parse (Program_Source, "declare program");
-      The_Module  : constant Ast.Module := Support.Must_Parse (Module_Source, "declare module");
-      Emoji_Prog  : constant Ast.Module := Support.Must_Parse (Emoji_Program, "emoji program");
-      Emoji_Mod   : constant Ast.Module := Support.Must_Parse (Emoji_Module, "emoji module");
-      Empty_Decl  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+      The_Program    : constant Ast.Module := Support.Must_Parse (Program_Source, "declare program");
+      The_Module     : constant Ast.Module := Support.Must_Parse (Module_Source, "declare module");
+      Emoji_Prog     : constant Ast.Module := Support.Must_Parse (Emoji_Program, "emoji program");
+      Emoji_Mod      : constant Ast.Module := Support.Must_Parse (Emoji_Module, "emoji module");
+      Empty_Decl     : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
         Support.Must_Fail_Parse ("program P; declare begin end.", "empty declare");
-      Shadow      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+      Shadow         : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
         Support.Must_Fail_Parse
           ("program P; declare X : integer; begin declare X : boolean; begin end; end.", "shadow");
-      Unit_Clash  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+      Unit_Clash     : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
         Support.Must_Fail_Parse ("program Demo; declare Demo : integer; begin end.", "unit clash");
-      Proc_Clash  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse
-          ("module M; procedure Run(); declare Run : integer; begin end; end.", "proc clash");
-      Sibling_Ok  : constant Ast.Module :=
+      Proc_Clash     : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("module M; procedure Run(); declare Run : integer; begin end; end.", "proc clash");
+      Sibling_Ok     : constant Ast.Module :=
         Support.Must_Parse
-          ("program P; begin declare X : integer; begin end; declare X : boolean; begin end; end.",
-           "sibling locals");
+          ("program P; begin declare X : integer; begin end; declare X : boolean; begin end; end.", "sibling locals");
    begin
       declare
          Prog_Block : constant Ast.Block := Ast.Get_Body (Ast.Get_Subroutine (The_Program, 1));
@@ -281,19 +405,14 @@ package body Lovelace.Compiler.Tests.Parser is
          Stmts      : constant Ast.Statement_Sequence := Ast.Statements (Prog_Block);
       begin
          AUnit.Assertions.Assert (Ast.Length (Locals) = 3, "program three locals");
-         AUnit.Assertions.Assert
-           (Ada.Strings.Unbounded.To_String (Ast.Element (Locals, 1).Parameter_Name) = "X", "X");
-         AUnit.Assertions.Assert
-           (Ada.Strings.Unbounded.To_String (Ast.Element (Locals, 2).Parameter_Name) = "Y", "Y");
+         AUnit.Assertions.Assert (Ada.Strings.Unbounded.To_String (Ast.Element (Locals, 1).Parameter_Name) = "X", "X");
+         AUnit.Assertions.Assert (Ada.Strings.Unbounded.To_String (Ast.Element (Locals, 2).Parameter_Name) = "Y", "Y");
          AUnit.Assertions.Assert
            (Ada.Strings.Unbounded.To_String (Ast.Element (Locals, 3).Parameter_Name) = "Flag", "Flag");
          AUnit.Assertions.Assert (Ast.Length (Stmts) = 2, "two nested statements");
-         AUnit.Assertions.Assert
-           (Ast.Kind (Ast.Element (Stmts, 1)) = Ast.Nested_Block, "nested declare");
-         AUnit.Assertions.Assert
-           (Ast.Length (Ast.Locals (Ast.Block_Of (Ast.Element (Stmts, 1)))) = 1, "inner local");
-         AUnit.Assertions.Assert
-           (Ast.Kind (Ast.Element (Stmts, 2)) = Ast.Nested_Block, "bare nested");
+         AUnit.Assertions.Assert (Ast.Kind (Ast.Element (Stmts, 1)) = Ast.Nested_Block, "nested declare");
+         AUnit.Assertions.Assert (Ast.Length (Ast.Locals (Ast.Block_Of (Ast.Element (Stmts, 1)))) = 1, "inner local");
+         AUnit.Assertions.Assert (Ast.Kind (Ast.Element (Stmts, 2)) = Ast.Nested_Block, "bare nested");
          AUnit.Assertions.Assert
            (Ast.Length (Ast.Locals (Ast.Block_Of (Ast.Element (Stmts, 2)))) = 0, "bare no locals");
       end;
@@ -311,20 +430,16 @@ package body Lovelace.Compiler.Tests.Parser is
          = Rocket & "Var",
          "emoji local");
       AUnit.Assertions.Assert (Ast.Name (Emoji_Mod) = Rocket, "emoji module name");
-      AUnit.Assertions.Assert
-        (Ast.Name (Ast.Get_Subroutine (Emoji_Mod, 1)) = Rocket & "Go", "emoji procedure");
+      AUnit.Assertions.Assert (Ast.Name (Ast.Get_Subroutine (Emoji_Mod, 1)) = Rocket & "Go", "emoji procedure");
 
       Support.Assert_Parser_Error_Count (Empty_Decl, 1, "empty declare");
-      Support.Assert_Parser_Error_Code
-        (Empty_Decl, 1, Lovelace.Compiler.Parser.Unexpected_Token, "empty declare code");
+      Support.Assert_Parser_Error_Code (Empty_Decl, 1, Lovelace.Compiler.Parser.Unexpected_Token, "empty declare code");
       Support.Assert_Parser_Error_Count (Shadow, 1, "shadow");
       Support.Assert_Parser_Error_Code (Shadow, 1, Lovelace.Compiler.Parser.Name_Clash, "shadow code");
       Support.Assert_Parser_Error_Count (Unit_Clash, 1, "unit clash");
-      Support.Assert_Parser_Error_Code
-        (Unit_Clash, 1, Lovelace.Compiler.Parser.Name_Clash, "unit clash code");
+      Support.Assert_Parser_Error_Code (Unit_Clash, 1, Lovelace.Compiler.Parser.Name_Clash, "unit clash code");
       Support.Assert_Parser_Error_Count (Proc_Clash, 1, "proc clash");
-      Support.Assert_Parser_Error_Code
-        (Proc_Clash, 1, Lovelace.Compiler.Parser.Name_Clash, "proc clash code");
+      Support.Assert_Parser_Error_Code (Proc_Clash, 1, Lovelace.Compiler.Parser.Name_Clash, "proc clash code");
       AUnit.Assertions.Assert (Ast.Subroutine_Count (Sibling_Ok) = 1, "sibling ok");
    end Test_Declare_Locals;
 
@@ -605,87 +720,6 @@ package body Lovelace.Compiler.Tests.Parser is
       Assert_Entrypoint_Module (At_Module, "@foo", "@foo name");
    end Test_Identifier_Names;
 
-   procedure Test_Import_Declarations (The_Test : in out Fixture) is
-      pragma Unreferenced (The_Test);
-      Program_Source : constant String :=
-        "import augusta.std.io;"
-        & ASCII.LF
-        & "import Other;"
-        & ASCII.LF
-        & "program Hello;"
-        & ASCII.LF
-        & "begin"
-        & ASCII.LF
-        & "end.";
-      Module_Source  : constant String :=
-        "import Lib.A;" & ASCII.LF & "module Host;" & ASCII.LF & "procedure P(); begin end;" & ASCII.LF & "end.";
-      Program_Module : constant Ast.Module := Support.Must_Parse (Program_Source, "program imports");
-      Module_Module  : constant Ast.Module := Support.Must_Parse (Module_Source, "module imports");
-      After_Program  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse ("program P; import X; begin end.", "import after program");
-      After_Module   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse ("module M; procedure P(); begin end; import X; end.", "import after procedure");
-      In_Body        : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse ("module M; procedure P(); begin import X; end; end.", "import in body");
-      In_Flavor      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse
-          ("module M; #if flavor = ""wasi"" import X; #end end.", "import in flavor", Flavor.Wasi);
-      Duplicate      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse ("import A; import A; program P; begin end.", "duplicate import");
-      Self_Import    : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse ("import Hello; program Hello; begin end.", "self import");
-      Only_Import    : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse ("import Foo;", "import only");
-      Missing_Semi   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse ("import Foo.Bar program P; begin end.", "import missing semicolon");
-      Trailing_Dot   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse ("import Foo.; program P; begin end.", "import trailing dot");
-   begin
-      AUnit.Assertions.Assert (Ast.Kind (Program_Module) = Ast.Program_Unit, "program imports: kind");
-      AUnit.Assertions.Assert (Ast.Name (Program_Module) = "Hello", "program imports: name");
-      AUnit.Assertions.Assert (Ast.Import_Count (Program_Module) = 2, "program imports: count");
-      AUnit.Assertions.Assert
-        (Ada.Strings.Unbounded.To_String (Ast.Get_Import (Program_Module, 1).Module_Name) = "augusta.std.io",
-         "program imports: first");
-      AUnit.Assertions.Assert
-        (Ada.Strings.Unbounded.To_String (Ast.Get_Import (Program_Module, 2).Module_Name) = "Other",
-         "program imports: second");
-      AUnit.Assertions.Assert (Ast.Subroutine_Count (Program_Module) = 1, "program imports: entrypoint");
-
-      AUnit.Assertions.Assert (Ast.Kind (Module_Module) = Ast.Module_Unit, "module imports: kind");
-      AUnit.Assertions.Assert (Ast.Name (Module_Module) = "Host", "module imports: name");
-      AUnit.Assertions.Assert (Ast.Import_Count (Module_Module) = 1, "module imports: count");
-      AUnit.Assertions.Assert
-        (Ada.Strings.Unbounded.To_String (Ast.Get_Import (Module_Module, 1).Module_Name) = "Lib.A",
-         "module imports: first");
-      AUnit.Assertions.Assert (Ast.Subroutine_Count (Module_Module) = 1, "module imports: procedure");
-
-      Support.Assert_Parser_Error_Count (After_Program, 1, "import after program");
-      Support.Assert_Parser_Error_Code
-        (After_Program, 1, Lovelace.Compiler.Parser.Unexpected_Token, "import after program code");
-      Support.Assert_Parser_Error_Count (After_Module, 1, "import after procedure");
-      Support.Assert_Parser_Error_Code
-        (After_Module, 1, Lovelace.Compiler.Parser.Unexpected_Token, "import after procedure code");
-      Support.Assert_Parser_Error_Count (In_Body, 1, "import in body");
-      Support.Assert_Parser_Error_Code (In_Body, 1, Lovelace.Compiler.Parser.Unexpected_Token, "import in body code");
-      Support.Assert_Parser_Error_Count (In_Flavor, 1, "import in flavor");
-      Support.Assert_Parser_Error_Code
-        (In_Flavor, 1, Lovelace.Compiler.Parser.Unexpected_Token, "import in flavor code");
-      Support.Assert_Parser_Error_Count (Duplicate, 1, "duplicate import");
-      Support.Assert_Parser_Error_Code (Duplicate, 1, Lovelace.Compiler.Parser.Name_Clash, "duplicate import code");
-      Support.Assert_Parser_Error_Count (Self_Import, 1, "self import");
-      Support.Assert_Parser_Error_Code (Self_Import, 1, Lovelace.Compiler.Parser.Name_Clash, "self import code");
-      Support.Assert_Parser_Error_Count (Only_Import, 1, "import only");
-      Support.Assert_Parser_Error_Code
-        (Only_Import, 1, Lovelace.Compiler.Parser.Unexpected_End_Of_Input, "import only code");
-      Support.Assert_Parser_Error_Count (Missing_Semi, 1, "import missing semicolon");
-      Support.Assert_Parser_Error_Code
-        (Missing_Semi, 1, Lovelace.Compiler.Parser.Unexpected_Token, "import missing semicolon code");
-      Support.Assert_Parser_Error_Count (Trailing_Dot, 1, "import trailing dot");
-      Support.Assert_Parser_Error_Code
-        (Trailing_Dot, 1, Lovelace.Compiler.Parser.Unexpected_Token, "import trailing dot code");
-   end Test_Import_Declarations;
-
    procedure Test_Module_Begin_Rejected (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Errors : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
@@ -754,65 +788,56 @@ package body Lovelace.Compiler.Tests.Parser is
    procedure Test_Native_Procedure (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       package U renames Ada.Strings.Unbounded;
-      Exported_Source : constant String :=
+      Exported_Source  : constant String :=
         "module Lib; export @native(""libx"", ""print_fn"") procedure print(value : integer); end.";
-      Plain_Source    : constant String :=
+      Plain_Source     : constant String :=
         "module Lib; @native(""libx"", ""print_fn"") procedure print(value : integer); end.";
-      Intrinsic_Source : constant String :=
-        "module Lib; export @intrinsic procedure print(value : integer); end.";
-      Obsolete        : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+      Intrinsic_Source : constant String := "module Lib; export @intrinsic procedure print(value : integer); end.";
+      Obsolete         : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
         Support.Must_Fail_Parse
           ("module Lib; native(""wasi"", ""native-print-integer"") procedure print(value : integer); end.",
            "obsolete native");
-      With_Body       : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+      With_Body        : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
         Support.Must_Fail_Parse
-          ("module Lib; @native(""libx"", ""print_fn"") procedure print(value : integer);"
-           & " begin end; end.",
+          ("module Lib; @native(""libx"", ""print_fn"") procedure print(value : integer);" & " begin end; end.",
            "native with begin");
-      Intrinsic_Body  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+      Intrinsic_Body   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
         Support.Must_Fail_Parse
-          ("module Lib; @intrinsic procedure print(value : integer); begin end; end.",
-           "intrinsic with begin");
-      Missing_Comma   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+          ("module Lib; @intrinsic procedure print(value : integer); begin end; end.", "intrinsic with begin");
+      Missing_Comma    : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
         Support.Must_Fail_Parse
-          ("module Lib; @native(""libx"" ""print_fn"") procedure print(value : integer); end.",
-           "native missing comma");
-      Missing_Paren   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+          ("module Lib; @native(""libx"" ""print_fn"") procedure print(value : integer); end.", "native missing comma");
+      Missing_Paren    : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
         Support.Must_Fail_Parse
-          ("module Lib; @native ""libx"", ""print_fn"" procedure print(value : integer); end.",
-           "native missing paren");
-      Exported_Module : constant Ast.Module := Support.Must_Parse (Exported_Source, "native export");
-      Plain_Module    : constant Ast.Module := Support.Must_Parse (Plain_Source, "native plain");
-      Intrinsic_Mod   : constant Ast.Module := Support.Must_Parse (Intrinsic_Source, "intrinsic");
-      Exported_Sub    : constant Ast.Subroutine := Ast.Get_Subroutine (Exported_Module, 1);
-      Plain_Sub       : constant Ast.Subroutine := Ast.Get_Subroutine (Plain_Module, 1);
-      Intrinsic_Sub   : constant Ast.Subroutine := Ast.Get_Subroutine (Intrinsic_Mod, 1);
-      Exported_Native : constant Ast.Native_Binding_Option := Ast.Native (Exported_Sub);
-      Plain_Native    : constant Ast.Native_Binding_Option := Ast.Native (Plain_Sub);
+          ("module Lib; @native ""libx"", ""print_fn"" procedure print(value : integer); end.", "native missing paren");
+      Exported_Module  : constant Ast.Module := Support.Must_Parse (Exported_Source, "native export");
+      Plain_Module     : constant Ast.Module := Support.Must_Parse (Plain_Source, "native plain");
+      Intrinsic_Mod    : constant Ast.Module := Support.Must_Parse (Intrinsic_Source, "intrinsic");
+      Exported_Sub     : constant Ast.Subroutine := Ast.Get_Subroutine (Exported_Module, 1);
+      Plain_Sub        : constant Ast.Subroutine := Ast.Get_Subroutine (Plain_Module, 1);
+      Intrinsic_Sub    : constant Ast.Subroutine := Ast.Get_Subroutine (Intrinsic_Mod, 1);
+      Exported_Native  : constant Ast.Native_Binding_Option := Ast.Native (Exported_Sub);
+      Plain_Native     : constant Ast.Native_Binding_Option := Ast.Native (Plain_Sub);
    begin
       AUnit.Assertions.Assert (Ast.Has_Export (Ast.Get_Flags (Exported_Sub)), "exported has export");
       AUnit.Assertions.Assert (Ast.Has_Native (Ast.Get_Flags (Exported_Sub)), "exported has native");
       AUnit.Assertions.Assert (Ast.Name (Exported_Sub) = "print", "exported name");
-      AUnit.Assertions.Assert
-        (Ast.Length (Ast.Statements (Ast.Get_Body (Exported_Sub))) = 0, "exported empty body");
+      AUnit.Assertions.Assert (Ast.Length (Ast.Statements (Ast.Get_Body (Exported_Sub))) = 0, "exported empty body");
       AUnit.Assertions.Assert (Exported_Native.Present, "exported binding present");
-      AUnit.Assertions.Assert
-        (U.To_String (Exported_Native.Value.Library) = "libx", "exported library");
-      AUnit.Assertions.Assert
-        (U.To_String (Exported_Native.Value.Function_Name) = "print_fn", "exported function");
+      AUnit.Assertions.Assert (U.To_String (Exported_Native.Value.Library) = "libx", "exported library");
+      AUnit.Assertions.Assert (U.To_String (Exported_Native.Value.Function_Name) = "print_fn", "exported function");
       AUnit.Assertions.Assert (not Ast.Has_Export (Ast.Get_Flags (Plain_Sub)), "plain no export");
       AUnit.Assertions.Assert (Ast.Has_Native (Ast.Get_Flags (Plain_Sub)), "plain has native");
       AUnit.Assertions.Assert (Plain_Native.Present, "plain binding present");
       AUnit.Assertions.Assert (U.To_String (Plain_Native.Value.Library) = "libx", "plain library");
-      AUnit.Assertions.Assert
-        (U.To_String (Plain_Native.Value.Function_Name) = "print_fn", "plain function");
+      AUnit.Assertions.Assert (U.To_String (Plain_Native.Value.Function_Name) = "print_fn", "plain function");
       AUnit.Assertions.Assert (Ast.Has_Export (Ast.Get_Flags (Intrinsic_Sub)), "intrinsic export");
       AUnit.Assertions.Assert (Ast.Has_Intrinsic (Ast.Get_Flags (Intrinsic_Sub)), "intrinsic flag");
       AUnit.Assertions.Assert (not Ast.Has_Native (Ast.Get_Flags (Intrinsic_Sub)), "intrinsic not native");
       AUnit.Assertions.Assert (not Ast.Native (Intrinsic_Sub).Present, "intrinsic no binding");
       Support.Assert_Parser_Error_Count (Obsolete, 1, "obsolete native");
       Support.Assert_Parser_Error_Code
-        (Obsolete, 1, Lovelace.Compiler.Parser.Obsolete_Native_Modifier, "obsolete native code");
+        (Obsolete, 1, Lovelace.Compiler.Parser.Unexpected_Token, "obsolete native code");
       Support.Assert_Parser_Error_Count (With_Body, 1, "native with begin");
       Support.Assert_Parser_Error_Code
         (With_Body, 1, Lovelace.Compiler.Parser.Unexpected_Token, "native with begin code");
@@ -827,9 +852,58 @@ package body Lovelace.Compiler.Tests.Parser is
         (Missing_Paren, 1, Lovelace.Compiler.Parser.Unexpected_Token, "native missing paren code");
    end Test_Native_Procedure;
 
+   procedure Test_Obsolete_Import (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Unit_Leading    : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("import Foo; program P; begin end.", "obsolete import unit-leading");
+      Block_Preamble  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("program P; import Foo; begin end.", "obsolete import block preamble");
+      Statement_Start : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("program P; begin import Foo; end.", "obsolete import statement start");
+      Nested_Preamble : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("program P; begin begin import Foo; begin end; end; end.", "obsolete nested");
+   begin
+      Support.Assert_Parser_Error_Count (Unit_Leading, 1, "obsolete import unit-leading");
+      Support.Assert_Parser_Error_Code
+        (Unit_Leading, 1, Lovelace.Compiler.Parser.Unexpected_Token, "obsolete import unit-leading code");
+      Support.Assert_Parser_Error_Count (Block_Preamble, 1, "obsolete import block preamble");
+      Support.Assert_Parser_Error_Code
+        (Block_Preamble, 1, Lovelace.Compiler.Parser.Unexpected_Token, "obsolete import block preamble code");
+      Support.Assert_Parser_Error_Count (Statement_Start, 1, "obsolete import statement start");
+      Support.Assert_Parser_Error_Code
+        (Statement_Start, 1, Lovelace.Compiler.Parser.Unexpected_Token, "obsolete import statement start code");
+      Support.Assert_Parser_Error_Count (Nested_Preamble, 1, "obsolete import nested");
+      Support.Assert_Parser_Error_Code
+        (Nested_Preamble, 1, Lovelace.Compiler.Parser.Unexpected_Token, "obsolete import nested code");
+   end Test_Obsolete_Import;
+
+   procedure Test_Overload_Signatures (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Different : constant Ast.Module :=
+        Support.Must_Parse
+          ("module M; procedure Sink(V : integer); begin end; "
+           & "procedure Sink(V : boolean); begin end; end.",
+           "different param types");
+      Identical : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module M; procedure Sink(V : integer); begin end; "
+           & "procedure Sink(X : integer); begin end; end.",
+           "identical param types");
+      Zero_Dup  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse
+          ("module M; procedure Sink(); begin end; procedure Sink(); begin end; end.",
+           "duplicate nullary");
+   begin
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (Different) = 2, "two overloads parsed");
+      AUnit.Assertions.Assert (Ast.Name (Ast.Get_Subroutine (Different, 1)) = "Sink", "first Sink");
+      AUnit.Assertions.Assert (Ast.Name (Ast.Get_Subroutine (Different, 2)) = "Sink", "second Sink");
+      Support.Assert_Parser_Error_Code (Identical, 1, Lovelace.Compiler.Parser.Name_Clash, "identical types");
+      Support.Assert_Parser_Error_Code (Zero_Dup, 1, Lovelace.Compiler.Parser.Name_Clash, "duplicate nullary");
+   end Test_Overload_Signatures;
+
    procedure Test_Qualified_Calls (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Module_Source : constant String :=
+      Module_Source  : constant String :=
         "module Calls;"
         & ASCII.LF
         & "procedure Sink(Value : integer); begin end;"
@@ -852,14 +926,11 @@ package body Lovelace.Compiler.Tests.Parser is
       The_Module     : constant Ast.Module := Support.Must_Parse (Module_Source, "module calls");
       The_Program    : constant Ast.Module := Support.Must_Parse (Program_Source, "program call");
       Unqualified    : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse
-          ("module Calls; procedure Run(); begin Sink(42); end; end.", "unqualified call");
+        Support.Must_Fail_Parse ("module Calls; procedure Run(); begin Sink(42); end; end.", "unqualified call");
       Float_Arg      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse
-          ("module Calls; procedure Run(); begin Calls.Sink(1.5); end; end.", "float arg");
+        Support.Must_Fail_Parse ("module Calls; procedure Run(); begin Calls.Sink(1.5); end; end.", "float arg");
       Missing_Semi   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
-        Support.Must_Fail_Parse
-          ("module Calls; procedure Run(); begin Calls.Sink(42) end; end.", "missing semicolon");
+        Support.Must_Fail_Parse ("module Calls; procedure Run(); begin Calls.Sink(42) end; end.", "missing semicolon");
    begin
       AUnit.Assertions.Assert (Ast.Subroutine_Count (The_Module) = 2, "two procedures");
       declare
@@ -912,6 +983,87 @@ package body Lovelace.Compiler.Tests.Parser is
       Support.Assert_Parser_Error_Code
         (Program_Id, 1, Lovelace.Compiler.Parser.Unexpected_Token, "Program keyword case code");
    end Test_Trailing_And_Keyword_Case;
+
+   procedure Test_Using_Declarations (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Program_Source : constant String :=
+        "using augusta.std.io;"
+        & ASCII.LF
+        & "using Other;"
+        & ASCII.LF
+        & "program Hello;"
+        & ASCII.LF
+        & "begin"
+        & ASCII.LF
+        & "end.";
+      Module_Source  : constant String :=
+        "using Lib.A;" & ASCII.LF & "module Host;" & ASCII.LF & "procedure P(); begin end;" & ASCII.LF & "end.";
+      Program_Module : constant Ast.Module := Support.Must_Parse (Program_Source, "program usings");
+      Module_Module  : constant Ast.Module := Support.Must_Parse (Module_Source, "module usings");
+      Block_Using    : constant Ast.Module :=
+        Support.Must_Parse ("program P; using X; begin end.", "using in program block");
+      After_Module   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("module M; procedure P(); begin end; using X; end.", "using after procedure");
+      In_Body        : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("module M; procedure P(); begin using X; end; end.", "using without begin");
+      In_Flavor      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("module M; #if flavor = ""wasi"" using X; #end end.", "using in flavor", Flavor.Wasi);
+      Duplicate      : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("using A; using A; program P; begin end.", "duplicate using");
+      Self_Using     : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("using Hello; program Hello; begin end.", "self using");
+      Only_Using     : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("using Foo;", "using only");
+      Missing_Semi   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("using Foo.Bar program P; begin end.", "using missing semicolon");
+      Trailing_Dot   : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse ("using Foo.; program P; begin end.", "using trailing dot");
+   begin
+      AUnit.Assertions.Assert (Ast.Kind (Program_Module) = Ast.Program_Unit, "program usings: kind");
+      AUnit.Assertions.Assert (Ast.Name (Program_Module) = "Hello", "program usings: name");
+      AUnit.Assertions.Assert (Ast.Using_Count (Program_Module) = 2, "program usings: count");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Ast.Get_Using (Program_Module, 1).Module_Name) = "augusta.std.io",
+         "program usings: first");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Ast.Get_Using (Program_Module, 2).Module_Name) = "Other",
+         "program usings: second");
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (Program_Module) = 1, "program usings: entrypoint");
+
+      AUnit.Assertions.Assert (Ast.Kind (Module_Module) = Ast.Module_Unit, "module usings: kind");
+      AUnit.Assertions.Assert (Ast.Name (Module_Module) = "Host", "module usings: name");
+      AUnit.Assertions.Assert (Ast.Using_Count (Module_Module) = 1, "module usings: count");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Ast.Get_Using (Module_Module, 1).Module_Name) = "Lib.A",
+         "module usings: first");
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (Module_Module) = 1, "module usings: procedure");
+
+      AUnit.Assertions.Assert (Ast.Using_Count (Block_Using) = 0, "block using is not unit-leading");
+      AUnit.Assertions.Assert
+        (Ast.Length (Ast.Usings (Ast.Get_Body (Ast.Get_Subroutine (Block_Using, 1)))) = 1, "block using: one using");
+      Support.Assert_Parser_Error_Count (After_Module, 1, "using after procedure");
+      Support.Assert_Parser_Error_Code
+        (After_Module, 1, Lovelace.Compiler.Parser.Unexpected_Token, "using after procedure code");
+      Support.Assert_Parser_Error_Count (In_Body, 1, "using without begin");
+      Support.Assert_Parser_Error_Code
+        (In_Body, 1, Lovelace.Compiler.Parser.Unexpected_Token, "using without begin code");
+      Support.Assert_Parser_Error_Count (In_Flavor, 1, "using in flavor");
+      Support.Assert_Parser_Error_Code
+        (In_Flavor, 1, Lovelace.Compiler.Parser.Unexpected_Token, "using in flavor code");
+      Support.Assert_Parser_Error_Count (Duplicate, 1, "duplicate using");
+      Support.Assert_Parser_Error_Code (Duplicate, 1, Lovelace.Compiler.Parser.Name_Clash, "duplicate using code");
+      Support.Assert_Parser_Error_Count (Self_Using, 1, "self using");
+      Support.Assert_Parser_Error_Code (Self_Using, 1, Lovelace.Compiler.Parser.Name_Clash, "self using code");
+      Support.Assert_Parser_Error_Count (Only_Using, 1, "using only");
+      Support.Assert_Parser_Error_Code
+        (Only_Using, 1, Lovelace.Compiler.Parser.Unexpected_End_Of_Input, "using only code");
+      Support.Assert_Parser_Error_Count (Missing_Semi, 1, "using missing semicolon");
+      Support.Assert_Parser_Error_Code
+        (Missing_Semi, 1, Lovelace.Compiler.Parser.Unexpected_Token, "using missing semicolon code");
+      Support.Assert_Parser_Error_Count (Trailing_Dot, 1, "using trailing dot");
+      Support.Assert_Parser_Error_Code
+        (Trailing_Dot, 1, Lovelace.Compiler.Parser.Unexpected_Token, "using trailing dot code");
+   end Test_Using_Declarations;
 
    procedure Test_Whitespace_Variants (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);

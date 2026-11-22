@@ -15,7 +15,7 @@ package body Lovelace.Main.Tests.Arguments is
       Tokens : Cli_Arguments.String_Vectors.Vector;
       Parsed : Cli_Arguments.Parsed_Arguments;
    begin
-      Tokens.Append ("build");
+      Tokens.Append ("compile");
       Tokens.Append ("--no-logo");
       Parsed := Cli_Arguments.Parse (Tokens);
       case Parsed.Ok is
@@ -25,7 +25,7 @@ package body Lovelace.Main.Tests.Arguments is
          when True  =>
             AUnit.Assertions.Assert (Parsed.Show_Logo, "logo still default");
             AUnit.Assertions.Assert
-              (Parsed.Command = Cli_Arguments.Build, "build");
+              (Parsed.Command = Cli_Arguments.Compile, "compile");
             AUnit.Assertions.Assert
               (Parsed.Command_Arguments.Element (1) = "--no-logo", "arg kept");
       end case;
@@ -38,7 +38,7 @@ package body Lovelace.Main.Tests.Arguments is
    begin
       Tokens.Append ("--no-logo");
       Tokens.Append ("--no-colour");
-      Tokens.Append ("build");
+      Tokens.Append ("compile");
       Tokens.Append ("Hello.love");
       Parsed := Cli_Arguments.Parse (Tokens);
       case Parsed.Ok is
@@ -49,7 +49,7 @@ package body Lovelace.Main.Tests.Arguments is
             AUnit.Assertions.Assert (not Parsed.Show_Logo, "no logo");
             AUnit.Assertions.Assert (not Parsed.Colour_Enabled, "no colour");
             AUnit.Assertions.Assert
-              (Parsed.Command = Cli_Arguments.Build, "build");
+              (Parsed.Command = Cli_Arguments.Compile, "compile");
             AUnit.Assertions.Assert
               (Natural (Parsed.Command_Arguments.Length) = 1, "one arg");
             AUnit.Assertions.Assert
@@ -78,7 +78,7 @@ package body Lovelace.Main.Tests.Arguments is
       Parsed : Cli_Arguments.Parsed_Arguments;
    begin
       Tokens.Append ("--no-color");
-      Tokens.Append ("build");
+      Tokens.Append ("compile");
       Parsed := Cli_Arguments.Parse (Tokens);
       case Parsed.Ok is
          when True  =>

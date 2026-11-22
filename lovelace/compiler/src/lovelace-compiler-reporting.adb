@@ -47,26 +47,56 @@ package body Lovelace.Compiler.Reporting is
       return Error_Codes.Error_Code is
    begin
       case Code is
-         when Ir_Generator.Internal_Error      =>
+         when Ir_Generator.Internal_Error         =>
             return Error_Codes.Internal_Error;
-
-         when Ir_Generator.Unresolved_Call     =>
-            return Error_Codes.Unresolved_Call;
-
-         when Ir_Generator.Invalid_Arguments   =>
-            return Error_Codes.Invalid_Arguments;
-
-         when Ir_Generator.Call_Without_Import =>
-            return Error_Codes.Call_Without_Import;
-
-         when Ir_Generator.Not_Exported           =>
-            return Error_Codes.Not_Exported;
 
          when Ir_Generator.Unknown_Native_Binding =>
             return Error_Codes.Unknown_Native_Binding;
 
          when Ir_Generator.Unknown_Intrinsic      =>
             return Error_Codes.Unknown_Intrinsic;
+      end case;
+   end To_Error_Code;
+
+   function To_Error_Code
+     (Code : Semantics.Semantics_Error_Code) return Error_Codes.Error_Code is
+   begin
+      case Code is
+         when Semantics.Internal_Error        =>
+            return Error_Codes.Internal_Error;
+
+         when Semantics.Unresolved_Call       =>
+            return Error_Codes.Unresolved_Call;
+
+         when Semantics.Invalid_Arguments     =>
+            return Error_Codes.Invalid_Arguments;
+
+         when Semantics.Call_Without_Using    =>
+            return Error_Codes.Call_Without_Using;
+
+         when Semantics.Not_Exported          =>
+            return Error_Codes.Not_Exported;
+
+         when Semantics.Use_Before_Assignment =>
+            return Error_Codes.Use_Before_Assignment;
+
+         when Semantics.Type_Mismatch         =>
+            return Error_Codes.Type_Mismatch;
+
+         when Semantics.Unresolved_Name       =>
+            return Error_Codes.Unresolved_Name;
+
+         when Semantics.Ambiguous_Call        =>
+            return Error_Codes.Ambiguous_Call;
+
+         when Semantics.Unused_Variable       =>
+            return Error_Codes.Unused_Variable;
+
+         when Semantics.Unused_Assignment     =>
+            return Error_Codes.Unused_Assignment;
+
+         when Semantics.Unused_Using          =>
+            return Error_Codes.Unused_Using;
       end case;
    end To_Error_Code;
 
@@ -92,8 +122,9 @@ package body Lovelace.Compiler.Reporting is
          when Parser.Invalid_Flavor_Condition =>
             return Error_Codes.Invalid_Flavor_Condition;
 
-         when Parser.Obsolete_Native_Modifier =>
-            return Error_Codes.Obsolete_Native_Modifier;
+         when Parser.Invalid_Module_Version   =>
+            return Error_Codes.Invalid_Module_Version;
+
       end case;
    end To_Error_Code;
 

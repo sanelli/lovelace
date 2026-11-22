@@ -7,11 +7,15 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  Fixture for IR Generator matrix tests.
    type Fixture is new AUnit.Test_Fixtures.Test_Fixture with null record;
 
+   --  Assignment + identifier read + call with identifier arg emit Local_Set/Get/Constant/Call.
+   --  @param The_Test Unused fixture.
+   procedure Test_Assignment_And_Local_Access (The_Test : in out Fixture);
+
    --  Canonical program Hello; begin end. lowers to matching LIR structure and origins.
    --  @param The_Test Unused fixture.
    procedure Test_Canonical_Multiline (The_Test : in out Fixture);
 
-   --  Multi-unit flatten: import-gated exported calls succeed; missing import / not exported fail.
+   --  Multi-unit flatten lowers resolved exported calls to the flat callee index.
    --  @param The_Test Unused fixture.
    procedure Test_Cross_Module_Calls (The_Test : in out Fixture);
 
@@ -43,7 +47,7 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  @param The_Test Unused fixture.
    procedure Test_Identifier_Names (The_Test : in out Fixture);
 
-   --  Leading imports lower to LIR Dependencies in source order; empty imports stay zero.
+   --  Leading and nested usings lower to unique LIR Dependencies; empty stay zero.
    --  @param The_Test Unused fixture.
    procedure Test_Import_Dependencies (The_Test : in out Fixture);
 
@@ -55,11 +59,15 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  @param The_Test Unused fixture.
    procedure Test_Native_Binding (The_Test : in out Fixture);
 
-   --  Integer/float/boolean formals map to matching LIR Value_Type (boolean → I32).
+   --  Overloads select distinct Call targets; LIR names stay the source name.
+   --  @param The_Test Unused fixture.
+   procedure Test_Overload_Calls (The_Test : in out Fixture);
+
+   --  Integer/float/boolean formals map to matching LIR Value_Type (boolean -> I32).
    --  @param The_Test Unused fixture.
    procedure Test_Parameter_Type_Mapping (The_Test : in out Fixture);
 
-   --  Same-unit calls (integer + boolean literals); unresolved / arity / type mismatches fail.
+   --  Same-unit calls (integer + boolean literals) lower; unresolved calls are not an IR decision (Internal_Error).
    --  @param The_Test Unused fixture.
    procedure Test_Same_Unit_Calls (The_Test : in out Fixture);
 

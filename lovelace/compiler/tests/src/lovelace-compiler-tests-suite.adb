@@ -6,6 +6,7 @@ with Lovelace.Compiler.Tests.Ir_Generator;
 with Lovelace.Compiler.Tests.Literals;
 with Lovelace.Compiler.Tests.Module_Path;
 with Lovelace.Compiler.Tests.Parser;
+with Lovelace.Compiler.Tests.Semantics;
 with Lovelace.Compiler.Tests.Tokenizer;
 with Lovelace.Compiler.Tests.Unit_Graph;
 
@@ -23,6 +24,8 @@ package body Lovelace.Compiler.Tests.Suite is
      AUnit.Test_Caller (Lovelace.Compiler.Tests.Module_Path.Fixture);
    package Parser_Caller is new
      AUnit.Test_Caller (Lovelace.Compiler.Tests.Parser.Fixture);
+   package Semantics_Caller is new
+     AUnit.Test_Caller (Lovelace.Compiler.Tests.Semantics.Fixture);
    package Tokenizer_Caller is new
      AUnit.Test_Caller (Lovelace.Compiler.Tests.Tokenizer.Fixture);
    package Unit_Graph_Caller is new
@@ -74,16 +77,24 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Tokenizer.Test_Export_Keyword'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
-           ("tokenizer: import keyword",
-            Lovelace.Compiler.Tests.Tokenizer.Test_Import_Keyword'Access));
+           ("tokenizer: import identifier",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Import_Identifier'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
-           ("tokenizer: native keyword",
-            Lovelace.Compiler.Tests.Tokenizer.Test_Native_Keyword'Access));
+           ("tokenizer: native identifier",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Native_Identifier'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
            ("tokenizer: declare keyword",
             Lovelace.Compiler.Tests.Tokenizer.Test_Declare_Keyword'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
+           ("tokenizer: using keyword",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Using_Keyword'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
+           ("tokenizer: assign punctuation",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Assign_Punctuation'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
            ("tokenizer: ascii identifiers",
@@ -231,6 +242,10 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Parser.Test_Flavor_Active_Clash'Access));
       Result.Add_Test
         (Parser_Caller.Create
+           ("parser: overload signatures",
+            Lovelace.Compiler.Tests.Parser.Test_Overload_Signatures'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
            ("parser: flavor exclusive names",
             Lovelace
               .Compiler
@@ -283,8 +298,20 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Parser.Test_Identifier_Names'Access));
       Result.Add_Test
         (Parser_Caller.Create
-           ("parser: import declarations",
-            Lovelace.Compiler.Tests.Parser.Test_Import_Declarations'Access));
+           ("parser: using declarations",
+            Lovelace.Compiler.Tests.Parser.Test_Using_Declarations'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: obsolete import",
+            Lovelace.Compiler.Tests.Parser.Test_Obsolete_Import'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: block usings",
+            Lovelace.Compiler.Tests.Parser.Test_Block_Usings'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: assignment statements",
+            Lovelace.Compiler.Tests.Parser.Test_Assignment_Statements'Access));
       Result.Add_Test
         (Parser_Caller.Create
            ("parser: module begin rejected",
@@ -410,7 +437,11 @@ package body Lovelace.Compiler.Tests.Suite is
       Result.Add_Test
         (Ir_Generator_Caller.Create
            ("ir generator: flattened locals",
-            Lovelace.Compiler.Tests.Ir_Generator.Test_Flattened_Locals'Access));
+            Lovelace
+              .Compiler
+              .Tests
+              .Ir_Generator
+              .Test_Flattened_Locals'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
            ("ir generator: identifier names",
@@ -427,6 +458,14 @@ package body Lovelace.Compiler.Tests.Suite is
               .Tests
               .Ir_Generator
               .Test_Import_Dependencies'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
+           ("ir generator: assignment and local access",
+            Lovelace
+              .Compiler
+              .Tests
+              .Ir_Generator
+              .Test_Assignment_And_Local_Access'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
            ("ir generator: module procedure parameters",
@@ -459,6 +498,10 @@ package body Lovelace.Compiler.Tests.Suite is
         (Ir_Generator_Caller.Create
            ("ir generator: same-unit calls",
             Lovelace.Compiler.Tests.Ir_Generator.Test_Same_Unit_Calls'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
+           ("ir generator: overload calls",
+            Lovelace.Compiler.Tests.Ir_Generator.Test_Overload_Calls'Access));
 
       Result.Add_Test
         (Backend_Caller.Create
@@ -496,6 +539,10 @@ package body Lovelace.Compiler.Tests.Suite is
         (Backend_Caller.Create
            ("backend: const and call body",
             Lovelace.Compiler.Tests.Backend.Test_Const_And_Call_Body'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: local get set body",
+            Lovelace.Compiler.Tests.Backend.Test_Local_Get_Set_Body'Access));
       Result.Add_Test
         (Backend_Caller.Create
            ("backend: typed locals",
@@ -541,6 +588,10 @@ package body Lovelace.Compiler.Tests.Suite is
         (Diagnostics_Caller.Create
            ("diagnostics: format shape",
             Lovelace.Compiler.Tests.Diagnostics.Test_Format_Shape'Access));
+      Result.Add_Test
+        (Diagnostics_Caller.Create
+           ("diagnostics: severity policy",
+            Lovelace.Compiler.Tests.Diagnostics.Test_Severity_Policy'Access));
       Result.Add_Test
         (Diagnostics_Caller.Create
            ("diagnostics: love basename",
@@ -601,8 +652,77 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Unit_Graph.Test_Load_Dependency'Access));
       Result.Add_Test
         (Unit_Graph_Caller.Create
+           ("unit graph: load nested using",
+            Lovelace.Compiler.Tests.Unit_Graph.Test_Load_Nested_Using'Access));
+      Result.Add_Test
+        (Unit_Graph_Caller.Create
            ("unit graph: load failures",
             Lovelace.Compiler.Tests.Unit_Graph.Test_Load_Failures'Access));
+      Result.Add_Test
+        (Unit_Graph_Caller.Create
+           ("unit graph: load versions",
+            Lovelace.Compiler.Tests.Unit_Graph.Test_Load_Versions'Access));
+
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: definite assignment",
+            Lovelace
+              .Compiler
+              .Tests
+              .Semantics
+              .Test_Definite_Assignment'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: environment scopes",
+            Lovelace.Compiler.Tests.Semantics.Test_Environment_Scopes'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: type mismatch",
+            Lovelace.Compiler.Tests.Semantics.Test_Type_Mismatch'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: typecheck api",
+            Lovelace.Compiler.Tests.Semantics.Test_Typecheck_Api'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: unused priority",
+            Lovelace.Compiler.Tests.Semantics.Test_Unused_Priority'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: unused using",
+            Lovelace.Compiler.Tests.Semantics.Test_Unused_Using'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: overload resolve",
+            Lovelace.Compiler.Tests.Semantics.Test_Overload_Resolve'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: scoped using visibility",
+            Lovelace
+              .Compiler
+              .Tests
+              .Semantics
+              .Test_Scoped_Using_Visibility'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: missing and non-exported callees",
+            Lovelace
+              .Compiler
+              .Tests
+              .Semantics
+              .Test_Missing_And_Not_Exported_Callees'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: warnings do not fail",
+            Lovelace
+              .Compiler
+              .Tests
+              .Semantics
+              .Test_Warnings_Do_Not_Fail'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: reporting mapping",
+            Lovelace.Compiler.Tests.Semantics.Test_Reporting_Mapping'Access));
 
       return Result;
    end Suite;

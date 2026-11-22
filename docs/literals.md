@@ -19,7 +19,7 @@ function To_Integer_32 (Lexeme : String) return Integer_32_Results.Result;
 
 Handle both `Ok` discriminants. Failure codes: `Internal_Error` (first) and `Invalid_Literal`.
 
-`To_Integer_32` range-checks against `Interfaces.Integer_32'First .. Integer_32'Last` (including `-2147483648`). Size/signedness suffixes on the lexeme are preserved by `Interpret_Integer` but do not change the evaluate range in this slice.
+`To_Integer_32` range-checks against `Interfaces.Integer_32'First .. Integer_32'Last` (including `-2147483648`). Size/signedness suffixes are preserved by `Interpret_Integer` and are used by **semantics** when typing the literal (see below); they do not change the `To_Integer_32` evaluate range in this slice.
 
 ## Integer forms
 
@@ -56,8 +56,16 @@ Where `exponent = (e|E) [+|-] digits` and `width = f32|F32|f64|F64`.
 
 There is **no** lone `f` / `F` suffix. Hex integers such as `0xf` / `0xF32` stay integers (based prefix wins). Type-position bare `float` remains an alias of `float<32>` (parser default unchanged by this slice).
 
+## Integer suffixes and semantic typing
+
+| Lexeme | Semantic type |
+| --- | --- |
+| Bare (`42`, `0xFF`) | `Integer_Literal` — matches a formal/variable by **range fit** (≤32-bit targets in this slice) |
+| Size and/or signedness (`1s8`, `255u8`, `2s`, `0xFFs32`) | Concrete `integer` / `unsigned integer` / `integer<N>` — defaults: missing signedness → signed; missing size → `32` |
+
+The value must still fit the pinned type (e.g. `300s8` is a type error). Suffixed literals do **not** range-match other widths, so they disambiguate overloads such as `Sink(integer)` vs `Sink(integer<8>)` (`1s8` picks the latter; bare `1` stays ambiguous). Details: [semantics.md](semantics.md).
+
 ## Out of scope
 
 - Evaluating float literals to `Float_32` / `Float_64`
-- Typing a literal into a Lovelace `integer` / `float` type expression beyond call-arg checks
 - Underscores in digit groups

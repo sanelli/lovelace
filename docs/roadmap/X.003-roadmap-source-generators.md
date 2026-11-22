@@ -2,14 +2,14 @@
 
 **Objective:** Allow **Lovelace user-defined source generators** — plugins / extensions that generate or rewrite Lovelace (or adjacent) sources as part of the build, under a documented API and trust model.
 
-Prerequisite: stable build/CLI story; package distribution may interact with [Y.001](Y.001-roadmap-package-manager.md).
+Prerequisite: stable build/CLI story; package distribution may interact with [4.002](4.002-roadmap-pack-and-package-manager.md).
 
 ## In scope
 
 - Extension point for user source generators (invocation, inputs/outputs, diagnostics — TBC)
 - Sandboxing / trust / versioning policy for generators (TBC)
 - Samples of a minimal generator and docs for authors
-- Integration with `lovelace build` (and later the package manager)
+- Integration with `lovelace compile` (and later the package manager)
 
 ## Out of scope
 

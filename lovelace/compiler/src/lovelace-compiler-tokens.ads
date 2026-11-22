@@ -24,8 +24,6 @@ package Lovelace.Compiler.Tokens is
    --  @enum Begin_Keyword begin
    --  @enum End_Keyword end
    --  @enum Export_Keyword export
-   --  @enum Import_Keyword import
-   --  @enum Native_Keyword native
    --  @enum Procedure_Keyword procedure
    --  @enum Integer_Keyword integer
    --  @enum Float_Keyword float
@@ -35,14 +33,14 @@ package Lovelace.Compiler.Tokens is
    --  @enum True_Keyword true
    --  @enum False_Keyword false
    --  @enum Declare_Keyword declare
+   --  @enum Using_Keyword using
+   --  Note: `import` and `native` are ordinary identifiers (not keywords).
    type Keyword_Subtype is
      (Program_Keyword,
       Module_Keyword,
       Begin_Keyword,
       End_Keyword,
       Export_Keyword,
-      Import_Keyword,
-      Native_Keyword,
       Procedure_Keyword,
       Integer_Keyword,
       Float_Keyword,
@@ -51,7 +49,8 @@ package Lovelace.Compiler.Tokens is
       Boolean_Keyword,
       True_Keyword,
       False_Keyword,
-      Declare_Keyword);
+      Declare_Keyword,
+      Using_Keyword);
 
    --  Which punctuation token was matched.
    --  @enum Semicolon ;
@@ -59,12 +58,22 @@ package Lovelace.Compiler.Tokens is
    --  @enum Left_Parenthesis (
    --  @enum Right_Parenthesis )
    --  @enum Comma ,
+   --  @enum Colon_Equals :=
    --  @enum Colon :
    --  @enum Less_Than <
    --  @enum Greater_Than >
    --  @enum Equals =
    type Punctuation_Subtype is
-     (Semicolon, Full_Stop, Left_Parenthesis, Right_Parenthesis, Comma, Colon, Less_Than, Greater_Than, Equals);
+     (Semicolon,
+      Full_Stop,
+      Left_Parenthesis,
+      Right_Parenthesis,
+      Comma,
+      Colon_Equals,
+      Colon,
+      Less_Than,
+      Greater_Than,
+      Equals);
 
    --  Which directive token was matched.
    --  @enum If_Directive #if

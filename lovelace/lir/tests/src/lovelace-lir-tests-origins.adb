@@ -39,7 +39,8 @@ package body Lovelace.Lir.Tests.Origins is
       Modules.Set_Origin
         (The_Module, (Name_Span => Name_Span, Span => Unit_Span, Filename => File_Opt));
       Subroutines.Set_Origin
-        (The_Subroutine, (Name_Span => Name_Span, Filename => File_Opt));
+        (The_Subroutine,
+         (Name_Span => Name_Span, Span => Unit_Span, Filename => File_Opt));
       Modules.Append_Subroutine (The_Module, The_Subroutine);
 
       Decoded :=
@@ -73,6 +74,9 @@ package body Lovelace.Lir.Tests.Origins is
               (Condition => Sub_Origin.Value.Name_Span.Last.Column = 5,
                Message   => "decoded subroutine name span");
             AUnit.Assertions.Assert
+              (Condition => Sub_Origin.Value.Span.Last.Line = 2,
+               Message   => "decoded subroutine span");
+            AUnit.Assertions.Assert
               (Condition => Lovelace.Common.Source.To_Utf_8 (Sub_Origin.Value.Filename) = "origins.love",
                Message   => "decoded subroutine filename");
       end case;
@@ -91,7 +95,8 @@ package body Lovelace.Lir.Tests.Origins is
                   Support.Assert_Contains (Text, "(origin", "text origin form");
                   Support.Assert_Contains (Text, "(filename ""origins.love"")", "text filename");
                   Support.Assert_Contains (Text, "(name-span", "text name-span");
-                  Support.Assert_Contains (Text, "(position 1 1 1)", "text position");
+                  Support.Assert_Contains (Text, "(span ", "text subroutine span");
+                  Support.Assert_Contains (Text, "(position (byte 1) (row 1) (column 1))", "text position");
                end;
          end case;
       end;
@@ -127,7 +132,8 @@ package body Lovelace.Lir.Tests.Origins is
       Sub_Origin_Value    : Subroutines.Origin_Option;
    begin
       Modules.Set_Origin (The_Module, (Name_Span => Name_Span, Span => Unit_Span, Filename => File_Opt));
-      Subroutines.Set_Origin (The_Subroutine, (Name_Span => Name_Span, Filename => File_Opt));
+      Subroutines.Set_Origin
+        (The_Subroutine, (Name_Span => Name_Span, Span => Unit_Span, Filename => File_Opt));
       Modules.Append_Subroutine (The_Module, The_Subroutine);
 
       Module_Origin_Value := Modules.Origin (The_Module);
@@ -155,6 +161,9 @@ package body Lovelace.Lir.Tests.Origins is
             AUnit.Assertions.Assert
               (Condition => Sub_Origin_Value.Value.Name_Span.Last.Column = 13,
                Message   => "subroutine name span last column");
+            AUnit.Assertions.Assert
+              (Condition => Sub_Origin_Value.Value.Span.Last.Line = 3,
+               Message   => "subroutine span last line");
             AUnit.Assertions.Assert
               (Condition => Lovelace.Common.Source.Same_Storage (Sub_Origin_Value.Value.Filename, File_Opt),
                Message   => "subroutine filename shares storage");

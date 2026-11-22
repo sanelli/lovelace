@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Formatter (`format/`)
 
-**`format/`** is a **static** library that reformats `.love` source to the **effective** Lovelace style (defaults in the diagnostics rule; overrides from `.pjlove` / `.slnlove` via `tooling/`).
+**`format/`** is a **static** library that reformats `.love` source to the **effective** Lovelace style (defaults in the diagnostics rule; overrides from `.pjlove` / `.slnlove` via `lovelace/tooling/`).
 
 - CLI: **`lovelace format`** (thin wrapper; do not put format logic in `lovelace/` or `compiler/`).
 - Reads the same style settings the compiler uses for style diagnostics so format and check cannot drift.

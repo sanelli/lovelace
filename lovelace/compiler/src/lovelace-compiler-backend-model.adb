@@ -15,6 +15,16 @@ package body Lovelace.Compiler.Backend.Model is
       Sequence.Items.Append (Item);
    end Append;
 
+   procedure Append_Dependency
+     (The_Model : in out Component_Model; Name : String; Version : String)
+   is
+   begin
+      The_Model.Dependencies.Append
+        (Dependency'
+           (Name    => Ada.Strings.Unbounded.To_Unbounded_String (Name),
+            Version => Ada.Strings.Unbounded.To_Unbounded_String (Version)));
+   end Append_Dependency;
+
    procedure Append_Export (The_Model : in out Component_Model; The_Export : Lifted_Export) is
    begin
       The_Model.Exports.Append (The_Export);
@@ -25,14 +35,24 @@ package body Lovelace.Compiler.Backend.Model is
       The_Model.Functions.Append (The_Function);
    end Append_Function;
 
-   function Create (Name : String) return Component_Model is
+   function Create
+     (Name : String; Version : String := Default_Module_Version)
+      return Component_Model is
    begin
       return
-        (Module_Name_Value   => Ada.Strings.Unbounded.To_Unbounded_String (Name),
-         Functions           => Function_Vectors.Empty_Vector,
-         Exports             => Export_Vectors.Empty_Vector,
-         Wasi_Stdout_Enabled => False);
+        (Module_Name_Value    => Ada.Strings.Unbounded.To_Unbounded_String (Name),
+         Module_Version_Value =>
+           Ada.Strings.Unbounded.To_Unbounded_String (Version),
+         Functions            => Function_Vectors.Empty_Vector,
+         Exports              => Export_Vectors.Empty_Vector,
+         Dependencies         => Dependency_Vectors.Empty_Vector,
+         Wasi_Stdout_Enabled  => False);
    end Create;
+
+   function Dependency_Count (The_Model : Component_Model) return Natural is
+   begin
+      return Natural (The_Model.Dependencies.Length);
+   end Dependency_Count;
 
    function Element (Sequence : Core_Parameter_Sequence; Index : Positive) return Core_Value_Type is
    begin
@@ -79,6 +99,12 @@ package body Lovelace.Compiler.Backend.Model is
       return Natural (The_Model.Functions.Length);
    end Function_Count;
 
+   function Get_Dependency
+     (The_Model : Component_Model; Index : Positive) return Dependency is
+   begin
+      return The_Model.Dependencies.Element (Index);
+   end Get_Dependency;
+
    function Get_Export (The_Model : Component_Model; Index : Positive) return Lifted_Export is
    begin
       return The_Model.Exports.Element (Index);
@@ -124,5 +150,10 @@ package body Lovelace.Compiler.Backend.Model is
    begin
       return Ada.Strings.Unbounded.To_String (The_Model.Module_Name_Value);
    end Module_Name;
+
+   function Module_Version (The_Model : Component_Model) return String is
+   begin
+      return Ada.Strings.Unbounded.To_String (The_Model.Module_Version_Value);
+   end Module_Version;
 
 end Lovelace.Compiler.Backend.Model;

@@ -39,7 +39,7 @@ Required features (semantics only; do not invent syntax until specified):
 
 ## Projects, solutions, packages
 
-Formats live in **`tooling/`** (parse, validate, write, glob/exclude rules). Do not reimplement XML handling in `lovelace/` or `hypatia/`.
+Formats live in **`lovelace/tooling/`** (parse, validate, write, glob/exclude rules). Do not reimplement XML handling in `lovelace/lovelace/` or `hypatia/`.
 
 - **Project** `.pjlove`: XML, similar to `.csproj`. Does **not** list every source file. All `.love` files in the project directory **and subfolders** are in the project. Exclusions only via the `.pjlove`. May hold warning-silence and **style** settings (see diagnostics).
 - **Solution** `.slnlove`: XML, similar to `.slnx`. Lists member projects (does not glob them). May hold warning-silence and style settings for member projects.
@@ -51,7 +51,7 @@ At least:
 
 - `lovelace new` — create project and/or solution
 - `lovelace sln add` / `remove` — attach projects to a solution
-- `lovelace build`
+- `lovelace compile`
 - `lovelace run` — compile if needed, then JIT via `jit/`
 - `lovelace doc` — generate Markdown documentation (SVG diagrams when useful) for a project, solution, or package; implemented via **Alexandria**
 - `lovelace format` — reformat `.love` files to the effective style; implemented via **`format/`**
