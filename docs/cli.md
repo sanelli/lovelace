@@ -10,7 +10,7 @@ Related docs: [diagnostics](diagnostics.md), [semantics](semantics.md), [codegen
 lovelace [global-options...] <command> [command-parameters...]
 ```
 
-Global options must appear **before** the command. Unknown globals, unknown commands, and build usage mistakes print a plain `[err]` block on stderr (no `LV#####` code) and exit non-zero.
+Global options must appear **before** the command. Unknown globals, unknown commands, and compile usage mistakes print a plain `[err]` block on stderr (no `LV#####` code) and exit non-zero.
 
 With **no command**, the CLI prints the same text as `lovelace help` on **stderr** and exits non-zero (no `[err]` line).
 
@@ -25,7 +25,7 @@ British spelling: the flag is `--no-colour`, not `--no-color`.
 
 | Command | Role |
 | --- | --- |
-| `build` | Compile a `.love` file through tokenize → parse → semantics → LIR → WASM/WAT/WIT |
+| `compile` | Compile a `.love` file through tokenize → parse → semantics → LIR → WASM/WAT/WIT |
 | `help` | General help, or `lovelace help <command>` |
 | `version` | Print `0.0.1-alpha.1 @ <short-git-hash>` (`nogit` if unavailable at build time) |
 
@@ -40,7 +40,7 @@ Prints one line to stdout. The short git hash is generated at `alr build` by [`s
 | Form | Output |
 | --- | --- |
 | `lovelace help` | General usage (stdout) |
-| `lovelace help compile` | Build usage and options |
+| `lovelace help compile` | Compile usage and options |
 | `lovelace help version` | Version usage |
 
 ### `lovelace compile`
@@ -134,7 +134,7 @@ lovelace compile samples/module/Empty.love
 lovelace compile samples/module/Foo.Bar.love
 lovelace compile samples/directives/FlavorSelect.love
 lovelace compile samples/directives/FlavorSelect.love --flavor native
-lovelace --no-logo build samples/program/Hello.love --force
+lovelace --no-logo compile samples/program/Hello.love --force
 lovelace compile samples/program/Hello.love --generate-tlir
 lovelace compile samples/program/Hello.love --output-format wasm,wat --output-folder /tmp/out
 lovelace compile samples/program/Hello.love --no-wit --output-format wat
@@ -153,7 +153,7 @@ wasmtime run -Sp3 -W component-model-async=y .output/bin/Hello.wasm
 wasmtime run -Sp3 -W component-model-async=y .output/bin/Hello.wat
 ```
 
-Empty modules have no entrypoint; build them for artifacts only (do not expect `wasmtime run` to succeed).
+Empty modules have no entrypoint; compile them for artifacts only (do not expect `wasmtime run` to succeed).
 
 See [codegen.md](codegen.md) for export naming and kebab-case rules.
 
@@ -175,7 +175,7 @@ By default the script runs workspace `alr build`, all unit crates below, then th
 | `lovelace/lir/tests` | `alr -C lovelace/lir/tests run` | LIR types / codecs unit tests |
 | `lovelace/compiler/tests` | `alr -C lovelace/compiler/tests run` | Compiler frontend / backend unit tests |
 | `lovelace/lovelace/tests` (`lovelace_tests`) | `alr -C lovelace/lovelace/tests run` | Unit tests for argument parsing, output-format, help, version, basename |
-| `lovelace/lovelace/integration_tests` (`lovelace_integration_tests`) | `alr -C lovelace/lovelace/integration_tests run` | Optional: build `samples/program/Hello.love` into `.tests/integration-tests/` and run Wasmtime on `.wasm` / `.wat` (prints `INCONCLUSIVE: wasmtime not found` and passes if Wasmtime is missing); also builds module samples under `samples/module/` |
+| `lovelace/lovelace/integration_tests` (`lovelace_integration_tests`) | `alr -C lovelace/lovelace/integration_tests run` | Optional: compile `samples/program/Hello.love` into `.tests/integration-tests/` and run Wasmtime on `.wasm` / `.wat` (prints `INCONCLUSIVE: wasmtime not found` and passes if Wasmtime is missing); also compiles module samples under `samples/module/` |
 
 Integration tests are **not** part of the default unit-test checklist; use `-SkipIntegration` when you only want units, or `-SkipUnit` when you only want integration.
 

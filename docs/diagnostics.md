@@ -48,7 +48,7 @@ When there is no useful source span (or for CLI usage errors):
 {description}
 ```
 
-`{context}` is a short label such as `command line` or `build`. There is **no** `[LVxxxxx]` line for pure CLI errors (except when a stable code is emitted for invalid warning suppression — see `LV00030`).
+`{context}` is a short label such as `command line` or `compile`. There is **no** `[LVxxxxx]` line for pure CLI errors (except when a stable code is emitted for invalid warning suppression — see `LV00030`).
 
 ## Severity
 
@@ -75,8 +75,8 @@ When there is no useful source span (or for CLI usage errors):
 | `LV00006` | Unexpected_Trailing | Parser |
 | `LV00007` | Unsupported_Type | Backend |
 | `LV00008` | Invalid_Module | Backend / LIR validate surfaced to the user |
-| `LV00009` | Program_Name_Filename_Mismatch | Build (program/module id vs `.love` stem) |
-| `LV00010` | Source_File_Io | Build (missing or unreadable source) |
+| `LV00009` | Program_Name_Filename_Mismatch | Compile (program/module id vs `.love` stem) |
+| `LV00010` | Source_File_Io | Compile (missing or unreadable source) |
 | `LV00011` | Name_Clash | Parser (duplicate or conflicting procedure/parameter/using/local name; self-using; using shadow) |
 | `LV00012` | Invalid_Flavor_Condition | Parser (`#if`/`#elsif` flavor string not wasi/native/web) |
 | `LV00013` | Unterminated_String_Literal | Tokenizer (opening `"` without a matching closer) |
@@ -96,7 +96,7 @@ When there is no useful source span (or for CLI usage errors):
 | `LV00027` | Type_Mismatch | Semantics (assignment or call actual not assignable) |
 | `LV00028` | Unused_Variable | Warning: local never read (assignment alone is not a use) |
 | `LV00029` | Unused_Assignment | Warning: store whose value is never read before overwrite/end (only when the local is read at least once elsewhere) |
-| `LV00030` | Invalid_Warning_Suppression | CLI/build: `--no-warnings` entry unknown or not a warning |
+| `LV00030` | Invalid_Warning_Suppression | CLI/compile: `--no-warnings` entry unknown or not a warning |
 | `LV00031` | Unresolved_Name | Semantics (identifier does not name a visible local or parameter) |
 | `LV00032` | Unused_Using | Warning: a `using M;` was never required for call resolve |
 | `LV00033` | Ambiguous_Call | Semantics (two or more overloads match a call equally) |

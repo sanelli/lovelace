@@ -23,7 +23,7 @@ Ast.Module  →  Ir_Generator.Generate  →  Lir.Modules.Module
                               Backend.Wit      Backend.Wit
 ```
 
-LIR ownership and codecs: [lir.md](lir.md). Frontend lowering into LIR: [ir-generator.md](ir-generator.md). End-to-end builds: [cli.md](cli.md). Diagnostics: [diagnostics.md](diagnostics.md).
+LIR ownership and codecs: [lir.md](lir.md). Frontend lowering into LIR: [ir-generator.md](ir-generator.md). End-to-end compiles: [cli.md](cli.md). Diagnostics: [diagnostics.md](diagnostics.md).
 
 ## Ada packages
 
@@ -196,4 +196,4 @@ Each failure carries a UTF-8 `Detail` string.
 
 Nested crate `lovelace_compiler_tests` covers export-only, entrypoint, both flags, two exports, noop bodies, const+call bodies, typed core parameters, print-integer intrinsic stdout synthesis, unsupported types, invalid modules, component preamble bytes, and Wasm/Wat WIT equality. Run with `alr -C lovelace/compiler/tests run`.
 
-End-to-end CLI checks live in `lovelace/lovelace/integration_tests`: build samples, optionally `wasm-tools validate` every `.wasm`/`.wat`, and run entrypoint programs with `wasmtime` when present.
+End-to-end CLI checks live in `lovelace/lovelace/integration_tests`: compile samples, optionally `wasm-tools validate` every `.wasm`/`.wat`, and run entrypoint programs with `wasmtime` when present.

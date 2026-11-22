@@ -4,7 +4,7 @@ with AUnit.Test_Fixtures;
 
 package Lovelace.Main.Tests.Compile is
 
-   --  Fixture for build option helper tests.
+   --  Fixture for compile option helper tests.
    type Fixture is new AUnit.Test_Fixtures.Test_Fixture with null record;
 
    --  --no-warnings accepts warning LV labels and rejects bad entries.
@@ -19,7 +19,7 @@ package Lovelace.Main.Tests.Compile is
    --  @param The_Test Unused fixture.
    procedure Test_Output_Format_Values (The_Test : in out Fixture);
 
-   --  Spawned build: unread local surfaces LV00028 (exit 0); --warning-as-errors
+   --  Spawned compile: unread local surfaces LV00028 (exit 0); --warning-as-errors
    --  fails; --no-warnings LV00027 fails with LV00030.
    --  @param The_Test Unused fixture.
    procedure Test_Warning_Policy_Cli (The_Test : in out Fixture);

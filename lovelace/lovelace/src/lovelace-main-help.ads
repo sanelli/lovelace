@@ -5,7 +5,7 @@ with Lovelace.Main.Arguments;
 package Lovelace.Main.Help is
 
    --  Print help for the whole tool or for a named command.
-   --  @param Command_Arguments Optional command name (e.g. build).
+   --  @param Command_Arguments Optional command name (e.g. compile).
    --  @param To_Standard_Error When True, write help to standard error.
    --  @return True on success; False when the topic is unknown.
    function Run

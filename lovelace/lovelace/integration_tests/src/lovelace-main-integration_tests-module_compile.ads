@@ -4,7 +4,7 @@ with AUnit.Test_Fixtures;
 
 package Lovelace.Main.Integration_Tests.Module_Compile is
 
-   --  Fixture for module sample end-to-end build and validate checks.
+   --  Fixture for module sample end-to-end compile and validate checks.
    type Fixture is new AUnit.Test_Fixtures.Test_Fixture with null record;
 
    --  Compile Empty, Foo.Bar, Procedures, ExportProcedures, SameModuleCall,
