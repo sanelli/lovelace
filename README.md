@@ -73,7 +73,10 @@ Install these Alire crates once (in addition to the GNAT toolchain Alire selects
 ```bash
 alr install libadalang_tools
 alr install gnatdoc
+alr install gnatcov
 ```
+
+`libadalang_tools` provides **`gnatformat`** and **`gnatmetric`**. **`gnatcov`** drives host Ada coverage (`scripts/coverage.ps1`).
 
 ### Ada code formatting
 

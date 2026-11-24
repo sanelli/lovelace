@@ -1,15 +1,17 @@
 --  Frontend type expressions for the Lovelace compiler AST.
 --  Distinct from Lovelace.Lir.Types. Future path / Named kinds may be
---  added without reshaping Integer, Float, and Boolean.
+--  added without reshaping Integer_Kind, Float_Kind, and Boolean_Kind.
+--  Enum literals use *_Kind names so they do not hide Standard.Boolean /
+--  Integer (required for gnatcov instrumentation witnesses).
 
 package Lovelace.Compiler.Types is
 
    --  Kind of a frontend type expression.
    --  @enum Unit No value; used for procedure return types.
-   --  @enum Boolean Boolean type (LIR i32: 0 = false, nonzero = true).
-   --  @enum Integer Signed or unsigned integral type with a bit size.
-   --  @enum Float Floating-point type with a bit size.
-   type Type_Kind is (Unit, Boolean, Integer, Float);
+   --  @enum Boolean_Kind Boolean type (LIR i32: 0 = false, nonzero = true).
+   --  @enum Integer_Kind Signed or unsigned integral type with a bit size.
+   --  @enum Float_Kind Floating-point type with a bit size.
+   type Type_Kind is (Unit, Boolean_Kind, Integer_Kind, Float_Kind);
 
    --  Signedness of an Integer type expression.
    --  @enum Signed Two's-complement signed integer.
@@ -41,7 +43,7 @@ package Lovelace.Compiler.Types is
    end record;
 
    --  The boolean type expression.
-   --  @return Type_Expression with Kind Boolean.
+   --  @return Type_Expression with Kind Boolean_Kind.
    function Boolean_Type return Type_Expression;
 
    --  Float type with The_Size.

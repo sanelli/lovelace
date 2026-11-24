@@ -66,15 +66,18 @@ package body Lovelace.Compiler.Diagnostics is
            when Error_Codes.Warning => "[warning] ");
    begin
       declare
-         Header      : constant String :=
+         --  Bind 'Image results before slicing so gnatcov witnesses stay valid Ada.
+         Line_Image   : constant String := Positive'Image (Span.First.Line);
+         Column_Image : constant String := Positive'Image (Span.First.Column);
+         Header       : constant String :=
            Tag
            & Filename
            & ":"
-           & Positive'Image (Span.First.Line) (2 .. Positive'Image (Span.First.Line)'Last)
+           & Line_Image (Line_Image'First + 1 .. Line_Image'Last)
            & ","
-           & Positive'Image (Span.First.Column) (2 .. Positive'Image (Span.First.Column)'Last);
-         Source_Line : constant String := (if Have_Line then Source_Text (Line_First .. Line_Last) else "");
-         Footer      : constant String := "[" & Error_Codes.Label (Code) & "] " & Description;
+           & Column_Image (Column_Image'First + 1 .. Column_Image'Last);
+         Source_Line  : constant String := (if Have_Line then Source_Text (Line_First .. Line_Last) else "");
+         Footer       : constant String := "[" & Error_Codes.Label (Code) & "] " & Description;
       begin
          return Header & ASCII.LF & Source_Line & ASCII.LF & Caret_Line (Span) & ASCII.LF & Footer & ASCII.LF;
       end;

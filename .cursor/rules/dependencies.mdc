@@ -17,6 +17,8 @@ Do **not** vendor, wrap, or “temporarily” `depends-on` wasm-tools, wit-bindg
 2. **AUnit** ([AdaCore/aunit](https://github.com/AdaCore/aunit)) — **required** for all tests.
 3. **Git C library (libgit2)** — link **only** from crate `lovelace_hypatia` (`hypatia/`). Hand-written Ada `Interfaces.C` bindings in this repo. Used so Hypatia can clone/fetch git dependencies. No other Git wrappers or Ada git crates.
 4. **GNATdoc** ([AdaCore/gnatdoc](https://github.com/AdaCore/gnatdoc), [Alire crate](https://alire.ada.dev/crates/gnatdoc)) — documentation generator only. Invoke via `scripts/gnatdoc.ps1`; do **not** `depends-on` it from library or `lovelace` crates.
+5. **GNATcoverage (`gnatcov`)** ([Alire crate](https://alire.ada.dev/crates/gnatcov)) — host Ada statement / decision / subprogram coverage only. Install with `alr install gnatcov`; invoke via `scripts/coverage.ps1`. Do **not** `depends-on` it from library or `lovelace` crates.
+6. **GNATmetric (`gnatmetric`)** — from **`libadalang_tools`** (same install as `gnatformat`). Host Ada complexity / nesting / coupling metrics only. Invoke via `scripts/metrics.ps1`; do **not** `depends-on` it from library or `lovelace` crates.
 
 Alire is the host build manager (one crate per component; see the Alire crates rule). Prefer declaring AUnit via Alire on **nested test crates** only; treat any other Alire crate as forbidden until the user approves it.
 

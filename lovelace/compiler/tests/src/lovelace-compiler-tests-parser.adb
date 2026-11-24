@@ -237,7 +237,8 @@ package body Lovelace.Compiler.Tests.Parser is
            Ast.Statements (Ast.Get_Body (Ast.Get_Subroutine (The_Module, 2)));
       begin
          AUnit.Assertions.Assert (Ast.Length (Sink_Params) = 1, "one param");
-         AUnit.Assertions.Assert (Ast.Element (Sink_Params, 1).Parameter_Type.Kind = Types.Boolean, "boolean param");
+         AUnit.Assertions.Assert
+           (Ast.Element (Sink_Params, 1).Parameter_Type.Kind = Types.Boolean_Kind, "boolean param");
          AUnit.Assertions.Assert (Ast.Length (Run_Body) = 2, "two calls");
          AUnit.Assertions.Assert
            (Ada.Strings.Unbounded.To_String (Ast.Element (Ast.Call_Of (Ast.Element (Run_Body, 1)).Arguments, 1).Lexeme)
@@ -757,11 +758,11 @@ package body Lovelace.Compiler.Tests.Parser is
       AUnit.Assertions.Assert (Ast.Length (Params) = 3, "three params");
       AUnit.Assertions.Assert
         (Ada.Strings.Unbounded.To_String (Ast.Element (Params, 1).Parameter_Name) = "x", "param x");
-      AUnit.Assertions.Assert (Ast.Element (Params, 1).Parameter_Type.Kind = Types.Integer, "x integer");
+      AUnit.Assertions.Assert (Ast.Element (Params, 1).Parameter_Type.Kind = Types.Integer_Kind, "x integer");
       AUnit.Assertions.Assert (Ast.Element (Params, 1).Parameter_Type.Integer_Bit_Size = Types.Bits_32, "x size 32");
       AUnit.Assertions.Assert
         (Ada.Strings.Unbounded.To_String (Ast.Element (Params, 2).Parameter_Name) = "y", "param y");
-      AUnit.Assertions.Assert (Ast.Element (Params, 2).Parameter_Type.Kind = Types.Float, "y float");
+      AUnit.Assertions.Assert (Ast.Element (Params, 2).Parameter_Type.Kind = Types.Float_Kind, "y float");
       AUnit.Assertions.Assert (Ast.Element (Params, 3).Parameter_Type.Float_Bit_Size = Types.Bits_32, "z float 32");
    end Test_Module_Procedure;
 
@@ -836,8 +837,7 @@ package body Lovelace.Compiler.Tests.Parser is
       AUnit.Assertions.Assert (not Ast.Has_Native (Ast.Get_Flags (Intrinsic_Sub)), "intrinsic not native");
       AUnit.Assertions.Assert (not Ast.Native (Intrinsic_Sub).Present, "intrinsic no binding");
       Support.Assert_Parser_Error_Count (Obsolete, 1, "obsolete native");
-      Support.Assert_Parser_Error_Code
-        (Obsolete, 1, Lovelace.Compiler.Parser.Unexpected_Token, "obsolete native code");
+      Support.Assert_Parser_Error_Code (Obsolete, 1, Lovelace.Compiler.Parser.Unexpected_Token, "obsolete native code");
       Support.Assert_Parser_Error_Count (With_Body, 1, "native with begin");
       Support.Assert_Parser_Error_Code
         (With_Body, 1, Lovelace.Compiler.Parser.Unexpected_Token, "native with begin code");
@@ -881,18 +881,15 @@ package body Lovelace.Compiler.Tests.Parser is
       pragma Unreferenced (The_Test);
       Different : constant Ast.Module :=
         Support.Must_Parse
-          ("module M; procedure Sink(V : integer); begin end; "
-           & "procedure Sink(V : boolean); begin end; end.",
+          ("module M; procedure Sink(V : integer); begin end; " & "procedure Sink(V : boolean); begin end; end.",
            "different param types");
       Identical : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
         Support.Must_Fail_Parse
-          ("module M; procedure Sink(V : integer); begin end; "
-           & "procedure Sink(X : integer); begin end; end.",
+          ("module M; procedure Sink(V : integer); begin end; " & "procedure Sink(X : integer); begin end; end.",
            "identical param types");
       Zero_Dup  : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
         Support.Must_Fail_Parse
-          ("module M; procedure Sink(); begin end; procedure Sink(); begin end; end.",
-           "duplicate nullary");
+          ("module M; procedure Sink(); begin end; procedure Sink(); begin end; end.", "duplicate nullary");
    begin
       AUnit.Assertions.Assert (Ast.Subroutine_Count (Different) = 2, "two overloads parsed");
       AUnit.Assertions.Assert (Ast.Name (Ast.Get_Subroutine (Different, 1)) = "Sink", "first Sink");

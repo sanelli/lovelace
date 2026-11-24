@@ -27,3 +27,11 @@ lovelace/lovelace/src/lovelace-main-git_hash.ads
 
 # Test scratch output (integration artifacts, etc.)
 .tests/
+
+# Host Ada coverage / metrics (scripts/coverage.ps1, metrics.ps1, …)
+.coverage/
+.metrics/
+*.srctrace
+*.xcov
+**/gnatcov_rts*/
+**/gnatcov-instr/

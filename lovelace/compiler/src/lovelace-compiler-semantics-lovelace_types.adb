@@ -31,16 +31,16 @@ package body Lovelace.Compiler.Semantics.Lovelace_Types is
    function From_Expression (Expression : Types.Type_Expression) return Lovelace_Type is
    begin
       case Expression.Kind is
-         when Types.Unit    =>
+         when Types.Unit         =>
             return (Class => Unit_Class, Expression => Expression, Literal_Value => 0);
 
-         when Types.Boolean =>
+         when Types.Boolean_Kind =>
             return (Class => Boolean_Class, Expression => Expression, Literal_Value => 0);
 
-         when Types.Integer =>
+         when Types.Integer_Kind =>
             return (Class => Integer_Class, Expression => Expression, Literal_Value => 0);
 
-         when Types.Float   =>
+         when Types.Float_Kind   =>
             return (Class => Float_Class, Expression => Expression, Literal_Value => 0);
       end case;
    end From_Expression;
