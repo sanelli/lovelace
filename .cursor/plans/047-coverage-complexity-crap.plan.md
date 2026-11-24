@@ -19,10 +19,10 @@ todos:
     status: completed
   - id: "6"
     content: "6. scripts/metrics.ps1 — gnatmetric XML + complexity gates (CC/essential≤10, nesting≤4); report coupling/exits."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. scripts/crap.ps1 (or shared helper) — join CC + per-subprogram cov; CRAP≤30 gate; summary."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. scripts/quality-report.ps1 — markdown metrics table (value/threshold/✅|⛔️); sticky PR comment in CI."
     status: pending
