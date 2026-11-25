@@ -26,10 +26,12 @@ Then the implementation steps, continuing the same numbering (4, 5, …).
 
 **Always last two steps (N−1 and N):**
 
-- **N−1.** Run all tests that exist (nested AUnit crates, etc.). If there are none, record that and continue.
-- **N.** If tests passed (or none exist), push and open a PR with `gh pr create`.
+- **N−1.** Run all tests that exist (nested AUnit crates, etc.). If there are none, record that and continue. Then run the **host quality scripts without `-SkipGates`**, in order: `pwsh scripts/coverage.ps1`, `pwsh scripts/metrics.ps1`, `pwsh scripts/crap.ps1` (and optionally `pwsh scripts/quality-report.ps1` for the sticky Markdown). If a script is missing from the tree yet, skip only that script and note it.
+- **N.** Push and open a PR with `gh pr create` **only if** step N−1 succeeded (tests passed or none exist, **and** every quality script that ran exited 0).
 
-When **writing** a plan, include this full numbered envelope (use `<n>` until step 1 exists). When **executing** an approved plan, do the steps for real: issue → linked branch → write `.cursor/plans/<nnn>-*.plan.md` (3-digit zero-padded issue number) → implement → tests → PR. Do not wait for a second “please open an issue/PR”.
+**Do not create a PR when quality gates fail.** If coverage, metrics, or CRAP fails, stop: fix the Ada/tests (or complete the in-progress quality work) and re-run N−1. Do **not** `gh pr create`, and do **not** treat “open a draft PR anyway” as acceptable unless the user explicitly overrides this rule in the request. `-SkipGates` is for local diagnosis only — never use it to greenlight a PR.
+
+When **writing** a plan, include this full numbered envelope (use `<n>` until step 1 exists). When **executing** an approved plan, do the steps for real: issue → linked branch → write `.cursor/plans/<nnn>-*.plan.md` (3-digit zero-padded issue number) → implement → tests → quality gates → PR. Do not wait for a second “please open an issue/PR”.
 
 ### Link branch to issue (step 2)
 
