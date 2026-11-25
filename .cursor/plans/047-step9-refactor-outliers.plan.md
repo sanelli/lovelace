@@ -22,7 +22,7 @@ todos:
     status: completed
   - id: "9.6"
     content: "9.6 Metrics gate — pwsh scripts/metrics.ps1 (no SkipGates); fix any remaining CC/essential/nesting breaches."
-    status: pending
+    status: completed
   - id: "9.7"
     content: "9.7 CLI in-process coverage — AUnit for Compile.Run/Parse_Options, Main.Run, Terminal (stop spawning uninstrumented binary for gated paths)."
     status: pending
