@@ -25,7 +25,7 @@ todos:
     status: completed
   - id: "9.7"
     content: "9.7 CLI in-process coverage — AUnit for Compile.Run/Parse_Options, Main.Run, Terminal (stop spawning uninstrumented binary for gated paths)."
-    status: pending
+    status: completed
   - id: "9.8"
     content: "9.8 Library decision coverage — both sides of ! branches in lir-binary, parser, tokenizer, literals, regex, versioning, unit_graph."
     status: pending
