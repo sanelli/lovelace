@@ -1,4 +1,5 @@
 with Ada.Containers.Indefinite_Vectors;
+with Ada.Strings;
 with Ada.Strings.Fixed;
 
 with Lovelace.Compiler.Types;
@@ -54,8 +55,7 @@ package body Lovelace.Compiler.Parser is
       Usings       : Ast.Using_Sequence := Ast.Empty_Using_Sequence;
       Subroutines  : Ast.Subroutine_Sequence := Ast.Empty_Subroutine_Sequence;
       Program_Body : Ast.Block := Ast.Empty_Block;
-      Version      : Ada.Strings.Unbounded.Unbounded_String :=
-        Ada.Strings.Unbounded.Null_Unbounded_String;
+      Version      : Ada.Strings.Unbounded.Unbounded_String := Ada.Strings.Unbounded.Null_Unbounded_String;
    end record;
 
    --  Identifier collected in a parameter group before its type is known.
@@ -180,9 +180,8 @@ package body Lovelace.Compiler.Parser is
    function Parse_Using_List
      (The_Cursor : in out Cursor; Source_Text : String; Usings : out Ast.Using_Sequence) return Step_Result;
    function Parse_Version_Attribute
-     (The_Cursor : in out Cursor;
-      Source_Text : String;
-      Version     : out Ada.Strings.Unbounded.Unbounded_String) return Step_Result;
+     (The_Cursor : in out Cursor; Source_Text : String; Version : out Ada.Strings.Unbounded.Unbounded_String)
+      return Step_Result;
    function Peek (The_Cursor : Cursor) return Tokens.Token;
    function Reject_Self_Usings (The_Unit : Unit_Parse) return Step_Result;
    function Step_End_Of_Input (The_Cursor : Cursor; Detail : String) return Step_Result;
@@ -209,92 +208,53 @@ package body Lovelace.Compiler.Parser is
       return The_Cursor.Next_Index > Tokens.Length (The_Cursor.Token_List);
    end At_End;
 
+   --  Padded description tables; Trim Right before return (uniform enum maps).
+   Keyword_Descriptions : constant array (Tokens.Keyword_Subtype) of String (1 .. 19) :=
+     [Tokens.Program_Keyword   => "keyword ""program""  ",
+      Tokens.Module_Keyword    => "keyword ""module""   ",
+      Tokens.Begin_Keyword     => "keyword ""begin""    ",
+      Tokens.End_Keyword       => "keyword ""end""      ",
+      Tokens.Export_Keyword    => "keyword ""export""   ",
+      Tokens.Procedure_Keyword => "keyword ""procedure""",
+      Tokens.Integer_Keyword   => "keyword ""integer""  ",
+      Tokens.Float_Keyword     => "keyword ""float""    ",
+      Tokens.Signed_Keyword    => "keyword ""signed""   ",
+      Tokens.Unsigned_Keyword  => "keyword ""unsigned"" ",
+      Tokens.Boolean_Keyword   => "keyword ""boolean""  ",
+      Tokens.True_Keyword      => "keyword ""true""     ",
+      Tokens.False_Keyword     => "keyword ""false""    ",
+      Tokens.Declare_Keyword   => "keyword ""declare""  ",
+      Tokens.Using_Keyword     => "keyword ""using""    "];
+
+   Punctuation_Descriptions : constant array (Tokens.Punctuation_Subtype) of String (1 .. 16) :=
+     [Tokens.Semicolon         => "punctuation "";"" ",
+      Tokens.Full_Stop         => "punctuation ""."" ",
+      Tokens.Left_Parenthesis  => "punctuation ""("" ",
+      Tokens.Right_Parenthesis => "punctuation "")"" ",
+      Tokens.Comma             => "punctuation "","" ",
+      Tokens.Colon_Equals      => "punctuation "":=""",
+      Tokens.Colon             => "punctuation "":"" ",
+      Tokens.Less_Than         => "punctuation ""<"" ",
+      Tokens.Greater_Than      => "punctuation "">"" ",
+      Tokens.Equals            => "punctuation ""="" "];
+
+   Directive_Descriptions : constant array (Tokens.Directive_Subtype) of String (1 .. 18) :=
+     [Tokens.If_Directive    => "directive ""#if""   ",
+      Tokens.Elsif_Directive => "directive ""#elsif""",
+      Tokens.Else_Directive  => "directive ""#else"" ",
+      Tokens.End_Directive   => "directive ""#end""  "];
+
    function Describe_Token (Source_Text : String; The_Token : Tokens.Token) return String is
    begin
       case The_Token.Kind is
          when Tokens.Keyword         =>
-            case The_Token.Keyword_Value is
-               when Tokens.Program_Keyword   =>
-                  return "keyword ""program""";
-
-               when Tokens.Module_Keyword    =>
-                  return "keyword ""module""";
-
-               when Tokens.Begin_Keyword     =>
-                  return "keyword ""begin""";
-
-               when Tokens.End_Keyword       =>
-                  return "keyword ""end""";
-
-               when Tokens.Export_Keyword    =>
-                  return "keyword ""export""";
-
-               when Tokens.Procedure_Keyword =>
-                  return "keyword ""procedure""";
-
-               when Tokens.Integer_Keyword   =>
-                  return "keyword ""integer""";
-
-               when Tokens.Float_Keyword     =>
-                  return "keyword ""float""";
-
-               when Tokens.Signed_Keyword    =>
-                  return "keyword ""signed""";
-
-               when Tokens.Unsigned_Keyword  =>
-                  return "keyword ""unsigned""";
-
-               when Tokens.Boolean_Keyword   =>
-                  return "keyword ""boolean""";
-
-               when Tokens.True_Keyword      =>
-                  return "keyword ""true""";
-
-               when Tokens.False_Keyword     =>
-                  return "keyword ""false""";
-
-               when Tokens.Declare_Keyword   =>
-                  return "keyword ""declare""";
-
-               when Tokens.Using_Keyword     =>
-                  return "keyword ""using""";
-            end case;
+            return Ada.Strings.Fixed.Trim (Keyword_Descriptions (The_Token.Keyword_Value), Ada.Strings.Right);
 
          when Tokens.Identifier      =>
             return "identifier """ & Tokens.Lexeme (Source_Text, The_Token) & '"';
 
          when Tokens.Punctuation     =>
-            case The_Token.Punctuation_Value is
-               when Tokens.Semicolon         =>
-                  return "punctuation "";""";
-
-               when Tokens.Full_Stop         =>
-                  return "punctuation "".""";
-
-               when Tokens.Left_Parenthesis  =>
-                  return "punctuation ""(""";
-
-               when Tokens.Right_Parenthesis =>
-                  return "punctuation "")""";
-
-               when Tokens.Comma             =>
-                  return "punctuation "",""";
-
-               when Tokens.Colon_Equals      =>
-                  return "punctuation "":=""";
-
-               when Tokens.Colon             =>
-                  return "punctuation "":""";
-
-               when Tokens.Less_Than         =>
-                  return "punctuation ""<""";
-
-               when Tokens.Greater_Than      =>
-                  return "punctuation "">""";
-
-               when Tokens.Equals            =>
-                  return "punctuation ""=""";
-            end case;
+            return Ada.Strings.Fixed.Trim (Punctuation_Descriptions (The_Token.Punctuation_Value), Ada.Strings.Right);
 
          when Tokens.Integer_Literal =>
             return "integer literal """ & Tokens.Lexeme (Source_Text, The_Token) & '"';
@@ -303,19 +263,7 @@ package body Lovelace.Compiler.Parser is
             return "float literal """ & Tokens.Lexeme (Source_Text, The_Token) & '"';
 
          when Tokens.Directive       =>
-            case The_Token.Directive_Value is
-               when Tokens.If_Directive    =>
-                  return "directive ""#if""";
-
-               when Tokens.Elsif_Directive =>
-                  return "directive ""#elsif""";
-
-               when Tokens.Else_Directive  =>
-                  return "directive ""#else""";
-
-               when Tokens.End_Directive   =>
-                  return "directive ""#end""";
-            end case;
+            return Ada.Strings.Fixed.Trim (Directive_Descriptions (The_Token.Directive_Value), Ada.Strings.Right);
 
          when Tokens.String_Literal  =>
             return "string literal """ & Tokens.Lexeme (Source_Text, The_Token) & '"';
@@ -806,24 +754,19 @@ package body Lovelace.Compiler.Parser is
    end Parse_Using_List;
 
    function Parse_Version_Attribute
-     (The_Cursor  : in out Cursor;
-      Source_Text : String;
-      Version     : out Ada.Strings.Unbounded.Unbounded_String) return Step_Result
+     (The_Cursor : in out Cursor; Source_Text : String; Version : out Ada.Strings.Unbounded.Unbounded_String)
+      return Step_Result
    is
       Attr_Token   : Tokens.Token := Dummy_Identifier;
       String_Token : Tokens.Token :=
-        (Kind     => Tokens.String_Literal,
-         Span     => Origin_Span,
-         Filename => Source.Absent_Filename);
+        (Kind => Tokens.String_Literal, Span => Origin_Span, Filename => Source.Absent_Filename);
       Step         : Step_Result;
       Content      : Ada.Strings.Unbounded.Unbounded_String;
    begin
       Version := Ada.Strings.Unbounded.Null_Unbounded_String;
 
       --  @version ( string_literal )
-      Step :=
-        Expect_Identifier
-          (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => Attr_Token);
+      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => Attr_Token);
       case Step.Ok is
          when False =>
             return Step;
@@ -838,17 +781,12 @@ package body Lovelace.Compiler.Parser is
              (Code     => Unexpected_Token,
               Span     => Attr_Token.Span,
               Filename => Attr_Token.Filename,
-              Detail   =>
-                "expected ""@version"", found "
-                & Describe_Token (Source_Text, Attr_Token));
+              Detail   => "expected ""@version"", found " & Describe_Token (Source_Text, Attr_Token));
       end if;
 
       Step :=
         Expect_Punctuation
-          (The_Cursor => The_Cursor,
-           Source_Text => Source_Text,
-           Expected    => Tokens.Left_Parenthesis,
-           Label       => "(");
+          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Left_Parenthesis, Label => "(");
       case Step.Ok is
          when False =>
             return Step;
@@ -858,9 +796,7 @@ package body Lovelace.Compiler.Parser is
       end case;
 
       if At_End (The_Cursor) then
-         return
-           Step_End_Of_Input
-             (The_Cursor, "expected string literal, found end of input");
+         return Step_End_Of_Input (The_Cursor, "expected string literal, found end of input");
       end if;
 
       declare
@@ -872,21 +808,15 @@ package body Lovelace.Compiler.Parser is
                 (Code     => Unexpected_Token,
                  Span     => Current.Span,
                  Filename => Current.Filename,
-                 Detail   =>
-                   "expected string literal, found "
-                   & Describe_Token (Source_Text, Current));
+                 Detail   => "expected string literal, found " & Describe_Token (Source_Text, Current));
          end if;
          String_Token := Current;
          Advance (The_Cursor);
       end;
 
-      Content :=
-        Ada.Strings.Unbounded.To_Unbounded_String
-          (String_Literal_Content (Source_Text, String_Token));
+      Content := Ada.Strings.Unbounded.To_Unbounded_String (String_Literal_Content (Source_Text, String_Token));
 
-      if not Versioning.Is_Valid_Version
-               (Ada.Strings.Unbounded.To_String (Content))
-      then
+      if not Versioning.Is_Valid_Version (Ada.Strings.Unbounded.To_String (Content)) then
          return
            Make_Failure
              (Code     => Invalid_Module_Version,
@@ -900,10 +830,7 @@ package body Lovelace.Compiler.Parser is
 
       Step :=
         Expect_Punctuation
-          (The_Cursor => The_Cursor,
-           Source_Text => Source_Text,
-           Expected    => Tokens.Right_Parenthesis,
-           Label       => ")");
+          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Right_Parenthesis, Label => ")");
       case Step.Ok is
          when False =>
             return Step;
@@ -1448,9 +1375,7 @@ package body Lovelace.Compiler.Parser is
         and then Peek (The_Cursor).Kind = Tokens.Identifier
         and then Is_Identifier_Lexeme (Source_Text, Peek (The_Cursor), "@version")
       then
-         Step :=
-           Parse_Version_Attribute
-             (The_Cursor => The_Cursor, Source_Text => Source_Text, Version => Version);
+         Step := Parse_Version_Attribute (The_Cursor => The_Cursor, Source_Text => Source_Text, Version => Version);
          case Step.Ok is
             when False =>
                return Step;
@@ -1461,10 +1386,7 @@ package body Lovelace.Compiler.Parser is
       end if;
 
       if At_End (The_Cursor) then
-         return
-           Step_End_Of_Input
-             (The_Cursor,
-              "expected keyword ""program"" or ""module"", found end of input");
+         return Step_End_Of_Input (The_Cursor, "expected keyword ""program"" or ""module"", found end of input");
       end if;
 
       declare
@@ -1477,8 +1399,7 @@ package body Lovelace.Compiler.Parser is
                  Span     => Current.Span,
                  Filename => Current.Filename,
                  Detail   =>
-                   "expected keyword ""program"" or ""module"", found "
-                   & Describe_Token (Source_Text, Current));
+                   "expected keyword ""program"" or ""module"", found " & Describe_Token (Source_Text, Current));
          end if;
 
          case Current.Keyword_Value is
@@ -2527,8 +2448,7 @@ package body Lovelace.Compiler.Parser is
             null;
       end case;
 
-      Decl_Span :=
-        (First => Decl_First, Last => The_Cursor.Last_Consumed_Span.Last);
+      Decl_Span := (First => Decl_First, Last => The_Cursor.Last_Consumed_Span.Last);
 
       if Is_Intrinsic or else Is_Native then
          if Keep_Declarations then
@@ -2605,8 +2525,7 @@ package body Lovelace.Compiler.Parser is
          end case;
 
          if Keep_Declarations then
-            Decl_Span :=
-              (First => Decl_First, Last => The_Cursor.Last_Consumed_Span.Last);
+            Decl_Span := (First => Decl_First, Last => The_Cursor.Last_Consumed_Span.Last);
             The_Subroutine :=
               Ast.Create_Subroutine
                 (Name        => Ada.Strings.Unbounded.To_String (Procedure_Name),
@@ -2967,8 +2886,7 @@ package body Lovelace.Compiler.Parser is
                     Kind        => Ast.Program_Unit,
                     Usings      => The_Unit.Usings,
                     Subroutines => Subroutines,
-                    Version     =>
-                      Ada.Strings.Unbounded.To_String (The_Unit.Version));
+                    Version     => Ada.Strings.Unbounded.To_String (The_Unit.Version));
                return (Ok => True, The_Module => The_Module);
             end;
 
@@ -2984,8 +2902,7 @@ package body Lovelace.Compiler.Parser is
                     Kind        => Ast.Module_Unit,
                     Usings      => The_Unit.Usings,
                     Subroutines => The_Unit.Subroutines,
-                    Version     =>
-                      Ada.Strings.Unbounded.To_String (The_Unit.Version)));
+                    Version     => Ada.Strings.Unbounded.To_String (The_Unit.Version)));
       end case;
    end To_Parse_Result;
 

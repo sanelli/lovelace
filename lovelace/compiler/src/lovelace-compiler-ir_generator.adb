@@ -792,6 +792,22 @@ package body Lovelace.Compiler.Ir_Generator is
       return Result;
    end Map_Parameters;
 
+   Signed_Integer_Map : constant array (Lovelace.Compiler.Types.Integer_Size) of Lovelace.Lir.Types.Value_Type :=
+     [Lovelace.Compiler.Types.Bits_8  => Lovelace.Lir.Types.I8,
+      Lovelace.Compiler.Types.Bits_16 => Lovelace.Lir.Types.I16,
+      Lovelace.Compiler.Types.Bits_32 => Lovelace.Lir.Types.I32,
+      Lovelace.Compiler.Types.Bits_64 => Lovelace.Lir.Types.I64];
+
+   Unsigned_Integer_Map : constant array (Lovelace.Compiler.Types.Integer_Size) of Lovelace.Lir.Types.Value_Type :=
+     [Lovelace.Compiler.Types.Bits_8  => Lovelace.Lir.Types.U8,
+      Lovelace.Compiler.Types.Bits_16 => Lovelace.Lir.Types.U16,
+      Lovelace.Compiler.Types.Bits_32 => Lovelace.Lir.Types.U32,
+      Lovelace.Compiler.Types.Bits_64 => Lovelace.Lir.Types.U64];
+
+   Float_Map : constant array (Lovelace.Compiler.Types.Float_Size) of Lovelace.Lir.Types.Value_Type :=
+     [Lovelace.Compiler.Types.Bits_32 => Lovelace.Lir.Types.F32,
+      Lovelace.Compiler.Types.Bits_64 => Lovelace.Lir.Types.F64];
+
    function Map_Value_Type (The_Type : Lovelace.Compiler.Types.Type_Expression) return Lovelace.Lir.Types.Value_Type is
    begin
       case The_Type.Kind is
@@ -804,44 +820,14 @@ package body Lovelace.Compiler.Ir_Generator is
          when Lovelace.Compiler.Types.Integer_Kind =>
             case The_Type.The_Signedness is
                when Lovelace.Compiler.Types.Signed   =>
-                  case The_Type.Integer_Bit_Size is
-                     when Lovelace.Compiler.Types.Bits_8  =>
-                        return Lovelace.Lir.Types.I8;
-
-                     when Lovelace.Compiler.Types.Bits_16 =>
-                        return Lovelace.Lir.Types.I16;
-
-                     when Lovelace.Compiler.Types.Bits_32 =>
-                        return Lovelace.Lir.Types.I32;
-
-                     when Lovelace.Compiler.Types.Bits_64 =>
-                        return Lovelace.Lir.Types.I64;
-                  end case;
+                  return Signed_Integer_Map (The_Type.Integer_Bit_Size);
 
                when Lovelace.Compiler.Types.Unsigned =>
-                  case The_Type.Integer_Bit_Size is
-                     when Lovelace.Compiler.Types.Bits_8  =>
-                        return Lovelace.Lir.Types.U8;
-
-                     when Lovelace.Compiler.Types.Bits_16 =>
-                        return Lovelace.Lir.Types.U16;
-
-                     when Lovelace.Compiler.Types.Bits_32 =>
-                        return Lovelace.Lir.Types.U32;
-
-                     when Lovelace.Compiler.Types.Bits_64 =>
-                        return Lovelace.Lir.Types.U64;
-                  end case;
+                  return Unsigned_Integer_Map (The_Type.Integer_Bit_Size);
             end case;
 
          when Lovelace.Compiler.Types.Float_Kind   =>
-            case The_Type.Float_Bit_Size is
-               when Lovelace.Compiler.Types.Bits_32 =>
-                  return Lovelace.Lir.Types.F32;
-
-               when Lovelace.Compiler.Types.Bits_64 =>
-                  return Lovelace.Lir.Types.F64;
-            end case;
+            return Float_Map (The_Type.Float_Bit_Size);
       end case;
    end Map_Value_Type;
 

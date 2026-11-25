@@ -25,9 +25,9 @@ todos:
     status: completed
   - id: "8"
     content: "8. scripts/quality-report.ps1 — markdown metrics table (value/threshold/✅|⛔️); sticky PR comment in CI."
-    status: pending
+    status: completed
   - id: "9"
-    content: "9. Refactor host Ada outliers until complexity/CRAP gates pass (no permanent allowlist)."
+    content: "9. Refactor outliers until all gates pass — see sub-plan 047-step9-refactor-outliers.plan.md (1A + tables/helpers)."
     status: pending
   - id: "10"
     content: "10. Docs (docs/coverage.md + README/roadmap lock) and PR-only CI quality job (gates + sticky comment; skip on main push)."
@@ -240,10 +240,16 @@ Rename/move this draft to [`.cursor/plans/<nnn>-coverage-complexity-crap.plan.md
 
 ### 9. Refactor outliers
 
+**Sub-plan (execute this, not ad-hoc):** [`.cursor/plans/047-step9-refactor-outliers.plan.md`](047-step9-refactor-outliers.plan.md)
+
+Locked for step 9:
+- **Scope 1A** — full gate pass on this branch (coverage ≥95% stmt/decision/fun_call, CC/essential ≤10, nesting ≤4, CRAP ≤30); no project exclusions, no threshold weakening, no permanent skip list
+- **Split style** — tables for uniform enum/opcode maps; phase/helper extraction for irregular pipelines
+- Waves `9.0`…`9.10` (complexity first → metrics gate → CLI in-process AUnit → library decision coverage → coverage/CRAP gates → verify)
+
 - Run metrics/coverage/crap; list failures
-- Refactor host Ada (extract helpers, reduce nesting, add tests for coverage holes) until **all gates pass**
+- Refactor host Ada (tables/helpers) and add tests until **all gates pass**
 - `gnatformat` + relevant AUnit after each package touched
-- Do not weaken thresholds; do not land a permanent skip list
 
 ### 10. Docs + roadmap + CI
 
