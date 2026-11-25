@@ -5,10 +5,7 @@ with Ada.Strings.Unbounded;
 
 package Lovelace.Compiler.Module_Path is
 
-   package Path_Vectors is new
-     Ada.Containers.Indefinite_Vectors
-       (Index_Type   => Positive,
-        Element_Type => String);
+   package Path_Vectors is new Ada.Containers.Indefinite_Vectors (Index_Type => Positive, Element_Type => String);
 
    --  Ordered list of UTF-8 filesystem paths (search roots or candidate relatives).
    subtype Path_Sequence is Path_Vectors.Vector;
@@ -38,8 +35,8 @@ package Lovelace.Compiler.Module_Path is
 
    --  All mixed slash/dot relative candidates for a dotted module name, each ending in .love.
    --  Enumeration is stable: separators from left to right as bits of a mask (0 = '/', 1 = '.'),
-   --  counting masks from 0 upward (so a.b.c â a/b/c, a/b.c, a.b/c, a.b.c).
-   --  @param Name UTF-8 dotted module name (empty â empty sequence).
+   --  counting masks from 0 upward (so a.b.c -> a/b/c, a/b.c, a.b/c, a.b.c).
+   --  @param Name UTF-8 dotted module name (empty -> empty sequence).
    --  @return Candidate relatives under a search root.
    function Module_To_Relative_Candidates (Name : String) return Path_Sequence;
 
@@ -47,8 +44,7 @@ package Lovelace.Compiler.Module_Path is
    --  @param Name UTF-8 dotted module name.
    --  @param Roots Ordered search roots (directories).
    --  @return Unique path, not-found, or ambiguous with the colliding paths.
-   function Resolve_Module_File
-     (Name : String; Roots : Path_Sequence) return Resolve_Result;
+   function Resolve_Module_File (Name : String; Roots : Path_Sequence) return Resolve_Result;
 
    --  Mutually exclusive Augusta stdlib root: AUGUSTA_HOME, else
    --  LOVELACE_HOME/lib/augusta/<product-version>, else
@@ -63,9 +59,7 @@ package Lovelace.Compiler.Module_Path is
    --  @param Root_Source_Path Path of the root .love file.
    --  @param Include_Paths Extra roots from -I / --include-path (CLI order).
    --  @return Ordered search roots.
-   function Default_Search_Roots
-     (Root_Source_Path : String; Include_Paths : Path_Sequence)
-      return Path_Sequence;
+   function Default_Search_Roots (Root_Source_Path : String; Include_Paths : Path_Sequence) return Path_Sequence;
 
    --  Join Root and a possibly nested Relative path (Relative may contain '/').
    --  @param Root Directory path.

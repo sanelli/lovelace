@@ -117,10 +117,10 @@ package Lovelace.Compiler.Ast is
    --  Statement kind in a block body.
    --  @enum Call Qualified call with optional expression arguments.
    --  @enum Assignment `Name := Expression;`.
-   --  @enum Nested_Block Nested `{ using } [declareÃÂ¢ÃÂÃÂ¦] begin ÃÂ¢ÃÂÃÂ¦ end;` block statement.
+   --  @enum Nested_Block Nested `{ using } [declare...] begin ... end;` block statement.
    type Statement_Kind is (Call, Assignment, Nested_Block);
 
-   --  One `begin`ÃÂ¢ÃÂÃÂ¦`end` block with optional usings/locals (may nest via Nested_Block).
+   --  One `begin`...`end` block with optional usings/locals (may nest via Nested_Block).
    type Block is private;
 
    --  One statement in a block body (call, assignment, or nested block).
@@ -152,7 +152,7 @@ package Lovelace.Compiler.Ast is
    type Module is private;
 
    --  Which surface form produced this compilation-unit AST.
-   --  @enum Program_Unit Source used program IDENTIFIER; begin ÃÂ¢ÃÂÃÂ¦ end.
+   --  @enum Program_Unit Source used program IDENTIFIER; begin ... end.
    --  @enum Module_Unit Source used module qualified_identifier; end.
    type Unit_Kind is (Program_Unit, Module_Unit);
 
@@ -425,7 +425,7 @@ package Lovelace.Compiler.Ast is
    --  @param Kind Program_Unit or Module_Unit.
    --  @param Usings Ordered unit-level using list (may be empty).
    --  @param Subroutines Ordered subroutine list (empty for empty modules).
-   --  @param Version Optional `@version("…")` attribute text (empty when absent).
+   --  @param Version Optional `@version("â¦")` attribute text (empty when absent).
    --  @return Module value.
    function Create_Module
      (Name        : String;
@@ -462,7 +462,7 @@ package Lovelace.Compiler.Ast is
    --  @return Unit span.
    function Span (The_Module : Module) return Source.Source_Span;
 
-   --  True when The_Module carries a source `@version("…")` attribute.
+   --  True when The_Module carries a source `@version("â¦")` attribute.
    --  @param The_Module Module to query.
    --  @return True iff Version is non-empty.
    function Has_Version_Attribute (The_Module : Module) return Boolean;
@@ -563,14 +563,14 @@ private
    end record;
 
    type Module is record
-      Module_Name              : Ada.Strings.Unbounded.Unbounded_String;
-      Name_Span_Value          : Source.Source_Span;
-      Filename_Value           : Source.Filename_Option;
-      Span_Value               : Source.Source_Span;
-      Kind_Value               : Unit_Kind := Program_Unit;
-      Usings                   : Using_Sequence;
-      Subroutines              : Subroutine_Sequence;
-      Version_Attribute_Value  : Ada.Strings.Unbounded.Unbounded_String;
+      Module_Name             : Ada.Strings.Unbounded.Unbounded_String;
+      Name_Span_Value         : Source.Source_Span;
+      Filename_Value          : Source.Filename_Option;
+      Span_Value              : Source.Source_Span;
+      Kind_Value              : Unit_Kind := Program_Unit;
+      Usings                  : Using_Sequence;
+      Subroutines             : Subroutine_Sequence;
+      Version_Attribute_Value : Ada.Strings.Unbounded.Unbounded_String;
    end record;
 
 end Lovelace.Compiler.Ast;

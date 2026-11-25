@@ -19,11 +19,10 @@ package Lovelace.Main.Compile is
    --  @param Text One of wasm, wat, wasm,wat, or wat,wasm.
    --  @param Format_Set Filled on success.
    --  @return True when Text is a recognized format set.
-   function Try_Parse_Output_Format
-     (Text : String; Format_Set : out Output_Format_Set) return Boolean;
+   function Try_Parse_Output_Format (Text : String; Format_Set : out Output_Format_Set) return Boolean;
 
    --  Apply a comma-separated `--no-warnings` value to The_Policy.
-   --  Each entry must be a known warning LV label (e.g. LV00028). Requires â¥1 id.
+   --  Each entry must be a known warning LV label (e.g. LV00028). Requires >=1 id.
    --  @param Text One argv value such as LV00028,LV00029.
    --  @param The_Policy Policy updated with suppressions on success.
    --  @param Detail Failure description when the function returns False.
@@ -36,7 +35,6 @@ package Lovelace.Main.Compile is
    --  Run the compile command with Command_Arguments.
    --  @param Command_Arguments Tokens after 'compile'.
    --  @return True on success; False after reporting errors.
-   function Run
-     (Command_Arguments : Arguments.String_Vectors.Vector) return Boolean;
+   function Run (Command_Arguments : Arguments.String_Vectors.Vector) return Boolean;
 
 end Lovelace.Main.Compile;

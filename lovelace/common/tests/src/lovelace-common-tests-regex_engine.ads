@@ -39,7 +39,7 @@ package Lovelace.Common.Tests.Regex_Engine is
    --  @param The_Test Unused fixture.
    procedure Test_Quantifiers (The_Test : in out Fixture);
 
-   --  Multi-byte UTF-8 literals and \u{ÃÂ¢ÃÂÃÂ¦}.
+   --  Multi-byte UTF-8 literals and \u{...}.
    --  @param The_Test Unused fixture.
    procedure Test_Utf_8_Literals (The_Test : in out Fixture);
 

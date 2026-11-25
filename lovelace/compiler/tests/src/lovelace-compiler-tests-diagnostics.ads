@@ -15,6 +15,19 @@ package Lovelace.Compiler.Tests.Diagnostics is
    --  @param The_Test Unused fixture.
    procedure Test_Format_Shape (The_Test : in out Fixture);
 
+   --  Format extracts the right source line for LF, CRLF, CR, empty, invalid UTF-8,
+   --  and past-the-end line numbers.
+   --  @param The_Test Unused fixture.
+   procedure Test_Format_Line_Endings (The_Test : in out Fixture);
+
+   --  Format widens an inverted span to one caret.
+   --  @param The_Test Unused fixture.
+   procedure Test_Format_Inverted_Span (The_Test : in out Fixture);
+
+   --  Format_Unbounded, Promote_Warnings, and repeated Suppress_Warning.
+   --  @param The_Test Unused fixture.
+   procedure Test_Policy_Accessors (The_Test : in out Fixture);
+
    --  Love_Basename strips directories and a final .love suffix (including dotted stems).
    --  @param The_Test Unused fixture.
    procedure Test_Love_Basename (The_Test : in out Fixture);

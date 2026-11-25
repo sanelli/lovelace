@@ -23,7 +23,7 @@ package Lovelace.Compiler.Tests.Parser is
    --  @param The_Test Unused fixture.
    procedure Test_Canonical_Multiline (The_Test : in out Fixture);
 
-   --  `{ â¦ }` comments in program/module sources parse like the comment-free forms.
+   --  `{ ... }` comments in program/module sources parse like the comment-free forms.
    --  @param The_Test Unused fixture.
    procedure Test_Comments (The_Test : in out Fixture);
 
@@ -119,7 +119,7 @@ package Lovelace.Compiler.Tests.Parser is
    --  @param The_Test Unused fixture.
    procedure Test_Module_Procedure (The_Test : in out Fixture);
 
-   --  `@intrinsic` / `@native("â¦","â¦")` procedure headers; reject obsolete `native(â¦)` / bad forms.
+   --  `@intrinsic` / `@native("...","...")` procedure headers; reject obsolete `native(...)` / bad forms.
    --  @param The_Test Unused fixture.
    procedure Test_Native_Procedure (The_Test : in out Fixture);
 
@@ -146,5 +146,49 @@ package Lovelace.Compiler.Tests.Parser is
    --  Wrong order and incomplete units fail.
    --  @param The_Test Unused fixture.
    procedure Test_Wrong_Order_And_Incomplete (The_Test : in out Fixture);
+
+   --  Call statements: empty argument list, missing punctuation, bad arguments, end of input.
+   --  @param The_Test Unused fixture.
+   procedure Test_Call_Syntax_Errors (The_Test : in out Fixture);
+
+   --  Malformed `declare` parts and nested blocks fail with token or end-of-input errors.
+   --  @param The_Test Unused fixture.
+   procedure Test_Declare_Syntax_Errors (The_Test : in out Fixture);
+
+   --  Unexpected integer, float, and string literals are described in the error detail.
+   --  @param The_Test Unused fixture.
+   procedure Test_Describe_Literal_Tokens (The_Test : in out Fixture);
+
+   --  Malformed `#if` / `#elsif` / `#else` / `#end` forms and inactive stub arms.
+   --  @param The_Test Unused fixture.
+   procedure Test_Flavor_Syntax_Errors (The_Test : in out Fixture);
+
+   --  Truncated units, procedures, types, native bindings, and `@version` attributes.
+   --  @param The_Test Unused fixture.
+   procedure Test_Incomplete_Input (The_Test : in out Fixture);
+
+   --  Parameter, procedure, local, and block-using names that clash with enclosing names.
+   --  @param The_Test Unused fixture.
+   procedure Test_Name_Clashes (The_Test : in out Fixture);
+
+   --  Malformed `@native` and `@intrinsic` markers and stub signatures.
+   --  @param The_Test Unused fixture.
+   procedure Test_Native_Syntax_Errors (The_Test : in out Fixture);
+
+   --  Malformed procedure headers, parameter groups, and procedure bodies.
+   --  @param The_Test Unused fixture.
+   procedure Test_Procedure_Syntax_Errors (The_Test : in out Fixture);
+
+   --  Integer and float size clauses and malformed type names.
+   --  @param The_Test Unused fixture.
+   procedure Test_Type_Syntax_Errors (The_Test : in out Fixture);
+
+   --  `@version` attribute success and failure forms.
+   --  @param The_Test Unused fixture.
+   procedure Test_Version_Attribute (The_Test : in out Fixture);
+
+   --  A version string token without quote characters keeps its lexeme as the version text.
+   --  @param The_Test Unused fixture.
+   procedure Test_Version_Unquoted_String (The_Test : in out Fixture);
 
 end Lovelace.Compiler.Tests.Parser;

@@ -20,22 +20,29 @@ package body Lovelace.Common.Tests.Source is
       Left_Present  : constant Lovelace.Common.Source.Filename_Option := Lovelace.Common.Source.Some_Filename (Holder);
       Right_Present : constant Lovelace.Common.Source.Filename_Option := Lovelace.Common.Source.Some_Filename (Holder);
       Other_Holder  : constant Lovelace.Common.Source.Shared_Filename :=
-        Lovelace.Common.Source.From_Utf_8 ("shared.love");
+        Lovelace.Common.Source.From_Utf_8 ("other.love");
       Other_Present : constant Lovelace.Common.Source.Filename_Option :=
         Lovelace.Common.Source.Some_Filename (Other_Holder);
+      Equal_Holder  : constant Lovelace.Common.Source.Shared_Filename :=
+        Lovelace.Common.Source.From_Utf_8 ("shared.love");
+      Equal_Present : constant Lovelace.Common.Source.Filename_Option :=
+        Lovelace.Common.Source.Some_Filename (Equal_Holder);
    begin
       AUnit.Assertions.Assert
         (Condition => Lovelace.Common.Source.Same_Storage (Left_Absent, Right_Absent),
-         Message   => "two absent options share storage relation");
+         Message   => "two absent options match");
       AUnit.Assertions.Assert
         (Condition => Lovelace.Common.Source.Same_Storage (Left_Present, Right_Present),
-         Message   => "options from one holder share storage");
+         Message   => "options from one holder match");
+      AUnit.Assertions.Assert
+        (Condition => Lovelace.Common.Source.Same_Storage (Left_Present, Equal_Present),
+         Message   => "equal-text options match");
       AUnit.Assertions.Assert
         (Condition => not Lovelace.Common.Source.Same_Storage (Left_Present, Left_Absent),
-         Message   => "present and absent do not share storage");
+         Message   => "present and absent do not match");
       AUnit.Assertions.Assert
         (Condition => not Lovelace.Common.Source.Same_Storage (Left_Present, Other_Present),
-         Message   => "options from distinct holders do not share storage");
+         Message   => "different-text options do not match");
    end Test_Same_Storage_Filename_Option;
 
    procedure Test_Same_Storage_Shared_Filename (The_Test : in out Fixture) is
@@ -43,12 +50,15 @@ package body Lovelace.Common.Tests.Source is
       First  : constant Lovelace.Common.Source.Shared_Filename := Lovelace.Common.Source.From_Utf_8 ("unit.love");
       Second : constant Lovelace.Common.Source.Shared_Filename := First;
       Third  : constant Lovelace.Common.Source.Shared_Filename := Lovelace.Common.Source.From_Utf_8 ("unit.love");
+      Other  : constant Lovelace.Common.Source.Shared_Filename := Lovelace.Common.Source.From_Utf_8 ("other.love");
    begin
       AUnit.Assertions.Assert
-        (Condition => Lovelace.Common.Source.Same_Storage (First, Second), Message => "copy of holder shares storage");
+        (Condition => Lovelace.Common.Source.Same_Storage (First, Second), Message => "copy of holder matches");
       AUnit.Assertions.Assert
-        (Condition => not Lovelace.Common.Source.Same_Storage (First, Third),
-         Message   => "separate From_Utf_8 calls do not share storage");
+        (Condition => Lovelace.Common.Source.Same_Storage (First, Third), Message => "equal From_Utf_8 text matches");
+      AUnit.Assertions.Assert
+        (Condition => not Lovelace.Common.Source.Same_Storage (First, Other),
+         Message   => "different text does not match");
    end Test_Same_Storage_Shared_Filename;
 
    procedure Test_Source_Span_Fields (The_Test : in out Fixture) is

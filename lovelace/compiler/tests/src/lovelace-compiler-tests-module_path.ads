@@ -16,6 +16,29 @@ package Lovelace.Compiler.Tests.Module_Path is
    --  @param The_Test Unused fixture.
    procedure Test_Default_Search_Roots (The_Test : in out Fixture);
 
+   --  Augusta_Root and Default_Search_Roots fall back to USERPROFILE and to no
+   --  Augusta slot when HOME and USERPROFILE are unset or empty.
+   --  @param The_Test Unused fixture.
+   procedure Test_Home_Fallbacks (The_Test : in out Fixture);
+
+   --  Default_Search_Roots skips missing include directories, invalid paths, and
+   --  duplicates; a root with no containing directory falls back to ".".
+   --  @param The_Test Unused fixture.
+   procedure Test_Search_Roots_Edge_Cases (The_Test : in out Fixture);
+
+   --  Join_Root handles empty parts and every slash / backslash combination.
+   --  @param The_Test Unused fixture.
+   procedure Test_Join_Root (The_Test : in out Fixture);
+
+   --  Module_To_Relative_Candidates handles empty names and empty segments.
+   --  @param The_Test Unused fixture.
+   procedure Test_Candidates_Empty_Segments (The_Test : in out Fixture);
+
+   --  Resolve_Module_File deduplicates repeated roots and ignores invalid roots.
+   --  @param The_Test Unused fixture.
+   procedure Test_Resolve_Duplicate_And_Invalid_Roots
+     (The_Test : in out Fixture);
+
    --  Module_To_Relative_Candidates enumerates mixed slash/dot forms stably.
    --  @param The_Test Unused fixture.
    procedure Test_Relative_Candidates (The_Test : in out Fixture);

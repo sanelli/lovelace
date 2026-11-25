@@ -258,7 +258,7 @@ Locked for step 9:
 - Lock roadmap 1.002 § Macro step 7: tool = gnatcov + gnatmetric; gates as above; sticky PR comment; status with `#<n>`
 - [`.github/workflows/build.yml`](../../.github/workflows/build.yml):
   - Keep the existing `build` job on both `pull_request` and `push` to `main` (build + unit + integration) — unchanged trigger behavior for that job
-  - Add a **`quality` job** with `if: github.event_name == 'pull_request'` (Alire/GNAT setup, install gnatcov + gnatmetric, unit tests as needed for instrumentation, then `coverage.ps1` → `metrics.ps1` → `crap.ps1` → `quality-report.ps1`)
+  - Add a **`quality` job** with `if: github.event_name == 'pull_request'` (Alire/GNAT setup, install gnatcov + gnatmetric, unit tests as needed for instrumentation, then `check-encoding.ps1` → `coverage.ps1` → `metrics.ps1` → `crap.ps1` → `quality-report.ps1`). Encoding also runs as an early blocking step in the existing `build` job (same checkout, before Alire).
   - Job permissions: `contents: read`, `pull-requests: write` (sticky comment)
   - Post/update sticky comment from the report Markdown (**even if gates failed** — `if: always()` once the report file exists)
   - **Do not** run coverage/metrics/CRAP/comment on `push` to `main`

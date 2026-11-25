@@ -54,7 +54,11 @@ package body Lovelace.Lir.Tests.Suite is
       Result.Add_Test
         (Binary_Caller.Create
            ("binary .lir: const and call encoding",
-            Lovelace.Lir.Tests.Binary_Format.Test_Const_And_Call_Encoding'Access));
+            Lovelace
+              .Lir
+              .Tests
+              .Binary_Format
+              .Test_Const_And_Call_Encoding'Access));
       Result.Add_Test
         (Binary_Caller.Create
            ("binary .lir: all value types",
@@ -63,6 +67,70 @@ package body Lovelace.Lir.Tests.Suite is
         (Binary_Caller.Create
            ("binary .lir: decode failures",
             Lovelace.Lir.Tests.Binary_Format.Test_Decode_Failures'Access));
+      Result.Add_Test
+        (Binary_Caller.Create
+           ("binary .lir: absent filename origins",
+            Lovelace
+              .Lir
+              .Tests
+              .Binary_Format
+              .Test_Absent_Filename_Origins'Access));
+      Result.Add_Test
+        (Binary_Caller.Create
+           ("binary .lir: hand-built baseline",
+            Lovelace.Lir.Tests.Binary_Format.Test_Hand_Built_Baseline'Access));
+      Result.Add_Test
+        (Binary_Caller.Create
+           ("binary .lir: optional sections round-trip",
+            Lovelace
+              .Lir
+              .Tests
+              .Binary_Format
+              .Test_Optional_Sections_Round_Trip'Access));
+      Result.Add_Test
+        (Binary_Caller.Create
+           ("binary .lir: encode failures",
+            Lovelace.Lir.Tests.Binary_Format.Test_Encode_Failures'Access));
+      Result.Add_Test
+        (Binary_Caller.Create
+           ("binary .lir: file failures",
+            Lovelace.Lir.Tests.Binary_Format.Test_File_Failures'Access));
+      Result.Add_Test
+        (Binary_Caller.Create
+           ("binary .lir: header failures",
+            Lovelace.Lir.Tests.Binary_Format.Test_Header_Failures'Access));
+      Result.Add_Test
+        (Binary_Caller.Create
+           ("binary .lir: presence failures",
+            Lovelace.Lir.Tests.Binary_Format.Test_Presence_Failures'Access));
+      Result.Add_Test
+        (Binary_Caller.Create
+           ("binary .lir: origin failures",
+            Lovelace.Lir.Tests.Binary_Format.Test_Origin_Failures'Access));
+      Result.Add_Test
+        (Binary_Caller.Create
+           ("binary .lir: name failures",
+            Lovelace.Lir.Tests.Binary_Format.Test_Name_Failures'Access));
+      Result.Add_Test
+        (Binary_Caller.Create
+           ("binary .lir: preamble failures",
+            Lovelace.Lir.Tests.Binary_Format.Test_Preamble_Failures'Access));
+      Result.Add_Test
+        (Binary_Caller.Create
+           ("binary .lir: body failures",
+            Lovelace.Lir.Tests.Binary_Format.Test_Body_Failures'Access));
+      Result.Add_Test
+        (Binary_Caller.Create
+           ("binary .lir: instruction immediates",
+            Lovelace
+              .Lir
+              .Tests
+              .Binary_Format
+              .Test_Instruction_Immediates'Access));
+      Result.Add_Test
+        (Binary_Caller.Create
+           ("binary .lir: truncation sweep",
+            Lovelace.Lir.Tests.Binary_Format.Test_Truncation_Sweep'Access));
 
       Result.Add_Test
         (Text_Caller.Create

@@ -15,7 +15,7 @@ package body Lovelace.Compiler.Intrinsics is
       Subroutine_Name : String;
       Return_Type     : Lovelace.Lir.Types.Value_Type;
       Parameters      : Lovelace.Lir.Types.Parameter_Sequence) return Boolean;
-   --  Closed-table check for augusta.std.io.print(integer) â Unit.
+   --  Closed-table check for augusta.std.io.print(integer) -> Unit.
 
    function Is_Default_Integer (The_Type : Lovelace.Compiler.Types.Type_Expression) return Boolean is
    begin

@@ -16,13 +16,30 @@ package body Lovelace.Compiler.Tests.Parser is
    use type Lovelace.Compiler.Parser.Parser_Error_Code;
    use type Lovelace.Compiler.Types.Float_Size;
    use type Lovelace.Compiler.Types.Integer_Size;
+   use type Lovelace.Compiler.Types.Signedness;
    use type Lovelace.Compiler.Types.Type_Kind;
+
+   package Compiler_Parser renames Lovelace.Compiler.Parser;
 
    procedure Assert_Empty_Module (The_Module : Ast.Module; Expected_Name : String; Message : String);
    --  Assert Module_Unit with Expected_Name and zero subroutines.
 
    procedure Assert_Entrypoint_Module (The_Module : Ast.Module; Expected_Name : String; Message : String);
    --  Assert Program_Unit with one entrypoint+export subroutine named Expected_Name.
+
+   procedure Assert_Parse_Detail
+     (Source_Text     : String;
+      Expected_Code   : Compiler_Parser.Parser_Error_Code;
+      Expected_Detail : String;
+      Message         : String);
+   --  Assert Source_Text fails with exactly one error carrying Expected_Code and Expected_Detail.
+
+   procedure Assert_Parse_Error
+     (Source_Text   : String;
+      Expected_Code : Compiler_Parser.Parser_Error_Code;
+      Message       : String;
+      Active_Flavor : Flavor.Flavor := Flavor.Default);
+   --  Assert Source_Text fails with exactly one error carrying Expected_Code.
 
    procedure Assert_Empty_Module (The_Module : Ast.Module; Expected_Name : String; Message : String) is
    begin
@@ -59,6 +76,34 @@ package body Lovelace.Compiler.Tests.Parser is
             Message & ": unit span bounds");
       end;
    end Assert_Entrypoint_Module;
+
+   procedure Assert_Parse_Detail
+     (Source_Text     : String;
+      Expected_Code   : Compiler_Parser.Parser_Error_Code;
+      Expected_Detail : String;
+      Message         : String)
+   is
+      Errors : constant Compiler_Parser.Parser_Error_Sequence := Support.Must_Fail_Parse (Source_Text, Message);
+   begin
+      Support.Assert_Parser_Error_Count (Errors, 1, Message);
+      Support.Assert_Parser_Error_Code (Errors, 1, Expected_Code, Message & " code");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Unbounded.To_String (Compiler_Parser.Element (Errors, 1).Detail) = Expected_Detail,
+         Message & ": detail");
+   end Assert_Parse_Detail;
+
+   procedure Assert_Parse_Error
+     (Source_Text   : String;
+      Expected_Code : Compiler_Parser.Parser_Error_Code;
+      Message       : String;
+      Active_Flavor : Flavor.Flavor := Flavor.Default)
+   is
+      Errors : constant Compiler_Parser.Parser_Error_Sequence :=
+        Support.Must_Fail_Parse (Source_Text, Message, Active_Flavor);
+   begin
+      Support.Assert_Parser_Error_Count (Errors, 1, Message);
+      Support.Assert_Parser_Error_Code (Errors, 1, Expected_Code, Message & " code");
+   end Assert_Parse_Error;
 
    procedure Test_Assignment_Statements (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -257,6 +302,50 @@ package body Lovelace.Compiler.Tests.Parser is
       Support.Assert_Parser_Error_Code (Sized_Bool, 1, Lovelace.Compiler.Parser.Unexpected_Token, "boolean size code");
    end Test_Boolean_Type;
 
+   procedure Test_Call_Syntax_Errors (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Empty_Call : constant Ast.Module :=
+        Support.Must_Parse ("program P; begin Lib.Put(); end.", "empty argument list");
+   begin
+      declare
+         Statements : constant Ast.Statement_Sequence :=
+           Ast.Statements (Ast.Get_Body (Ast.Get_Subroutine (Empty_Call, 1)));
+      begin
+         AUnit.Assertions.Assert (Ast.Length (Statements) = 1, "empty argument list: one call");
+         AUnit.Assertions.Assert
+           (Ast.Length (Ast.Call_Of (Ast.Element (Statements, 1)).Arguments) = 0, "empty argument list: no args");
+      end;
+
+      Assert_Parse_Error
+        ("program P; begin Lib.Put 5; end.", Compiler_Parser.Unexpected_Token, "call missing open parenthesis");
+      Assert_Parse_Error
+        ("program P; begin Lib.Put(1 2); end.", Compiler_Parser.Unexpected_Token, "call missing close parenthesis");
+      Assert_Parse_Error
+        ("program P; begin Lib.Put(;); end.", Compiler_Parser.Unexpected_Token, "call bad first argument");
+      Assert_Parse_Error
+        ("program P; begin Lib.Put(1, ;); end.", Compiler_Parser.Unexpected_Token, "call bad later argument");
+      Assert_Parse_Error
+        ("program P; begin Lib.Put(1.5); end.", Compiler_Parser.Unexpected_Token, "call float argument in program");
+      Assert_Parse_Error
+        ("program P; begin Sink(1); end.", Compiler_Parser.Unexpected_Token, "call target without module");
+      Assert_Parse_Error
+        ("program P; begin Lib.Put(1); Sink(); end.", Compiler_Parser.Unexpected_Token, "second call without module");
+      Assert_Parse_Error
+        ("program P; begin Lib.Put(1) end.", Compiler_Parser.Unexpected_Token, "call missing semicolon in program");
+      Assert_Parse_Error
+        ("program P; begin Lib.", Compiler_Parser.Unexpected_End_Of_Input, "call segment missing at end");
+      Assert_Parse_Error
+        ("program P; begin Lib.Put", Compiler_Parser.Unexpected_End_Of_Input, "call open parenthesis at end");
+      Assert_Parse_Error
+        ("program P; begin Lib.Put(", Compiler_Parser.Unexpected_End_Of_Input, "call argument list at end");
+      Assert_Parse_Error
+        ("program P; begin Lib.Put(1", Compiler_Parser.Unexpected_End_Of_Input, "call close parenthesis at end");
+      Assert_Parse_Error
+        ("program P; begin Lib.Put(1,", Compiler_Parser.Unexpected_End_Of_Input, "call argument after comma at end");
+      Assert_Parse_Error
+        ("program P; begin Lib.Put(1)", Compiler_Parser.Unexpected_End_Of_Input, "call semicolon at end");
+   end Test_Call_Syntax_Errors;
+
    procedure Test_Canonical_Module (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Source_Text : constant String := "module Empty;" & ASCII.LF & "end.";
@@ -443,6 +532,65 @@ package body Lovelace.Compiler.Tests.Parser is
       Support.Assert_Parser_Error_Code (Proc_Clash, 1, Lovelace.Compiler.Parser.Name_Clash, "proc clash code");
       AUnit.Assertions.Assert (Ast.Subroutine_Count (Sibling_Ok) = 1, "sibling ok");
    end Test_Declare_Locals;
+
+   procedure Test_Declare_Syntax_Errors (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+   begin
+      Assert_Parse_Error
+        ("program P; declare", Compiler_Parser.Unexpected_End_Of_Input, "declare without declarations at end");
+      Assert_Parse_Error
+        ("program P; declare 5 : integer; begin end.", Compiler_Parser.Unexpected_Token, "declare bad first name");
+      Assert_Parse_Error
+        ("program P; declare X, 5 : integer; begin end.", Compiler_Parser.Unexpected_Token, "declare bad later name");
+      Assert_Parse_Error
+        ("program P; declare X", Compiler_Parser.Unexpected_End_Of_Input, "declare name then end of input");
+      Assert_Parse_Error
+        ("program P; declare X,", Compiler_Parser.Unexpected_End_Of_Input, "declare comma then end of input");
+      Assert_Parse_Error
+        ("program P; declare X integer; begin end.", Compiler_Parser.Unexpected_Token, "declare missing colon");
+      Assert_Parse_Error
+        ("program P; declare X :", Compiler_Parser.Unexpected_End_Of_Input, "declare colon then end of input");
+      Assert_Parse_Error
+        ("program P; declare X : ; begin end.", Compiler_Parser.Unexpected_Token, "declare missing type");
+      Assert_Parse_Error
+        ("program P; declare X : integer begin end.", Compiler_Parser.Unexpected_Token, "declare missing semicolon");
+      Assert_Parse_Error
+        ("program P; declare X : integer", Compiler_Parser.Unexpected_End_Of_Input, "declare semicolon at end");
+      Assert_Parse_Error
+        ("program P; declare X : integer; Y integer; begin end.",
+         Compiler_Parser.Unexpected_Token,
+         "declare second declaration missing colon");
+      Assert_Parse_Error
+        ("program P; begin begin end end.", Compiler_Parser.Unexpected_Token, "nested block missing semicolon");
+      Assert_Parse_Error
+        ("program P; begin begin end", Compiler_Parser.Unexpected_End_Of_Input, "nested block semicolon at end");
+      Assert_Parse_Error ("program P; begin using", Compiler_Parser.Unexpected_End_Of_Input, "block using name at end");
+      Assert_Parse_Error
+        ("program P; begin using Lib begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "block using missing semicolon");
+   end Test_Declare_Syntax_Errors;
+
+   procedure Test_Describe_Literal_Tokens (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Expected : constant String := "expected identifier, found ";
+   begin
+      Assert_Parse_Detail
+        ("program 5; begin end.",
+         Compiler_Parser.Unexpected_Token,
+         Expected & "integer literal ""5""",
+         "describe integer literal");
+      Assert_Parse_Detail
+        ("program 1.5; begin end.",
+         Compiler_Parser.Unexpected_Token,
+         Expected & "float literal ""1.5""",
+         "describe float literal");
+      Assert_Parse_Detail
+        ("program ""x""; begin end.",
+         Compiler_Parser.Unexpected_Token,
+         Expected & "string literal """"x""""",
+         "describe string literal");
+   end Test_Describe_Literal_Tokens;
 
    procedure Test_Dotted_Module_Name (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -709,6 +857,78 @@ package body Lovelace.Compiler.Tests.Parser is
       AUnit.Assertions.Assert (Ast.Name (Ast.Get_Subroutine (Web_Module, 1)) = "WebOnly", "web name");
    end Test_Flavor_Selection;
 
+   procedure Test_Flavor_Syntax_Errors (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Inactive_Source : constant String :=
+        "module M;"
+        & ASCII.LF
+        & "#if flavor = ""native"""
+        & ASCII.LF
+        & "@intrinsic procedure A();"
+        & ASCII.LF
+        & "@native(""lib"", ""fn"") procedure B(x : integer);"
+        & ASCII.LF
+        & "procedure C(y : float<64>); begin end;"
+        & ASCII.LF
+        & "#end"
+        & ASCII.LF
+        & "end.";
+      Inactive_Wasi   : constant Ast.Module := Support.Must_Parse (Inactive_Source, "inactive arm", Flavor.Wasi);
+   begin
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (Inactive_Wasi) = 0, "inactive arm: nothing kept");
+      Assert_Parse_Error
+        ("module M; #if flavor = ""wasi"" procedure P(); begin end;",
+         Compiler_Parser.Unexpected_End_Of_Input,
+         "conditional missing #end at end",
+         Flavor.Wasi);
+      Assert_Parse_Error
+        ("module M; #if flavor = ""wasi"" #else #else #end end.",
+         Compiler_Parser.Unexpected_Token,
+         "conditional second else",
+         Flavor.Wasi);
+      Assert_Parse_Error
+        ("module M; #if flavor = ""wasi"" #else #elsif flavor = ""native"" #end end.",
+         Compiler_Parser.Unexpected_Token,
+         "conditional elsif after else",
+         Flavor.Wasi);
+      Assert_Parse_Error
+        ("module M; #if flavor = ""wasi"" #elsif flavor = ""nope"" #end end.",
+         Compiler_Parser.Invalid_Flavor_Condition,
+         "conditional invalid elsif",
+         Flavor.Wasi);
+      Assert_Parse_Error
+        ("module M; #if flavor = ""wasi"" end.",
+         Compiler_Parser.Unexpected_Token,
+         "conditional arm stops at end keyword",
+         Flavor.Wasi);
+      Assert_Parse_Error ("module M; #if", Compiler_Parser.Unexpected_End_Of_Input, "conditional name at end");
+      Assert_Parse_Error
+        ("module M; #if ""wasi"" #end end.", Compiler_Parser.Unexpected_Token, "conditional missing flavor name");
+      Assert_Parse_Error
+        ("module M; #if mode = ""wasi"" #end end.", Compiler_Parser.Unexpected_Token, "conditional wrong name");
+      Assert_Parse_Error
+        ("module M; #if flavor ""wasi"" #end end.", Compiler_Parser.Unexpected_Token, "conditional missing equals");
+      Assert_Parse_Error ("module M; #if flavor", Compiler_Parser.Unexpected_End_Of_Input, "conditional equals at end");
+      Assert_Parse_Error
+        ("module M; #if flavor =", Compiler_Parser.Unexpected_End_Of_Input, "conditional string at end");
+      Assert_Parse_Error
+        ("module M; #if flavor = wasi #end end.", Compiler_Parser.Unexpected_Token, "conditional unquoted flavor");
+      Assert_Parse_Error ("module M; #end end.", Compiler_Parser.Unexpected_Token, "stray #end");
+      Assert_Parse_Error ("module M; #else end.", Compiler_Parser.Unexpected_Token, "stray #else");
+
+      declare
+         Inactive_Native : constant Ast.Module := Support.Must_Parse (Inactive_Source, "native arm", Flavor.Native);
+      begin
+         AUnit.Assertions.Assert (Ast.Subroutine_Count (Inactive_Native) = 3, "native arm: all kept");
+         AUnit.Assertions.Assert
+           (Ast.Has_Intrinsic (Ast.Get_Flags (Ast.Get_Subroutine (Inactive_Native, 1))), "native arm: intrinsic stub");
+         AUnit.Assertions.Assert
+           (Ast.Has_Native (Ast.Get_Flags (Ast.Get_Subroutine (Inactive_Native, 2))), "native arm: native stub");
+         AUnit.Assertions.Assert
+           (Ast.Length (Ast.Parameters (Ast.Get_Subroutine (Inactive_Native, 3))) = 1, "native arm: body procedure");
+      end;
+   end Test_Flavor_Syntax_Errors;
+
    procedure Test_Identifier_Names (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Cafe_Name   : constant String := "caf" & Support.To_Utf_8 (Wide_Wide_Character'Val (16#00E9#));
@@ -720,6 +940,53 @@ package body Lovelace.Compiler.Tests.Parser is
       Assert_Entrypoint_Module (Cafe_Module, Cafe_Name, "unicode name");
       Assert_Entrypoint_Module (At_Module, "@foo", "@foo name");
    end Test_Identifier_Names;
+
+   procedure Test_Incomplete_Input (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+   begin
+      Assert_Parse_Error ("program", Compiler_Parser.Unexpected_End_Of_Input, "program name at end");
+      Assert_Parse_Error ("program P", Compiler_Parser.Unexpected_End_Of_Input, "program semicolon at end");
+      Assert_Parse_Error ("program P;", Compiler_Parser.Unexpected_End_Of_Input, "program block at end");
+      Assert_Parse_Error ("program P; begin", Compiler_Parser.Unexpected_End_Of_Input, "program end at end");
+      Assert_Parse_Error ("program P; begin end", Compiler_Parser.Unexpected_End_Of_Input, "program full stop at end");
+      Assert_Parse_Error ("module", Compiler_Parser.Unexpected_End_Of_Input, "module name at end");
+      Assert_Parse_Error ("module Foo", Compiler_Parser.Unexpected_End_Of_Input, "module semicolon at end");
+      Assert_Parse_Error ("module Foo.", Compiler_Parser.Unexpected_End_Of_Input, "module name segment at end");
+      Assert_Parse_Error ("module M;", Compiler_Parser.Unexpected_End_Of_Input, "module end at end");
+      Assert_Parse_Error ("module M; end", Compiler_Parser.Unexpected_End_Of_Input, "module full stop at end");
+      Assert_Parse_Error ("using", Compiler_Parser.Unexpected_End_Of_Input, "using name at end");
+      Assert_Parse_Error ("using Foo", Compiler_Parser.Unexpected_End_Of_Input, "using semicolon at end");
+      Assert_Parse_Error ("using Foo;", Compiler_Parser.Unexpected_End_Of_Input, "unit keyword at end");
+      Assert_Parse_Error ("using Foo; 5", Compiler_Parser.Unexpected_Token, "unit keyword missing");
+      Assert_Parse_Error ("module M; procedure", Compiler_Parser.Unexpected_End_Of_Input, "procedure name at end");
+      Assert_Parse_Error ("module M; procedure P", Compiler_Parser.Unexpected_End_Of_Input, "parameters at end");
+      Assert_Parse_Error ("module M; procedure P(", Compiler_Parser.Unexpected_End_Of_Input, "parameter list at end");
+      Assert_Parse_Error ("module M; procedure P(x", Compiler_Parser.Unexpected_End_Of_Input, "parameter colon at end");
+      Assert_Parse_Error ("module M; procedure P(x,", Compiler_Parser.Unexpected_End_Of_Input, "parameter name at end");
+      Assert_Parse_Error
+        ("module M; procedure P(x :", Compiler_Parser.Unexpected_End_Of_Input, "parameter type at end");
+      Assert_Parse_Error
+        ("module M; procedure P(x : integer", Compiler_Parser.Unexpected_End_Of_Input, "parameter close at end");
+      Assert_Parse_Error
+        ("module M; procedure P(x : integer;", Compiler_Parser.Unexpected_End_Of_Input, "next parameter at end");
+      Assert_Parse_Error
+        ("module M; procedure P()", Compiler_Parser.Unexpected_End_Of_Input, "procedure semicolon at end");
+      Assert_Parse_Error
+        ("module M; procedure P();", Compiler_Parser.Unexpected_End_Of_Input, "procedure block at end");
+      Assert_Parse_Error
+        ("module M; procedure P(); begin", Compiler_Parser.Unexpected_End_Of_Input, "procedure end at end");
+      Assert_Parse_Error
+        ("module M; procedure P(); begin end", Compiler_Parser.Unexpected_End_Of_Input, "procedure semicolon at end");
+      Assert_Parse_Error ("module M; export", Compiler_Parser.Unexpected_End_Of_Input, "export procedure at end");
+      Assert_Parse_Error
+        ("module M; @intrinsic", Compiler_Parser.Unexpected_End_Of_Input, "intrinsic procedure at end");
+      Assert_Parse_Error ("module M; @native", Compiler_Parser.Unexpected_End_Of_Input, "native binding at end");
+      Assert_Parse_Error ("@version", Compiler_Parser.Unexpected_End_Of_Input, "version open parenthesis at end");
+      Assert_Parse_Error ("@version(", Compiler_Parser.Unexpected_End_Of_Input, "version string at end");
+      Assert_Parse_Error
+        ("@version(""1.0.0""", Compiler_Parser.Unexpected_End_Of_Input, "version close parenthesis at end");
+      Assert_Parse_Error ("@version(""1.0.0"")", Compiler_Parser.Unexpected_End_Of_Input, "version unit at end");
+   end Test_Incomplete_Input;
 
    procedure Test_Module_Begin_Rejected (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -785,6 +1052,68 @@ package body Lovelace.Compiler.Tests.Parser is
       Assert_Empty_Module (Glued_Module, "Empty", "glued module");
       Assert_Empty_Module (Spaced_Module, "Foo.Bar", "spaced module");
    end Test_Module_Whitespace;
+
+   procedure Test_Name_Clashes (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Arity_Overload : constant Ast.Module :=
+        Support.Must_Parse
+          ("module M; procedure Sink(); begin end; procedure Sink(V : integer); begin end; end.", "arity overload");
+      Inactive_Name  : constant Ast.Module :=
+        Support.Must_Parse
+          ("module M; #if flavor = ""native"" procedure M(); begin end; #end end.",
+           "inactive module-named procedure",
+           Flavor.Wasi);
+   begin
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (Arity_Overload) = 2, "arity overload: both kept");
+      AUnit.Assertions.Assert (Ast.Subroutine_Count (Inactive_Name) = 0, "inactive module-named procedure: dropped");
+
+      Assert_Parse_Error
+        ("module M; procedure P(M : integer); begin end; end.",
+         Compiler_Parser.Name_Clash,
+         "parameter named like module");
+      Assert_Parse_Error
+        ("module M; procedure P(P : integer); begin end; end.",
+         Compiler_Parser.Name_Clash,
+         "parameter named like procedure");
+      Assert_Parse_Error
+        ("module M; procedure A(); begin end; procedure B(A : integer); begin end; end.",
+         Compiler_Parser.Name_Clash,
+         "parameter named like subroutine");
+      Assert_Parse_Error
+        ("module M; procedure M(); begin end; end.", Compiler_Parser.Name_Clash, "procedure named like module");
+      Assert_Parse_Error
+        ("module M; procedure A(); begin end; procedure B(); declare A : integer; begin end; end.",
+         Compiler_Parser.Name_Clash,
+         "local named like subroutine");
+      Assert_Parse_Error
+        ("module M; procedure P(X : integer); declare X : integer; begin end; end.",
+         Compiler_Parser.Name_Clash,
+         "local named like parameter");
+      Assert_Parse_Error
+        ("program Demo; declare Demo : integer; begin end.", Compiler_Parser.Name_Clash, "local named like program");
+      Assert_Parse_Error
+        ("module M; procedure Run(); declare Run : integer; begin end; end.",
+         Compiler_Parser.Name_Clash,
+         "local named like procedure");
+      Assert_Parse_Error
+        ("program P; declare X : integer; begin declare X : boolean; begin end; end.",
+         Compiler_Parser.Name_Clash,
+         "local shadows enclosing local");
+      Assert_Parse_Error
+        ("program P; declare X, X : integer; begin end.", Compiler_Parser.Name_Clash, "local duplicated in group");
+      Assert_Parse_Error
+        ("program P; begin using P; begin end; end.", Compiler_Parser.Name_Clash, "nested block using of program");
+      Assert_Parse_Error
+        ("program P; begin using Lib; using Lib; begin end; end.",
+         Compiler_Parser.Name_Clash,
+         "nested block duplicate using");
+      Assert_Parse_Error
+        ("program P; declare X : integer; begin using X; begin end; end.",
+         Compiler_Parser.Name_Clash,
+         "nested block using named like local");
+      Assert_Parse_Error
+        ("using P; program P; begin end.", Compiler_Parser.Name_Clash, "unit using named like program");
+   end Test_Name_Clashes;
 
    procedure Test_Native_Procedure (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -852,6 +1181,51 @@ package body Lovelace.Compiler.Tests.Parser is
         (Missing_Paren, 1, Lovelace.Compiler.Parser.Unexpected_Token, "native missing paren code");
    end Test_Native_Procedure;
 
+   procedure Test_Native_Syntax_Errors (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+   begin
+      Assert_Parse_Error
+        ("module M; @native procedure P(); end.", Compiler_Parser.Unexpected_Token, "native missing binding");
+      Assert_Parse_Error
+        ("module M; @native(1, ""f"") procedure P(); end.",
+         Compiler_Parser.Unexpected_Token,
+         "native library not a string");
+      Assert_Parse_Error
+        ("module M; @native(""l"", 1) procedure P(); end.",
+         Compiler_Parser.Unexpected_Token,
+         "native function not a string");
+      Assert_Parse_Error
+        ("module M; @native(""l"", ""f"" procedure P(); end.",
+         Compiler_Parser.Unexpected_Token,
+         "native missing close parenthesis");
+      Assert_Parse_Error
+        ("module M; @native(", Compiler_Parser.Unexpected_End_Of_Input, "native library at end of input");
+      Assert_Parse_Error
+        ("module M; @native(""l""", Compiler_Parser.Unexpected_End_Of_Input, "native comma at end of input");
+      Assert_Parse_Error
+        ("module M; @native(""l"",", Compiler_Parser.Unexpected_End_Of_Input, "native function at end of input");
+      Assert_Parse_Error
+        ("module M; @native(""l"", ""f"" ", Compiler_Parser.Unexpected_End_Of_Input, "native close at end of input");
+      Assert_Parse_Error
+        ("module M; @native(""l"", ""f"") begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "native without procedure keyword");
+      Assert_Parse_Error
+        ("module M; @intrinsic end.", Compiler_Parser.Unexpected_Token, "intrinsic without procedure keyword");
+      Assert_Parse_Error
+        ("module M; @intrinsic @native(""l"", ""f"") procedure P(); end.",
+         Compiler_Parser.Unexpected_Token,
+         "intrinsic followed by native");
+      Assert_Parse_Error
+        ("module M; export @intrinsic procedure P(x : integer; x : integer); end.",
+         Compiler_Parser.Name_Clash,
+         "intrinsic duplicate parameter");
+      Assert_Parse_Error
+        ("module M; @intrinsic procedure P(); @intrinsic procedure P(); end.",
+         Compiler_Parser.Name_Clash,
+         "intrinsic duplicate signature");
+   end Test_Native_Syntax_Errors;
+
    procedure Test_Obsolete_Import (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Unit_Leading    : constant Lovelace.Compiler.Parser.Parser_Error_Sequence :=
@@ -897,6 +1271,59 @@ package body Lovelace.Compiler.Tests.Parser is
       Support.Assert_Parser_Error_Code (Identical, 1, Lovelace.Compiler.Parser.Name_Clash, "identical types");
       Support.Assert_Parser_Error_Code (Zero_Dup, 1, Lovelace.Compiler.Parser.Name_Clash, "duplicate nullary");
    end Test_Overload_Signatures;
+
+   procedure Test_Procedure_Syntax_Errors (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+   begin
+      Assert_Parse_Error
+        ("module M; 5 end.", Compiler_Parser.Unexpected_Token, "declaration expected but literal found");
+      Assert_Parse_Error
+        ("module M; procedure begin end; end.", Compiler_Parser.Unexpected_Token, "procedure name missing");
+      Assert_Parse_Error
+        ("module M; procedure P begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "procedure missing open parenthesis");
+      Assert_Parse_Error
+        ("module M; procedure P(x : integer begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "procedure missing close parenthesis");
+      Assert_Parse_Error
+        ("module M; procedure P() begin end; end.", Compiler_Parser.Unexpected_Token, "procedure missing semicolon");
+      Assert_Parse_Error
+        ("module M; procedure P(x integer); begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "parameter missing colon");
+      Assert_Parse_Error
+        ("module M; procedure P(5 : integer); begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "parameter name is a literal");
+      Assert_Parse_Error
+        ("module M; procedure P(x : integer; ); begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "parameter group after separator missing");
+      Assert_Parse_Error
+        ("module M; procedure P(x : integer; y : ); begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "second parameter type missing");
+      Assert_Parse_Error
+        ("module M; procedure P(x, y : ); begin end; end.", Compiler_Parser.Unexpected_Token, "grouped type missing");
+      Assert_Parse_Error
+        ("module M; procedure P(); end; end.", Compiler_Parser.Unexpected_Token, "procedure body begin missing");
+      Assert_Parse_Error
+        ("module M; procedure P(); begin end end.",
+         Compiler_Parser.Unexpected_Token,
+         "procedure end semicolon missing");
+      Assert_Parse_Error
+        ("module M; procedure P(); begin Lib.Put(1); end; end",
+         Compiler_Parser.Unexpected_End_Of_Input,
+         "module full stop at end");
+      Assert_Parse_Error
+        ("module M; procedure P(); begin 5; end; end.", Compiler_Parser.Unexpected_Token, "statement is a literal");
+      Assert_Parse_Error
+        ("module M; procedure P(); declare begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "procedure declare without declarations");
+   end Test_Procedure_Syntax_Errors;
 
    procedure Test_Qualified_Calls (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -981,6 +1408,78 @@ package body Lovelace.Compiler.Tests.Parser is
         (Program_Id, 1, Lovelace.Compiler.Parser.Unexpected_Token, "Program keyword case code");
    end Test_Trailing_And_Keyword_Case;
 
+   procedure Test_Type_Syntax_Errors (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Sizes : constant Ast.Module :=
+        Support.Must_Parse
+          ("module M; procedure P(a : integer<8>; b : unsigned integer<16>; c : signed integer<64>; "
+           & "d : float<64>; e : float; f : unsigned integer); begin end; end.",
+           "integer and float sizes");
+   begin
+      declare
+         Params : constant Ast.Parameter_Sequence := Ast.Parameters (Ast.Get_Subroutine (Sizes, 1));
+      begin
+         AUnit.Assertions.Assert (Ast.Length (Params) = 6, "sizes: six parameters");
+         AUnit.Assertions.Assert (Ast.Element (Params, 1).Parameter_Type.Integer_Bit_Size = Types.Bits_8, "sizes: a");
+         AUnit.Assertions.Assert (Ast.Element (Params, 2).Parameter_Type.Integer_Bit_Size = Types.Bits_16, "sizes: b");
+         AUnit.Assertions.Assert
+           (Ast.Element (Params, 2).Parameter_Type.The_Signedness = Types.Unsigned, "sizes: b unsigned");
+         AUnit.Assertions.Assert (Ast.Element (Params, 3).Parameter_Type.Integer_Bit_Size = Types.Bits_64, "sizes: c");
+         AUnit.Assertions.Assert
+           (Ast.Element (Params, 3).Parameter_Type.The_Signedness = Types.Signed, "sizes: c signed");
+         AUnit.Assertions.Assert (Ast.Element (Params, 4).Parameter_Type.Float_Bit_Size = Types.Bits_64, "sizes: d");
+         AUnit.Assertions.Assert (Ast.Element (Params, 5).Parameter_Type.Float_Bit_Size = Types.Bits_32, "sizes: e");
+         AUnit.Assertions.Assert (Ast.Element (Params, 6).Parameter_Type.Integer_Bit_Size = Types.Bits_32, "sizes: f");
+      end;
+
+      Assert_Parse_Detail
+        ("module M; procedure P(x : float<x>); begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "expected float size 32 or 64, found identifier ""x""",
+         "float size not a literal");
+      Assert_Parse_Detail
+        ("module M; procedure P(x : float<16>); begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "invalid float size ""16""; expected 32 or 64",
+         "float size invalid");
+      Assert_Parse_Detail
+        ("module M; procedure P(x : integer<x>); begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "expected integer size 8, 16, 32, or 64, found identifier ""x""",
+         "integer size not a literal");
+      Assert_Parse_Detail
+        ("module M; procedure P(x : integer<7>); begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "invalid integer size ""7""; expected 8, 16, 32, or 64",
+         "integer size invalid");
+      Assert_Parse_Error
+        ("module M; procedure P(x : float<32; y : integer); begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "float size missing close angle");
+      Assert_Parse_Error
+        ("module M; procedure P(x : integer<16; y : integer); begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "integer size missing close angle");
+      Assert_Parse_Error
+        ("module M; procedure P(x : float<", Compiler_Parser.Unexpected_End_Of_Input, "float size at end of input");
+      Assert_Parse_Error
+        ("module M; procedure P(x : float<32", Compiler_Parser.Unexpected_End_Of_Input, "float close angle at end");
+      Assert_Parse_Error
+        ("module M; procedure P(x : integer<", Compiler_Parser.Unexpected_End_Of_Input, "integer size at end of input");
+      Assert_Parse_Error
+        ("module M; procedure P(x : integer<64", Compiler_Parser.Unexpected_End_Of_Input, "integer close angle at end");
+      Assert_Parse_Error
+        ("module M; procedure P(x : 5); begin end; end.", Compiler_Parser.Unexpected_Token, "type name is a literal");
+      Assert_Parse_Error
+        ("module M; procedure P(x : unsigned float); begin end; end.",
+         Compiler_Parser.Unexpected_Token,
+         "unsigned without integer");
+      Assert_Parse_Error
+        ("module M; procedure P(x : signed); begin end; end.", Compiler_Parser.Unexpected_Token, "signed without type");
+      Assert_Parse_Error
+        ("module M; procedure P(x : unsigned", Compiler_Parser.Unexpected_End_Of_Input, "unsigned at end of input");
+   end Test_Type_Syntax_Errors;
+
    procedure Test_Using_Declarations (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Program_Source : constant String :=
@@ -1061,6 +1560,73 @@ package body Lovelace.Compiler.Tests.Parser is
       Support.Assert_Parser_Error_Code
         (Trailing_Dot, 1, Lovelace.Compiler.Parser.Unexpected_Token, "using trailing dot code");
    end Test_Using_Declarations;
+
+   procedure Test_Version_Attribute (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Program_Module : constant Ast.Module :=
+        Support.Must_Parse ("@version(""1.2.3"") program P; begin end.", "version program");
+      Module_Module  : constant Ast.Module :=
+        Support.Must_Parse ("using Lib; @version(""2.0.1-preview.4"") module M; end.", "version module with using");
+   begin
+      AUnit.Assertions.Assert (Ast.Version_Attribute (Program_Module) = "1.2.3", "version program: text");
+      AUnit.Assertions.Assert (Ast.Version_Attribute (Module_Module) = "2.0.1-preview.4", "version module: text");
+      AUnit.Assertions.Assert (Ast.Using_Count (Module_Module) = 1, "version module: using kept");
+
+      Assert_Parse_Error
+        ("@version program P; begin end.", Compiler_Parser.Unexpected_Token, "version missing open parenthesis");
+      Assert_Parse_Error
+        ("@version(1) program P; begin end.", Compiler_Parser.Unexpected_Token, "version not a string");
+      Assert_Parse_Error
+        ("@version(""bogus"") program P; begin end.", Compiler_Parser.Invalid_Module_Version, "version invalid text");
+      Assert_Parse_Error
+        ("@version("""") program P; begin end.", Compiler_Parser.Invalid_Module_Version, "version empty text");
+      Assert_Parse_Error
+        ("@version(""1.0.0"" program P; begin end.",
+         Compiler_Parser.Unexpected_Token,
+         "version missing close parenthesis");
+      Assert_Parse_Error
+        ("@version(""1.0.0"") @version(""1.0.0"") program P; begin end.",
+         Compiler_Parser.Unexpected_Token,
+         "version repeated");
+   end Test_Version_Attribute;
+
+   procedure Test_Version_Unquoted_String (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Source_Text : constant String := "@version(""1.0.0"") program P; begin end.";
+      Original    : constant Tokens.Token_Sequence := Support.Must_Succeed (Source_Text, "version tokens");
+      Rewritten   : Tokens.Token_Sequence := Tokens.Empty_Sequence;
+   begin
+      --  Strip the quotes from the string token span so String_Literal_Content keeps the lexeme as is.
+      for Index in 1 .. Tokens.Length (Original) loop
+         declare
+            Item : Tokens.Token := Tokens.Element (Original, Index);
+         begin
+            case Item.Kind is
+               when Tokens.String_Literal =>
+                  Item.Span.First.Byte_Index := Item.Span.First.Byte_Index + 1;
+                  Item.Span.Last.Byte_Index := Item.Span.Last.Byte_Index - 1;
+
+               when others                =>
+                  null;
+            end case;
+            Tokens.Append (Rewritten, Item);
+         end;
+      end loop;
+
+      declare
+         Result : constant Compiler_Parser.Parse_Result :=
+           Compiler_Parser.Parse (Source_Text, Rewritten, Flavor.Default);
+      begin
+         case Result.Ok is
+            when True  =>
+               AUnit.Assertions.Assert
+                 (Ast.Version_Attribute (Result.The_Module) = "1.0.0", "unquoted version: text kept");
+
+            when False =>
+               AUnit.Assertions.Assert (False, "unquoted version: expected success");
+         end case;
+      end;
+   end Test_Version_Unquoted_String;
 
    procedure Test_Whitespace_Variants (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
