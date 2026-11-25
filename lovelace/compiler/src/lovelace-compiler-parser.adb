@@ -93,8 +93,7 @@ package body Lovelace.Compiler.Parser is
    function Expect_Directive
      (The_Cursor : in out Cursor; Source_Text : String; Expected : Tokens.Directive_Subtype; Label : String)
       return Step_Result;
-   function Expect_Identifier
-     (The_Cursor : in out Cursor; Source_Text : String; The_Token : out Tokens.Token) return Step_Result;
+   function Expect_Identifier (The_Cursor : in out Cursor; Source_Text : String) return Step_Result;
    function Expect_Keyword
      (The_Cursor : in out Cursor; Source_Text : String; Expected : Tokens.Keyword_Subtype; Label : String)
       return Step_Result;
@@ -512,11 +511,10 @@ package body Lovelace.Compiler.Parser is
       end;
    end Expect_Directive;
 
-   function Expect_Identifier
-     (The_Cursor : in out Cursor; Source_Text : String; The_Token : out Tokens.Token) return Step_Result is
+   function Expect_Identifier (The_Cursor : in out Cursor; Source_Text : String) return Step_Result is
    begin
-      The_Token := Dummy_Identifier;
-
+      --  No Token out/return: gnatcov + Token (Unbounded Filename) finalize breaks.
+      --  Callers Peek the identifier before calling, then Advance happens here.
       if At_End (The_Cursor) then
          return Step_End_Of_Input (The_Cursor, "expected identifier, found end of input");
       end if;
@@ -533,7 +531,6 @@ package body Lovelace.Compiler.Parser is
                  Detail   => "expected identifier, found " & Describe_Token (Source_Text, Current));
          end if;
 
-         The_Token := Current;
          Advance (The_Cursor);
          return (Ok => True);
       end;
@@ -829,13 +826,16 @@ package body Lovelace.Compiler.Parser is
             Arguments   => Ast.Empty_Expression_Sequence));
 
       --  assignment_statement = identifier , ":=" , expression , ";"
-      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => Name_Token);
+      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text);
       case Step.Ok is
          when False =>
             return Step;
 
          when True  =>
-            null;
+            Name_Token :=
+              (Kind     => Tokens.Identifier,
+               Span     => The_Cursor.Last_Consumed_Span,
+               Filename => The_Cursor.Last_Consumed_Filename);
       end case;
 
       Step :=
@@ -973,13 +973,16 @@ package body Lovelace.Compiler.Parser is
       Version := Ada.Strings.Unbounded.Null_Unbounded_String;
 
       --  @version ( string_literal )
-      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => Attr_Token);
+      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text);
       case Step.Ok is
          when False =>
             return Step;
 
          when True  =>
-            null;
+            Attr_Token :=
+              (Kind     => Tokens.Identifier,
+               Span     => The_Cursor.Last_Consumed_Span,
+               Filename => The_Cursor.Last_Consumed_Filename);
       end case;
 
       if not Is_Identifier_Lexeme (Source_Text, Attr_Token, "@version") then
@@ -1139,12 +1142,16 @@ package body Lovelace.Compiler.Parser is
          Name_Tok : Tokens.Token := Dummy_Identifier;
       begin
          loop
-            Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => Name_Tok);
+            Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text);
             case Step.Ok is
                when False =>
                   return Step;
 
                when True  =>
+                  Name_Tok :=
+                    (Kind     => Tokens.Identifier,
+                     Span     => The_Cursor.Last_Consumed_Span,
+                     Filename => The_Cursor.Last_Consumed_Filename);
                   Pending_Name_Vectors.Append
                     (Names,
                      Pending_Name'
@@ -1670,13 +1677,16 @@ package body Lovelace.Compiler.Parser is
       Condition_Flavor := Flavor.Wasi;
 
       --  flavor_condition = "flavor" , "=" , string_literal
-      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => Flavor_Token);
+      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text);
       case Step.Ok is
          when False =>
             return Step;
 
          when True  =>
-            null;
+            Flavor_Token :=
+              (Kind     => Tokens.Identifier,
+               Span     => The_Cursor.Last_Consumed_Span,
+               Filename => The_Cursor.Last_Consumed_Filename);
       end case;
 
       if Tokens.Lexeme (Source_Text, Flavor_Token) /= "flavor" then
@@ -2335,9 +2345,13 @@ package body Lovelace.Compiler.Parser is
       Name_Token : Tokens.Token := Dummy_Identifier;
       Step       : Step_Result;
    begin
-      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => Name_Token);
+      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text);
 
       if Step.Ok then
+         Name_Token :=
+           (Kind     => Tokens.Identifier,
+            Span     => The_Cursor.Last_Consumed_Span,
+            Filename => The_Cursor.Last_Consumed_Filename);
          Names.Append
            (Pending_Name'
               (Name      => Ada.Strings.Unbounded.To_Unbounded_String (Tokens.Lexeme (Source_Text, Name_Token)),
@@ -2492,10 +2506,14 @@ package body Lovelace.Compiler.Parser is
            Label       => "procedure");
 
       if Step.Ok then
-         Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => Name_Token);
+         Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text);
       end if;
 
       if Step.Ok then
+         Name_Token :=
+           (Kind     => Tokens.Identifier,
+            Span     => The_Cursor.Last_Consumed_Span,
+            Filename => The_Cursor.Last_Consumed_Filename);
          Header.Name := Ada.Strings.Unbounded.To_Unbounded_String (Tokens.Lexeme (Source_Text, Name_Token));
          Header.Name_Span := Name_Token.Span;
          Header.Filename := Name_Token.Filename;
@@ -2613,13 +2631,16 @@ package body Lovelace.Compiler.Parser is
             null;
       end case;
 
-      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => Name_Token);
+      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text);
       case Step.Ok is
          when False =>
             return Step;
 
          when True  =>
-            null;
+            Name_Token :=
+              (Kind     => Tokens.Identifier,
+               Span     => The_Cursor.Last_Consumed_Span,
+               Filename => The_Cursor.Last_Consumed_Filename);
       end case;
 
       The_Unit.Module_Name := Ada.Strings.Unbounded.To_Unbounded_String (Tokens.Lexeme (Source_Text, Name_Token));
@@ -2687,13 +2708,16 @@ package body Lovelace.Compiler.Parser is
       Name_Span := Origin_Span;
       Filename := Source.Absent_Filename;
 
-      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => First_Token);
+      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text);
       case Step.Ok is
          when False =>
             return Step;
 
          when True  =>
-            null;
+            First_Token :=
+              (Kind     => Tokens.Identifier,
+               Span     => The_Cursor.Last_Consumed_Span,
+               Filename => The_Cursor.Last_Consumed_Filename);
       end case;
 
       Module_Name := Ada.Strings.Unbounded.To_Unbounded_String (Tokens.Lexeme (Source_Text, First_Token));
@@ -2717,13 +2741,16 @@ package body Lovelace.Compiler.Parser is
             declare
                Segment_Token : Tokens.Token := Dummy_Identifier;
             begin
-               Step :=
-                 Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Token => Segment_Token);
+               Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text);
                case Step.Ok is
                   when False =>
                      return Step;
 
                   when True  =>
+                     Segment_Token :=
+                       (Kind     => Tokens.Identifier,
+                        Span     => The_Cursor.Last_Consumed_Span,
+                        Filename => The_Cursor.Last_Consumed_Filename);
                      Ada.Strings.Unbounded.Append (Module_Name, ".");
                      Ada.Strings.Unbounded.Append (Module_Name, Tokens.Lexeme (Source_Text, Segment_Token));
                      Name_Span.Last := Segment_Token.Span.Last;
