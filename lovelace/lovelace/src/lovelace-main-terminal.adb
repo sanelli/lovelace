@@ -10,64 +10,47 @@ package body Lovelace.Main.Terminal is
    Ansi_Red   : constant String := ASCII.ESC & "[31m";
    Ansi_Reset : constant String := ASCII.ESC & "[0m";
 
+   function Is_Error_Line (Line : String) return Boolean;
+
+   procedure Put_Error_Line (Line : String);
+
    function Colour_Enabled return Boolean is
    begin
       return Colour_Is_Enabled;
    end Colour_Enabled;
+
+   --  True when Line is an error or Lovelace diagnostic line that should be
+   --  highlighted: it begins with "[err]" or "[LV".
+   function Is_Error_Line (Line : String) return Boolean
+   is ((Line'Length >= 5
+        and then Line (Line'First .. Line'First + 4) = "[err]")
+       or else (Line'Length >= 3
+                and then Line (Line'First .. Line'First + 2) = "[LV"));
+
+   --  Write one line to standard error, in red when it is an error line and
+   --  colour is enabled.
+   procedure Put_Error_Line (Line : String) is
+   begin
+      if Colour_Is_Enabled and then Is_Error_Line (Line) then
+         Ada.Text_IO.Put_Line
+           (Ada.Text_IO.Standard_Error, Ansi_Red & Line & Ansi_Reset);
+      else
+         Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, Line);
+      end if;
+   end Put_Error_Line;
 
    procedure Put_Error_Text (Text : String) is
       Start : Positive := Text'First;
    begin
       for Index in Text'Range loop
          if Text (Index) = ASCII.LF then
-            declare
-               Line : constant String := Text (Start .. Index - 1);
-            begin
-               if Colour_Is_Enabled
-                 and then (Line'Length >= 5
-                           and then Line (Line'First .. Line'First + 4)
-                                    = "[err]")
-               then
-                  Ada.Text_IO.Put_Line
-                    (Ada.Text_IO.Standard_Error, Ansi_Red & Line & Ansi_Reset);
-               elsif Colour_Is_Enabled
-                 and then (Line'Length >= 3
-                           and then Line (Line'First) = '['
-                           and then Line (Line'First + 1) = 'L'
-                           and then Line (Line'First + 2) = 'V')
-               then
-                  Ada.Text_IO.Put_Line
-                    (Ada.Text_IO.Standard_Error, Ansi_Red & Line & Ansi_Reset);
-               else
-                  Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, Line);
-               end if;
-            end;
+            Put_Error_Line (Text (Start .. Index - 1));
             Start := Index + 1;
          end if;
       end loop;
 
       if Start <= Text'Last then
-         declare
-            Line : constant String := Text (Start .. Text'Last);
-         begin
-            if Colour_Is_Enabled
-              and then (Line'Length >= 5
-                        and then Line (Line'First .. Line'First + 4) = "[err]")
-            then
-               Ada.Text_IO.Put_Line
-                 (Ada.Text_IO.Standard_Error, Ansi_Red & Line & Ansi_Reset);
-            elsif Colour_Is_Enabled
-              and then (Line'Length >= 3
-                        and then Line (Line'First) = '['
-                        and then Line (Line'First + 1) = 'L'
-                        and then Line (Line'First + 2) = 'V')
-            then
-               Ada.Text_IO.Put_Line
-                 (Ada.Text_IO.Standard_Error, Ansi_Red & Line & Ansi_Reset);
-            else
-               Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, Line);
-            end if;
-         end;
+         Put_Error_Line (Text (Start .. Text'Last));
       end if;
    end Put_Error_Text;
 

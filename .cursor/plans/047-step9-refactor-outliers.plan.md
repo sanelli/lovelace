@@ -19,7 +19,7 @@ todos:
     status: completed
   - id: "9.5"
     content: "9.5 Mid-band helpers — literals, Utf_8.Decode, terminal, arguments, remaining CC 11–20 units."
-    status: pending
+    status: completed
   - id: "9.6"
     content: "9.6 Metrics gate — pwsh scripts/metrics.ps1 (no SkipGates); fix any remaining CC/essential/nesting breaches."
     status: pending

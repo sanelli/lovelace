@@ -4,6 +4,7 @@ with Lovelace.Common.Tests.Option;
 with Lovelace.Common.Tests.Regex_Engine;
 with Lovelace.Common.Tests.Source;
 with Lovelace.Common.Tests.Token_Classes;
+with Lovelace.Common.Tests.Utf_8;
 
 package body Lovelace.Common.Tests.Suite is
 
@@ -15,6 +16,8 @@ package body Lovelace.Common.Tests.Suite is
      AUnit.Test_Caller (Lovelace.Common.Tests.Source.Fixture);
    package Token_Caller is new
      AUnit.Test_Caller (Lovelace.Common.Tests.Token_Classes.Fixture);
+   package Utf_8_Caller is new
+     AUnit.Test_Caller (Lovelace.Common.Tests.Utf_8.Fixture);
 
    function Suite return AUnit.Test_Suites.Access_Test_Suite is
       Result : constant AUnit.Test_Suites.Access_Test_Suite :=
@@ -159,6 +162,19 @@ package body Lovelace.Common.Tests.Suite is
         (Token_Caller.Create
            ("token class: identifiers",
             Lovelace.Common.Tests.Token_Classes.Test_Identifiers'Access));
+
+      Result.Add_Test
+        (Utf_8_Caller.Create
+           ("utf-8: valid sequences",
+            Lovelace.Common.Tests.Utf_8.Test_Decode_Valid'Access));
+      Result.Add_Test
+        (Utf_8_Caller.Create
+           ("utf-8: malformed sequences",
+            Lovelace.Common.Tests.Utf_8.Test_Decode_Malformed'Access));
+      Result.Add_Test
+        (Utf_8_Caller.Create
+           ("utf-8: boundaries",
+            Lovelace.Common.Tests.Utf_8.Test_Decode_Boundaries'Access));
 
       return Result;
    end Suite;

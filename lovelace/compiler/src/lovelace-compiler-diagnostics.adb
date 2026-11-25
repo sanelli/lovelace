@@ -9,8 +9,44 @@ package body Lovelace.Compiler.Diagnostics is
    --  Set First..Last to the UTF-8 byte range of Line_Number (1-based), excluding the
    --  line ending. Return False when Line_Number is past the end of Source_Text.
 
+   procedure Advance_Line_Position (Source_Text : String; Index : in out Positive; Current_Line : in out Positive);
+   --  Advance Index past one line break (CR, LF or CRLF, bumping Current_Line) or
+   --  past one UTF-8 character that is not a line break.
+
+   procedure Advance_Over_Character (Source_Text : String; Index : in out Positive);
+   --  Advance Index past one UTF-8 character (one byte when invalid).
+
    function Caret_Line (Span : Source.Source_Span) return String;
    --  Spaces to Column, then ^ or a run of carets for a multi-column span.
+
+   procedure Advance_Line_Position (Source_Text : String; Index : in out Positive; Current_Line : in out Positive) is
+   begin
+      if Source_Text (Index) = ASCII.CR then
+         Index := Index + 1;
+         if Index <= Source_Text'Last and then Source_Text (Index) = ASCII.LF then
+            Index := Index + 1;
+         end if;
+         Current_Line := Current_Line + 1;
+      elsif Source_Text (Index) = ASCII.LF then
+         Index := Index + 1;
+         Current_Line := Current_Line + 1;
+      else
+         Advance_Over_Character (Source_Text, Index);
+      end if;
+   end Advance_Line_Position;
+
+   procedure Advance_Over_Character (Source_Text : String; Index : in out Positive) is
+      Point  : Lovelace.Common.Utf_8.Code_Point;
+      Length : Natural;
+      Valid  : Boolean;
+   begin
+      Lovelace.Common.Utf_8.Decode (Source_Text, Index, Point, Length, Valid);
+      if Valid and then Length > 0 then
+         Index := Index + Length;
+      else
+         Index := Index + 1;
+      end if;
+   end Advance_Over_Character;
 
    function Caret_Line (Span : Source.Source_Span) return String is
       Start_Column : constant Positive := Span.First.Column;
@@ -131,29 +167,7 @@ package body Lovelace.Compiler.Diagnostics is
             return True;
          end if;
 
-         if Source_Text (Index) = ASCII.CR then
-            Index := Index + 1;
-            if Index <= Source_Text'Last and then Source_Text (Index) = ASCII.LF then
-               Index := Index + 1;
-            end if;
-            Current_Line := Current_Line + 1;
-         elsif Source_Text (Index) = ASCII.LF then
-            Index := Index + 1;
-            Current_Line := Current_Line + 1;
-         else
-            declare
-               Point  : Lovelace.Common.Utf_8.Code_Point;
-               Length : Natural;
-               Valid  : Boolean;
-            begin
-               Lovelace.Common.Utf_8.Decode (Source_Text, Index, Point, Length, Valid);
-               if Valid and then Length > 0 then
-                  Index := Index + Length;
-               else
-                  Index := Index + 1;
-               end if;
-            end;
-         end if;
+         Advance_Line_Position (Source_Text, Index, Current_Line);
       end loop;
 
       if Current_Line = Line_Number then

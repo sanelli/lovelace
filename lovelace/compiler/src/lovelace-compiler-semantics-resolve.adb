@@ -11,43 +11,106 @@ package body Lovelace.Compiler.Semantics.Resolve is
       The_Subroutine   : Ast.Subroutine;
    end record;
 
-   package Candidate_Vectors is new
-     Ada.Containers.Vectors
-       (Index_Type   => Positive,
-        Element_Type => Candidate);
+   package Candidate_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Candidate);
 
-   function Failure
-     (Code : Semantics_Error_Code; Detail : String) return Resolve_Result;
+   procedure Collect_Exported_Candidates
+     (Candidate_Unit  : Ast.Module;
+      Unit_Index      : Positive;
+      Procedure_Text  : String;
+      Actual_Types    : Actual_Type_Sequence;
+      Matching        : in out Candidate_Vectors.Vector;
+      Same_Name_Count : in out Natural;
+      Exported_Count  : in out Natural);
+   --  Scan Candidate_Unit for exported subroutines named Procedure_Text.
 
-   function Formals_Match
-     (The_Subroutine : Ast.Subroutine; Actual_Types : Actual_Type_Sequence)
-      return Boolean;
+   procedure Collect_Local_Candidates
+     (Caller_Unit    : Ast.Module;
+      Unit_Index     : Positive;
+      Procedure_Text : String;
+      Actual_Types   : Actual_Type_Sequence;
+      Matching       : in out Candidate_Vectors.Vector);
+   --  Same-unit subroutines named Procedure_Text whose formals accept Actual_Types.
 
-   function Pick_Overload
-     (Candidates : Candidate_Vectors.Vector; Callee_Name : String)
-      return Resolve_Result;
+   function Failure (Code : Semantics_Error_Code; Detail : String) return Resolve_Result;
+
+   function Formals_Match (The_Subroutine : Ast.Subroutine; Actual_Types : Actual_Type_Sequence) return Boolean;
+
+   function Pick_Overload (Candidates : Candidate_Vectors.Vector; Callee_Name : String) return Resolve_Result;
+
+   function Resolve_Imported
+     (Units          : Unit_Graph.Compilation_Set;
+      Prefix_Text    : String;
+      Procedure_Text : String;
+      Callee_Name    : String;
+      Actual_Types   : Actual_Type_Sequence) return Resolve_Result;
+   --  Resolve Prefix_Text.Procedure_Text among exported subroutines of Units.
 
    function Split_Callee
      (Callee_Name    : String;
       Module_Prefix  : out Ada.Strings.Unbounded.Unbounded_String;
-      Procedure_Name : out Ada.Strings.Unbounded.Unbounded_String)
-      return Boolean;
+      Procedure_Name : out Ada.Strings.Unbounded.Unbounded_String) return Boolean;
 
-   function Failure
-     (Code : Semantics_Error_Code; Detail : String) return Resolve_Result is
+   procedure Collect_Exported_Candidates
+     (Candidate_Unit  : Ast.Module;
+      Unit_Index      : Positive;
+      Procedure_Text  : String;
+      Actual_Types    : Actual_Type_Sequence;
+      Matching        : in out Candidate_Vectors.Vector;
+      Same_Name_Count : in out Natural;
+      Exported_Count  : in out Natural) is
    begin
-      return
-        (Ok     => False,
-         Code   => Code,
-         Detail => Ada.Strings.Unbounded.To_Unbounded_String (Detail));
+      for Candidate_Index in 1 .. Ast.Subroutine_Count (Candidate_Unit) loop
+         declare
+            Candidate_Subroutine : constant Ast.Subroutine := Ast.Get_Subroutine (Candidate_Unit, Candidate_Index);
+         begin
+            if Ast.Name (Candidate_Subroutine) = Procedure_Text then
+               Same_Name_Count := Same_Name_Count + 1;
+               if Ast.Has_Export (Ast.Get_Flags (Candidate_Subroutine)) then
+                  Exported_Count := Exported_Count + 1;
+                  if Formals_Match (Candidate_Subroutine, Actual_Types) then
+                     Matching.Append
+                       (Candidate'
+                          (Unit_Index       => Unit_Index,
+                           Subroutine_Index => Candidate_Index,
+                           The_Subroutine   => Candidate_Subroutine));
+                  end if;
+               end if;
+            end if;
+         end;
+      end loop;
+   end Collect_Exported_Candidates;
+
+   procedure Collect_Local_Candidates
+     (Caller_Unit    : Ast.Module;
+      Unit_Index     : Positive;
+      Procedure_Text : String;
+      Actual_Types   : Actual_Type_Sequence;
+      Matching       : in out Candidate_Vectors.Vector) is
+   begin
+      for Candidate_Index in 1 .. Ast.Subroutine_Count (Caller_Unit) loop
+         declare
+            Candidate_Subroutine : constant Ast.Subroutine := Ast.Get_Subroutine (Caller_Unit, Candidate_Index);
+         begin
+            if Ast.Name (Candidate_Subroutine) = Procedure_Text
+              and then Formals_Match (Candidate_Subroutine, Actual_Types)
+            then
+               Matching.Append
+                 (Candidate'
+                    (Unit_Index       => Unit_Index,
+                     Subroutine_Index => Candidate_Index,
+                     The_Subroutine   => Candidate_Subroutine));
+            end if;
+         end;
+      end loop;
+   end Collect_Local_Candidates;
+
+   function Failure (Code : Semantics_Error_Code; Detail : String) return Resolve_Result is
+   begin
+      return (Ok => False, Code => Code, Detail => Ada.Strings.Unbounded.To_Unbounded_String (Detail));
    end Failure;
 
-   function Formals_Match
-     (The_Subroutine : Ast.Subroutine; Actual_Types : Actual_Type_Sequence)
-      return Boolean
-   is
-      Formals : constant Ast.Parameter_Sequence :=
-        Ast.Parameters (The_Subroutine);
+   function Formals_Match (The_Subroutine : Ast.Subroutine; Actual_Types : Actual_Type_Sequence) return Boolean is
+      Formals : constant Ast.Parameter_Sequence := Ast.Parameters (The_Subroutine);
    begin
       if Ast.Length (Formals) /= Natural (Actual_Types.Length) then
          return False;
@@ -56,12 +119,9 @@ package body Lovelace.Compiler.Semantics.Resolve is
       for Index in 1 .. Ast.Length (Formals) loop
          declare
             Formal_Type : constant Lovelace_Types.Lovelace_Type :=
-              Lovelace_Types.From_Expression
-                (Ast.Element (Formals, Index).Parameter_Type);
+              Lovelace_Types.From_Expression (Ast.Element (Formals, Index).Parameter_Type);
          begin
-            if not Typecheck.Is_Assignable
-                     (Formal_Type, Actual_Types.Element (Index))
-            then
+            if not Typecheck.Is_Assignable (Formal_Type, Actual_Types.Element (Index)) then
                return False;
             end if;
          end;
@@ -70,18 +130,11 @@ package body Lovelace.Compiler.Semantics.Resolve is
       return True;
    end Formals_Match;
 
-   function Pick_Overload
-     (Candidates : Candidate_Vectors.Vector; Callee_Name : String)
-      return Resolve_Result is
+   function Pick_Overload (Candidates : Candidate_Vectors.Vector; Callee_Name : String) return Resolve_Result is
    begin
       case Natural (Candidates.Length) is
          when 0      =>
-            return
-              Failure
-                (Unresolved_Call,
-                 "unresolved call '"
-                 & Callee_Name
-                 & "': no matching overload");
+            return Failure (Unresolved_Call, "unresolved call '" & Callee_Name & "': no matching overload");
 
          when 1      =>
             declare
@@ -96,8 +149,7 @@ package body Lovelace.Compiler.Semantics.Resolve is
             end;
 
          when others =>
-            return
-              Failure (Ambiguous_Call, "ambiguous call '" & Callee_Name & "'");
+            return Failure (Ambiguous_Call, "ambiguous call '" & Callee_Name & "'");
       end case;
    end Pick_Overload;
 
@@ -108,139 +160,84 @@ package body Lovelace.Compiler.Semantics.Resolve is
       Callee_Name       : String;
       Actual_Types      : Actual_Type_Sequence) return Resolve_Result
    is
-      Caller_Unit    : constant Ast.Module :=
-        Units.Element (Caller_Unit_Index).The_Module;
+      Caller_Unit    : constant Ast.Module := Units.Element (Caller_Unit_Index).The_Module;
       Module_Prefix  : Ada.Strings.Unbounded.Unbounded_String;
       Procedure_Name : Ada.Strings.Unbounded.Unbounded_String;
    begin
       if not Split_Callee (Callee_Name, Module_Prefix, Procedure_Name) then
-         return
-           Failure (Unresolved_Call, "unresolved call '" & Callee_Name & "'");
+         return Failure (Unresolved_Call, "unresolved call '" & Callee_Name & "'");
       end if;
 
       declare
-         Prefix_Text    : constant String :=
-           Ada.Strings.Unbounded.To_String (Module_Prefix);
-         Procedure_Text : constant String :=
-           Ada.Strings.Unbounded.To_String (Procedure_Name);
+         Prefix_Text    : constant String := Ada.Strings.Unbounded.To_String (Module_Prefix);
+         Procedure_Text : constant String := Ada.Strings.Unbounded.To_String (Procedure_Name);
          Matching       : Candidate_Vectors.Vector;
       begin
          if Prefix_Text = Ast.Name (Caller_Unit) then
-            for Candidate_Index in 1 .. Ast.Subroutine_Count (Caller_Unit) loop
-               declare
-                  Candidate_Subroutine : constant Ast.Subroutine :=
-                    Ast.Get_Subroutine (Caller_Unit, Candidate_Index);
-               begin
-                  if Ast.Name (Candidate_Subroutine) = Procedure_Text
-                    and then Formals_Match (Candidate_Subroutine, Actual_Types)
-                  then
-                     Matching.Append
-                       (Candidate'
-                          (Unit_Index       => Caller_Unit_Index,
-                           Subroutine_Index => Candidate_Index,
-                           The_Subroutine   => Candidate_Subroutine));
-                  end if;
-               end;
-            end loop;
-
+            Collect_Local_Candidates (Caller_Unit, Caller_Unit_Index, Procedure_Text, Actual_Types, Matching);
             return Pick_Overload (Matching, Callee_Name);
          end if;
 
          if not Environment.Lookup_Module (Scope, Prefix_Text).Found then
-            return
-              Failure
-                (Call_Without_Using,
-                 "call '" & Callee_Name & "' requires using " & Prefix_Text);
+            return Failure (Call_Without_Using, "call '" & Callee_Name & "' requires using " & Prefix_Text);
          end if;
 
          Environment.Note_Module_Used (Scope, Prefix_Text);
 
-         declare
-            Same_Name_Count   : Natural := 0;
-            Exported_Count    : Natural := 0;
-            Target_Unit_Index : Natural := 0;
-         begin
-            for Unit_Index in 1 .. Natural (Units.Length) loop
-               declare
-                  Candidate_Unit : constant Ast.Module :=
-                    Units.Element (Unit_Index).The_Module;
-               begin
-                  if Ast.Name (Candidate_Unit) = Prefix_Text then
-                     Target_Unit_Index := Unit_Index;
-                     for Candidate_Index in
-                       1 .. Ast.Subroutine_Count (Candidate_Unit)
-                     loop
-                        declare
-                           Candidate_Subroutine : constant Ast.Subroutine :=
-                             Ast.Get_Subroutine
-                               (Candidate_Unit, Candidate_Index);
-                        begin
-                           if Ast.Name (Candidate_Subroutine) = Procedure_Text
-                           then
-                              Same_Name_Count := Same_Name_Count + 1;
-                              if Ast.Has_Export
-                                   (Ast.Get_Flags (Candidate_Subroutine))
-                              then
-                                 Exported_Count := Exported_Count + 1;
-                                 if Formals_Match
-                                      (Candidate_Subroutine, Actual_Types)
-                                 then
-                                    Matching.Append
-                                      (Candidate'
-                                         (Unit_Index       => Unit_Index,
-                                          Subroutine_Index => Candidate_Index,
-                                          The_Subroutine   =>
-                                            Candidate_Subroutine));
-                                 end if;
-                              end if;
-                           end if;
-                        end;
-                     end loop;
-                  end if;
-               end;
-            end loop;
-
-            if Same_Name_Count = 0 or else Target_Unit_Index = 0 then
-               return
-                 Failure
-                   (Unresolved_Call, "unresolved call '" & Callee_Name & "'");
-            end if;
-
-            if Exported_Count = 0 then
-               return
-                 Failure
-                   (Not_Exported,
-                    "procedure '" & Callee_Name & "' is not exported");
-            end if;
-
-            return Pick_Overload (Matching, Callee_Name);
-         end;
+         return Resolve_Imported (Units, Prefix_Text, Procedure_Text, Callee_Name, Actual_Types);
       end;
    end Resolve_Call;
+
+   function Resolve_Imported
+     (Units          : Unit_Graph.Compilation_Set;
+      Prefix_Text    : String;
+      Procedure_Text : String;
+      Callee_Name    : String;
+      Actual_Types   : Actual_Type_Sequence) return Resolve_Result
+   is
+      Matching          : Candidate_Vectors.Vector;
+      Same_Name_Count   : Natural := 0;
+      Exported_Count    : Natural := 0;
+      Target_Unit_Index : Natural := 0;
+   begin
+      for Unit_Index in 1 .. Natural (Units.Length) loop
+         declare
+            Candidate_Unit : constant Ast.Module := Units.Element (Unit_Index).The_Module;
+         begin
+            if Ast.Name (Candidate_Unit) = Prefix_Text then
+               Target_Unit_Index := Unit_Index;
+               Collect_Exported_Candidates
+                 (Candidate_Unit, Unit_Index, Procedure_Text, Actual_Types, Matching, Same_Name_Count, Exported_Count);
+            end if;
+         end;
+      end loop;
+
+      if Same_Name_Count = 0 or else Target_Unit_Index = 0 then
+         return Failure (Unresolved_Call, "unresolved call '" & Callee_Name & "'");
+      end if;
+
+      if Exported_Count = 0 then
+         return Failure (Not_Exported, "procedure '" & Callee_Name & "' is not exported");
+      end if;
+
+      return Pick_Overload (Matching, Callee_Name);
+   end Resolve_Imported;
 
    function Split_Callee
      (Callee_Name    : String;
       Module_Prefix  : out Ada.Strings.Unbounded.Unbounded_String;
-      Procedure_Name : out Ada.Strings.Unbounded.Unbounded_String)
-      return Boolean
+      Procedure_Name : out Ada.Strings.Unbounded.Unbounded_String) return Boolean
    is
       Dot : Natural;
    begin
       Module_Prefix := Ada.Strings.Unbounded.Null_Unbounded_String;
       Procedure_Name := Ada.Strings.Unbounded.Null_Unbounded_String;
-      Dot :=
-        Ada.Strings.Fixed.Index
-          (Callee_Name, ".", Going => Ada.Strings.Backward);
-      if Dot = 0 or else Dot = Callee_Name'First or else Dot = Callee_Name'Last
-      then
+      Dot := Ada.Strings.Fixed.Index (Callee_Name, ".", Going => Ada.Strings.Backward);
+      if Dot = 0 or else Dot = Callee_Name'First or else Dot = Callee_Name'Last then
          return False;
       end if;
-      Module_Prefix :=
-        Ada.Strings.Unbounded.To_Unbounded_String
-          (Callee_Name (Callee_Name'First .. Dot - 1));
-      Procedure_Name :=
-        Ada.Strings.Unbounded.To_Unbounded_String
-          (Callee_Name (Dot + 1 .. Callee_Name'Last));
+      Module_Prefix := Ada.Strings.Unbounded.To_Unbounded_String (Callee_Name (Callee_Name'First .. Dot - 1));
+      Procedure_Name := Ada.Strings.Unbounded.To_Unbounded_String (Callee_Name (Dot + 1 .. Callee_Name'Last));
       return True;
    end Split_Callee;
 

@@ -157,8 +157,14 @@ package body Lovelace.Compiler.Tokenizer is
      (Error : Lovelace.Common.Regex.Regex_Error; Filename : Source.Filename_Option) return Tokenizer_Error_Sequence;
    function Is_Excluded_Punctuation (Point : Code_Point) return Boolean;
    function Is_Identifier_Continue (Point : Code_Point) return Boolean;
+   function Is_Crlf_Pair
+     (Source_Text : String; Position : Positive; Point : Code_Point; Length : Natural; Remaining : Natural)
+      return Boolean;
+   function Is_Empty_Truncation (Source_Text : String; From : Positive; Max_Length : Natural) return Boolean;
    function Is_Identifier_First (Point : Code_Point) return Boolean;
    function Is_In_Ranges (Point : Code_Point; Ranges : Scalar_Range_List) return Boolean;
+   function Is_Line_Break (Point : Code_Point) return Boolean;
+   function Is_Valid_Identifier_Char (Point : Code_Point; At_Start : Boolean) return Boolean;
    function Lookup_Directive (Lexeme : String) return Directive_Options.Option;
    function Lookup_Keyword (Lexeme : String) return Keyword_Options.Option;
    function Lookup_Punctuation (Lexeme : String) return Punctuation_Options.Option;
@@ -170,6 +176,16 @@ package body Lovelace.Compiler.Tokenizer is
    function Register_Scan_Class
      (Pattern : String; Kind : Tokens.Token_Kind; Filename : Source.Filename_Option) return Tokenizer_Error_Sequence;
    function Scalar_To_Class (Point : Code_Point) return String;
+   procedure Scan_Token
+     (Token_List      : in out Tokens.Token_Sequence;
+      Errors          : in out Tokenizer_Error_Sequence;
+      Source_Text     : String;
+      Position        : in out Positive;
+      Line            : in out Positive;
+      Column          : in out Positive;
+      After_Delimiter : in out Boolean;
+      Filename        : Source.Filename_Option);
+   --  Scan one non-whitespace, non-comment token or report its error.
    procedure Skip_Comment
      (Errors      : in out Tokenizer_Error_Sequence;
       Source_Text : String;
@@ -177,7 +193,7 @@ package body Lovelace.Compiler.Tokenizer is
       Line        : in out Positive;
       Column      : in out Positive;
       Filename    : Source.Filename_Option);
-   --  Consume `{` â¦ `}` (no token). Nested `{`, EOF, handled as errors.
+   --  Consume a brace-delimited comment (no token). Nested open brace and EOF are errors.
    function String_Literal_Pattern return String;
    function Success_Result (Token_List : Tokens.Token_Sequence) return Tokenize_Result;
    function Tokenize_Core (Source_Text : String; Filename : Source.Filename_Option) return Tokenize_Result;
@@ -277,18 +293,13 @@ package body Lovelace.Compiler.Tokenizer is
            (Source => Source_Text, Index => Position, Point => Point, Length => Length, Valid => Valid);
          exit when not Valid or else Length = 0 or else Length > Remaining;
 
-         if Point = Wide_Wide_Character'Val (16#000D#)
-           and then Length = 1
-           and then Remaining >= 2
-           and then Position + 1 <= Source_Text'Last
-           and then Source_Text (Position + 1) = Character'Val (16#0A#)
-         then
+         if Is_Crlf_Pair (Source_Text, Position, Point, Length, Remaining) then
             Last_Position := (Byte_Index => Position + 1, Line => Line, Column => Column);
             Position := Position + 2;
             Remaining := Remaining - 2;
             Line := Line + 1;
             Column := 1;
-         elsif Point = Wide_Wide_Character'Val (16#000A#) or else Point = Wide_Wide_Character'Val (16#000D#) then
+         elsif Is_Line_Break (Point) then
             Last_Position := (Byte_Index => Position + Length - 1, Line => Line, Column => Column);
             Position := Position + Length;
             Remaining := Remaining - Length;
@@ -645,6 +656,23 @@ package body Lovelace.Compiler.Tokenizer is
       return Errors;
    end Internal_Compile_Error;
 
+   function Is_Crlf_Pair
+     (Source_Text : String; Position : Positive; Point : Code_Point; Length : Natural; Remaining : Natural)
+      return Boolean is
+   begin
+      return
+        Point = Wide_Wide_Character'Val (16#000D#)
+        and then Length = 1
+        and then Remaining >= 2
+        and then Position + 1 <= Source_Text'Last
+        and then Source_Text (Position + 1) = Character'Val (16#0A#);
+   end Is_Crlf_Pair;
+
+   function Is_Empty_Truncation (Source_Text : String; From : Positive; Max_Length : Natural) return Boolean is
+   begin
+      return Max_Length = 0 or else (Source_Text (From) = '@' and then Max_Length = 1);
+   end Is_Empty_Truncation;
+
    function Is_Excluded_Punctuation (Point : Code_Point) return Boolean is
    begin
       if Point = '_' then
@@ -711,6 +739,19 @@ package body Lovelace.Compiler.Tokenizer is
       end loop;
       return False;
    end Is_In_Ranges;
+
+   function Is_Line_Break (Point : Code_Point) return Boolean is
+   begin
+      return Point = Wide_Wide_Character'Val (16#000A#) or else Point = Wide_Wide_Character'Val (16#000D#);
+   end Is_Line_Break;
+
+   function Is_Valid_Identifier_Char (Point : Code_Point; At_Start : Boolean) return Boolean is
+   begin
+      if At_Start then
+         return Is_Identifier_First (Point);
+      end if;
+      return Is_Identifier_Continue (Point);
+   end Is_Valid_Identifier_Char;
 
    function Length (Errors : Tokenizer_Error_Sequence) return Natural is
    begin
@@ -1034,6 +1075,48 @@ package body Lovelace.Compiler.Tokenizer is
       return "\u{" & Hex & "}";
    end Scalar_To_Class;
 
+   procedure Scan_Token
+     (Token_List      : in out Tokens.Token_Sequence;
+      Errors          : in out Tokenizer_Error_Sequence;
+      Source_Text     : String;
+      Position        : in out Positive;
+      Line            : in out Positive;
+      Column          : in out Positive;
+      After_Delimiter : in out Boolean;
+      Filename        : Source.Filename_Option)
+   is
+      Match_Length : Natural;
+      Kind         : Tokens.Token_Kind;
+   begin
+      Longest_Scan_Match
+        (Source_Text     => Source_Text,
+         Position        => Position,
+         After_Delimiter => After_Delimiter,
+         Match_Length    => Match_Length,
+         Kind            => Kind);
+      if Match_Length = 0 then
+         if Position <= Source_Text'Last and then Source_Text (Position) = '"' then
+            Report_Unterminated_String (Errors, Source_Text, Position, Line, Column, Filename);
+         else
+            Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
+         end if;
+         After_Delimiter := False;
+      else
+         Append_Matched
+           (Token_List   => Token_List,
+            Errors       => Errors,
+            Source_Text  => Source_Text,
+            Position     => Position,
+            Line         => Line,
+            Column       => Column,
+            Match_Length => Match_Length,
+            Kind         => Kind,
+            Filename     => Filename);
+         After_Delimiter :=
+           Kind = Tokens.Punctuation or else Kind = Tokens.Directive or else Kind = Tokens.String_Literal;
+      end if;
+   end Scan_Token;
+
    procedure Skip_Comment
      (Errors      : in out Tokenizer_Error_Sequence;
       Source_Text : String;
@@ -1137,8 +1220,6 @@ package body Lovelace.Compiler.Tokenizer is
       Line              : Positive := 1;
       Column            : Positive := 1;
       Whitespace_Length : Natural;
-      Match_Length      : Natural;
-      Kind              : Tokens.Token_Kind;
       Last_Position     : Source.Source_Position;
       Start_Position    : Positive;
       After_Delimiter   : Boolean := True;
@@ -1166,33 +1247,15 @@ package body Lovelace.Compiler.Tokenizer is
             Skip_Comment (Errors, Source_Text, Position, Line, Column, Filename);
             After_Delimiter := True;
          else
-            Longest_Scan_Match
-              (Source_Text     => Source_Text,
+            Scan_Token
+              (Token_List      => Token_List,
+               Errors          => Errors,
+               Source_Text     => Source_Text,
                Position        => Position,
+               Line            => Line,
+               Column          => Column,
                After_Delimiter => After_Delimiter,
-               Match_Length    => Match_Length,
-               Kind            => Kind);
-            if Match_Length = 0 then
-               if Position <= Source_Text'Last and then Source_Text (Position) = '"' then
-                  Report_Unterminated_String (Errors, Source_Text, Position, Line, Column, Filename);
-               else
-                  Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
-               end if;
-               After_Delimiter := False;
-            else
-               Append_Matched
-                 (Token_List   => Token_List,
-                  Errors       => Errors,
-                  Source_Text  => Source_Text,
-                  Position     => Position,
-                  Line         => Line,
-                  Column       => Column,
-                  Match_Length => Match_Length,
-                  Kind         => Kind,
-                  Filename     => Filename);
-               After_Delimiter :=
-                 Kind = Tokens.Punctuation or else Kind = Tokens.Directive or else Kind = Tokens.String_Literal;
-            end if;
+               Filename        => Filename);
          end if;
 
          if Position = Start_Position then
@@ -1212,45 +1275,35 @@ package body Lovelace.Compiler.Tokenizer is
       Limit           : constant Positive := From + Max_Length - 1;
       Consumed        : Natural := 0;
       After_At_Prefix : Boolean := False;
+      Stopped         : Boolean := False;
       Point           : Code_Point;
       Length          : Natural;
       Valid           : Boolean;
    begin
-      if Max_Length = 0 then
+      if Is_Empty_Truncation (Source_Text, From, Max_Length) then
          return 0;
       end if;
 
       if Source_Text (From) = '@' then
-         if Max_Length = 1 then
-            return 0;
-         end if;
          After_At_Prefix := True;
          Index := From + 1;
          Consumed := 1;
       end if;
 
-      while Index <= Limit loop
+      while not Stopped and then Index <= Limit loop
          Lovelace.Common.Utf_8.Decode
            (Source => Source_Text, Index => Index, Point => Point, Length => Length, Valid => Valid);
-         exit when not Valid or else Length = 0;
 
-         if After_At_Prefix then
-            if not Is_Identifier_First (Point) then
-               exit;
-            end if;
-            After_At_Prefix := False;
-         elsif Consumed = 0 then
-            if not Is_Identifier_First (Point) then
-               exit;
-            end if;
+         if not Valid
+           or else Length = 0
+           or else not Is_Valid_Identifier_Char (Point, After_At_Prefix or else Consumed = 0)
+         then
+            Stopped := True;
          else
-            if not Is_Identifier_Continue (Point) then
-               exit;
-            end if;
+            After_At_Prefix := False;
+            Consumed := Consumed + Length;
+            Index := Index + Length;
          end if;
-
-         Consumed := Consumed + Length;
-         Index := Index + Length;
       end loop;
 
       return Consumed;
