@@ -67,10 +67,15 @@ package body Lovelace.Compiler.Ir_Generator is
 
    function Failure (Code : Ir_Generator_Error_Code; Span : Source.Source_Span; Detail : String) return Generate_Result;
 
+   procedure Add_Dependencies
+     (Lir_Module : in out Lovelace.Lir.Modules.Module; Units : Unit_Graph.Compilation_Set; Root_Unit : Ast.Module);
+
    procedure Append_Usings_From_Block (The_Block : Ast.Block; Into : in out Ast.Using_Sequence);
 
    procedure Bind_Local
      (The_Map : in out Local_Map; Name : String; Index : Positive; Value_Type : Lovelace_Types.Lovelace_Type);
+
+   function Build_Symbols (Units : Unit_Graph.Compilation_Set) return Flat_Symbol_Vectors.Vector;
 
    function Collect_Unique_Dependencies (The_Module : Ast.Module) return Ast.Using_Sequence;
 
@@ -101,10 +106,32 @@ package body Lovelace.Compiler.Ir_Generator is
      (The_Expression : Ast.Expression; Locals : Local_Map; Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine)
       return Generate_Result;
 
+   function Lower_Intrinsic_Subroutine
+     (Symbol : Flat_Symbol; Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine) return Generate_Result;
+
+   function Lower_Native_Subroutine
+     (Symbol : Flat_Symbol; Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine) return Generate_Result;
+
+   function Lower_Source_Subroutine
+     (Symbol         : Flat_Symbol;
+      Symbols        : Flat_Symbol_Vectors.Vector;
+      Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine) return Generate_Result;
+
    function Lower_Statement_Body
      (The_Body       : Ast.Block;
       Symbols        : Flat_Symbol_Vectors.Vector;
       Locals         : in out Local_Map;
+      Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine) return Generate_Result;
+
+   function Lower_Symbol
+     (Units      : Unit_Graph.Compilation_Set;
+      Symbols    : Flat_Symbol_Vectors.Vector;
+      Symbol     : Flat_Symbol;
+      Lir_Module : in out Lovelace.Lir.Modules.Module) return Generate_Result;
+
+   function Lower_Symbol_Flags
+     (Symbol         : Flat_Symbol;
+      Symbols        : Flat_Symbol_Vectors.Vector;
       Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine) return Generate_Result;
 
    function Map_Flags (Flags : Ast.Subroutine_Flags) return Lovelace.Lir.Subroutines.Subroutine_Flags;
@@ -127,7 +154,28 @@ package body Lovelace.Compiler.Ir_Generator is
       Procedure_Name : out Ada.Strings.Unbounded.Unbounded_String) return Boolean;
 
    --  Resolved version of the unit named Module_Name in Units, else the default.
+   function Success return Generate_Result;
+
    function Unit_Version (Units : Unit_Graph.Compilation_Set; Module_Name : String) return String;
+
+   function Validate_Module (Lir_Module : Lovelace.Lir.Modules.Module; Root_Unit : Ast.Module) return Generate_Result;
+
+   procedure Add_Dependencies
+     (Lir_Module : in out Lovelace.Lir.Modules.Module; Units : Unit_Graph.Compilation_Set; Root_Unit : Ast.Module)
+   is
+      Dependencies : constant Ast.Using_Sequence := Collect_Unique_Dependencies (Root_Unit);
+   begin
+      for Index in 1 .. Ast.Length (Dependencies) loop
+         declare
+            The_Import : constant Ast.Using_Declaration := Ast.Element (Dependencies, Index);
+         begin
+            Lovelace.Lir.Modules.Append_Dependency
+              (Lir_Module,
+               Ada.Strings.Unbounded.To_String (The_Import.Module_Name),
+               Unit_Version (Units, Ada.Strings.Unbounded.To_String (The_Import.Module_Name)));
+         end;
+      end loop;
+   end Add_Dependencies;
 
    procedure Append_Usings_From_Block (The_Block : Ast.Block; Into : in out Ast.Using_Sequence) is
       Block_Usings : constant Ast.Using_Sequence := Ast.Usings (The_Block);
@@ -159,6 +207,37 @@ package body Lovelace.Compiler.Ir_Generator is
            (Name => Ada.Strings.Unbounded.To_Unbounded_String (Name), Index => Index, Value_Type => Value_Type));
       The_Map.Scopes.Replace_Element (Last_Index, Frame);
    end Bind_Local;
+
+   function Build_Symbols (Units : Unit_Graph.Compilation_Set) return Flat_Symbol_Vectors.Vector is
+      Symbols : Flat_Symbol_Vectors.Vector;
+   begin
+      for Unit_Index in 1 .. Natural (Units.Length) loop
+         declare
+            Loaded : constant Unit_Graph.Loaded_Unit := Units.Element (Unit_Index);
+         begin
+            for Local_Index in 1 .. Ast.Subroutine_Count (Loaded.The_Module) loop
+               declare
+                  Ast_Sub   : constant Ast.Subroutine := Ast.Get_Subroutine (Loaded.The_Module, Local_Index);
+                  Proc_Name : constant String := Ast.Name (Ast_Sub);
+                  Mod_Name  : constant String := Ast.Name (Loaded.The_Module);
+               begin
+                  --  Always Module.Proc (overloads share a name); Call targets are by index.
+                  Symbols.Append
+                    (Flat_Symbol'
+                       (Unit_Index     => Unit_Index,
+                        Local_Index    => Local_Index,
+                        Module_Name    => Ada.Strings.Unbounded.To_Unbounded_String (Mod_Name),
+                        Procedure_Name => Ada.Strings.Unbounded.To_Unbounded_String (Proc_Name),
+                        Lir_Name       => Ada.Strings.Unbounded.To_Unbounded_String (Mod_Name & "." & Proc_Name),
+                        Exported       => Ast.Has_Export (Ast.Get_Flags (Ast_Sub)),
+                        The_Subroutine => Ast_Sub));
+               end;
+            end loop;
+         end;
+      end loop;
+
+      return Symbols;
+   end Build_Symbols;
 
    function Collect_Unique_Dependencies (The_Module : Ast.Module) return Ast.Using_Sequence is
       All_Usings : Ast.Using_Sequence := Ast.Empty_Using_Sequence;
@@ -357,206 +436,25 @@ package body Lovelace.Compiler.Ir_Generator is
           Span      => Ast.Span (Root_Unit),
           Filename  => Origin_Filename (Units.Element (1), Ast.Filename (Root_Unit))));
 
-      declare
-         Dependencies : constant Ast.Using_Sequence := Collect_Unique_Dependencies (Root_Unit);
-      begin
-         for Index in 1 .. Ast.Length (Dependencies) loop
-            declare
-               The_Import : constant Ast.Using_Declaration := Ast.Element (Dependencies, Index);
-            begin
-               Lovelace.Lir.Modules.Append_Dependency
-                 (Lir_Module,
-                  Ada.Strings.Unbounded.To_String (The_Import.Module_Name),
-                  Unit_Version (Units, Ada.Strings.Unbounded.To_String (The_Import.Module_Name)));
-            end;
-         end loop;
-      end;
-
-      for Unit_Index in 1 .. Natural (Units.Length) loop
-         declare
-            Loaded : constant Unit_Graph.Loaded_Unit := Units.Element (Unit_Index);
-         begin
-            for Local_Index in 1 .. Ast.Subroutine_Count (Loaded.The_Module) loop
-               declare
-                  Ast_Sub   : constant Ast.Subroutine := Ast.Get_Subroutine (Loaded.The_Module, Local_Index);
-                  Proc_Name : constant String := Ast.Name (Ast_Sub);
-                  Mod_Name  : constant String := Ast.Name (Loaded.The_Module);
-               begin
-                  Symbols.Append
-                    (Flat_Symbol'
-                       (Unit_Index     => Unit_Index,
-                        Local_Index    => Local_Index,
-                        Module_Name    => Ada.Strings.Unbounded.To_Unbounded_String (Mod_Name),
-                        Procedure_Name => Ada.Strings.Unbounded.To_Unbounded_String (Proc_Name),
-                        Lir_Name       => Ada.Strings.Unbounded.Null_Unbounded_String,
-                        Exported       => Ast.Has_Export (Ast.Get_Flags (Ast_Sub)),
-                        The_Subroutine => Ast_Sub));
-               end;
-            end loop;
-         end;
-      end loop;
+      Add_Dependencies (Lir_Module, Units, Root_Unit);
+      Symbols := Build_Symbols (Units);
 
       for Symbol_Index in 1 .. Natural (Symbols.Length) loop
          declare
-            Symbol    : Flat_Symbol := Symbols.Element (Symbol_Index);
-            Mod_Name  : constant String := Ada.Strings.Unbounded.To_String (Symbol.Module_Name);
-            Proc_Name : constant String := Ada.Strings.Unbounded.To_String (Symbol.Procedure_Name);
-            --  Always Module.Proc (overloads share a name); Call targets are by index.
-            Lir_Name  : constant String := Mod_Name & "." & Proc_Name;
+            Symbol_Result : constant Generate_Result :=
+              Lower_Symbol
+                (Units      => Units,
+                 Symbols    => Symbols,
+                 Symbol     => Symbols.Element (Symbol_Index),
+                 Lir_Module => Lir_Module);
          begin
-            Symbol.Lir_Name := Ada.Strings.Unbounded.To_Unbounded_String (Lir_Name);
-            Symbols.Replace_Element (Symbol_Index, Symbol);
-         end;
-      end loop;
-
-      for Symbol_Index in 1 .. Natural (Symbols.Length) loop
-         declare
-            Symbol         : constant Flat_Symbol := Symbols.Element (Symbol_Index);
-            Parameters     : constant Lovelace.Lir.Types.Parameter_Sequence :=
-              Map_Parameters (Ast.Parameters (Symbol.The_Subroutine));
-            The_Signature  : constant Lovelace.Lir.Subroutines.Signature :=
-              (Name        => Symbol.Lir_Name,
-               Return_Type => Map_Value_Type (Ast.Return_Type (Symbol.The_Subroutine)),
-               Parameters  => Parameters);
-            Lir_Subroutine : Lovelace.Lir.Subroutines.Subroutine :=
-              Lovelace.Lir.Subroutines.Create
-                (The_Signature => The_Signature, Flags => Map_Flags (Ast.Get_Flags (Symbol.The_Subroutine)));
-            Body_Result    : Generate_Result;
-            Ast_Native     : constant Ast.Native_Binding_Option := Ast.Native (Symbol.The_Subroutine);
-         begin
-            Lovelace.Lir.Subroutines.Set_Origin
-              (Lir_Subroutine,
-               (Name_Span => Ast.Name_Span (Symbol.The_Subroutine),
-                Span      => Ast.Span (Symbol.The_Subroutine),
-                Filename  =>
-                  Origin_Filename (Units.Element (Symbol.Unit_Index), Ast.Filename (Symbol.The_Subroutine))));
-
-            if Symbol.Unit_Index /= 1 then
-               Lovelace.Lir.Subroutines.Set_From_Dependency
-                 (Lir_Subroutine, Ada.Strings.Unbounded.To_String (Symbol.Module_Name));
+            if not Symbol_Result.Ok then
+               return Symbol_Result;
             end if;
-
-            declare
-               Sub_Flags : constant Ast.Subroutine_Flags := Ast.Get_Flags (Symbol.The_Subroutine);
-            begin
-               if Ast.Has_Intrinsic (Sub_Flags) and then Ast.Has_Native (Sub_Flags) then
-                  return
-                    Failure
-                      (Internal_Error,
-                       Ast.Name_Span (Symbol.The_Subroutine),
-                       "procedure cannot be both @intrinsic and @native");
-               end if;
-
-               if Ast.Has_Intrinsic (Sub_Flags) then
-                  if Ast_Native.Present then
-                     return
-                       Failure
-                         (Internal_Error,
-                          Ast.Name_Span (Symbol.The_Subroutine),
-                          "intrinsic procedure must not carry a native binding");
-                  end if;
-
-                  declare
-                     Matched : constant Intrinsics.Intrinsic_Kind_Option :=
-                       Intrinsics.Match_Intrinsic
-                         (Ada.Strings.Unbounded.To_String (Symbol.Module_Name), Symbol.The_Subroutine);
-                  begin
-                     if not Matched.Present then
-                        return
-                          Failure
-                            (Unknown_Intrinsic,
-                             Ast.Name_Span (Symbol.The_Subroutine),
-                             "unknown @intrinsic signature for procedure '"
-                             & Ada.Strings.Unbounded.To_String (Symbol.Procedure_Name)
-                             & "'");
-                     end if;
-                  end;
-
-                  Lovelace.Lir.Subroutines.Set_Intrinsic (Lir_Subroutine);
-
-               elsif Ast.Has_Native (Sub_Flags) then
-                  if not Ast_Native.Present then
-                     return
-                       Failure
-                         (Internal_Error,
-                          Ast.Name_Span (Symbol.The_Subroutine),
-                          "native flag without binding on procedure '"
-                          & Ada.Strings.Unbounded.To_String (Symbol.Procedure_Name)
-                          & "'");
-                  end if;
-
-                  Lovelace.Lir.Subroutines.Set_Native_Binding
-                    (Lir_Subroutine,
-                     Ada.Strings.Unbounded.To_String (Ast_Native.Value.Library),
-                     Ada.Strings.Unbounded.To_String (Ast_Native.Value.Function_Name));
-
-               else
-                  if Ast_Native.Present then
-                     return
-                       Failure
-                         (Internal_Error,
-                          Ast.Name_Span (Symbol.The_Subroutine),
-                          "native binding without flag on procedure '"
-                          & Ada.Strings.Unbounded.To_String (Symbol.Procedure_Name)
-                          & "'");
-                  end if;
-
-                  declare
-                     Locals      : Local_Map;
-                     Ast_Params  : constant Ast.Parameter_Sequence := Ast.Parameters (Symbol.The_Subroutine);
-                     Param_Count : constant Natural := Ast.Length (Ast_Params);
-                  begin
-                     Push_Scope (Locals);
-                     for Param_Index in 1 .. Param_Count loop
-                        declare
-                           The_Parameter : constant Ast.Parameter := Ast.Element (Ast_Params, Param_Index);
-                        begin
-                           Bind_Local
-                             (Locals,
-                              Ada.Strings.Unbounded.To_String (The_Parameter.Parameter_Name),
-                              Param_Index,
-                              Lovelace_Types.From_Expression (The_Parameter.Parameter_Type));
-                        end;
-                     end loop;
-                     Locals.Next_Slot := Param_Count + 1;
-
-                     Body_Result :=
-                       Lower_Statement_Body
-                         (The_Body       => Ast.Get_Body (Symbol.The_Subroutine),
-                          Symbols        => Symbols,
-                          Locals         => Locals,
-                          Lir_Subroutine => Lir_Subroutine);
-                     case Body_Result.Ok is
-                        when False =>
-                           return Body_Result;
-
-                        when True  =>
-                           null;
-                     end case;
-                  end;
-               end if;
-            end;
-
-            Lovelace.Lir.Modules.Append_Subroutine (Lir_Module, Lir_Subroutine);
          end;
       end loop;
 
-      declare
-         Validation : constant Lovelace.Lir.Errors.Validation_Results.Result :=
-           Lovelace.Lir.Modules.Validate (Lir_Module);
-      begin
-         case Validation.Ok is
-            when True  =>
-               return (Ok => True, The_Module => Lir_Module);
-
-            when False =>
-               return
-                 Failure
-                   (Internal_Error,
-                    Ast.Name_Span (Root_Unit),
-                    "LIR Validate failed: " & Lovelace.Lir.Errors.Error_Code'Image (Validation.Error));
-         end case;
-      end;
+      return Validate_Module (Lir_Module, Root_Unit);
    end Generate;
 
    function Lower_Call
@@ -657,6 +555,97 @@ package body Lovelace.Compiler.Ir_Generator is
       end case;
    end Lower_Expression;
 
+   function Lower_Intrinsic_Subroutine
+     (Symbol : Flat_Symbol; Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine) return Generate_Result
+   is
+      Matched : constant Intrinsics.Intrinsic_Kind_Option :=
+        Intrinsics.Match_Intrinsic (Ada.Strings.Unbounded.To_String (Symbol.Module_Name), Symbol.The_Subroutine);
+   begin
+      if Ast.Native (Symbol.The_Subroutine).Present then
+         return
+           Failure
+             (Internal_Error,
+              Ast.Name_Span (Symbol.The_Subroutine),
+              "intrinsic procedure must not carry a native binding");
+      end if;
+
+      if not Matched.Present then
+         return
+           Failure
+             (Unknown_Intrinsic,
+              Ast.Name_Span (Symbol.The_Subroutine),
+              "unknown @intrinsic signature for procedure '"
+              & Ada.Strings.Unbounded.To_String (Symbol.Procedure_Name)
+              & "'");
+      end if;
+
+      Lovelace.Lir.Subroutines.Set_Intrinsic (Lir_Subroutine);
+      return Success;
+   end Lower_Intrinsic_Subroutine;
+
+   function Lower_Native_Subroutine
+     (Symbol : Flat_Symbol; Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine) return Generate_Result
+   is
+      Ast_Native : constant Ast.Native_Binding_Option := Ast.Native (Symbol.The_Subroutine);
+   begin
+      if not Ast_Native.Present then
+         return
+           Failure
+             (Internal_Error,
+              Ast.Name_Span (Symbol.The_Subroutine),
+              "native flag without binding on procedure '"
+              & Ada.Strings.Unbounded.To_String (Symbol.Procedure_Name)
+              & "'");
+      end if;
+
+      Lovelace.Lir.Subroutines.Set_Native_Binding
+        (Lir_Subroutine,
+         Ada.Strings.Unbounded.To_String (Ast_Native.Value.Library),
+         Ada.Strings.Unbounded.To_String (Ast_Native.Value.Function_Name));
+      return Success;
+   end Lower_Native_Subroutine;
+
+   function Lower_Source_Subroutine
+     (Symbol         : Flat_Symbol;
+      Symbols        : Flat_Symbol_Vectors.Vector;
+      Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine) return Generate_Result
+   is
+      Locals      : Local_Map;
+      Ast_Params  : constant Ast.Parameter_Sequence := Ast.Parameters (Symbol.The_Subroutine);
+      Param_Count : constant Natural := Ast.Length (Ast_Params);
+   begin
+      if Ast.Native (Symbol.The_Subroutine).Present then
+         return
+           Failure
+             (Internal_Error,
+              Ast.Name_Span (Symbol.The_Subroutine),
+              "native binding without flag on procedure '"
+              & Ada.Strings.Unbounded.To_String (Symbol.Procedure_Name)
+              & "'");
+      end if;
+
+      Push_Scope (Locals);
+      for Param_Index in 1 .. Param_Count loop
+         declare
+            The_Parameter : constant Ast.Parameter := Ast.Element (Ast_Params, Param_Index);
+         begin
+            Bind_Local
+              (Locals,
+               Ada.Strings.Unbounded.To_String (The_Parameter.Parameter_Name),
+               Param_Index,
+               Lovelace_Types.From_Expression (The_Parameter.Parameter_Type));
+         end;
+      end loop;
+      Locals.Next_Slot := Param_Count + 1;
+
+      return
+        Lower_Statement_Body
+          (The_Body       => Ast.Get_Body (Symbol.The_Subroutine),
+           Symbols        => Symbols,
+           Locals         => Locals,
+           Lir_Subroutine => Lir_Subroutine);
+   end Lower_Source_Subroutine;
+
    function Lower_Statement_Body
      (The_Body       : Ast.Block;
       Symbols        : Flat_Symbol_Vectors.Vector;
@@ -752,6 +741,63 @@ package body Lovelace.Compiler.Ir_Generator is
       Pop_Scope (Locals);
       return (Ok => True, The_Module => Lovelace.Lir.Modules.Create (""));
    end Lower_Statement_Body;
+
+   function Lower_Symbol
+     (Units      : Unit_Graph.Compilation_Set;
+      Symbols    : Flat_Symbol_Vectors.Vector;
+      Symbol     : Flat_Symbol;
+      Lir_Module : in out Lovelace.Lir.Modules.Module) return Generate_Result
+   is
+      The_Signature  : constant Lovelace.Lir.Subroutines.Signature :=
+        (Name        => Symbol.Lir_Name,
+         Return_Type => Map_Value_Type (Ast.Return_Type (Symbol.The_Subroutine)),
+         Parameters  => Map_Parameters (Ast.Parameters (Symbol.The_Subroutine)));
+      Lir_Subroutine : Lovelace.Lir.Subroutines.Subroutine :=
+        Lovelace.Lir.Subroutines.Create
+          (The_Signature => The_Signature, Flags => Map_Flags (Ast.Get_Flags (Symbol.The_Subroutine)));
+      Body_Result    : Generate_Result;
+   begin
+      Lovelace.Lir.Subroutines.Set_Origin
+        (Lir_Subroutine,
+         (Name_Span => Ast.Name_Span (Symbol.The_Subroutine),
+          Span      => Ast.Span (Symbol.The_Subroutine),
+          Filename  => Origin_Filename (Units.Element (Symbol.Unit_Index), Ast.Filename (Symbol.The_Subroutine))));
+
+      if Symbol.Unit_Index /= 1 then
+         Lovelace.Lir.Subroutines.Set_From_Dependency
+           (Lir_Subroutine, Ada.Strings.Unbounded.To_String (Symbol.Module_Name));
+      end if;
+
+      Body_Result := Lower_Symbol_Flags (Symbol, Symbols, Lir_Subroutine);
+      if not Body_Result.Ok then
+         return Body_Result;
+      end if;
+
+      Lovelace.Lir.Modules.Append_Subroutine (Lir_Module, Lir_Subroutine);
+      return Success;
+   end Lower_Symbol;
+
+   function Lower_Symbol_Flags
+     (Symbol         : Flat_Symbol;
+      Symbols        : Flat_Symbol_Vectors.Vector;
+      Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine) return Generate_Result
+   is
+      Sub_Flags : constant Ast.Subroutine_Flags := Ast.Get_Flags (Symbol.The_Subroutine);
+   begin
+      if Ast.Has_Intrinsic (Sub_Flags) and then Ast.Has_Native (Sub_Flags) then
+         return
+           Failure
+             (Internal_Error, Ast.Name_Span (Symbol.The_Subroutine), "procedure cannot be both @intrinsic and @native");
+      end if;
+
+      if Ast.Has_Intrinsic (Sub_Flags) then
+         return Lower_Intrinsic_Subroutine (Symbol, Lir_Subroutine);
+      elsif Ast.Has_Native (Sub_Flags) then
+         return Lower_Native_Subroutine (Symbol, Lir_Subroutine);
+      else
+         return Lower_Source_Subroutine (Symbol, Symbols, Lir_Subroutine);
+      end if;
+   end Lower_Symbol_Flags;
 
    function Map_Flags (Flags : Ast.Subroutine_Flags) return Lovelace.Lir.Subroutines.Subroutine_Flags is
       Result : Lovelace.Lir.Subroutines.Subroutine_Flags := 0;
@@ -881,6 +927,11 @@ package body Lovelace.Compiler.Ir_Generator is
       return True;
    end Split_Callee;
 
+   function Success return Generate_Result is
+   begin
+      return (Ok => True, The_Module => Lovelace.Lir.Modules.Create (""));
+   end Success;
+
    function Unit_Version (Units : Unit_Graph.Compilation_Set; Module_Name : String) return String is
    begin
       for Unit of Units loop
@@ -891,5 +942,21 @@ package body Lovelace.Compiler.Ir_Generator is
 
       return Lovelace.Lir.Modules.Default_Module_Version;
    end Unit_Version;
+
+   function Validate_Module (Lir_Module : Lovelace.Lir.Modules.Module; Root_Unit : Ast.Module) return Generate_Result is
+      Validation : constant Lovelace.Lir.Errors.Validation_Results.Result := Lovelace.Lir.Modules.Validate (Lir_Module);
+   begin
+      case Validation.Ok is
+         when True  =>
+            return (Ok => True, The_Module => Lir_Module);
+
+         when False =>
+            return
+              Failure
+                (Internal_Error,
+                 Ast.Name_Span (Root_Unit),
+                 "LIR Validate failed: " & Lovelace.Lir.Errors.Error_Code'Image (Validation.Error));
+      end case;
+   end Validate_Module;
 
 end Lovelace.Compiler.Ir_Generator;

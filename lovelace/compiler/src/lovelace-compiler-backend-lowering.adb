@@ -26,8 +26,17 @@ package body Lovelace.Compiler.Backend.Lowering is
    procedure Append_Kebab_Byte (Byte : Character; Buffer : in out String; Last : in out Natural);
    --  Map one source byte into Buffer as lowercase alnum or a single '-'.
 
+   procedure Append_Start_Function (The_Model : in out Model.Component_Model; Entrypoint_Index : Positive);
+   --  Append the synthesized `_start` wrapper and its WASI run export.
+
+   function Check_Signature (The_Subroutine : Subroutines.Subroutine) return Lower_Result;
+   --  Reject non-Unit returns and entrypoints with parameters.
+
    function Failure (Code : Backend_Error_Code; Detail : String) return Lower_Result;
    --  Build a Lower_Result failure.
+
+   function Is_Component_Export (The_Flags : Subroutines.Subroutine_Flags; Parameter_Count : Natural) return Boolean;
+   --  True for exported subroutines with no parameters (component-level export).
 
    function Kebab_Export_Name (Name : String) return String;
    --  Component/WIT extern name: ASCII letters/digits lowercased; other bytes become '-'.
@@ -37,6 +46,31 @@ package body Lovelace.Compiler.Backend.Lowering is
       Body_Out         : out Model.Instruction_Sequence;
       Outcome          : out Lower_Result);
    --  Fill Body_Out from The_Instructions; Outcome.Ok False on failure.
+
+   function Lower_Intrinsic_Body
+     (The_Module      : Modules.Module;
+      The_Model       : in out Model.Component_Model;
+      The_Subroutine  : Subroutines.Subroutine;
+      Parameter_Types : Model.Core_Parameter_Sequence;
+      Local_Types     : out Model.Core_Local_Sequence;
+      Body_Out        : out Model.Instruction_Sequence) return Lower_Result;
+   --  Synthesize the body of a matched intrinsic.
+
+   function Lower_Subroutine
+     (The_Module       : Modules.Module;
+      The_Model        : in out Model.Component_Model;
+      Subroutine_Index : Positive;
+      Entrypoint_Index : in out Natural) return Lower_Result;
+   --  Lower one LIR subroutine into The_Model (function, export, entrypoint tracking).
+
+   function Lower_Subroutine_Body
+     (The_Module      : Modules.Module;
+      The_Model       : in out Model.Component_Model;
+      The_Subroutine  : Subroutines.Subroutine;
+      Parameter_Types : Model.Core_Parameter_Sequence;
+      Local_Types     : out Model.Core_Local_Sequence;
+      Body_Out        : out Model.Instruction_Sequence) return Lower_Result;
+   --  Produce locals and body for an intrinsic, native, or ordinary subroutine.
 
    function Map_Core_Parameter_Type (The_Type : Types.Value_Type; Mapped : out Model.Core_Value_Type) return Boolean;
    --  Map a non-Unit LIR parameter type to a core WASM value type. False when unsupported.
@@ -52,6 +86,14 @@ package body Lovelace.Compiler.Backend.Lowering is
       Mapped     : out Model.Core_Parameter_Sequence;
       Detail     : out Ada.Strings.Unbounded.Unbounded_String) return Boolean;
    --  Map LIR named parameters to core types. False when a parameter type is unsupported.
+
+   function Record_Entrypoint
+     (The_Flags : Subroutines.Subroutine_Flags; Subroutine_Index : Positive; Entrypoint_Index : in out Natural)
+      return Lower_Result;
+   --  Remember the entrypoint index; fail on a duplicate.
+
+   function Success return Lower_Result;
+   --  Build a successful Lower_Result with an empty placeholder model.
 
    function Trim_Kebab_Dashes (Buffer : String; Last : Natural) return String;
    --  Strip leading/trailing '-' from Buffer (1 .. Last); "export" if empty.
@@ -71,10 +113,59 @@ package body Lovelace.Compiler.Backend.Lowering is
       end if;
    end Append_Kebab_Byte;
 
+   procedure Append_Start_Function (The_Model : in out Model.Component_Model; Entrypoint_Index : Positive) is
+      Start_Body  : Model.Instruction_Sequence := Model.Empty_Instructions;
+      Start_Index : constant Positive := Model.Function_Count (The_Model) + 1;
+   begin
+      Model.Append (Start_Body, (Kind => Model.Call_Function, Target_Index => Entrypoint_Index));
+      Model.Append (Start_Body, (Kind => Model.I32_Constant, Value => 0));
+
+      Model.Append_Function
+        (The_Model,
+         (Name            => Ada.Strings.Unbounded.To_Unbounded_String ("_start"),
+          Parameter_Types => Model.Empty_Parameters,
+          Local_Types     => Model.Empty_Locals,
+          Result_Is_I32   => True,
+          Instructions    => Start_Body,
+          Core_Exported   => True));
+
+      Model.Append_Export
+        (The_Model,
+         (Export_Name         => Ada.Strings.Unbounded.To_Unbounded_String (Model.Wasi_Cli_Run_Export_Name),
+          Core_Function_Index => Start_Index,
+          Returns_Result      => True));
+   end Append_Start_Function;
+
+   function Check_Signature (The_Subroutine : Subroutines.Subroutine) return Lower_Result is
+      The_Signature   : constant Subroutines.Signature := Subroutines.Get_Signature (The_Subroutine);
+      Source_Name     : constant String := Ada.Strings.Unbounded.To_String (The_Signature.Name);
+      Parameter_Count : constant Natural := Types.Length (The_Signature.Parameters);
+   begin
+      if The_Signature.Return_Type /= Types.Unit then
+         return
+           Failure (Unsupported_Type, "backend this slice supports only Unit return; got subroutine " & Source_Name);
+      end if;
+
+      if Subroutines.Has_Entrypoint (Subroutines.Get_Flags (The_Subroutine)) and then Parameter_Count > 0 then
+         return
+           Failure
+             (Unsupported_Type,
+              "backend this slice supports parameters only on non-entrypoint procedures; got subroutine "
+              & Source_Name);
+      end if;
+
+      return Success;
+   end Check_Signature;
+
    function Failure (Code : Backend_Error_Code; Detail : String) return Lower_Result is
    begin
       return (Ok => False, Error => Make_Error (Code, Detail));
    end Failure;
+
+   function Is_Component_Export (The_Flags : Subroutines.Subroutine_Flags; Parameter_Count : Natural) return Boolean is
+   begin
+      return Subroutines.Has_Export (The_Flags) and then Parameter_Count = 0;
+   end Is_Component_Export;
 
    function Kebab_Export_Name (Name : String) return String is
       --  COMPONENT/WIT export: Module.Name -> module-name (kebab; dots to dashes).
@@ -103,7 +194,6 @@ package body Lovelace.Compiler.Backend.Lowering is
          The_Model        : Model.Component_Model :=
            Model.Create (Modules.Name (The_Module), Modules.Module_Version (The_Module));
          Entrypoint_Index : Natural := 0;
-         Entrypoint_Found : Boolean := False;
       begin
          for Dependency_Index in 1 .. Modules.Dependency_Count (The_Module) loop
             Model.Append_Dependency
@@ -114,169 +204,21 @@ package body Lovelace.Compiler.Backend.Lowering is
 
          for Subroutine_Index in 1 .. Modules.Subroutine_Count (The_Module) loop
             declare
-               The_Subroutine   : constant Subroutines.Subroutine :=
-                 Modules.Get_Subroutine (The_Module, Subroutine_Index);
-               The_Signature    : constant Subroutines.Signature := Subroutines.Get_Signature (The_Subroutine);
-               The_Flags        : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (The_Subroutine);
-               Body_Out         : Model.Instruction_Sequence;
-               Body_Outcome     : Lower_Result;
-               Parameter_Types  : Model.Core_Parameter_Sequence;
-               Parameter_Detail : Ada.Strings.Unbounded.Unbounded_String;
-               Source_Name      : constant String := Ada.Strings.Unbounded.To_String (The_Signature.Name);
-               Parameter_Count  : constant Natural := Types.Length (The_Signature.Parameters);
-               Component_Export : constant Boolean := Subroutines.Has_Export (The_Flags) and then Parameter_Count = 0;
+               Outcome : constant Lower_Result :=
+                 Lower_Subroutine
+                   (The_Module       => The_Module,
+                    The_Model        => The_Model,
+                    Subroutine_Index => Subroutine_Index,
+                    Entrypoint_Index => Entrypoint_Index);
             begin
-               if The_Signature.Return_Type /= Types.Unit then
-                  return
-                    Failure
-                      (Unsupported_Type, "backend this slice supports only Unit return; got subroutine " & Source_Name);
-               end if;
-
-               if Subroutines.Has_Entrypoint (The_Flags) and then Parameter_Count > 0 then
-                  return
-                    Failure
-                      (Unsupported_Type,
-                       "backend this slice supports parameters only on non-entrypoint procedures; got subroutine "
-                       & Source_Name);
-               end if;
-
-               if not Map_Parameters
-                        (Parameters => The_Signature.Parameters, Mapped => Parameter_Types, Detail => Parameter_Detail)
-               then
-                  return
-                    Failure
-                      (Unsupported_Type,
-                       "unsupported parameter type in subroutine "
-                       & Source_Name
-                       & ": "
-                       & Ada.Strings.Unbounded.To_String (Parameter_Detail));
-               end if;
-
-               declare
-                  Local_Types  : Model.Core_Local_Sequence := Model.Empty_Locals;
-                  Local_Detail : Ada.Strings.Unbounded.Unbounded_String;
-                  Lir_Locals   : constant Types.Parameter_Sequence := Subroutines.Get_Locals (The_Subroutine);
-               begin
-                  if Subroutines.Has_Intrinsic (The_Flags) then
-                     declare
-                        Owner_Module : Ada.Strings.Unbounded.Unbounded_String;
-                        Proc_Name    : Ada.Strings.Unbounded.Unbounded_String;
-                        Matched      : Intrinsics.Intrinsic_Kind_Option;
-                     begin
-                        Intrinsics.Split_Lir_Subroutine_Name
-                          (Root_Module_Name => Modules.Name (The_Module),
-                           Lir_Name         => Source_Name,
-                           Module_Name      => Owner_Module,
-                           Subroutine_Name  => Proc_Name);
-                        Matched :=
-                          Intrinsics.Match_Intrinsic
-                            (Module_Name     => Ada.Strings.Unbounded.To_String (Owner_Module),
-                             Subroutine_Name => Ada.Strings.Unbounded.To_String (Proc_Name),
-                             Return_Type     => The_Signature.Return_Type,
-                             Parameters      => The_Signature.Parameters);
-
-                        if not Matched.Present then
-                           return
-                             Failure (Internal_Error, "backend intrinsic table miss for subroutine " & Source_Name);
-                        end if;
-
-                        case Matched.Kind is
-                           when Intrinsics.Print_Integer_Stdout =>
-                              if Parameter_Count /= 1 or else Model.Element (Parameter_Types, 1) /= Model.I32 then
-                                 return
-                                   Failure
-                                     (Unsupported_Type,
-                                      "print integer intrinsic requires a single integer parameter; got "
-                                      & Source_Name);
-                              end if;
-
-                              Native_Print.Synthesize (Local_Types, Body_Out);
-                              Model.Enable_Wasi_Stdout (The_Model);
-                        end case;
-                     end;
-                  elsif Subroutines.Has_Native (The_Flags) then
-                     --  `@native` FFI is parse/LIR-only in this slice; emit an empty noop body.
-                     null;
-                  else
-                     if not Map_Locals (Locals => Lir_Locals, Mapped => Local_Types, Detail => Local_Detail) then
-                        return
-                          Failure
-                            (Unsupported_Type,
-                             "unsupported local type in subroutine "
-                             & Source_Name
-                             & ": "
-                             & Ada.Strings.Unbounded.To_String (Local_Detail));
-                     end if;
-
-                     Lower_Instruction_Body
-                       (The_Instructions => Subroutines.Get_Instructions (The_Subroutine),
-                        Body_Out         => Body_Out,
-                        Outcome          => Body_Outcome);
-
-                     case Body_Outcome.Ok is
-                        when False =>
-                           return Body_Outcome;
-
-                        when True  =>
-                           null;
-                     end case;
-                  end if;
-
-                  Model.Append_Function
-                    (The_Model,
-                     (Name            =>
-                        Ada.Strings.Unbounded.To_Unbounded_String
-                          (if Component_Export then Kebab_Export_Name (Source_Name) else Source_Name),
-                      Parameter_Types => Parameter_Types,
-                      Local_Types     => Local_Types,
-                      Result_Is_I32   => False,
-                      Instructions    => Body_Out,
-                      Core_Exported   => Component_Export));
-               end;
-
-               if Component_Export then
-                  Model.Append_Export
-                    (The_Model,
-                     (Export_Name         =>
-                        Ada.Strings.Unbounded.To_Unbounded_String (Kebab_Export_Name (Source_Name)),
-                      Core_Function_Index => Subroutine_Index,
-                      Returns_Result      => False));
-               end if;
-
-               if Subroutines.Has_Entrypoint (The_Flags) then
-                  if Entrypoint_Found then
-                     return Failure (Internal_Error, "duplicate entrypoint after Validate");
-                  end if;
-
-                  Entrypoint_Found := True;
-                  Entrypoint_Index := Subroutine_Index;
+               if not Outcome.Ok then
+                  return Outcome;
                end if;
             end;
          end loop;
 
-         if Entrypoint_Found then
-            declare
-               Start_Body  : Model.Instruction_Sequence := Model.Empty_Instructions;
-               Start_Index : constant Positive := Model.Function_Count (The_Model) + 1;
-            begin
-               Model.Append (Start_Body, (Kind => Model.Call_Function, Target_Index => Positive (Entrypoint_Index)));
-               Model.Append (Start_Body, (Kind => Model.I32_Constant, Value => 0));
-
-               Model.Append_Function
-                 (The_Model,
-                  (Name            => Ada.Strings.Unbounded.To_Unbounded_String ("_start"),
-                   Parameter_Types => Model.Empty_Parameters,
-                   Local_Types     => Model.Empty_Locals,
-                   Result_Is_I32   => True,
-                   Instructions    => Start_Body,
-                   Core_Exported   => True));
-
-               Model.Append_Export
-                 (The_Model,
-                  (Export_Name         => Ada.Strings.Unbounded.To_Unbounded_String (Model.Wasi_Cli_Run_Export_Name),
-                   Core_Function_Index => Start_Index,
-                   Returns_Result      => True));
-            end;
+         if Entrypoint_Index /= 0 then
+            Append_Start_Function (The_Model, Entrypoint_Index);
          end if;
 
          return (Ok => True, The_Model => The_Model);
@@ -326,6 +268,170 @@ package body Lovelace.Compiler.Backend.Lowering is
          end;
       end loop;
    end Lower_Instruction_Body;
+
+   function Lower_Intrinsic_Body
+     (The_Module      : Modules.Module;
+      The_Model       : in out Model.Component_Model;
+      The_Subroutine  : Subroutines.Subroutine;
+      Parameter_Types : Model.Core_Parameter_Sequence;
+      Local_Types     : out Model.Core_Local_Sequence;
+      Body_Out        : out Model.Instruction_Sequence) return Lower_Result
+   is
+      The_Signature : constant Subroutines.Signature := Subroutines.Get_Signature (The_Subroutine);
+      Source_Name   : constant String := Ada.Strings.Unbounded.To_String (The_Signature.Name);
+      Owner_Module  : Ada.Strings.Unbounded.Unbounded_String;
+      Proc_Name     : Ada.Strings.Unbounded.Unbounded_String;
+      Matched       : Intrinsics.Intrinsic_Kind_Option;
+   begin
+      Intrinsics.Split_Lir_Subroutine_Name
+        (Root_Module_Name => Modules.Name (The_Module),
+         Lir_Name         => Source_Name,
+         Module_Name      => Owner_Module,
+         Subroutine_Name  => Proc_Name);
+      Matched :=
+        Intrinsics.Match_Intrinsic
+          (Module_Name     => Ada.Strings.Unbounded.To_String (Owner_Module),
+           Subroutine_Name => Ada.Strings.Unbounded.To_String (Proc_Name),
+           Return_Type     => The_Signature.Return_Type,
+           Parameters      => The_Signature.Parameters);
+
+      if not Matched.Present then
+         return Failure (Internal_Error, "backend intrinsic table miss for subroutine " & Source_Name);
+      end if;
+
+      case Matched.Kind is
+         when Intrinsics.Print_Integer_Stdout =>
+            if Types.Length (The_Signature.Parameters) /= 1 or else Model.Element (Parameter_Types, 1) /= Model.I32 then
+               return
+                 Failure
+                   (Unsupported_Type,
+                    "print integer intrinsic requires a single integer parameter; got " & Source_Name);
+            end if;
+
+            Native_Print.Synthesize (Local_Types, Body_Out);
+            Model.Enable_Wasi_Stdout (The_Model);
+      end case;
+
+      return Success;
+   end Lower_Intrinsic_Body;
+
+   function Lower_Subroutine
+     (The_Module       : Modules.Module;
+      The_Model        : in out Model.Component_Model;
+      Subroutine_Index : Positive;
+      Entrypoint_Index : in out Natural) return Lower_Result
+   is
+      The_Subroutine   : constant Subroutines.Subroutine := Modules.Get_Subroutine (The_Module, Subroutine_Index);
+      The_Signature    : constant Subroutines.Signature := Subroutines.Get_Signature (The_Subroutine);
+      The_Flags        : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (The_Subroutine);
+      Source_Name      : constant String := Ada.Strings.Unbounded.To_String (The_Signature.Name);
+      Component_Export : constant Boolean := Is_Component_Export (The_Flags, Types.Length (The_Signature.Parameters));
+      Body_Out         : Model.Instruction_Sequence;
+      Local_Types      : Model.Core_Local_Sequence;
+      Parameter_Types  : Model.Core_Parameter_Sequence;
+      Parameter_Detail : Ada.Strings.Unbounded.Unbounded_String;
+      Outcome          : Lower_Result;
+   begin
+      Outcome := Check_Signature (The_Subroutine);
+      if not Outcome.Ok then
+         return Outcome;
+      end if;
+
+      if not Map_Parameters
+               (Parameters => The_Signature.Parameters, Mapped => Parameter_Types, Detail => Parameter_Detail)
+      then
+         return
+           Failure
+             (Unsupported_Type,
+              "unsupported parameter type in subroutine "
+              & Source_Name
+              & ": "
+              & Ada.Strings.Unbounded.To_String (Parameter_Detail));
+      end if;
+
+      Outcome :=
+        Lower_Subroutine_Body
+          (The_Module      => The_Module,
+           The_Model       => The_Model,
+           The_Subroutine  => The_Subroutine,
+           Parameter_Types => Parameter_Types,
+           Local_Types     => Local_Types,
+           Body_Out        => Body_Out);
+      if not Outcome.Ok then
+         return Outcome;
+      end if;
+
+      Model.Append_Function
+        (The_Model,
+         (Name            =>
+            Ada.Strings.Unbounded.To_Unbounded_String
+              (if Component_Export then Kebab_Export_Name (Source_Name) else Source_Name),
+          Parameter_Types => Parameter_Types,
+          Local_Types     => Local_Types,
+          Result_Is_I32   => False,
+          Instructions    => Body_Out,
+          Core_Exported   => Component_Export));
+
+      if Component_Export then
+         Model.Append_Export
+           (The_Model,
+            (Export_Name         => Ada.Strings.Unbounded.To_Unbounded_String (Kebab_Export_Name (Source_Name)),
+             Core_Function_Index => Subroutine_Index,
+             Returns_Result      => False));
+      end if;
+
+      return Record_Entrypoint (The_Flags, Subroutine_Index, Entrypoint_Index);
+   end Lower_Subroutine;
+
+   function Lower_Subroutine_Body
+     (The_Module      : Modules.Module;
+      The_Model       : in out Model.Component_Model;
+      The_Subroutine  : Subroutines.Subroutine;
+      Parameter_Types : Model.Core_Parameter_Sequence;
+      Local_Types     : out Model.Core_Local_Sequence;
+      Body_Out        : out Model.Instruction_Sequence) return Lower_Result
+   is
+      The_Flags    : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (The_Subroutine);
+      Local_Detail : Ada.Strings.Unbounded.Unbounded_String;
+      Body_Outcome : Lower_Result;
+   begin
+      Local_Types := Model.Empty_Locals;
+      Body_Out := Model.Empty_Instructions;
+
+      if Subroutines.Has_Intrinsic (The_Flags) then
+         return
+           Lower_Intrinsic_Body
+             (The_Module      => The_Module,
+              The_Model       => The_Model,
+              The_Subroutine  => The_Subroutine,
+              Parameter_Types => Parameter_Types,
+              Local_Types     => Local_Types,
+              Body_Out        => Body_Out);
+      end if;
+
+      if Subroutines.Has_Native (The_Flags) then
+         --  `@native` FFI is parse/LIR-only in this slice; emit an empty noop body.
+         return Success;
+      end if;
+
+      if not Map_Locals
+               (Locals => Subroutines.Get_Locals (The_Subroutine), Mapped => Local_Types, Detail => Local_Detail)
+      then
+         return
+           Failure
+             (Unsupported_Type,
+              "unsupported local type in subroutine "
+              & Ada.Strings.Unbounded.To_String (Subroutines.Get_Signature (The_Subroutine).Name)
+              & ": "
+              & Ada.Strings.Unbounded.To_String (Local_Detail));
+      end if;
+
+      Lower_Instruction_Body
+        (The_Instructions => Subroutines.Get_Instructions (The_Subroutine),
+         Body_Out         => Body_Out,
+         Outcome          => Body_Outcome);
+      return Body_Outcome;
+   end Lower_Subroutine_Body;
 
    function Map_Core_Parameter_Type (The_Type : Types.Value_Type; Mapped : out Model.Core_Value_Type) return Boolean is
    begin
@@ -408,6 +514,26 @@ package body Lovelace.Compiler.Backend.Lowering is
 
       return True;
    end Map_Parameters;
+
+   function Record_Entrypoint
+     (The_Flags : Subroutines.Subroutine_Flags; Subroutine_Index : Positive; Entrypoint_Index : in out Natural)
+      return Lower_Result is
+   begin
+      if Subroutines.Has_Entrypoint (The_Flags) then
+         if Entrypoint_Index /= 0 then
+            return Failure (Internal_Error, "duplicate entrypoint after Validate");
+         end if;
+
+         Entrypoint_Index := Subroutine_Index;
+      end if;
+
+      return Success;
+   end Record_Entrypoint;
+
+   function Success return Lower_Result is
+   begin
+      return (Ok => True, The_Model => Model.Create (""));
+   end Success;
 
    function Trim_Kebab_Dashes (Buffer : String; Last : Natural) return String is
       First : Natural := 1;

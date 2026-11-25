@@ -10,13 +10,13 @@ todos:
     status: completed
   - id: "9.2"
     content: "9.2 Instruction dispatch tables/helpers — Wasm.Append_Instruction, Wat.Instruction_Text (shared family split)."
-    status: pending
+    status: completed
   - id: "9.3"
     content: "9.3 Pipeline helpers — Modules.Validate; Main.Compile.Run + Parse_Options; Binary.Decode + Parse_Subroutine."
-    status: pending
+    status: completed
   - id: "9.4"
     content: "9.4 Parser/backend phase splits — Parse_Procedure_Declaration, Encode_Component, To_Wat, Encode_Core_Module, Lower, Generate."
-    status: pending
+    status: completed
   - id: "9.5"
     content: "9.5 Mid-band helpers — literals, Utf_8.Decode, terminal, arguments, remaining CC 11–20 units."
     status: pending
