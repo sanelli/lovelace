@@ -39,8 +39,7 @@ package body Lovelace.Main.Tests.Compile is
    begin
       Ada.Text_IO.Open (File, Ada.Text_IO.In_File, Path);
       while not Ada.Text_IO.End_Of_File (File) loop
-         Ada.Strings.Unbounded.Append
-           (Contents, Ada.Text_IO.Get_Line (File) & ASCII.LF);
+         Ada.Strings.Unbounded.Append (Contents, Ada.Text_IO.Get_Line (File) & ASCII.LF);
       end loop;
       Ada.Text_IO.Close (File);
       return Ada.Strings.Unbounded.To_String (Contents);
@@ -105,6 +104,28 @@ package body Lovelace.Main.Tests.Compile is
       return Return_Code;
    end Spawn_Build;
 
+   procedure Test_No_Warnings_Empty_Entry (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      The_Policy : Diagnostics.Policy := Diagnostics.Default_Policy;
+      Detail     : Ada.Strings.Unbounded.Unbounded_String;
+   begin
+      AUnit.Assertions.Assert
+        (not Cli_Build.Try_Apply_No_Warnings (",LV00028", The_Policy, Detail), "reject leading comma");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Fixed.Index (Ada.Strings.Unbounded.To_String (Detail), "empty") > 0,
+         "leading comma mentions empty");
+
+      The_Policy := Diagnostics.Default_Policy;
+      AUnit.Assertions.Assert
+        (not Cli_Build.Try_Apply_No_Warnings ("LV00028,,LV00029", The_Policy, Detail), "reject middle empty entry");
+      AUnit.Assertions.Assert
+        (Ada.Strings.Fixed.Index (Ada.Strings.Unbounded.To_String (Detail), "empty") > 0,
+         "middle empty mentions empty");
+
+      The_Policy := Diagnostics.Default_Policy;
+      AUnit.Assertions.Assert (not Cli_Build.Try_Apply_No_Warnings (",", The_Policy, Detail), "reject lone comma");
+   end Test_No_Warnings_Empty_Entry;
+
    procedure Test_No_Warnings_List (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       The_Policy : Diagnostics.Policy := Diagnostics.Default_Policy;
@@ -112,38 +133,25 @@ package body Lovelace.Main.Tests.Compile is
       Code       : Error_Codes.Error_Code;
    begin
       AUnit.Assertions.Assert
-        (Cli_Build.Try_Apply_No_Warnings
-           ("LV00028,LV00029", The_Policy, Detail),
-         "apply both warnings");
+        (Cli_Build.Try_Apply_No_Warnings ("LV00028,LV00029", The_Policy, Detail), "apply both warnings");
       AUnit.Assertions.Assert
-        (Diagnostics.Is_Suppressed (The_Policy, Error_Codes.Unused_Variable),
-         "LV00028 suppressed");
+        (Diagnostics.Is_Suppressed (The_Policy, Error_Codes.Unused_Variable), "LV00028 suppressed");
       AUnit.Assertions.Assert
-        (Diagnostics.Is_Suppressed (The_Policy, Error_Codes.Unused_Assignment),
-         "LV00029 suppressed");
+        (Diagnostics.Is_Suppressed (The_Policy, Error_Codes.Unused_Assignment), "LV00029 suppressed");
 
       The_Policy := Diagnostics.Default_Policy;
+      AUnit.Assertions.Assert (not Cli_Build.Try_Apply_No_Warnings ("", The_Policy, Detail), "reject empty");
+      AUnit.Assertions.Assert (not Cli_Build.Try_Apply_No_Warnings ("LV99999", The_Policy, Detail), "reject unknown");
       AUnit.Assertions.Assert
-        (not Cli_Build.Try_Apply_No_Warnings ("", The_Policy, Detail),
-         "reject empty");
+        (not Cli_Build.Try_Apply_No_Warnings ("LV00027", The_Policy, Detail), "reject non-warning");
       AUnit.Assertions.Assert
-        (not Cli_Build.Try_Apply_No_Warnings ("LV99999", The_Policy, Detail),
-         "reject unknown");
-      AUnit.Assertions.Assert
-        (not Cli_Build.Try_Apply_No_Warnings ("LV00027", The_Policy, Detail),
-         "reject non-warning");
-      AUnit.Assertions.Assert
-        (not Cli_Build.Try_Apply_No_Warnings ("LV00028,", The_Policy, Detail),
-         "reject trailing comma");
+        (not Cli_Build.Try_Apply_No_Warnings ("LV00028,", The_Policy, Detail), "reject trailing comma");
 
-      AUnit.Assertions.Assert
-        (Error_Codes.Try_From_Label ("LV00028", Code), "from label");
-      AUnit.Assertions.Assert
-        (Code = Error_Codes.Unused_Variable, "label maps to unused variable");
+      AUnit.Assertions.Assert (Error_Codes.Try_From_Label ("LV00028", Code), "from label");
+      AUnit.Assertions.Assert (Code = Error_Codes.Unused_Variable, "label maps to unused variable");
       declare
          Ignored  : Error_Codes.Error_Code;
-         Rejected : constant Boolean :=
-           not Error_Codes.Try_From_Label ("lv00028", Ignored);
+         Rejected : constant Boolean := not Error_Codes.Try_From_Label ("lv00028", Ignored);
       begin
          pragma Unreferenced (Ignored);
          AUnit.Assertions.Assert (Rejected, "case-sensitive");
@@ -154,10 +162,8 @@ package body Lovelace.Main.Tests.Compile is
       pragma Unreferenced (The_Test);
       Format_Set_A : Cli_Build.Output_Format_Set;
       Format_Set_B : Cli_Build.Output_Format_Set;
-      Rejected_A   : constant Boolean :=
-        not Cli_Build.Try_Parse_Output_Format ("wasmwat", Format_Set_A);
-      Rejected_B   : constant Boolean :=
-        not Cli_Build.Try_Parse_Output_Format ("", Format_Set_B);
+      Rejected_A   : constant Boolean := not Cli_Build.Try_Parse_Output_Format ("wasmwat", Format_Set_A);
+      Rejected_B   : constant Boolean := not Cli_Build.Try_Parse_Output_Format ("", Format_Set_B);
    begin
       pragma Unreferenced (Format_Set_A, Format_Set_B);
       AUnit.Assertions.Assert (Rejected_A, "reject");
@@ -168,55 +174,36 @@ package body Lovelace.Main.Tests.Compile is
       pragma Unreferenced (The_Test);
       Format_Set : Cli_Build.Output_Format_Set;
    begin
-      AUnit.Assertions.Assert
-        (Cli_Build.Try_Parse_Output_Format ("wasm", Format_Set), "wasm ok");
-      AUnit.Assertions.Assert
-        (Format_Set.Want_Wasm and then not Format_Set.Want_Wat, "wasm only");
+      AUnit.Assertions.Assert (Cli_Build.Try_Parse_Output_Format ("wasm", Format_Set), "wasm ok");
+      AUnit.Assertions.Assert (Format_Set.Want_Wasm and then not Format_Set.Want_Wat, "wasm only");
 
-      AUnit.Assertions.Assert
-        (Cli_Build.Try_Parse_Output_Format ("wat", Format_Set), "wat ok");
-      AUnit.Assertions.Assert
-        (not Format_Set.Want_Wasm and then Format_Set.Want_Wat, "wat only");
+      AUnit.Assertions.Assert (Cli_Build.Try_Parse_Output_Format ("wat", Format_Set), "wat ok");
+      AUnit.Assertions.Assert (not Format_Set.Want_Wasm and then Format_Set.Want_Wat, "wat only");
 
-      AUnit.Assertions.Assert
-        (Cli_Build.Try_Parse_Output_Format ("wasm,wat", Format_Set),
-         "wasm,wat ok");
-      AUnit.Assertions.Assert
-        (Format_Set.Want_Wasm and then Format_Set.Want_Wat, "both A");
+      AUnit.Assertions.Assert (Cli_Build.Try_Parse_Output_Format ("wasm,wat", Format_Set), "wasm,wat ok");
+      AUnit.Assertions.Assert (Format_Set.Want_Wasm and then Format_Set.Want_Wat, "both A");
 
-      AUnit.Assertions.Assert
-        (Cli_Build.Try_Parse_Output_Format ("wat,wasm", Format_Set),
-         "wat,wasm ok");
-      AUnit.Assertions.Assert
-        (Format_Set.Want_Wasm and then Format_Set.Want_Wat, "both B");
+      AUnit.Assertions.Assert (Cli_Build.Try_Parse_Output_Format ("wat,wasm", Format_Set), "wat,wasm ok");
+      AUnit.Assertions.Assert (Format_Set.Want_Wasm and then Format_Set.Want_Wat, "both B");
    end Test_Output_Format_Values;
 
    procedure Test_Warning_Policy_Cli (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Lovelace_Path : constant String := Support.Locate_Lovelace_Executable;
       Work_Dir      : constant String :=
-        Ada.Directories.Compose
-          (Ada.Directories.Current_Directory, "warning-policy-work");
-      Source_Path   : constant String :=
-        Ada.Directories.Compose (Work_Dir, "WarnUnused.love");
-      Out_Default   : constant String :=
-        Ada.Directories.Compose (Work_Dir, "out-default");
-      Out_As_Errors : constant String :=
-        Ada.Directories.Compose (Work_Dir, "out-as-errors");
-      Out_Bad_Supp  : constant String :=
-        Ada.Directories.Compose (Work_Dir, "out-bad-supp");
-      Cap_Default   : constant String :=
-        Ada.Directories.Compose (Work_Dir, "cap-default.txt");
-      Cap_As_Errors : constant String :=
-        Ada.Directories.Compose (Work_Dir, "cap-as-errors.txt");
-      Cap_Bad_Supp  : constant String :=
-        Ada.Directories.Compose (Work_Dir, "cap-bad-supp.txt");
+        Ada.Directories.Compose (Ada.Directories.Current_Directory, "warning-policy-work");
+      Source_Path   : constant String := Ada.Directories.Compose (Work_Dir, "WarnUnused.love");
+      Out_Default   : constant String := Ada.Directories.Compose (Work_Dir, "out-default");
+      Out_As_Errors : constant String := Ada.Directories.Compose (Work_Dir, "out-as-errors");
+      Out_Bad_Supp  : constant String := Ada.Directories.Compose (Work_Dir, "out-bad-supp");
+      Cap_Default   : constant String := Ada.Directories.Compose (Work_Dir, "cap-default.txt");
+      Cap_As_Errors : constant String := Ada.Directories.Compose (Work_Dir, "cap-as-errors.txt");
+      Cap_Bad_Supp  : constant String := Ada.Directories.Compose (Work_Dir, "cap-bad-supp.txt");
       Code_Default  : Integer;
       Code_As_Err   : Integer;
       Code_Bad_Supp : Integer;
    begin
-      AUnit.Assertions.Assert
-        (Lovelace_Path'Length > 0, "lovelace executable present");
+      AUnit.Assertions.Assert (Lovelace_Path'Length > 0, "lovelace executable present");
 
       if Ada.Directories.Exists (Work_Dir) then
          Ada.Directories.Delete_Tree (Work_Dir);
@@ -224,34 +211,18 @@ package body Lovelace.Main.Tests.Compile is
       Ada.Directories.Create_Path (Work_Dir);
       Write_Unread_Local_Source (Source_Path);
 
-      Code_Default :=
-        Spawn_Build (Lovelace_Path, Source_Path, Out_Default, Cap_Default);
+      Code_Default := Spawn_Build (Lovelace_Path, Source_Path, Out_Default, Cap_Default);
       AUnit.Assertions.Assert (Code_Default = 0, "warnings alone exit 0");
       AUnit.Assertions.Assert
-        (Ada.Strings.Fixed.Index (Read_File (Cap_Default), "LV00028") > 0,
-         "default compile surfaces LV00028");
+        (Ada.Strings.Fixed.Index (Read_File (Cap_Default), "LV00028") > 0, "default compile surfaces LV00028");
 
-      Code_As_Err :=
-        Spawn_Build
-          (Lovelace_Path,
-           Source_Path,
-           Out_As_Errors,
-           Cap_As_Errors,
-           "--warning-as-errors");
+      Code_As_Err := Spawn_Build (Lovelace_Path, Source_Path, Out_As_Errors, Cap_As_Errors, "--warning-as-errors");
       AUnit.Assertions.Assert (Code_As_Err /= 0, "warning-as-errors fails");
 
-      Code_Bad_Supp :=
-        Spawn_Build
-          (Lovelace_Path,
-           Source_Path,
-           Out_Bad_Supp,
-           Cap_Bad_Supp,
-           "--no-warnings",
-           "LV00027");
+      Code_Bad_Supp := Spawn_Build (Lovelace_Path, Source_Path, Out_Bad_Supp, Cap_Bad_Supp, "--no-warnings", "LV00027");
       AUnit.Assertions.Assert (Code_Bad_Supp /= 0, "bad suppression fails");
       AUnit.Assertions.Assert
-        (Ada.Strings.Fixed.Index (Read_File (Cap_Bad_Supp), "LV00030") > 0,
-         "bad suppression reports LV00030");
+        (Ada.Strings.Fixed.Index (Read_File (Cap_Bad_Supp), "LV00030") > 0, "bad suppression reports LV00030");
 
       if Ada.Directories.Exists (Work_Dir) then
          Ada.Directories.Delete_Tree (Work_Dir);

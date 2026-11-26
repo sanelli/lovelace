@@ -22,18 +22,15 @@ package body Lovelace.Main.Terminal is
    --  True when Line is an error or Lovelace diagnostic line that should be
    --  highlighted: it begins with "[err]" or "[LV".
    function Is_Error_Line (Line : String) return Boolean
-   is ((Line'Length >= 5
-        and then Line (Line'First .. Line'First + 4) = "[err]")
-       or else (Line'Length >= 3
-                and then Line (Line'First .. Line'First + 2) = "[LV"));
+   is ((Line'Length >= 5 and then Line (Line'First .. Line'First + 4) = "[err]")
+       or else (Line'Length >= 3 and then Line (Line'First .. Line'First + 2) = "[LV"));
 
    --  Write one line to standard error, in red when it is an error line and
    --  colour is enabled.
    procedure Put_Error_Line (Line : String) is
    begin
       if Colour_Is_Enabled and then Is_Error_Line (Line) then
-         Ada.Text_IO.Put_Line
-           (Ada.Text_IO.Standard_Error, Ansi_Red & Line & Ansi_Reset);
+         Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, Ansi_Red & Line & Ansi_Reset);
       else
          Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, Line);
       end if;
@@ -57,8 +54,7 @@ package body Lovelace.Main.Terminal is
    procedure Put_Info (Message : String) is
    begin
       if Colour_Is_Enabled then
-         Ada.Text_IO.Put_Line
-           (Ansi_Green & "[info]" & Ansi_Reset & " " & Message);
+         Ada.Text_IO.Put_Line (Ansi_Green & "[info]" & Ansi_Reset & " " & Message);
       else
          Ada.Text_IO.Put_Line ("[info] " & Message);
       end if;
@@ -73,8 +69,7 @@ package body Lovelace.Main.Terminal is
       Ada.Text_IO.Put_Line ("| |__ / _ \ V / -_)| |/ _` |/ __/ -_)");
       Ada.Text_IO.Put_Line ("|____|\___/\_/\___||_|\__,_|\___\___|");
       Ada.Text_IO.Put_Line ("");
-      Ada.Text_IO.Put_Line
-        (" Lovelace compiler toolchain " & Version.Product_Version);
+      Ada.Text_IO.Put_Line (" Lovelace compiler toolchain " & Version.Product_Version);
       Ada.Text_IO.Put_Line ("");
    end Put_Logo;
 

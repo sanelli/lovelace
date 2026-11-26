@@ -10,8 +10,7 @@ package body Lovelace.Compiler.Semantics is
    use type Environment.Entity_Kind;
    use type Lovelace_Types.Type_Class;
 
-   package Id_Vectors is new
-     Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Positive);
+   package Id_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Positive);
 
    --  Mutable state threaded through one Analyze run.
    type Context is record
@@ -24,38 +23,25 @@ package body Lovelace.Compiler.Semantics is
    end record;
 
    procedure Add_Error
-     (The_Context : in out Context;
-      Code        : Semantics_Error_Code;
-      Span        : Source.Source_Span;
-      Detail      : String);
+     (The_Context : in out Context; Code : Semantics_Error_Code; Span : Source.Source_Span; Detail : String);
 
-   procedure Analyze_Assignment
-     (The_Context : in out Context; The_Assignment : Ast.Assignment_Statement);
+   procedure Analyze_Assignment (The_Context : in out Context; The_Assignment : Ast.Assignment_Statement);
 
-   procedure Analyze_Block
-     (The_Context : in out Context; The_Block : Ast.Block);
+   procedure Analyze_Block (The_Context : in out Context; The_Block : Ast.Block);
 
-   procedure Analyze_Call
-     (The_Context : in out Context; The_Call : Ast.Call_Statement);
+   procedure Analyze_Call (The_Context : in out Context; The_Call : Ast.Call_Statement);
 
    procedure Analyze_Expression
-     (The_Context    : in out Context;
-      The_Expression : Ast.Expression;
-      The_Type       : out Lovelace_Types.Lovelace_Type);
+     (The_Context : in out Context; The_Expression : Ast.Expression; The_Type : out Lovelace_Types.Lovelace_Type);
 
-   procedure Analyze_Subroutine
-     (The_Context : in out Context; Subroutine_Index : Positive);
+   procedure Analyze_Subroutine (The_Context : in out Context; Subroutine_Index : Positive);
 
-   procedure Analyze_Unit
-     (The_Context : in out Context; Unit_Index : Positive);
+   procedure Analyze_Unit (The_Context : in out Context; Unit_Index : Positive);
 
    procedure Emit_Unused_Usings (The_Context : in out Context);
 
    procedure Add_Error
-     (The_Context : in out Context;
-      Code        : Semantics_Error_Code;
-      Span        : Source.Source_Span;
-      Detail      : String)
+     (The_Context : in out Context; Code : Semantics_Error_Code; Span : Source.Source_Span; Detail : String)
    is
       Item : constant Diagnostic :=
         (Code       => Code,
@@ -70,8 +56,7 @@ package body Lovelace.Compiler.Semantics is
       end if;
    end Add_Error;
 
-   function Analyze (Units : Unit_Graph.Compilation_Set) return Analysis_Result
-   is
+   function Analyze (Units : Unit_Graph.Compilation_Set) return Analysis_Result is
       The_Context : Context;
    begin
       The_Context.Units := Units;
@@ -93,28 +78,22 @@ package body Lovelace.Compiler.Semantics is
       return Analyze (Units);
    end Analyze;
 
-   procedure Analyze_Assignment
-     (The_Context : in out Context; The_Assignment : Ast.Assignment_Statement)
-   is
-      Target_Name : constant String :=
-        Ada.Strings.Unbounded.To_String (The_Assignment.Target_Name);
+   procedure Analyze_Assignment (The_Context : in out Context; The_Assignment : Ast.Assignment_Statement) is
+      Target_Name : constant String := Ada.Strings.Unbounded.To_String (The_Assignment.Target_Name);
       Value_Type  : Lovelace_Types.Lovelace_Type;
    begin
       --  Right-hand side is evaluated (and counted as reads) before the store.
       Analyze_Expression (The_Context, The_Assignment.Value, Value_Type);
 
       declare
-         Target : constant Environment.Lookup_Result :=
-           Environment.Lookup_Variable (The_Context.Scope, Target_Name);
+         Target : constant Environment.Lookup_Result := Environment.Lookup_Variable (The_Context.Scope, Target_Name);
       begin
          if not Target.Found then
             Add_Error
               (The_Context,
                Unresolved_Name,
                The_Assignment.Name_Span,
-               "'"
-               & Target_Name
-               & "' does not name a visible local or parameter");
+               "'" & Target_Name & "' does not name a visible local or parameter");
             return;
          end if;
 
@@ -127,38 +106,27 @@ package body Lovelace.Compiler.Semantics is
                  (The_Context,
                   Type_Mismatch,
                   The_Assignment.Value.Span,
-                  "assignment to '"
-                  & Target_Name
-                  & "': "
-                  & Ada.Strings.Unbounded.To_String (Check.Detail));
+                  "assignment to '" & Target_Name & "': " & Ada.Strings.Unbounded.To_String (Check.Detail));
             end if;
          end;
 
          --  Assigned even after a mismatch so one error does not cascade into DA errors.
-         Definite_Assignment.Mark_Assigned
-           (The_Context.Assigned, Target.Value.Variable_Id);
-         Unused.Note_Store
-           (The_Context.Usage,
-            Target.Value.Variable_Id,
-            The_Assignment.Name_Span);
+         Definite_Assignment.Mark_Assigned (The_Context.Assigned, Target.Value.Variable_Id);
+         Unused.Note_Store (The_Context.Usage, Target.Value.Variable_Id, The_Assignment.Name_Span);
       end;
    end Analyze_Assignment;
 
-   procedure Analyze_Block
-     (The_Context : in out Context; The_Block : Ast.Block)
-   is
+   procedure Analyze_Block (The_Context : in out Context; The_Block : Ast.Block) is
       Block_Usings : constant Ast.Using_Sequence := Ast.Usings (The_Block);
       Block_Locals : constant Ast.Local_Sequence := Ast.Locals (The_Block);
-      Body_Items   : constant Ast.Statement_Sequence :=
-        Ast.Statements (The_Block);
+      Body_Items   : constant Ast.Statement_Sequence := Ast.Statements (The_Block);
       Local_Ids    : Id_Vectors.Vector;
    begin
       Environment.Push_Scope (The_Context.Scope);
 
       for Index in 1 .. Ast.Length (Block_Usings) loop
          declare
-            The_Using : constant Ast.Using_Declaration :=
-              Ast.Element (Block_Usings, Index);
+            The_Using : constant Ast.Using_Declaration := Ast.Element (Block_Usings, Index);
          begin
             Environment.Declare_Entity
               (The_Context.Scope,
@@ -175,13 +143,11 @@ package body Lovelace.Compiler.Semantics is
 
       for Index in 1 .. Ast.Length (Block_Locals) loop
          declare
-            The_Local : constant Ast.Local_Variable :=
-              Ast.Element (Block_Locals, Index);
+            The_Local : constant Ast.Local_Variable := Ast.Element (Block_Locals, Index);
             Id        : Positive;
             Dummy     : Positive;
          begin
-            Definite_Assignment.Declare_Variable
-              (The_Context.Assigned, Assigned => False, Id => Id);
+            Definite_Assignment.Declare_Variable (The_Context.Assigned, Assigned => False, Id => Id);
             Unused.Declare_Variable
               (The_Context.Usage,
                Ada.Strings.Unbounded.To_String (The_Local.Parameter_Name),
@@ -194,8 +160,7 @@ package body Lovelace.Compiler.Semantics is
                (Kind             => Environment.Local_Entity,
                 Name             => The_Local.Parameter_Name,
                 Span             => The_Local.Name_Span,
-                Value_Type       =>
-                  Lovelace_Types.From_Expression (The_Local.Parameter_Type),
+                Value_Type       => Lovelace_Types.From_Expression (The_Local.Parameter_Type),
                 Variable_Id      => Id,
                 Unit_Index       => 0,
                 Subroutine_Index => 0,
@@ -205,16 +170,14 @@ package body Lovelace.Compiler.Semantics is
 
       for Index in 1 .. Ast.Length (Body_Items) loop
          declare
-            The_Statement : constant Ast.Statement :=
-              Ast.Element (Body_Items, Index);
+            The_Statement : constant Ast.Statement := Ast.Element (Body_Items, Index);
          begin
             case Ast.Kind (The_Statement) is
                when Ast.Call         =>
                   Analyze_Call (The_Context, Ast.Call_Of (The_Statement));
 
                when Ast.Assignment   =>
-                  Analyze_Assignment
-                    (The_Context, Ast.Assignment_Of (The_Statement));
+                  Analyze_Assignment (The_Context, Ast.Assignment_Of (The_Statement));
 
                when Ast.Nested_Block =>
                   Analyze_Block (The_Context, Ast.Block_Of (The_Statement));
@@ -230,11 +193,8 @@ package body Lovelace.Compiler.Semantics is
       Environment.Pop_Scope (The_Context.Scope);
    end Analyze_Block;
 
-   procedure Analyze_Call
-     (The_Context : in out Context; The_Call : Ast.Call_Statement)
-   is
-      Callee_Text    : constant String :=
-        Ada.Strings.Unbounded.To_String (The_Call.Callee_Name);
+   procedure Analyze_Call (The_Context : in out Context; The_Call : Ast.Call_Statement) is
+      Callee_Text    : constant String := Ada.Strings.Unbounded.To_String (The_Call.Callee_Name);
       Actual_Count   : constant Natural := Ast.Length (The_Call.Arguments);
       Actual_Types   : Resolve.Actual_Type_Sequence;
       Resolved       : Resolve.Resolve_Result;
@@ -245,10 +205,7 @@ package body Lovelace.Compiler.Semantics is
          declare
             Actual_Type : Lovelace_Types.Lovelace_Type;
          begin
-            Analyze_Expression
-              (The_Context,
-               Ast.Element (The_Call.Arguments, Index),
-               Actual_Type);
+            Analyze_Expression (The_Context, Ast.Element (The_Call.Arguments, Index), Actual_Type);
             if Actual_Type.Class = Lovelace_Types.Unknown_Class then
                Unknown_Actual := True;
             end if;
@@ -257,12 +214,7 @@ package body Lovelace.Compiler.Semantics is
       end loop;
 
       Resolved :=
-        Resolve.Resolve_Call
-          (The_Context.Units,
-           The_Context.Unit_Index,
-           The_Context.Scope,
-           Callee_Text,
-           Actual_Types);
+        Resolve.Resolve_Call (The_Context.Units, The_Context.Unit_Index, The_Context.Scope, Callee_Text, Actual_Types);
 
       --  Unknown actuals already have a diagnostic; Unknown matches every formal
       --  so resolve would otherwise cascade Ambiguous_Call / Unresolved_Call.
@@ -270,10 +222,7 @@ package body Lovelace.Compiler.Semantics is
          when False =>
             if not Unknown_Actual then
                Add_Error
-                 (The_Context,
-                  Resolved.Code,
-                  The_Call.Name_Span,
-                  Ada.Strings.Unbounded.To_String (Resolved.Detail));
+                 (The_Context, Resolved.Code, The_Call.Name_Span, Ada.Strings.Unbounded.To_String (Resolved.Detail));
             end if;
 
          when True  =>
@@ -282,17 +231,14 @@ package body Lovelace.Compiler.Semantics is
    end Analyze_Call;
 
    procedure Analyze_Expression
-     (The_Context    : in out Context;
-      The_Expression : Ast.Expression;
-      The_Type       : out Lovelace_Types.Lovelace_Type) is
+     (The_Context : in out Context; The_Expression : Ast.Expression; The_Type : out Lovelace_Types.Lovelace_Type) is
    begin
       The_Type := Lovelace_Types.Unknown_Type;
 
       case The_Expression.Kind is
          when Ast.Integer_Literal | Ast.Boolean_Literal =>
             declare
-               Literal_Type : constant Typecheck.Type_Result :=
-                 Typecheck.Type_Of_Literal (The_Expression);
+               Literal_Type : constant Typecheck.Type_Result := Typecheck.Type_Of_Literal (The_Expression);
             begin
                case Literal_Type.Ok is
                   when True  =>
@@ -309,26 +255,20 @@ package body Lovelace.Compiler.Semantics is
 
          when Ast.Name_Reference                        =>
             declare
-               Name   : constant String :=
-                 Ada.Strings.Unbounded.To_String (The_Expression.Lexeme);
-               Entity : constant Environment.Lookup_Result :=
-                 Environment.Lookup_Variable (The_Context.Scope, Name);
+               Name   : constant String := Ada.Strings.Unbounded.To_String (The_Expression.Lexeme);
+               Entity : constant Environment.Lookup_Result := Environment.Lookup_Variable (The_Context.Scope, Name);
             begin
                if not Entity.Found then
                   Add_Error
                     (The_Context,
                      Unresolved_Name,
                      The_Expression.Span,
-                     "'"
-                     & Name
-                     & "' does not name a visible local or parameter");
+                     "'" & Name & "' does not name a visible local or parameter");
                   return;
                end if;
 
                Unused.Note_Read (The_Context.Usage, Entity.Value.Variable_Id);
-               if not Definite_Assignment.Is_Assigned
-                        (The_Context.Assigned, Entity.Value.Variable_Id)
-               then
+               if not Definite_Assignment.Is_Assigned (The_Context.Assigned, Entity.Value.Variable_Id) then
                   Add_Error
                     (The_Context,
                      Use_Before_Assignment,
@@ -340,17 +280,11 @@ package body Lovelace.Compiler.Semantics is
       end case;
    end Analyze_Expression;
 
-   procedure Analyze_Subroutine
-     (The_Context : in out Context; Subroutine_Index : Positive)
-   is
-      The_Module     : constant Ast.Module :=
-        The_Context.Units.Element (The_Context.Unit_Index).The_Module;
-      The_Subroutine : constant Ast.Subroutine :=
-        Ast.Get_Subroutine (The_Module, Subroutine_Index);
-      Formals        : constant Ast.Parameter_Sequence :=
-        Ast.Parameters (The_Subroutine);
-      Errors_Before  : constant Natural :=
-        Natural (The_Context.Result.Errors.Length);
+   procedure Analyze_Subroutine (The_Context : in out Context; Subroutine_Index : Positive) is
+      The_Module     : constant Ast.Module := The_Context.Units.Element (The_Context.Unit_Index).The_Module;
+      The_Subroutine : constant Ast.Subroutine := Ast.Get_Subroutine (The_Module, Subroutine_Index);
+      Formals        : constant Ast.Parameter_Sequence := Ast.Parameters (The_Subroutine);
+      Errors_Before  : constant Natural := Natural (The_Context.Result.Errors.Length);
    begin
       Definite_Assignment.Reset (The_Context.Assigned);
       Unused.Reset (The_Context.Usage);
@@ -362,8 +296,7 @@ package body Lovelace.Compiler.Semantics is
             Id     : Positive;
             Dummy  : Positive;
          begin
-            Definite_Assignment.Declare_Variable
-              (The_Context.Assigned, Assigned => True, Id => Id);
+            Definite_Assignment.Declare_Variable (The_Context.Assigned, Assigned => True, Id => Id);
             Unused.Declare_Variable
               (The_Context.Usage,
                Ada.Strings.Unbounded.To_String (Formal.Parameter_Name),
@@ -375,8 +308,7 @@ package body Lovelace.Compiler.Semantics is
                (Kind             => Environment.Parameter_Entity,
                 Name             => Formal.Parameter_Name,
                 Span             => Formal.Name_Span,
-                Value_Type       =>
-                  Lovelace_Types.From_Expression (Formal.Parameter_Type),
+                Value_Type       => Lovelace_Types.From_Expression (Formal.Parameter_Type),
                 Variable_Id      => Id,
                 Unit_Index       => 0,
                 Subroutine_Index => 0,
@@ -389,17 +321,12 @@ package body Lovelace.Compiler.Semantics is
 
       --  Unused warnings only run once resolve / DA / types were clean for this subroutine.
       if Natural (The_Context.Result.Errors.Length) = Errors_Before then
-         Unused.Collect_Warnings
-           (The_Context.Usage,
-            The_Context.Unit_Index,
-            The_Context.Result.Warnings);
+         Unused.Collect_Warnings (The_Context.Usage, The_Context.Unit_Index, The_Context.Result.Warnings);
       end if;
    end Analyze_Subroutine;
 
-   procedure Analyze_Unit (The_Context : in out Context; Unit_Index : Positive)
-   is
-      The_Module  : constant Ast.Module :=
-        The_Context.Units.Element (Unit_Index).The_Module;
+   procedure Analyze_Unit (The_Context : in out Context; Unit_Index : Positive) is
+      The_Module  : constant Ast.Module := The_Context.Units.Element (Unit_Index).The_Module;
       Empty_Scope : Environment.Scope_Stack;
    begin
       The_Context.Unit_Index := Unit_Index;
@@ -408,8 +335,7 @@ package body Lovelace.Compiler.Semantics is
 
       for Index in 1 .. Ast.Using_Count (The_Module) loop
          declare
-            The_Using : constant Ast.Using_Declaration :=
-              Ast.Get_Using (The_Module, Index);
+            The_Using : constant Ast.Using_Declaration := Ast.Get_Using (The_Module, Index);
          begin
             Environment.Declare_Entity
               (The_Context.Scope,
@@ -426,19 +352,14 @@ package body Lovelace.Compiler.Semantics is
 
       for Index in 1 .. Ast.Subroutine_Count (The_Module) loop
          declare
-            The_Subroutine : constant Ast.Subroutine :=
-              Ast.Get_Subroutine (The_Module, Index);
+            The_Subroutine : constant Ast.Subroutine := Ast.Get_Subroutine (The_Module, Index);
          begin
             Environment.Declare_Entity
               (The_Context.Scope,
                (Kind             => Environment.Subroutine_Entity,
-                Name             =>
-                  Ada.Strings.Unbounded.To_Unbounded_String
-                    (Ast.Name (The_Subroutine)),
+                Name             => Ada.Strings.Unbounded.To_Unbounded_String (Ast.Name (The_Subroutine)),
                 Span             => Ast.Name_Span (The_Subroutine),
-                Value_Type       =>
-                  Lovelace_Types.From_Expression
-                    (Ast.Return_Type (The_Subroutine)),
+                Value_Type       => Lovelace_Types.From_Expression (Ast.Return_Type (The_Subroutine)),
                 Variable_Id      => 0,
                 Unit_Index       => Unit_Index,
                 Subroutine_Index => Index,
@@ -457,19 +378,14 @@ package body Lovelace.Compiler.Semantics is
    begin
       for Index in 1 .. Environment.Innermost_Length (The_Context.Scope) loop
          declare
-            Binding : constant Environment.Entity :=
-              Environment.Innermost_Element (The_Context.Scope, Index);
+            Binding : constant Environment.Entity := Environment.Innermost_Element (The_Context.Scope, Index);
          begin
-            if Binding.Kind = Environment.Module_Entity
-              and then not Binding.Used
-            then
+            if Binding.Kind = Environment.Module_Entity and then not Binding.Used then
                Add_Error
                  (The_Context,
                   Unused_Using,
                   Binding.Span,
-                  "using '"
-                  & Ada.Strings.Unbounded.To_String (Binding.Name)
-                  & "' is unused");
+                  "using '" & Ada.Strings.Unbounded.To_String (Binding.Name) & "' is unused");
             end if;
          end;
       end loop;

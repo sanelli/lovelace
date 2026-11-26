@@ -61,10 +61,7 @@ package Lovelace.Compiler.Unit_Graph is
       Version     : Ada.Strings.Unbounded.Unbounded_String;
    end record;
 
-   package Loaded_Unit_Vectors is new
-     Ada.Containers.Vectors
-       (Index_Type   => Positive,
-        Element_Type => Loaded_Unit);
+   package Loaded_Unit_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Loaded_Unit);
 
    --  Ordered compilation set: root first, then dependencies in discovery order.
    subtype Compilation_Set is Loaded_Unit_Vectors.Vector;
@@ -84,8 +81,7 @@ package Lovelace.Compiler.Unit_Graph is
    --  LV code to report for Error (Frontend_Error uses Frontend_Code).
    --  @param Error Load failure.
    --  @return Stable Error_Codes value.
-   function Surface_Error_Code
-     (Error : Unit_Graph_Error) return Error_Codes.Error_Code;
+   function Surface_Error_Code (Error : Unit_Graph_Error) return Error_Codes.Error_Code;
 
    --  Load Root_Module and its transitive imports under Search_Roots with Active_Flavor.
    --  @param Root_Module Already-parsed root AST.

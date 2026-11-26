@@ -21,8 +21,7 @@ package body Lovelace.Test_Status is
    function Padded_Name (Name : String) return String;
    --  Left-align Name in a fixed-width field.
 
-   procedure Report_List
-     (List : Results.Result_Lists.List; Outcome : Test_Outcome);
+   procedure Report_List (List : Results.Result_Lists.List; Outcome : Test_Outcome);
    --  Print one status line per entry in List.
 
    function Display_Name (Test : Results.Test_Result) return String is
@@ -80,15 +79,11 @@ package body Lovelace.Test_Status is
       Report_List (Error_List, Fail);
    end Report;
 
-   procedure Report_List
-     (List : Results.Result_Lists.List; Outcome : Test_Outcome)
-   is
-      Cursor : Results.Result_Lists.Cursor :=
-        Results.Result_Lists.First (List);
+   procedure Report_List (List : Results.Result_Lists.List; Outcome : Test_Outcome) is
+      Cursor : Results.Result_Lists.Cursor := Results.Result_Lists.First (List);
    begin
       while Results.Result_Lists.Has_Element (Cursor) loop
-         Report_Test_Result
-           (Display_Name (Results.Result_Lists.Element (Cursor)), Outcome);
+         Report_Test_Result (Display_Name (Results.Result_Lists.Element (Cursor)), Outcome);
          Results.Result_Lists.Next (Cursor);
       end loop;
    end Report_List;
@@ -112,16 +107,13 @@ package body Lovelace.Test_Status is
    begin
       case Outcome is
          when Ok           =>
-            Ada.Text_IO.Put_Line
-              (Prefix & " [" & ANSI_Green & "OK" & ANSI_Reset & "]");
+            Ada.Text_IO.Put_Line (Prefix & " [" & ANSI_Green & "OK" & ANSI_Reset & "]");
 
          when Fail         =>
-            Ada.Text_IO.Put_Line
-              (Prefix & " [" & ANSI_Red & "FAIL" & ANSI_Reset & "]");
+            Ada.Text_IO.Put_Line (Prefix & " [" & ANSI_Red & "FAIL" & ANSI_Reset & "]");
 
          when Inconclusive =>
-            Ada.Text_IO.Put_Line
-              (Prefix & " [" & ANSI_Gray & "INCONCLUSIVE" & ANSI_Reset & "]");
+            Ada.Text_IO.Put_Line (Prefix & " [" & ANSI_Gray & "INCONCLUSIVE" & ANSI_Reset & "]");
       end case;
    end Report_Test_Result;
 

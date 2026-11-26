@@ -15,9 +15,7 @@ package body Lovelace.Compiler.Backend.Model is
       Sequence.Items.Append (Item);
    end Append;
 
-   procedure Append_Dependency
-     (The_Model : in out Component_Model; Name : String; Version : String)
-   is
+   procedure Append_Dependency (The_Model : in out Component_Model; Name : String; Version : String) is
    begin
       The_Model.Dependencies.Append
         (Dependency'
@@ -35,14 +33,11 @@ package body Lovelace.Compiler.Backend.Model is
       The_Model.Functions.Append (The_Function);
    end Append_Function;
 
-   function Create
-     (Name : String; Version : String := Default_Module_Version)
-      return Component_Model is
+   function Create (Name : String; Version : String := Default_Module_Version) return Component_Model is
    begin
       return
         (Module_Name_Value    => Ada.Strings.Unbounded.To_Unbounded_String (Name),
-         Module_Version_Value =>
-           Ada.Strings.Unbounded.To_Unbounded_String (Version),
+         Module_Version_Value => Ada.Strings.Unbounded.To_Unbounded_String (Version),
          Functions            => Function_Vectors.Empty_Vector,
          Exports              => Export_Vectors.Empty_Vector,
          Dependencies         => Dependency_Vectors.Empty_Vector,
@@ -99,8 +94,7 @@ package body Lovelace.Compiler.Backend.Model is
       return Natural (The_Model.Functions.Length);
    end Function_Count;
 
-   function Get_Dependency
-     (The_Model : Component_Model; Index : Positive) return Dependency is
+   function Get_Dependency (The_Model : Component_Model; Index : Positive) return Dependency is
    begin
       return The_Model.Dependencies.Element (Index);
    end Get_Dependency;

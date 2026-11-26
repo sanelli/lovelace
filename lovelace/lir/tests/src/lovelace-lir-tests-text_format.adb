@@ -5,6 +5,7 @@ with GNAT.OS_Lib;
 
 with Interfaces;
 
+with Lovelace.Common.Source;
 with Lovelace.Lir.Errors;
 with Lovelace.Lir.Modules;
 with Lovelace.Lir.Opcodes;
@@ -42,6 +43,49 @@ package body Lovelace.Lir.Tests.Text_Format is
       Support.Assert_Not_Contains (Text, "(dependency", "no dependency");
       Support.Assert_Not_Contains (Text, "(subroutine", "no subroutine");
    end Test_Empty_Module_Golden;
+
+   procedure Test_Quoted_Escapes (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      package Source renames Lovelace.Common.Source;
+      --  Module name exercises ", \, LF, CR, tab, and a low control.
+      Name       : constant String :=
+        "a"
+        & '"'
+        & '\'
+        & Character'Val (10)
+        & Character'Val (13)
+        & Character'Val (9)
+        & Character'Val (1)
+        & "z";
+      Holder     : constant Source.Shared_Filename :=
+        Source.From_Utf_8 ("escapes.love");
+      The_Module : Modules.Module := Modules.Create (Name);
+      Text       : Ada.Strings.Unbounded.Unbounded_String;
+   begin
+      --  Origin spans force Unsigned_Image (leading-space strip) on line/column.
+      Modules.Set_Origin
+        (The_Module,
+         (Name_Span =>
+            (First => (Byte_Index => 1, Line => 1, Column => 1),
+             Last  => (Byte_Index => 1, Line => 2, Column => 3)),
+          Span      =>
+            (First => (Byte_Index => 1, Line => 4, Column => 5),
+             Last  => (Byte_Index => 1, Line => 6, Column => 7)),
+          Filename  => Source.Some_Filename (Holder)));
+      Text := Support.Must_To_Text (The_Module, "escapes");
+      Support.Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Text),
+         "(name ""a\""\\\n\r\t\u{0001}z"")",
+         "quoted escapes");
+      Support.Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Text),
+         "(row 2)",
+         "origin row image");
+      Support.Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Text),
+         "(column 3)",
+         "origin column image");
+   end Test_Quoted_Escapes;
 
    procedure Test_Subroutine_Goldens (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -88,7 +132,9 @@ package body Lovelace.Lir.Tests.Text_Format is
       begin
          Support.Assert_Contains (Unit_Text, "(result unit)", "result unit");
          Support.Assert_Contains
-           (Unit_Text, "(index" & ASCII.LF & "    (1 ""P"" (result unit))", "unit index");
+           (Unit_Text,
+            "(index" & ASCII.LF & "    (1 ""P"" (result unit))",
+            "unit index");
          Support.Assert_Not_Contains (Unit_Text, "(param", "no param form");
          Support.Assert_Contains (I32_Text, "(result i32)", "result i32");
          Support.Assert_Contains
@@ -124,9 +170,9 @@ package body Lovelace.Lir.Tests.Text_Format is
             "locals list");
          --  With a parameter first, slots stay local.get order and params tag.
          declare
-            Mixed_Mod : Modules.Module := Modules.Create ("m");
+            Mixed_Mod    : Modules.Module := Modules.Create ("m");
             Mixed_Params : Types.Parameter_Sequence := Types.Empty_Sequence;
-            Mixed_Sub : Subroutines.Subroutine;
+            Mixed_Sub    : Subroutines.Subroutine;
          begin
             Types.Append (Mixed_Params, "V", Types.I32);
             Mixed_Sub :=
@@ -270,6 +316,15 @@ package body Lovelace.Lir.Tests.Text_Format is
          end;
       end loop;
    end Test_Subroutine_Goldens;
+
+   procedure Test_Write_Invalid_Path (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      The_Module : constant Modules.Module := Modules.Create ("example");
+      Written    : constant Text.Write_Result :=
+        Text.Write (The_Module, "obj/lir_no_such_dir_xyz/does-not-exist.tlir");
+   begin
+      AUnit.Assertions.Assert (not Written.Ok, "write missing dir fails");
+   end Test_Write_Invalid_Path;
 
    procedure Test_Write_Tlir (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);

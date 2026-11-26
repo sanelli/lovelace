@@ -16,7 +16,7 @@ package Lovelace.Compiler.Tokenizer is
    --  @enum Invalid_Utf_8 Bytes that are not valid UTF-8.
    --  @enum Unterminated_String_Literal Opening `"` without a matching closer.
    --  @enum Unterminated_Comment Opening `{` without a matching `}`.
-   --  @enum Nested_Comment `{` found inside an open `{` … `}` comment.
+   --  @enum Nested_Comment `{` found inside an open `{` â¦ `}` comment.
    --  @enum Stray_Comment_Closer `}` outside a comment.
    type Tokenizer_Error_Code is
      (Internal_Error,

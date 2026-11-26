@@ -5,9 +5,7 @@ package body Lovelace.Lir.Subroutines is
       Instructions.Append (The_Subroutine.Instruction_Body, Item);
    end Append_Instruction;
 
-   procedure Append_Local
-     (The_Subroutine : in out Subroutine; Name : String; The_Type : Types.Value_Type)
-   is
+   procedure Append_Local (The_Subroutine : in out Subroutine; Name : String; The_Type : Types.Value_Type) is
    begin
       Types.Append (The_Subroutine.Locals, Name, The_Type);
    end Append_Local;
@@ -24,9 +22,7 @@ package body Lovelace.Lir.Subroutines is
          Instruction_Body      => Instructions.Empty_Sequence);
    end Create;
 
-   function From_Dependency
-     (The_Subroutine : Subroutine) return From_Dependency_Option
-   is
+   function From_Dependency (The_Subroutine : Subroutine) return From_Dependency_Option is
    begin
       return The_Subroutine.From_Dependency_Value;
    end From_Dependency;
@@ -81,29 +77,21 @@ package body Lovelace.Lir.Subroutines is
       return The_Subroutine.Origin_Value;
    end Origin;
 
-   procedure Set_From_Dependency
-     (The_Subroutine : in out Subroutine; Dependency_Module : String)
-   is
+   procedure Set_From_Dependency (The_Subroutine : in out Subroutine; Dependency_Module : String) is
    begin
       The_Subroutine.From_Dependency_Value :=
-        (Present     => True,
-         Module_Name =>
-           Ada.Strings.Unbounded.To_Unbounded_String (Dependency_Module));
+        (Present => True, Module_Name => Ada.Strings.Unbounded.To_Unbounded_String (Dependency_Module));
    end Set_From_Dependency;
 
    procedure Set_Intrinsic (The_Subroutine : in out Subroutine) is
    begin
-      The_Subroutine.Flags :=
-        (The_Subroutine.Flags or Intrinsic_Flag) and not Native_Flag;
+      The_Subroutine.Flags := (The_Subroutine.Flags or Intrinsic_Flag) and not Native_Flag;
       The_Subroutine.Native_Value := (Present => False);
    end Set_Intrinsic;
 
-   procedure Set_Native_Binding
-     (The_Subroutine : in out Subroutine; Library : String; Function_Name : String)
-   is
+   procedure Set_Native_Binding (The_Subroutine : in out Subroutine; Library : String; Function_Name : String) is
    begin
-      The_Subroutine.Flags :=
-        (The_Subroutine.Flags or Native_Flag) and not Intrinsic_Flag;
+      The_Subroutine.Flags := (The_Subroutine.Flags or Native_Flag) and not Intrinsic_Flag;
       The_Subroutine.Native_Value :=
         (Present => True,
          Value   =>

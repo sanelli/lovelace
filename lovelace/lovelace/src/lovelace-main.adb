@@ -10,14 +10,7 @@ with Lovelace.Main.Version;
 package body Lovelace.Main is
 
    procedure Report_Error (Context : String; Description : String) is
-      Text : constant String :=
-        "[err] "
-        & Context
-        & ASCII.LF
-        & ASCII.LF
-        & ASCII.LF
-        & Description
-        & ASCII.LF;
+      Text : constant String := "[err] " & Context & ASCII.LF & ASCII.LF & ASCII.LF & Description & ASCII.LF;
    begin
       Terminal.Put_Error_Text (Text);
    end Report_Error;
@@ -29,9 +22,7 @@ package body Lovelace.Main is
       case Parsed.Ok is
          when False =>
             Terminal.Set_Colour_Enabled (True);
-            Report_Error
-              ("command line",
-               Ada.Strings.Unbounded.To_String (Parsed.Error_Message));
+            Report_Error ("command line", Ada.Strings.Unbounded.To_String (Parsed.Error_Message));
             Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
             return;
 
@@ -44,13 +35,10 @@ package body Lovelace.Main is
             case Parsed.Command is
                when Arguments.None    =>
                   declare
-                     Ignored : constant Boolean :=
-                       Help.Run
-                         (Parsed.Command_Arguments, To_Standard_Error => True);
+                     Ignored : constant Boolean := Help.Run (Parsed.Command_Arguments, To_Standard_Error => True);
                      pragma Unreferenced (Ignored);
                   begin
-                     Ada.Command_Line.Set_Exit_Status
-                       (Ada.Command_Line.Failure);
+                     Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
                      return;
                   end;
 
@@ -61,7 +49,7 @@ package body Lovelace.Main is
                   Version.Run;
                   Success := True;
 
-               when Arguments.Compile   =>
+               when Arguments.Compile =>
                   Success := Compile.Run (Parsed.Command_Arguments);
             end case;
 

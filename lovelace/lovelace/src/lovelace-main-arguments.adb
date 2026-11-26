@@ -31,13 +31,11 @@ package body Lovelace.Main.Arguments is
 
    --  Build a failed parse result carrying Message.
    function Failure (Message : String) return Parsed_Arguments
-   is (Ok            => False,
-       Error_Message => Ada.Strings.Unbounded.To_Unbounded_String (Message));
+   is (Ok => False, Error_Message => Ada.Strings.Unbounded.To_Unbounded_String (Message));
 
    --  True when Token starts with "--".
    function Is_Long_Option (Token : String) return Boolean
-   is (Token'Length >= 2
-       and then Token (Token'First .. Token'First + 1) = "--");
+   is (Token'Length >= 2 and then Token (Token'First .. Token'First + 1) = "--");
 
    --  Consume leading global options starting at Index. Stops at the first
    --  non-option token. Error is non-empty when an unknown option is found.
@@ -63,9 +61,7 @@ package body Lovelace.Main.Arguments is
             elsif Is_Long_Option (Token) then
                Error :=
                  Ada.Strings.Unbounded.To_Unbounded_String
-                   ("unknown global option '"
-                    & Token
-                    & "' (globals must appear before the command)");
+                   ("unknown global option '" & Token & "' (globals must appear before the command)");
                return;
             else
                return;
@@ -103,17 +99,9 @@ package body Lovelace.Main.Arguments is
       begin
          if Command = None then
             if Is_Long_Option (Command_Token) then
-               return
-                 Failure
-                   ("expected a command after global options, found '"
-                    & Command_Token
-                    & "'");
+               return Failure ("expected a command after global options, found '" & Command_Token & "'");
             end if;
-            return
-              Failure
-                ("unknown command '"
-                 & Command_Token
-                 & "'; try 'lovelace help'");
+            return Failure ("unknown command '" & Command_Token & "'; try 'lovelace help'");
          end if;
 
          for Rest_Index in Index + 1 .. Argument_Count loop

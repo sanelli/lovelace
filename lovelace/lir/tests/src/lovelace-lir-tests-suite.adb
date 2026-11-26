@@ -144,6 +144,14 @@ package body Lovelace.Lir.Tests.Suite is
         (Text_Caller.Create
            ("text .tlir: write file",
             Lovelace.Lir.Tests.Text_Format.Test_Write_Tlir'Access));
+      Result.Add_Test
+        (Text_Caller.Create
+           ("text .tlir: quoted escapes",
+            Lovelace.Lir.Tests.Text_Format.Test_Quoted_Escapes'Access));
+      Result.Add_Test
+        (Text_Caller.Create
+           ("text .tlir: write invalid path",
+            Lovelace.Lir.Tests.Text_Format.Test_Write_Invalid_Path'Access));
 
       Result.Add_Test
         (Types_Caller.Create

@@ -57,10 +57,7 @@ package Lovelace.Compiler.Semantics is
       Unit_Index : Positive := 1;
    end record;
 
-   package Diagnostic_Vectors is new
-     Ada.Containers.Vectors
-       (Index_Type   => Positive,
-        Element_Type => Diagnostic);
+   package Diagnostic_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Diagnostic);
 
    --  Ordered list of diagnostics.
    subtype Diagnostic_Sequence is Diagnostic_Vectors.Vector;
@@ -81,8 +78,7 @@ package Lovelace.Compiler.Semantics is
    --  Analyse every unit in Units (root first) after parse and before IR.
    --  @param Units Compilation set from Unit_Graph.Load.
    --  @return Errors and warnings in deterministic order (unit order, then source order).
-   function Analyze
-     (Units : Unit_Graph.Compilation_Set) return Analysis_Result;
+   function Analyze (Units : Unit_Graph.Compilation_Set) return Analysis_Result;
 
    --  Analyse a single already-parsed unit (thin wrap over the multi-unit API).
    --  @param The_Module Frontend compilation-unit AST.

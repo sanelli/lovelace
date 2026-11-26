@@ -67,9 +67,7 @@ package Lovelace.Lir.Modules is
    --  @param Dependency_Name UTF-8 name of a depended-on module.
    --  @param Dependency_Version UTF-8 module version (default Default_Module_Version).
    procedure Append_Dependency
-     (The_Module         : in out Module;
-      Dependency_Name    : String;
-      Dependency_Version : String := Default_Module_Version);
+     (The_Module : in out Module; Dependency_Name : String; Dependency_Version : String := Default_Module_Version);
 
    --  Append The_Subroutine to The_Module.
    --  @param The_Module Module to extend.
@@ -111,8 +109,7 @@ package Lovelace.Lir.Modules is
    --  @param The_Module Module to query.
    --  @param Index 1-based index.
    --  @return Dependency version bytes.
-   function Dependency_Version
-     (The_Module : Module; Index : Positive) return String;
+   function Dependency_Version (The_Module : Module; Index : Positive) return String;
 
    --  Number of subroutines.
    --  @param The_Module Module to query.
@@ -142,20 +139,19 @@ private
       Version : Ada.Strings.Unbounded.Unbounded_String;
    end record;
 
-   package Dependency_Vectors is new
-     Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Dependency);
+   package Dependency_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Dependency);
 
    package Subroutine_Vectors is new
      Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Subroutines.Subroutine);
 
    type Module is record
-      Module_Name            : Ada.Strings.Unbounded.Unbounded_String;
-      Module_Version_Value   : Ada.Strings.Unbounded.Unbounded_String :=
+      Module_Name          : Ada.Strings.Unbounded.Unbounded_String;
+      Module_Version_Value : Ada.Strings.Unbounded.Unbounded_String :=
         Ada.Strings.Unbounded.To_Unbounded_String (Default_Module_Version);
-      Flags_Value            : Module_Flags := 0;
-      Origin_Value           : Origin_Option := (Present => False);
-      Dependencies           : Dependency_Vectors.Vector;
-      Subroutines            : Subroutine_Vectors.Vector;
+      Flags_Value          : Module_Flags := 0;
+      Origin_Value         : Origin_Option := (Present => False);
+      Dependencies         : Dependency_Vectors.Vector;
+      Subroutines          : Subroutine_Vectors.Vector;
    end record;
 
 end Lovelace.Lir.Modules;

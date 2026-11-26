@@ -93,7 +93,6 @@ package Lovelace.Compiler.Error_Codes is
    --  @param Text Label such as LV00028 (case-sensitive).
    --  @param Code Filled when Text matches a known label.
    --  @return True when Text is a known label.
-   function Try_From_Label
-     (Text : String; Code : out Error_Code) return Boolean;
+   function Try_From_Label (Text : String; Code : out Error_Code) return Boolean;
 
 end Lovelace.Compiler.Error_Codes;

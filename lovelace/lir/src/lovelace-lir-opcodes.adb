@@ -7,8 +7,7 @@ package body Lovelace.Lir.Opcodes is
       return 2 + Immediate_Length (Operation);
    end Encoded_Length;
 
-   function From_Word
-     (Word : Interfaces.Unsigned_16) return Opcode_Options.Option is
+   function From_Word (Word : Interfaces.Unsigned_16) return Opcode_Options.Option is
    begin
       for Candidate in Opcode loop
          if To_Word (Candidate) = Word then

@@ -9,8 +9,6 @@ package Lovelace.Compiler.Backend.Native_Print is
    --  scratch buffer in guest linear memory.
    --  @param Locals Local types after the single i32 parameter.
    --  @param Instructions Synthesized core body (no trailing function end).
-   procedure Synthesize
-     (Locals       : out Model.Core_Local_Sequence;
-      Instructions : out Model.Instruction_Sequence);
+   procedure Synthesize (Locals : out Model.Core_Local_Sequence; Instructions : out Model.Instruction_Sequence);
 
 end Lovelace.Compiler.Backend.Native_Print;

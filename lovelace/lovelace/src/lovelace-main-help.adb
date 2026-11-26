@@ -7,80 +7,42 @@ package body Lovelace.Main.Help is
    procedure Put_Line (File : Ada.Text_IO.File_Type; Text : String);
 
    function Run_To_File
-     (Command_Arguments : Arguments.String_Vectors.Vector;
-      File              : Ada.Text_IO.File_Type) return Boolean;
+     (Command_Arguments : Arguments.String_Vectors.Vector; File : Ada.Text_IO.File_Type) return Boolean;
    --  Write help for Command_Arguments to File.
 
    procedure Put_Compile (File : Ada.Text_IO.File_Type) is
    begin
       Put_Line (File, "Usage: lovelace compile <file.love> [options...]");
       Put_Line (File, "");
-      Put_Line
-        (File,
-         "Compile a Lovelace source file through tokenize, parse, LIR, and");
-      Put_Line
-        (File,
-         "WASM/WAT/WIT backends. The program or module identifier must match");
-      Put_Line
-        (File,
-         "the .love basename (excluding the extension; dots are allowed in");
+      Put_Line (File, "Compile a Lovelace source file through tokenize, parse, LIR, and");
+      Put_Line (File, "WASM/WAT/WIT backends. The program or module identifier must match");
+      Put_Line (File, "the .love basename (excluding the extension; dots are allowed in");
       Put_Line (File, "module names, e.g. Foo.Bar.love).");
       Put_Line (File, "");
       Put_Line (File, "Options:");
-      Put_Line
-        (File,
-         "  --force                  Recompile from source; ignore incremental skips");
-      Put_Line
-        (File, "  --flavor <name>          wasi (default), native, or web");
-      Put_Line
-        (File,
-         "  --generate-tlir          Also write obj/<Unit>.tlir (textual LIR)");
-      Put_Line
-        (File,
-         "  -I/--include-path <dir>  Extra module search root (repeatable)");
-      Put_Line
-        (File,
-         "  --module-version <ver>   Fallback module version (@version and .loveversion win)");
-      Put_Line
-        (File,
-         "  --no-warnings <ids>      Suppress warning codes (comma-separated LV ids)");
-      Put_Line
-        (File,
-         "  --no-wit                 Do not write a companion .wit file");
-      Put_Line
-        (File,
-         "  --output-format <fmt>    wasm (default), wat, wasm,wat, or wat,wasm");
-      Put_Line
-        (File,
-         "  --output-folder <path>   Replace the default .output directory");
-      Put_Line
-        (File,
-         "  --warning-as-errors      Promote warnings to errors (fail the compile)");
+      Put_Line (File, "  --force                  Recompile from source; ignore incremental skips");
+      Put_Line (File, "  --flavor <name>          wasi (default), native, or web");
+      Put_Line (File, "  --generate-tlir          Also write obj/<Unit>.tlir (textual LIR)");
+      Put_Line (File, "  -I/--include-path <dir>  Extra module search root (repeatable)");
+      Put_Line (File, "  --module-version <ver>   Fallback module version (@version and .loveversion win)");
+      Put_Line (File, "  --no-warnings <ids>      Suppress warning codes (comma-separated LV ids)");
+      Put_Line (File, "  --no-wit                 Do not write a companion .wit file");
+      Put_Line (File, "  --output-format <fmt>    wasm (default), wat, wasm,wat, or wat,wasm");
+      Put_Line (File, "  --output-folder <path>   Replace the default .output directory");
+      Put_Line (File, "  --warning-as-errors      Promote warnings to errors (fail the compile)");
       Put_Line (File, "");
-      Put_Line
-        (File,
-         "Usings resolve under: root-file dir, cwd, each -I, then one Augusta slot");
-      Put_Line
-        (File, "(AUGUSTA_HOME, else LOVELACE_HOME/lib/augusta/<version>,");
-      Put_Line
-        (File,
-         " else ~/.lovelace/lib/augusta/<version>; version has no git hash).");
+      Put_Line (File, "Usings resolve under: root-file dir, cwd, each -I, then one Augusta slot");
+      Put_Line (File, "(AUGUSTA_HOME, else LOVELACE_HOME/lib/augusta/<version>,");
+      Put_Line (File, " else ~/.lovelace/lib/augusta/<version>; version has no git hash).");
       Put_Line (File, "");
       Put_Line (File, "Output layout under the output folder:");
       Put_Line (File, "  obj/<Unit>.lir");
-      Put_Line
-        (File, "  obj/<Unit>.tlir           # only with --generate-tlir");
-      Put_Line
-        (File, "  bin/<Unit>.wasm and/or .wat, plus .wit unless --no-wit");
+      Put_Line (File, "  obj/<Unit>.tlir           # only with --generate-tlir");
+      Put_Line (File, "  bin/<Unit>.wasm and/or .wat, plus .wit unless --no-wit");
       Put_Line (File, "");
-      Put_Line
-        (File,
-         "Incremental compiles skip IR/backend when outputs are newer than all");
-      Put_Line
-        (File, "loaded .love inputs. Pass --force to recompile every stage.");
-      Put_Line
-        (File,
-         ".tlir is never consulted for mtime skips (even with --generate-tlir).");
+      Put_Line (File, "Incremental compiles skip IR/backend when outputs are newer than all");
+      Put_Line (File, "loaded .love inputs. Pass --force to recompile every stage.");
+      Put_Line (File, ".tlir is never consulted for mtime skips (even with --generate-tlir).");
       Put_Line (File, "");
       Put_Line (File, "Examples:");
       Put_Line (File, "  lovelace compile foo.love");
@@ -89,21 +51,15 @@ package body Lovelace.Main.Help is
       Put_Line (File, "  lovelace compile foo.love -I libs --include-path more");
       Put_Line (File, "  lovelace compile foo.love --module-version 1.2.3");
       Put_Line (File, "  lovelace compile foo.love --no-wit");
-      Put_Line
-        (File, "  lovelace compile foo.love --no-warnings LV00028,LV00029");
+      Put_Line (File, "  lovelace compile foo.love --no-warnings LV00028,LV00029");
       Put_Line (File, "  lovelace compile foo.love --warning-as-errors");
-      Put_Line
-        (File, "  lovelace compile foo.love --output-format wat --no-wit");
-      Put_Line
-        (File,
-         "  lovelace compile foo.love --no-wit --output-format wasm --output-folder bar");
+      Put_Line (File, "  lovelace compile foo.love --output-format wat --no-wit");
+      Put_Line (File, "  lovelace compile foo.love --no-wit --output-format wasm --output-folder bar");
    end Put_Compile;
 
    procedure Put_General (File : Ada.Text_IO.File_Type) is
    begin
-      Put_Line
-        (File,
-         "Usage: lovelace [global-options...] <command> [command-parameters...]");
+      Put_Line (File, "Usage: lovelace [global-options...] <command> [command-parameters...]");
       Put_Line (File, "");
       Put_Line (File, "Global options (must appear before the command):");
       Put_Line (File, "  --no-logo     Do not print the startup logo");
@@ -123,12 +79,11 @@ package body Lovelace.Main.Help is
    end Put_Line;
 
    function Run
-     (Command_Arguments : Arguments.String_Vectors.Vector;
-      To_Standard_Error : Boolean := False) return Boolean is
+     (Command_Arguments : Arguments.String_Vectors.Vector; To_Standard_Error : Boolean := False) return Boolean is
    begin
       if To_Standard_Error then
-         return
-           Run_To_File (Command_Arguments, Ada.Text_IO.Standard_Error.all);
+         --  Current_Error so tests can redirect without printing to the console.
+         return Run_To_File (Command_Arguments, Ada.Text_IO.Current_Error);
       else
          --  Current_Output so tests can redirect without printing to the console.
          return Run_To_File (Command_Arguments, Ada.Text_IO.Current_Output);
@@ -136,8 +91,7 @@ package body Lovelace.Main.Help is
    end Run;
 
    function Run_To_File
-     (Command_Arguments : Arguments.String_Vectors.Vector;
-      File              : Ada.Text_IO.File_Type) return Boolean is
+     (Command_Arguments : Arguments.String_Vectors.Vector; File : Ada.Text_IO.File_Type) return Boolean is
    begin
       if Natural (Command_Arguments.Length) = 0 then
          Put_General (File);
@@ -153,15 +107,11 @@ package body Lovelace.Main.Help is
                return True;
             elsif Topic = "help" then
                Put_Line (File, "Usage: lovelace help [command]");
-               Put_Line
-                 (File,
-                  "Show general help, or details for compile, help, or version.");
+               Put_Line (File, "Show general help, or details for compile, help, or version.");
                return True;
             elsif Topic = "version" then
                Put_Line (File, "Usage: lovelace version");
-               Put_Line
-                 (File,
-                  "Print the product version as 0.0.1-alpha.1 @ <githash>.");
+               Put_Line (File, "Print the product version as 0.0.1-alpha.1 @ <githash>.");
                return True;
             else
                Put_Line (File, "Unknown help topic '" & Topic & "'.");

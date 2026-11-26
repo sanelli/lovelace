@@ -18,13 +18,13 @@ package Lovelace.Compiler.Backend.Model is
    Wasi_Cli_Types_Import_Name : constant String := "wasi:cli/types@0.3.0";
 
    --  Fixed core-import slots when Has_Wasi_Stdout (0-based WASM indices).
-   Stream_New_Import_Index            : constant := 0;
-   Stream_Write_Import_Index          : constant := 1;
-   Stream_Drop_Writable_Import_Index  : constant := 2;
-   Future_Read_Import_Index           : constant := 3;
-   Future_Drop_Readable_Import_Index  : constant := 4;
-   Write_Via_Stream_Import_Index      : constant := 5;
-   Wasi_Stdout_Import_Count           : constant := 6;
+   Stream_New_Import_Index           : constant := 0;
+   Stream_Write_Import_Index         : constant := 1;
+   Stream_Drop_Writable_Import_Index : constant := 2;
+   Future_Read_Import_Index          : constant := 3;
+   Future_Drop_Readable_Import_Index : constant := 4;
+   Write_Via_Stream_Import_Index     : constant := 5;
+   Wasi_Stdout_Import_Count          : constant := 6;
 
    --  One core WASM instruction in a lowered function body.
    --  @disc Kind Selects the instruction variant.
@@ -107,7 +107,8 @@ package Lovelace.Compiler.Backend.Model is
             | If_Empty
             | Else_Op
             | End_Op
-            | Loop_Empty =>
+            | Loop_Empty
+         =>
             null;
       end case;
    end record;
@@ -269,9 +270,7 @@ package Lovelace.Compiler.Backend.Model is
    --  @param Name UTF-8 LIR module name.
    --  @param Version UTF-8 module version (WIT package version).
    --  @return Empty Component_Model.
-   function Create
-     (Name : String; Version : String := Default_Module_Version)
-      return Component_Model;
+   function Create (Name : String; Version : String := Default_Module_Version) return Component_Model;
 
    --  One LIR dependency recorded for component metadata (name + version).
    --  @field Name UTF-8 depended-on module name (may be dotted).
@@ -285,8 +284,7 @@ package Lovelace.Compiler.Backend.Model is
    --  @param The_Model Model to extend.
    --  @param Name UTF-8 module name.
    --  @param Version UTF-8 module version.
-   procedure Append_Dependency
-     (The_Model : in out Component_Model; Name : String; Version : String);
+   procedure Append_Dependency (The_Model : in out Component_Model; Name : String; Version : String);
 
    --  Append The_Export to The_Model.
    --  @param The_Model Model to extend.
@@ -311,8 +309,7 @@ package Lovelace.Compiler.Backend.Model is
    --  @param The_Model Model to query.
    --  @param Index 1-based index.
    --  @return Dependency record.
-   function Get_Dependency
-     (The_Model : Component_Model; Index : Positive) return Dependency;
+   function Get_Dependency (The_Model : Component_Model; Index : Positive) return Dependency;
 
 private
 
@@ -338,8 +335,7 @@ private
 
    package Export_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Lifted_Export);
 
-   package Dependency_Vectors is new
-     Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Dependency);
+   package Dependency_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Dependency);
 
    type Component_Model is record
       Module_Name_Value    : Ada.Strings.Unbounded.Unbounded_String;

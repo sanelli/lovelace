@@ -50,7 +50,6 @@ package Lovelace.Lir.Text is
    --  @param The_Module Module to write.
    --  @param Path Destination filesystem path.
    --  @return Success, or Error_Code.
-   function Write
-     (The_Module : Modules.Module; Path : String) return Write_Result;
+   function Write (The_Module : Modules.Module; Path : String) return Write_Result;
 
 end Lovelace.Lir.Text;

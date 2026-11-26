@@ -516,6 +516,10 @@ package body Lovelace.Compiler.Tests.Suite is
               .Test_Import_Dependencies'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
+           ("ir generator: internal edges",
+            Lovelace.Compiler.Tests.Ir_Generator.Test_Internal_Edges'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
            ("ir generator: assignment and local access",
             Lovelace
               .Compiler
@@ -631,6 +635,66 @@ package body Lovelace.Compiler.Tests.Suite is
         (Backend_Caller.Create
            ("backend: native print integer",
             Lovelace.Compiler.Tests.Backend.Test_Native_Print_Integer'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: kebab export dash collapse",
+            Lovelace
+              .Compiler
+              .Tests
+              .Backend
+              .Test_Kebab_Export_Dash_Collapse'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: unsupported unit parameter",
+            Lovelace
+              .Compiler
+              .Tests
+              .Backend
+              .Test_Unsupported_Unit_Parameter'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: unsupported unit local",
+            Lovelace
+              .Compiler
+              .Tests
+              .Backend
+              .Test_Unsupported_Unit_Local'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: native empty body",
+            Lovelace.Compiler.Tests.Backend.Test_Native_Empty_Body'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: intrinsic table miss",
+            Lovelace.Compiler.Tests.Backend.Test_Intrinsic_Table_Miss'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: native print signature mismatch",
+            Lovelace
+              .Compiler
+              .Tests
+              .Backend
+              .Test_Native_Print_Signature_Mismatch'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: module dependency",
+            Lovelace.Compiler.Tests.Backend.Test_Module_Dependency'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: names sanitize edges",
+            Lovelace.Compiler.Tests.Backend.Test_Names_Sanitize_Edges'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: zero call target",
+            Lovelace.Compiler.Tests.Backend.Test_Zero_Call_Target'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: zero local index",
+            Lovelace.Compiler.Tests.Backend.Test_Zero_Local_Index'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: duplicate entrypoint",
+            Lovelace.Compiler.Tests.Backend.Test_Duplicate_Entrypoint'Access));
 
       Result.Add_Test
         (Diagnostics_Caller.Create

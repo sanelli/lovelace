@@ -22,8 +22,7 @@ package body Lovelace.Compiler.Tokens is
 
    function Lexeme (Source_Text : String; The_Token : Token) return String is
    begin
-      return Source_Text
-        (The_Token.Span.First.Byte_Index .. The_Token.Span.Last.Byte_Index);
+      return Source_Text (The_Token.Span.First.Byte_Index .. The_Token.Span.Last.Byte_Index);
    end Lexeme;
 
 end Lovelace.Compiler.Tokens;

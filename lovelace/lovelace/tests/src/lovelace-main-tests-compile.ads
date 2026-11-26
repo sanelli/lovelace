@@ -8,19 +8,19 @@ package Lovelace.Main.Tests.Compile is
    type Fixture is new AUnit.Test_Fixtures.Test_Fixture with null record;
 
    --  --no-warnings accepts warning LV labels and rejects bad entries.
+
+   --  @param The_Test Unused fixture.
+   procedure Test_No_Warnings_Empty_Entry (The_Test : in out Fixture);
+
    --  @param The_Test Unused fixture.
    procedure Test_No_Warnings_List (The_Test : in out Fixture);
 
-   --  Unknown format text is rejected.
    --  @param The_Test Unused fixture.
    procedure Test_Output_Format_Invalid (The_Test : in out Fixture);
 
-   --  Recognized --output-format values.
    --  @param The_Test Unused fixture.
    procedure Test_Output_Format_Values (The_Test : in out Fixture);
 
-   --  Spawned compile: unread local surfaces LV00028 (exit 0); --warning-as-errors
-   --  fails; --no-warnings LV00027 fails with LV00030.
    --  @param The_Test Unused fixture.
    procedure Test_Warning_Policy_Cli (The_Test : in out Fixture);
 

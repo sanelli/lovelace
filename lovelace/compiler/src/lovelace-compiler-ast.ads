@@ -425,7 +425,7 @@ package Lovelace.Compiler.Ast is
    --  @param Kind Program_Unit or Module_Unit.
    --  @param Usings Ordered unit-level using list (may be empty).
    --  @param Subroutines Ordered subroutine list (empty for empty modules).
-   --  @param Version Optional `@version("â¦")` attribute text (empty when absent).
+   --  @param Version Optional `@version("...")` attribute text (empty when absent).
    --  @return Module value.
    function Create_Module
      (Name        : String;
@@ -462,7 +462,7 @@ package Lovelace.Compiler.Ast is
    --  @return Unit span.
    function Span (The_Module : Module) return Source.Source_Span;
 
-   --  True when The_Module carries a source `@version("â¦")` attribute.
+   --  True when The_Module carries a source `@version("...")` attribute.
    --  @param The_Module Module to query.
    --  @return True iff Version is non-empty.
    function Has_Version_Attribute (The_Module : Module) return Boolean;

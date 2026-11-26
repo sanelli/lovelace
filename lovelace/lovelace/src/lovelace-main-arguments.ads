@@ -5,10 +5,7 @@ with Ada.Strings.Unbounded;
 
 package Lovelace.Main.Arguments is
 
-   package String_Vectors is new
-     Ada.Containers.Indefinite_Vectors
-       (Index_Type   => Positive,
-        Element_Type => String);
+   package String_Vectors is new Ada.Containers.Indefinite_Vectors (Index_Type => Positive, Element_Type => String);
 
    --  Recognized top-level commands.
    --  @enum Compile Compile a .love file.

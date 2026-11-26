@@ -51,6 +51,11 @@ package Lovelace.Compiler.Tests.Ir_Generator is
    --  @param The_Test Unused fixture.
    procedure Test_Import_Dependencies (The_Test : in out Fixture);
 
+   --  Hand-built AST / empty compilation set edges: Find_Local miss, Split_Callee, arity,
+   --  native/intrinsic flag conflicts, version attribute, and duplicate usings.
+   --  @param The_Test Unused fixture.
+   procedure Test_Internal_Edges (The_Test : in out Fixture);
+
    --  Module procedure parameters lower to named LIR signature entries with mapped types.
    --  @param The_Test Unused fixture.
    procedure Test_Module_Procedure_Parameters (The_Test : in out Fixture);

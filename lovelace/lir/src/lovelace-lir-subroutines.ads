@@ -81,7 +81,7 @@ package Lovelace.Lir.Subroutines is
    --  Optional dependency-module tag when this subroutine was flattened from
    --  another compilation unit (not the root).
    --  @disc Present True when Module_Name is stored; False when absent.
-   --  @field Module_Name UTF-8 dependency module name (matches a `(dependency …)`).
+   --  @field Module_Name UTF-8 dependency module name (matches a `(dependency â¦)`).
    type From_Dependency_Option (Present : Boolean := False) is record
       case Present is
          when True =>
@@ -104,8 +104,7 @@ package Lovelace.Lir.Subroutines is
    --  Mark The_Subroutine as coming from Dependency_Module (flattened non-root unit).
    --  @param The_Subroutine Subroutine to update.
    --  @param Dependency_Module UTF-8 module name of the dependency unit.
-   procedure Set_From_Dependency
-     (The_Subroutine : in out Subroutine; Dependency_Module : String);
+   procedure Set_From_Dependency (The_Subroutine : in out Subroutine; Dependency_Module : String);
 
    --  Mark The_Subroutine as `@intrinsic` (sets Intrinsic_Flag; clears Native_Flag and binding).
    --  @param The_Subroutine Subroutine to update.
@@ -115,8 +114,7 @@ package Lovelace.Lir.Subroutines is
    --  @param The_Subroutine Subroutine to update.
    --  @param Library UTF-8 shared-library name.
    --  @param Function_Name UTF-8 native function name.
-   procedure Set_Native_Binding
-     (The_Subroutine : in out Subroutine; Library : String; Function_Name : String);
+   procedure Set_Native_Binding (The_Subroutine : in out Subroutine; Library : String; Function_Name : String);
 
    --  Attach The_Origin to The_Subroutine (replaces any previous origin).
    --  @param The_Subroutine Subroutine to update.
@@ -132,8 +130,7 @@ package Lovelace.Lir.Subroutines is
    --  @param The_Subroutine Subroutine to extend.
    --  @param Name UTF-8 local name.
    --  @param The_Type Local value type.
-   procedure Append_Local
-     (The_Subroutine : in out Subroutine; Name : String; The_Type : Types.Value_Type);
+   procedure Append_Local (The_Subroutine : in out Subroutine; Name : String; The_Type : Types.Value_Type);
 
    --  Signature of The_Subroutine.
    --  @param The_Subroutine Subroutine to query.
@@ -163,8 +160,7 @@ package Lovelace.Lir.Subroutines is
    --  Optional from-dependency tag of The_Subroutine.
    --  @param The_Subroutine Subroutine to query.
    --  @return Present dependency module name, or absent for root-unit subroutines.
-   function From_Dependency
-     (The_Subroutine : Subroutine) return From_Dependency_Option;
+   function From_Dependency (The_Subroutine : Subroutine) return From_Dependency_Option;
 
    --  Optional native binding of The_Subroutine.
    --  @param The_Subroutine Subroutine to query.

@@ -38,6 +38,9 @@ package body Lovelace.Main.Tests.Suite is
         (Build_Caller.Create ("compile: no-warnings list", Lovelace.Main.Tests.Compile.Test_No_Warnings_List'Access));
       Result.Add_Test
         (Build_Caller.Create
+           ("compile: no-warnings empty entry", Lovelace.Main.Tests.Compile.Test_No_Warnings_Empty_Entry'Access));
+      Result.Add_Test
+        (Build_Caller.Create
            ("compile: warning policy CLI", Lovelace.Main.Tests.Compile.Test_Warning_Policy_Cli'Access));
       Result.Add_Test
         (Build_Caller.Create
@@ -113,12 +116,69 @@ package body Lovelace.Main.Tests.Suite is
       Result.Add_Test
         (Compile_Run_Caller.Create
            ("compile in-process: bad --no-warnings", Lovelace.Main.Tests.Compile_Run.Test_Bad_No_Warnings'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: empty --no-warnings entry",
+            Lovelace.Main.Tests.Compile_Run.Test_Empty_No_Warnings_Entry'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: --module-version accepted",
+            Lovelace.Main.Tests.Compile_Run.Test_Module_Version_Accepted'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: missing value options",
+            Lovelace.Main.Tests.Compile_Run.Test_Missing_Value_Options'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: tokenize error", Lovelace.Main.Tests.Compile_Run.Test_Tokenize_Error'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: load error", Lovelace.Main.Tests.Compile_Run.Test_Load_Error'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: semantic error", Lovelace.Main.Tests.Compile_Run.Test_Semantic_Error'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: corrupt lir", Lovelace.Main.Tests.Compile_Run.Test_Corrupt_Lir'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: wit refresh without wasm",
+            Lovelace.Main.Tests.Compile_Run.Test_Wit_Refresh_Without_Wasm'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: wasm write failure", Lovelace.Main.Tests.Compile_Run.Test_Wasm_Write_Failure'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: lir write failure", Lovelace.Main.Tests.Compile_Run.Test_Lir_Write_Failure'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: generate error", Lovelace.Main.Tests.Compile_Run.Test_Generate_Error'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: flavor native/web", Lovelace.Main.Tests.Compile_Run.Test_Flavor_Native_Web'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: wit write failure", Lovelace.Main.Tests.Compile_Run.Test_Wit_Write_Failure'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: wat write failure", Lovelace.Main.Tests.Compile_Run.Test_Wat_Write_Failure'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: tlir write failure", Lovelace.Main.Tests.Compile_Run.Test_Tlir_Write_Failure'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
+           ("compile in-process: empty source", Lovelace.Main.Tests.Compile_Run.Test_Empty_Source'Access));
 
       Result.Add_Test
         (Help_Caller.Create ("help: compile topic succeeds", Lovelace.Main.Tests.Help.Test_Help_Build_Topic'Access));
       Result.Add_Test
         (Help_Caller.Create
            ("help: CLI stdout mentions compile", Lovelace.Main.Tests.Help.Test_Help_Mentions_Build'Access));
+      Result.Add_Test (Help_Caller.Create ("help: general usage", Lovelace.Main.Tests.Help.Test_Help_General'Access));
+      Result.Add_Test
+        (Help_Caller.Create ("help: topics and errors", Lovelace.Main.Tests.Help.Test_Help_Topics_And_Errors'Access));
+      Result.Add_Test
+        (Help_Caller.Create ("help: standard error stream", Lovelace.Main.Tests.Help.Test_Help_Standard_Error'Access));
 
       Result.Add_Test
         (Version_Caller.Create
