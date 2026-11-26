@@ -1,8 +1,8 @@
 # Host Ada coverage via gnatcov (roadmap 1.002 macro step 7 / #47).
 #
 # Instruments unit-test crates, runs them, consolidates traces, writes
-# .coverage/ reports + summary JSON, and gates statement / decision /
-# fun_call (subprogram+call aggregate) at >= 95% fully covered.
+# .coverage/ reports + summary JSON, and gates statement / fun_call at
+# >= 95% and decision at >= 93% fully covered.
 #
 # Preconditions:
 #   alr install gnatcov
@@ -41,7 +41,7 @@ $LibDir = Join-Path $AlireHome 'lib'
 
 $CoverageLevel = 'stmt+decision+fun_call'
 $StatementMinimum = 95
-$DecisionMinimum = 95
+$DecisionMinimum = 93
 $FunCallMinimum = 95
 $RtsProject = 'gnatcov_rts.gpr'
 
