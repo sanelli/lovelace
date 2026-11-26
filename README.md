@@ -78,6 +78,8 @@ alr install gnatcov
 
 `libadalang_tools` provides **`gnatformat`** and **`gnatmetric`**. **`gnatcov`** drives host Ada coverage (`scripts/coverage.ps1`).
 
+Host Ada coverage, complexity, and CRAP gates (local scripts + PR-only CI sticky comment): [docs/coverage.md](docs/coverage.md).
+
 ### Ada code formatting
 
 The formatter executable is **`gnatformat`** (from `libadalang_tools`; see **Development tools** above). Run it through Alire so it uses the same environment as `alr build`.

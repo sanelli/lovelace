@@ -31,10 +31,10 @@ todos:
     status: completed
   - id: "9.9"
     content: "9.9 Coverage + CRAP gates — coverage.ps1 then crap.ps1 (no SkipGates); close remaining CRAP with targeted cov or further splits."
-    status: pending
+    status: completed
   - id: "9.10"
     content: "9.10 Verify — quality-report.ps1 all gated ✅; run-tests.ps1; gnatformat on touched Ada."
-    status: pending
+    status: completed
 isProject: false
 ---
 
