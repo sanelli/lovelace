@@ -91,14 +91,14 @@ package body Lovelace.Compiler.Backend.Lowering is
 
    function Map_Locals
      (Locals : Types.Parameter_Sequence;
-      Mapped : out Model.Core_Local_Sequence;
-      Detail : out Ada.Strings.Unbounded.Unbounded_String) return Boolean;
+      Mapped : in out Model.Core_Local_Sequence;
+      Detail : in out Ada.Strings.Unbounded.Unbounded_String) return Boolean;
    --  Map LIR named locals to core local types. False when a local type is unsupported.
 
    function Map_Parameters
      (Parameters : Types.Parameter_Sequence;
-      Mapped     : out Model.Core_Parameter_Sequence;
-      Detail     : out Ada.Strings.Unbounded.Unbounded_String) return Boolean;
+      Mapped     : in out Model.Core_Parameter_Sequence;
+      Detail     : in out Ada.Strings.Unbounded.Unbounded_String) return Boolean;
    --  Map LIR named parameters to core types. False when a parameter type is unsupported.
 
    function Record_Entrypoint
@@ -333,11 +333,13 @@ package body Lovelace.Compiler.Backend.Lowering is
       Local_Types      : Model.Core_Local_Sequence;
       Parameter_Types  : Model.Core_Parameter_Sequence;
       Parameter_Detail : Ada.Strings.Unbounded.Unbounded_String;
-      Outcome          : Lower_Result;
+      --  Do not keep a mutable Lower_Result across Ok True/False: assigning a
+      --  different discriminant finalizes/adjusts controlled The_Model and
+      --  CONSTRAINT_ERROR/PROGRAM_ERROR under gnatcov (build-in-place).
+      Signature_Outcome : constant Lower_Result := Check_Signature (The_Subroutine);
    begin
-      Outcome := Check_Signature (The_Subroutine);
-      if not Outcome.Ok then
-         return Outcome;
+      if not Signature_Outcome.Ok then
+         return Signature_Outcome;
       end if;
 
       if not Map_Parameters
@@ -352,17 +354,20 @@ package body Lovelace.Compiler.Backend.Lowering is
               & Ada.Strings.Unbounded.To_String (Parameter_Detail));
       end if;
 
-      Outcome :=
-        Lower_Subroutine_Body
-          (The_Module      => The_Module,
-           The_Model       => The_Model,
-           The_Subroutine  => The_Subroutine,
-           Parameter_Types => Parameter_Types,
-           Local_Types     => Local_Types,
-           Body_Out        => Body_Out);
-      if not Outcome.Ok then
-         return Outcome;
-      end if;
+      declare
+         Body_Outcome : constant Lower_Result :=
+           Lower_Subroutine_Body
+             (The_Module      => The_Module,
+              The_Model       => The_Model,
+              The_Subroutine  => The_Subroutine,
+              Parameter_Types => Parameter_Types,
+              Local_Types     => Local_Types,
+              Body_Out        => Body_Out);
+      begin
+         if not Body_Outcome.Ok then
+            return Body_Outcome;
+         end if;
+      end;
 
       Model.Append_Function
         (The_Model,
@@ -394,9 +399,7 @@ package body Lovelace.Compiler.Backend.Lowering is
       Local_Types     : out Model.Core_Local_Sequence;
       Body_Out        : out Model.Instruction_Sequence) return Lower_Result
    is
-      The_Flags    : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (The_Subroutine);
-      Local_Detail : Ada.Strings.Unbounded.Unbounded_String;
-      Body_Outcome : Lower_Result;
+      The_Flags : constant Subroutines.Subroutine_Flags := Subroutines.Get_Flags (The_Subroutine);
    begin
       Local_Types := Model.Empty_Locals;
       Body_Out := Model.Empty_Instructions;
@@ -417,26 +420,35 @@ package body Lovelace.Compiler.Backend.Lowering is
          return Success;
       end if;
 
-      if not Map_Locals
-               (Locals => Subroutines.Get_Locals (The_Subroutine), Mapped => Local_Types, Detail => Local_Detail)
-      then
-         declare
-            The_Signature   : constant Subroutines.Signature := Get_Signature (The_Subroutine);
-            Subroutine_Name : constant String := Unbounded_Text (The_Signature.Name);
-            Detail_Text     : constant String := Unbounded_Text (Local_Detail);
-         begin
-            return
-              Failure
-                (Unsupported_Type,
-                 "unsupported local type in subroutine " & Subroutine_Name & ": " & Detail_Text);
-         end;
-      end if;
+      declare
+         Local_Detail : Ada.Strings.Unbounded.Unbounded_String;
+         Locals_Ok    : constant Boolean :=
+           Map_Locals
+             (Locals => Subroutines.Get_Locals (The_Subroutine), Mapped => Local_Types, Detail => Local_Detail);
+      begin
+         if not Locals_Ok then
+            declare
+               The_Signature   : constant Subroutines.Signature := Get_Signature (The_Subroutine);
+               Subroutine_Name : constant String := Unbounded_Text (The_Signature.Name);
+               Detail_Text     : constant String := Unbounded_Text (Local_Detail);
+            begin
+               return
+                 Failure
+                   (Unsupported_Type,
+                    "unsupported local type in subroutine " & Subroutine_Name & ": " & Detail_Text);
+            end;
+         end if;
+      end;
 
-      Lower_Instruction_Body
-        (The_Instructions => Subroutines.Get_Instructions (The_Subroutine),
-         Body_Out         => Body_Out,
-         Outcome          => Body_Outcome);
-      return Body_Outcome;
+      declare
+         Body_Outcome : Lower_Result;
+      begin
+         Lower_Instruction_Body
+           (The_Instructions => Subroutines.Get_Instructions (The_Subroutine),
+            Body_Out         => Body_Out,
+            Outcome          => Body_Outcome);
+         return Body_Outcome;
+      end;
    end Lower_Subroutine_Body;
 
    function Map_Core_Parameter_Type (The_Type : Types.Value_Type; Mapped : out Model.Core_Value_Type) return Boolean is
@@ -465,8 +477,8 @@ package body Lovelace.Compiler.Backend.Lowering is
 
    function Map_Locals
      (Locals : Types.Parameter_Sequence;
-      Mapped : out Model.Core_Local_Sequence;
-      Detail : out Ada.Strings.Unbounded.Unbounded_String) return Boolean is
+      Mapped : in out Model.Core_Local_Sequence;
+      Detail : in out Ada.Strings.Unbounded.Unbounded_String) return Boolean is
    begin
       Mapped := Model.Empty_Locals;
       Detail := Ada.Strings.Unbounded.Null_Unbounded_String;
@@ -494,8 +506,8 @@ package body Lovelace.Compiler.Backend.Lowering is
 
    function Map_Parameters
      (Parameters : Types.Parameter_Sequence;
-      Mapped     : out Model.Core_Parameter_Sequence;
-      Detail     : out Ada.Strings.Unbounded.Unbounded_String) return Boolean is
+      Mapped     : in out Model.Core_Parameter_Sequence;
+      Detail     : in out Ada.Strings.Unbounded.Unbounded_String) return Boolean is
    begin
       Mapped := Model.Empty_Parameters;
       Detail := Ada.Strings.Unbounded.Null_Unbounded_String;
