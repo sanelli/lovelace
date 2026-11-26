@@ -57,7 +57,7 @@ package Lovelace.Main.Integration_Tests.Support is
    function Locate_Repository_Root return String;
 
    --  Run lovelace compile --force for Sample_Path into Output_Root.
-   --  Stdout ([info]) is discarded; stderr ([err]) still prints.
+   --  Child stdout and stderr are discarded (quiet [info]/[warning]/[err]).
    --  @param Lovelace_Path Path to the lovelace executable.
    --  @param Sample_Path Path to the .love source.
    --  @param Output_Root Compile output folder.
