@@ -160,6 +160,9 @@ package body Lovelace.Main.Tests.Arguments is
       Tokens : Cli_Arguments.String_Vectors.Vector;
       Parsed : Cli_Arguments.Parsed_Arguments;
    begin
+      --  Leading "--" tokens are globals; an unknown one fails before command
+      --  selection (so "--no-logo --force" is "unknown global", not "expected a
+      --  command").
       Tokens.Append ("--no-logo");
       Tokens.Append ("--force");
       Parsed := Cli_Arguments.Parse (Tokens);
@@ -169,8 +172,8 @@ package body Lovelace.Main.Tests.Arguments is
 
          when False =>
             AUnit.Assertions.Assert
-              (Ada.Strings.Unbounded.Index (Parsed.Error_Message, "expected a command") > 0,
-               "error mentions expected command");
+              (Ada.Strings.Unbounded.Index (Parsed.Error_Message, "unknown global") > 0,
+               "error mentions unknown global");
       end case;
    end Test_Unknown_Option_As_Command;
 

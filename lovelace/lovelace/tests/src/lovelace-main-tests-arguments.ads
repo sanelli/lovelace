@@ -35,7 +35,7 @@ package Lovelace.Main.Tests.Arguments is
    --  @param The_Test Unused fixture.
    procedure Test_Unknown_Global (The_Test : in out Fixture);
 
-   --  A long option where a command is expected fails parse.
+   --  Unknown long option after a valid global fails as unknown global.
    --  @param The_Test Unused fixture.
    procedure Test_Unknown_Option_As_Command (The_Test : in out Fixture);
 

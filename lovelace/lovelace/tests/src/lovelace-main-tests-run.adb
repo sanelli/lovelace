@@ -1,3 +1,4 @@
+with Ada.Command_Line;
 with Ada.Directories;
 with Ada.Strings.Fixed;
 with Ada.Strings.Unbounded;
@@ -20,12 +21,15 @@ package body Lovelace.Main.Tests.Run is
    end record;
 
    function Capture_Run (Parsed : Cli_Arguments.Parsed_Arguments) return Capture_Result;
-   --  Call Dispatch.Run with streams captured; restore colour afterwards.
+   --  Call Dispatch.Run with streams captured; restore colour and clear Failure
+   --  exit status so AUnit itself is not reported as failed.
 
    function Capture_Run (Parsed : Cli_Arguments.Parsed_Arguments) return Capture_Result is
-      Out_Path : constant String := Ada.Directories.Compose (Ada.Directories.Current_Directory, "main-run-stdout.txt");
-      Err_Path : constant String := Ada.Directories.Compose (Ada.Directories.Current_Directory, "main-run-stderr.txt");
-      Saved    : constant Boolean := Cli_Terminal.Colour_Enabled;
+      Out_Path     : constant String :=
+        Ada.Directories.Compose (Ada.Directories.Current_Directory, "main-run-stdout.txt");
+      Err_Path     : constant String :=
+        Ada.Directories.Compose (Ada.Directories.Current_Directory, "main-run-stderr.txt");
+      Saved_Colour : constant Boolean := Cli_Terminal.Colour_Enabled;
    begin
       Cli_Terminal.Set_Colour_Enabled (False);
       Support.Start_Capture (Out_Path, Err_Path);
@@ -34,11 +38,13 @@ package body Lovelace.Main.Tests.Run is
       exception
          when others =>
             Support.Stop_Capture;
-            Cli_Terminal.Set_Colour_Enabled (Saved);
+            Cli_Terminal.Set_Colour_Enabled (Saved_Colour);
+            Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Success);
             raise;
       end;
       Support.Stop_Capture;
-      Cli_Terminal.Set_Colour_Enabled (Saved);
+      Cli_Terminal.Set_Colour_Enabled (Saved_Colour);
+      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Success);
 
       declare
          Result : constant Capture_Result :=
@@ -91,12 +97,12 @@ package body Lovelace.Main.Tests.Run is
 
    procedure Test_Main_Run_Wrapper (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      Out_Path : constant String :=
+      Out_Path     : constant String :=
         Ada.Directories.Compose (Ada.Directories.Current_Directory, "main-run-wrapper-out.txt");
-      Err_Path : constant String :=
+      Err_Path     : constant String :=
         Ada.Directories.Compose (Ada.Directories.Current_Directory, "main-run-wrapper-err.txt");
-      Saved    : constant Boolean := Cli_Terminal.Colour_Enabled;
-      Stderr   : Ada.Strings.Unbounded.Unbounded_String;
+      Saved_Colour : constant Boolean := Cli_Terminal.Colour_Enabled;
+      Stderr       : Ada.Strings.Unbounded.Unbounded_String;
    begin
       --  Under AUnit, Argument_Count is typically 0 so Parse yields Command None.
       Cli_Terminal.Set_Colour_Enabled (False);
@@ -106,11 +112,13 @@ package body Lovelace.Main.Tests.Run is
       exception
          when others =>
             Support.Stop_Capture;
-            Cli_Terminal.Set_Colour_Enabled (Saved);
+            Cli_Terminal.Set_Colour_Enabled (Saved_Colour);
+            Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Success);
             raise;
       end;
       Support.Stop_Capture;
-      Cli_Terminal.Set_Colour_Enabled (Saved);
+      Cli_Terminal.Set_Colour_Enabled (Saved_Colour);
+      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Success);
       Stderr := Ada.Strings.Unbounded.To_Unbounded_String (Support.Read_File (Err_Path));
       if Ada.Directories.Exists (Out_Path) then
          Ada.Directories.Delete_File (Out_Path);
