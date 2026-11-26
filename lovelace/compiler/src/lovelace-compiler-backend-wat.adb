@@ -1,4 +1,6 @@
+with Ada.Strings;
 with Ada.Strings.Bounded;
+with Ada.Strings.Fixed;
 with Ada.Strings.Unbounded;
 with Interfaces;
 
@@ -456,6 +458,8 @@ package body Lovelace.Compiler.Backend.Wat is
          elsif Layout.Result_Functype_Index = Type_Index then
             Append_Line
               (Buffer, "  (type (func (result " & Image_Without_Leading_Space (Layout.Result_Valtype_Index) & ")))");
+         else
+            raise Program_Error with "unassigned export type index in Append_Type_Section";
          end if;
       end loop;
    end Append_Type_Section;
@@ -468,11 +472,13 @@ package body Lovelace.Compiler.Backend.Wat is
             The_Export : constant Model.Lifted_Export := Get_Export (The_Model, Export_Index);
          begin
             if The_Export.Returns_Result then
-               if Layout.Result_Functype_Index < 0 then
-                  Layout.Result_Valtype_Index := Layout.Next_Type_Index;
-                  Layout.Result_Functype_Index := Layout.Next_Type_Index + 1;
-                  Layout.Next_Type_Index := Layout.Next_Type_Index + 2;
+               --  LIR Validate allows at most one entrypoint (one result functype).
+               if Layout.Result_Functype_Index >= 0 then
+                  raise Program_Error with "duplicate result functype in Assign_Export_Types";
                end if;
+               Layout.Result_Valtype_Index := Layout.Next_Type_Index;
+               Layout.Result_Functype_Index := Layout.Next_Type_Index + 1;
+               Layout.Next_Type_Index := Layout.Next_Type_Index + 2;
             elsif Layout.Unit_Type_Index < 0 then
                Layout.Unit_Type_Index := Layout.Next_Type_Index;
                Layout.Next_Type_Index := Layout.Next_Type_Index + 1;
@@ -736,11 +742,8 @@ package body Lovelace.Compiler.Backend.Wat is
             declare
                Raw : constant String := Interfaces.Integer_64'Image (Item.Value_I64);
             begin
-               if Raw (Raw'First) = ' ' then
-                  return Raw (Raw'First + 1 .. Raw'Last);
-               end if;
-
-               return Raw;
+               --  Integer_64'Image always puts a leading space on non-negative values.
+               return Ada.Strings.Fixed.Trim (Raw, Ada.Strings.Left);
             end;
 
          when Model.Local_Get | Model.Local_Set =>

@@ -199,8 +199,9 @@ package body Lovelace.Compiler.Parser is
    procedure Append_Procedure
      (The_Cursor : Cursor; The_Unit : in out Unit_Parse; Header : Procedure_Header; The_Body : Ast.Block);
    function Check_Signature_Unique (The_Unit : Unit_Parse; Header : Procedure_Header) return Step_Result;
-   function Parse_Export_Prefix
-     (The_Cursor : in out Cursor; Source_Text : String; Flags : in out Ast.Subroutine_Flags) return Step_Result;
+   procedure Parse_Export_Prefix
+     (The_Cursor : in out Cursor; Source_Text : String; Flags : in out Ast.Subroutine_Flags);
+   --  Optional "export" prefix; sets Export_Flag when present.
    procedure Parse_Intrinsic_Marker
      (The_Cursor : in out Cursor; Source_Text : String; Flags : in out Ast.Subroutine_Flags);
    function Parse_Native_Binding
@@ -987,7 +988,6 @@ package body Lovelace.Compiler.Parser is
      (The_Cursor : in out Cursor; Source_Text : String; Version : out Ada.Strings.Unbounded.Unbounded_String)
       return Step_Result
    is
-      Attr_Token   : Tokens.Token := Dummy_Identifier;
       String_Token : Tokens.Token :=
         (Kind => Tokens.String_Literal, Span => Origin_Span, Filename => Source.Absent_Filename);
       Step         : Step_Result;
@@ -995,27 +995,8 @@ package body Lovelace.Compiler.Parser is
    begin
       Version := Ada.Strings.Unbounded.Null_Unbounded_String;
 
-      --  @version ( string_literal )
-      Step := Expect_Identifier (The_Cursor => The_Cursor, Source_Text => Source_Text);
-      case Step.Ok is
-         when False =>
-            return Step;
-
-         when True  =>
-            Attr_Token :=
-              (Kind     => Tokens.Identifier,
-               Span     => The_Cursor.Last_Consumed_Span,
-               Filename => The_Cursor.Last_Consumed_Filename);
-      end case;
-
-      if not Is_Identifier_Lexeme (Source_Text, Attr_Token, "@version") then
-         return
-           Make_Failure
-             (Code     => Unexpected_Token,
-              Span     => Attr_Token.Span,
-              Filename => Attr_Token.Filename,
-              Detail   => "expected ""@version"", found " & Describe_Token (Source_Text, Attr_Token));
-      end if;
+      --  Parse_Optional_Version only enters when Peek is already @version; consume it.
+      Advance (The_Cursor);
 
       Step :=
         Expect_Punctuation
@@ -1339,12 +1320,7 @@ package body Lovelace.Compiler.Parser is
                Filename    => Source.Absent_Filename,
                Arguments   => Ast.Empty_Expression_Sequence));
 
-         if At_End (The_Cursor) then
-            return
-              Parse_Call_Statement
-                (The_Cursor => The_Cursor, Source_Text => Source_Text, The_Statement => The_Statement);
-         end if;
-
+         --  Parse_Statement_Part only calls this when not At_End.
          declare
             Current : constant Tokens.Token := Peek (The_Cursor);
          begin
@@ -1636,25 +1612,16 @@ package body Lovelace.Compiler.Parser is
    end Parse_Compilation_Unit;
 
    --  Optional "export" prefix; sets Export_Flag when present.
-   function Parse_Export_Prefix
-     (The_Cursor : in out Cursor; Source_Text : String; Flags : in out Ast.Subroutine_Flags) return Step_Result
+   procedure Parse_Export_Prefix
+     (The_Cursor : in out Cursor; Source_Text : String; Flags : in out Ast.Subroutine_Flags)
    is
-      Step : Step_Result := (Ok => True);
+      pragma Unreferenced (Source_Text);
    begin
       if not At_End (The_Cursor) and then Is_Keyword (Peek (The_Cursor), Tokens.Export_Keyword) then
-         Step :=
-           Expect_Keyword
-             (The_Cursor  => The_Cursor,
-              Source_Text => Source_Text,
-              Expected    => Tokens.Export_Keyword,
-              Label       => "export");
-
-         if Step.Ok then
-            Flags := Flags or Ast.Export_Flag;
-         end if;
+         --  Peek already matched Export_Keyword; consume it.
+         Advance (The_Cursor);
+         Flags := Flags or Ast.Export_Flag;
       end if;
-
-      return Step;
    end Parse_Export_Prefix;
 
    --  One "#if" / "#elsif" / "#else" arm: optional condition, then its declarations.
@@ -1782,15 +1749,11 @@ package body Lovelace.Compiler.Parser is
       --  flavor_conditional = "#if" , flavor_condition , { module_declaration } ,
       --    { "#elsif" , flavor_condition , { module_declaration } } ,
       --    [ "#else" , { module_declaration } ] , "#end"
+      --  Caller only enters on Peek If_Directive; consume and parse the first arm.
+      Advance (The_Cursor);
       Step :=
-        Expect_Directive
-          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.If_Directive, Label => "#if");
-
-      if Step.Ok then
-         Step :=
-           Parse_Flavor_Arm
-             (The_Cursor, Source_Text, The_Unit, Keep_Declarations, Is_Else => False, Matched => Matched);
-      end if;
+        Parse_Flavor_Arm
+          (The_Cursor, Source_Text, The_Unit, Keep_Declarations, Is_Else => False, Matched => Matched);
 
       while Step.Ok and then not At_End (The_Cursor) and then Is_Directive (Peek (The_Cursor), Tokens.Elsif_Directive)
       loop
@@ -1839,16 +1802,8 @@ package body Lovelace.Compiler.Parser is
          return (Ok => True);
       end if;
 
-      Step :=
-        Expect_Punctuation
-          (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Less_Than, Label => "<");
-      case Step.Ok is
-         when False =>
-            return Step;
-
-         when True  =>
-            null;
-      end case;
+      --  Peek already matched '<'; consume it.
+      Advance (The_Cursor);
 
       if At_End (The_Cursor) then
          return Step_End_Of_Input (The_Cursor, "expected float size 32 or 64, found end of input");
@@ -1908,13 +1863,9 @@ package body Lovelace.Compiler.Parser is
       The_Size := Types.Bits_32;
 
       if not At_End (The_Cursor) and then Is_Punctuation (Peek (The_Cursor), Tokens.Less_Than) then
-         Step :=
-           Expect_Punctuation
-             (The_Cursor => The_Cursor, Source_Text => Source_Text, Expected => Tokens.Less_Than, Label => "<");
-
-         if Step.Ok then
-            Step := Parse_Integer_Size_Value (The_Cursor, Source_Text, The_Size);
-         end if;
+         --  Peek already matched '<'; consume and parse the size value.
+         Advance (The_Cursor);
+         Step := Parse_Integer_Size_Value (The_Cursor, Source_Text, The_Size);
 
          if Step.Ok then
             Step :=
@@ -2010,13 +1961,7 @@ package body Lovelace.Compiler.Parser is
      (The_Cursor : in out Cursor; Source_Text : String; The_Unit : in out Unit_Parse; Keep_Declarations : Boolean)
       return Step_Result is
    begin
-      if At_End (The_Cursor) then
-         return
-           Step_End_Of_Input
-             (The_Cursor,
-              "expected ""export"", ""@intrinsic"", ""@native"", procedure, or ""#if"", found end of input");
-      end if;
-
+      --  Parse_Module_Declaration_List only calls this when not At_End.
       declare
          Current : constant Tokens.Token := Peek (The_Cursor);
       begin
@@ -2468,19 +2413,11 @@ package body Lovelace.Compiler.Parser is
       --  ordinary:   [ export ] procedure ... ; begin ... end ;
       --  intrinsic:  [ export ] @intrinsic procedure ... ;
       --  native FFI: [ export ] @native ( string , string ) procedure ... ;
-      if not At_End (The_Cursor) then
-         declare
-            Current : constant Tokens.Token := Peek (The_Cursor);
-         begin
-            Header.Decl_First := Current.Span.First;
-         end;
-      end if;
+      --  Caller already rejected At_End; record the declaration start span.
+      Header.Decl_First := Peek (The_Cursor).Span.First;
 
-      Step := Parse_Export_Prefix (The_Cursor, Source_Text, Header.Flags);
-
-      if Step.Ok then
-         Step := Parse_Procedure_Markers (The_Cursor, Source_Text, Header);
-      end if;
+      Parse_Export_Prefix (The_Cursor, Source_Text, Header.Flags);
+      Step := Parse_Procedure_Markers (The_Cursor, Source_Text, Header);
 
       if Step.Ok then
          Step :=

@@ -107,9 +107,17 @@ package body Lovelace.Compiler.Tests.Tokenizer is
       Support.Assert_Error_Code (Stray, 1, Compiler_Tokenizer.Stray_Comment_Closer, "stray code");
       Support.Assert_Error_Count (Stray_After, 1, "stray after");
       Support.Assert_Error_Code (Stray_After, 1, Compiler_Tokenizer.Stray_Comment_Closer, "stray after code");
-   --  Invalid UTF-8 inside `{...}` hangs in Skip_Comment (Advance_Bytes does not move on
-   --  invalid bytes); left untested until that production bug is fixed.
    end Test_Comment_Errors;
+
+   procedure Test_Comment_Invalid_Utf_8 (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      --  Invalid UTF-8 inside `{ ... }` takes Skip_Length = 0 then Report_Invalid_Utf_8.
+      Errors : constant Compiler_Tokenizer.Tokenizer_Error_Sequence :=
+        Support.Must_Fail ("{" & Character'Val (16#FF#) & "}", "bad utf-8 in comment");
+   begin
+      Support.Assert_Error_Count (Errors, 1, "bad utf-8 in comment");
+      Support.Assert_Error_Code (Errors, 1, Compiler_Tokenizer.Invalid_Utf_8, "bad utf-8 in comment code");
+   end Test_Comment_Invalid_Utf_8;
 
    procedure Test_Comments (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);

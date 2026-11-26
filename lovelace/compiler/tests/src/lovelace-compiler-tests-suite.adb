@@ -193,6 +193,10 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Tokenizer.Test_Comment_Errors'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
+           ("tokenizer: comment invalid utf-8",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Comment_Invalid_Utf_8'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
            ("tokenizer: directives and strings",
             Lovelace
               .Compiler
@@ -693,8 +697,20 @@ package body Lovelace.Compiler.Tests.Suite is
             Lovelace.Compiler.Tests.Backend.Test_Zero_Local_Index'Access));
       Result.Add_Test
         (Backend_Caller.Create
+           ("backend: dollar name edges",
+            Lovelace.Compiler.Tests.Backend.Test_Dollar_Name_Edges'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
            ("backend: duplicate entrypoint",
             Lovelace.Compiler.Tests.Backend.Test_Duplicate_Entrypoint'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: duplicate func names",
+            Lovelace.Compiler.Tests.Backend.Test_Duplicate_Func_Names'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: empty module emit",
+            Lovelace.Compiler.Tests.Backend.Test_Empty_Module_Emit'Access));
 
       Result.Add_Test
         (Diagnostics_Caller.Create

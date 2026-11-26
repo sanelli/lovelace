@@ -198,9 +198,7 @@ package body Lovelace.Common.Regex is
       Next_Length : Natural;
       Next_Valid  : Boolean;
    begin
-      if At_End (Pattern, The_Parser) then
-         return True;
-      end if;
+      --  Caller peeks '-' at The_Parser.Position; check the following scalar.
       Next_Parser.Position := The_Parser.Position + 1;
       if Next_Parser.Position > Pattern'Last then
          return True;
@@ -667,9 +665,7 @@ package body Lovelace.Common.Regex is
    function Parse_Escape (Pattern : String; The_Parser : in out Parser) return Code_Point is
       Point : Code_Point;
    begin
-      if The_Parser.Failed then
-         return Wide_Wide_Character'Val (0);
-      end if;
+      --  Callers only invoke Parse_Escape immediately after consuming '\'.
       if At_End (Pattern, The_Parser) then
          Fail (The_Parser, "trailing backslash");
          return Wide_Wide_Character'Val (0);

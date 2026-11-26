@@ -711,6 +711,8 @@ package body Lovelace.Compiler.Backend.Wasm is
                Leb128.Append_Unsigned (Contents, 0);
                Append (Contents, 16#00#); -- one result
                Leb128.Append_Unsigned (Contents, Interfaces.Unsigned_32 (Layout.Result_Valtype_Index));
+            else
+               raise Program_Error with "unassigned export type index in Append_Type_Section";
             end if;
          end loop;
 
@@ -726,12 +728,14 @@ package body Lovelace.Compiler.Backend.Wasm is
             The_Export : constant Model.Lifted_Export := Get_Export (The_Model, Export_Index);
          begin
             if The_Export.Returns_Result then
-               if Layout.Result_Functype_Index < 0 then
-                  --  Bare (result) is a defvaltype; functype may only reference it by typeidx.
-                  Layout.Result_Valtype_Index := Layout.Next_Type_Index;
-                  Layout.Result_Functype_Index := Layout.Next_Type_Index + 1;
-                  Layout.Next_Type_Index := Layout.Next_Type_Index + 2;
+               --  LIR Validate allows at most one entrypoint (one result functype).
+               if Layout.Result_Functype_Index >= 0 then
+                  raise Program_Error with "duplicate result functype in Assign_Export_Types";
                end if;
+               --  Bare (result) is a defvaltype; functype may only reference it by typeidx.
+               Layout.Result_Valtype_Index := Layout.Next_Type_Index;
+               Layout.Result_Functype_Index := Layout.Next_Type_Index + 1;
+               Layout.Next_Type_Index := Layout.Next_Type_Index + 2;
             elsif Layout.Unit_Type_Index < 0 then
                Layout.Unit_Type_Index := Layout.Next_Type_Index;
                Layout.Next_Type_Index := Layout.Next_Type_Index + 1;

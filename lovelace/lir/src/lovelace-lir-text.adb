@@ -265,34 +265,31 @@ package body Lovelace.Lir.Text is
          begin
             Lovelace.Common.Utf_8.Decode (Text, Index, Point, Length, Valid);
             if not Valid then
-               --  Validate already required UTF-8 names; treat as Internal_Error
-               --  by copying the raw byte (should not occur on validated modules).
-               Ada.Strings.Unbounded.Append (Buffer, Text (Index .. Index));
-               Index := Index + 1;
-            else
-               declare
-                  Scalar : constant Natural := Wide_Wide_Character'Pos (Point);
-               begin
-                  if Point = Wide_Wide_Character'Val (Character'Pos ('"')) then
-                     Ada.Strings.Unbounded.Append (Buffer, "\""");
-                  elsif Point = Wide_Wide_Character'Val (Character'Pos ('\')) then
-                     Ada.Strings.Unbounded.Append (Buffer, "\\");
-                  elsif Point = Wide_Wide_Character'Val (10) then
-                     Ada.Strings.Unbounded.Append (Buffer, "\n");
-                  elsif Point = Wide_Wide_Character'Val (13) then
-                     Ada.Strings.Unbounded.Append (Buffer, "\r");
-                  elsif Point = Wide_Wide_Character'Val (9) then
-                     Ada.Strings.Unbounded.Append (Buffer, "\t");
-                  elsif Scalar < 32 then
-                     Ada.Strings.Unbounded.Append (Buffer, "\u{");
-                     Ada.Strings.Unbounded.Append (Buffer, Hex_Digits (Scalar));
-                     Ada.Strings.Unbounded.Append (Buffer, "}");
-                  else
-                     Ada.Strings.Unbounded.Append (Buffer, Text (Index .. Index + Length - 1));
-                  end if;
-               end;
-               Index := Index + Length;
+               --  Validate already required UTF-8 names.
+               raise Program_Error with "invalid UTF-8 in Append_Quoted after Validate";
             end if;
+            declare
+               Scalar : constant Natural := Wide_Wide_Character'Pos (Point);
+            begin
+               if Point = Wide_Wide_Character'Val (Character'Pos ('"')) then
+                  Ada.Strings.Unbounded.Append (Buffer, "\""");
+               elsif Point = Wide_Wide_Character'Val (Character'Pos ('\')) then
+                  Ada.Strings.Unbounded.Append (Buffer, "\\");
+               elsif Point = Wide_Wide_Character'Val (10) then
+                  Ada.Strings.Unbounded.Append (Buffer, "\n");
+               elsif Point = Wide_Wide_Character'Val (13) then
+                  Ada.Strings.Unbounded.Append (Buffer, "\r");
+               elsif Point = Wide_Wide_Character'Val (9) then
+                  Ada.Strings.Unbounded.Append (Buffer, "\t");
+               elsif Scalar < 32 or else Scalar > 126 then
+                  Ada.Strings.Unbounded.Append (Buffer, "\u{");
+                  Ada.Strings.Unbounded.Append (Buffer, Hex_Digits (Scalar));
+                  Ada.Strings.Unbounded.Append (Buffer, "}");
+               else
+                  Ada.Strings.Unbounded.Append (Buffer, Text (Index .. Index + Length - 1));
+               end if;
+            end;
+            Index := Index + Length;
          end;
       end loop;
       Ada.Strings.Unbounded.Append (Buffer, '"');
@@ -387,9 +384,7 @@ package body Lovelace.Lir.Text is
          Digits_Needed := Digits_Needed + 1;
          Scratch := Scratch / 16;
       end loop;
-      if Digits_Needed < 4 then
-         Digits_Needed := 4;
-      end if;
+      Digits_Needed := Natural'Max (4, Digits_Needed);
       declare
          Result : String (1 .. Digits_Needed);
       begin
@@ -497,10 +492,8 @@ package body Lovelace.Lir.Text is
    function Unsigned_Image (Value : Interfaces.Unsigned_32) return String is
       Image : constant String := Interfaces.Unsigned_32'Image (Value);
    begin
-      if Image'Length > 0 and then Image (Image'First) = ' ' then
-         return Image (Image'First + 1 .. Image'Last);
-      end if;
-      return Image;
+      --  Unsigned_32'Image always has a leading space.
+      return Ada.Strings.Fixed.Trim (Image, Ada.Strings.Left);
    end Unsigned_Image;
 
    function Write (The_Module : Modules.Module; Path : String) return Write_Result is

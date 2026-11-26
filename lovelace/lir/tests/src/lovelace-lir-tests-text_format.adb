@@ -93,6 +93,9 @@ package body Lovelace.Lir.Tests.Text_Format is
       pragma Unreferenced (The_Test);
       package Source renames Lovelace.Common.Source;
       --  Module name exercises ", \, LF, CR, tab, low and mid controls.
+      --  Include U+1F680 so Hex_Digits needs more than 4 digits (covers Digits_Needed < 4 = false).
+      Rocket     : constant String :=
+        Character'Val (16#F0#) & Character'Val (16#9F#) & Character'Val (16#9A#) & Character'Val (16#80#);
       Name       : constant String :=
         "a"
         & '"'
@@ -102,6 +105,7 @@ package body Lovelace.Lir.Tests.Text_Format is
         & Character'Val (9)
         & Character'Val (1)
         & Character'Val (16)
+        & Rocket
         & "z";
       Holder     : constant Source.Shared_Filename := Source.From_Utf_8 ("escapes.love");
       The_Module : Modules.Module := Modules.Create (Name);
@@ -117,7 +121,9 @@ package body Lovelace.Lir.Tests.Text_Format is
           Filename  => Source.Some_Filename (Holder)));
       Text := Support.Must_To_Text (The_Module, "escapes");
       Support.Assert_Contains
-        (Ada.Strings.Unbounded.To_String (Text), "(name ""a\""\\\n\r\t\u{0001}\u{0010}z"")", "quoted escapes");
+        (Ada.Strings.Unbounded.To_String (Text),
+         "(name ""a\""\\\n\r\t\u{0001}\u{0010}\u{1F680}z"")",
+         "quoted escapes");
       Support.Assert_Contains (Ada.Strings.Unbounded.To_String (Text), "(row 2)", "origin row image");
       Support.Assert_Contains (Ada.Strings.Unbounded.To_String (Text), "(column 3)", "origin column image");
    end Test_Quoted_Escapes;

@@ -487,26 +487,19 @@ package body Lovelace.Lir.Binary is
       Cursor     : in out Natural;
       Table      : Preamble_Table;
       The_Module : in out Modules.Module;
-      Code       : out Errors.Error_Code) return Boolean
-   is
-      Previous_Offset : Interfaces.Unsigned_32 := 0;
-      First_Offset    : Boolean := True;
+      Code       : out Errors.Error_Code) return Boolean is
    begin
       for Subroutine_Index in 1 .. Natural (Table.Offsets.Length) loop
          declare
             Expected_Offset : constant Interfaces.Unsigned_32 := Table.Offsets.Element (Subroutine_Index);
             The_Subroutine  : Subroutines.Subroutine;
          begin
+            --  Cursor only advances, so matching the absolute offset also
+            --  guarantees offsets are strictly increasing.
             if Expected_Offset /= Interfaces.Unsigned_32 (Cursor - 1) then
                Code := Errors.Invalid_Offset;
                return False;
             end if;
-            if not First_Offset and then Expected_Offset <= Previous_Offset then
-               Code := Errors.Invalid_Offset;
-               return False;
-            end if;
-            First_Offset := False;
-            Previous_Offset := Expected_Offset;
 
             if not Parse_Subroutine (Bytes, Cursor, The_Subroutine, Code) then
                return False;

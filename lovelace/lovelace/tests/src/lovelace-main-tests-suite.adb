@@ -156,6 +156,10 @@ package body Lovelace.Main.Tests.Suite is
            ("compile in-process: semantic error", Lovelace.Main.Tests.Compile_Run.Test_Semantic_Error'Access));
       Result.Add_Test
         (Compile_Run_Caller.Create
+           ("compile in-process: backend emit failure",
+            Lovelace.Main.Tests.Compile_Run.Test_Backend_Emit_Failure'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
            ("compile in-process: corrupt lir", Lovelace.Main.Tests.Compile_Run.Test_Corrupt_Lir'Access));
       Result.Add_Test
         (Compile_Run_Caller.Create

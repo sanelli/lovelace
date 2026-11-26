@@ -117,12 +117,7 @@ package body Lovelace.Main.Compile is
       Wit_Path      : String;
       The_Module    : Modules.Module;
       Wit_Text      : in out Ada.Strings.Unbounded.Unbounded_String;
-      Have_Wit_Text : in out Boolean) return Boolean;
-   function Emit_Wit_Text
-     (Source_Path   : String;
-      The_Module    : Modules.Module;
-      Wit_Text      : in out Ada.Strings.Unbounded.Unbounded_String;
-      Have_Wit_Text : in out Boolean) return Boolean;
+      Have_Wit_Text : Boolean) return Boolean;
    function File_Is_Newer_Or_Equal (Candidate, Reference : String) return Boolean;
    function Frontend_Is_Stale
      (Options : Compile_Options; Units : Unit_Graph.Compilation_Set; Lir_Path : String) return Boolean;
@@ -456,57 +451,35 @@ package body Lovelace.Main.Compile is
       Wit_Path      : String;
       The_Module    : Modules.Module;
       Wit_Text      : in out Ada.Strings.Unbounded.Unbounded_String;
-      Have_Wit_Text : in out Boolean) return Boolean
+      Have_Wit_Text : Boolean) return Boolean
    is
-      Result : Boolean := True;
+      Result : Boolean;
+      pragma Unreferenced (Source_Path, The_Module);
    begin
-      if Have_Wit_Text then
-         Terminal.Put_Info ("Writing WIT");
-      else
-         Result := Emit_Wit_Text (Source_Path, The_Module, Wit_Text, Have_Wit_Text);
+      --  Needs_Wasm_Pass / Wat always populate Wit_Text before this stage.
+      if not Have_Wit_Text then
+         raise Program_Error with "Emit_Wit_Stage without companion WIT text";
       end if;
-      if Result then
-         Result := Write_Text (Wit_Path, Ada.Strings.Unbounded.To_String (Wit_Text));
-         if not Result then
-            Report_Cli_Error ("failed to write " & Wit_Path);
-         end if;
+      Terminal.Put_Info ("Writing WIT");
+      Result := Write_Text (Wit_Path, Ada.Strings.Unbounded.To_String (Wit_Text));
+      if not Result then
+         Report_Cli_Error ("failed to write " & Wit_Path);
       end if;
       return Result;
    end Emit_Wit_Stage;
-
-   function Emit_Wit_Text
-     (Source_Path   : String;
-      The_Module    : Modules.Module;
-      Wit_Text      : in out Ada.Strings.Unbounded.Unbounded_String;
-      Have_Wit_Text : in out Boolean) return Boolean
-   is
-      Result : Boolean;
-   begin
-      Terminal.Put_Info ("Emitting WIT");
-      declare
-         Emit_Result : constant Backend.Wat_Emit_Result := Backend_Wat.Emit_Wat (The_Module);
-      begin
-         Result := Emit_Result.Ok;
-         if Emit_Result.Ok then
-            Wit_Text := Emit_Result.Wit_Text;
-            Have_Wit_Text := True;
-         else
-            Report_Backend_Error
-              (Source_Path, Reporting.To_Error_Code (Emit_Result.Error.Code), Emit_Result.Error.Detail);
-         end if;
-      end;
-      return Result;
-   end Emit_Wit_Text;
 
    function File_Is_Newer_Or_Equal (Candidate, Reference : String) return Boolean is
    begin
       if not Ada.Directories.Exists (Candidate) then
          return False;
       end if;
-      if not Ada.Directories.Exists (Reference) then
-         return True;
-      end if;
-      return Ada.Directories.Modification_Time (Candidate) >= Ada.Directories.Modification_Time (Reference);
+      begin
+         return Ada.Directories.Modification_Time (Candidate) >= Ada.Directories.Modification_Time (Reference);
+      exception
+         when Ada.Directories.Name_Error | Ada.Directories.Use_Error =>
+            --  Missing reference => treat candidate as not up to date.
+            return False;
+      end;
    end File_Is_Newer_Or_Equal;
 
    function Frontend_Is_Stale

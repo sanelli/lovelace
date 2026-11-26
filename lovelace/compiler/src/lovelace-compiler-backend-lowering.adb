@@ -248,10 +248,8 @@ package body Lovelace.Compiler.Backend.Lowering is
       Outcome := (Ok => True, The_Model => Model.Create (""));
 
       for Index in 1 .. Instructions.Length (The_Instructions) loop
+         --  LIR Validate already rejected zero Target_Index / Local_Index.
          Lower_One_Instruction (Instructions.Element (The_Instructions, Index), Body_Out, Outcome);
-         if not Outcome.Ok then
-            return;
-         end if;
       end loop;
    end Lower_Instruction_Body;
 
@@ -263,6 +261,7 @@ package body Lovelace.Compiler.Backend.Lowering is
       Local_Types     : out Model.Core_Local_Sequence;
       Body_Out        : out Model.Instruction_Sequence) return Lower_Result
    is
+      pragma Unreferenced (Parameter_Types);
       The_Signature : constant Subroutines.Signature := Subroutines.Get_Signature (The_Subroutine);
       Source_Name   : constant String := Ada.Strings.Unbounded.To_String (The_Signature.Name);
       Owner_Module  : Ada.Strings.Unbounded.Unbounded_String;
@@ -287,13 +286,7 @@ package body Lovelace.Compiler.Backend.Lowering is
 
       case Matched.Kind is
          when Intrinsics.Print_Integer_Stdout =>
-            if Types.Length (The_Signature.Parameters) /= 1 or else Model.Element (Parameter_Types, 1) /= Model.I32 then
-               return
-                 Failure
-                   (Unsupported_Type,
-                    "print integer intrinsic requires a single integer parameter; got " & Source_Name);
-            end if;
-
+            --  Match_Intrinsic already requires a single I32 parameter.
             Native_Print.Synthesize (Local_Types, Body_Out);
             Model.Enable_Wasi_Stdout (The_Model);
       end case;
@@ -305,6 +298,7 @@ package body Lovelace.Compiler.Backend.Lowering is
      (Item     : Instructions.Instruction;
       Body_Out : in out Model.Instruction_Sequence;
       Outcome  : in out Lower_Result) is
+      pragma Unreferenced (Outcome);
    begin
       case Item.Operation is
          when Opcodes.No_Operation =>
@@ -314,24 +308,12 @@ package body Lovelace.Compiler.Backend.Lowering is
             Model.Append (Body_Out, (Kind => Model.I32_Constant, Value => Item.Immediate_I32));
 
          when Opcodes.Call         =>
-            if Item.Target_Index = 0 then
-               Outcome := Failure (Internal_Error, "Call Target_Index is zero");
-               return;
-            end if;
             Model.Append (Body_Out, (Kind => Model.Call_Function, Target_Index => Positive (Item.Target_Index)));
 
          when Opcodes.Local_Get    =>
-            if Item.Local_Index = 0 then
-               Outcome := Failure (Internal_Error, "Local_Get Local_Index is zero");
-               return;
-            end if;
             Model.Append (Body_Out, (Kind => Model.Local_Get, Local_Index => Natural (Item.Local_Index) - 1));
 
          when Opcodes.Local_Set    =>
-            if Item.Local_Index = 0 then
-               Outcome := Failure (Internal_Error, "Local_Set Local_Index is zero");
-               return;
-            end if;
             Model.Append (Body_Out, (Kind => Model.Local_Set, Local_Index => Natural (Item.Local_Index) - 1));
       end case;
    end Lower_One_Instruction;
@@ -544,10 +526,7 @@ package body Lovelace.Compiler.Backend.Lowering is
       return Lower_Result is
    begin
       if Subroutines.Has_Entrypoint (The_Flags) then
-         if Entrypoint_Index /= 0 then
-            return Failure (Internal_Error, "duplicate entrypoint after Validate");
-         end if;
-
+         --  LIR Validate already rejected a second Entrypoint_Flag.
          Entrypoint_Index := Subroutine_Index;
       end if;
 

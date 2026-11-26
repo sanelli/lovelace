@@ -6,6 +6,8 @@ package body Lovelace.Test_Status is
    package Results renames AUnit.Test_Results;
 
    use type AUnit.Message_String;
+   use type Results.Test_Failure_Access;
+   use type Results.Test_Error_Access;
 
    ANSI_Reset : constant String := ASCII.ESC & "[0m";
    ANSI_Green : constant String := ASCII.ESC & "[32m";
@@ -83,7 +85,25 @@ package body Lovelace.Test_Status is
       Cursor : Results.Result_Lists.Cursor := Results.Result_Lists.First (List);
    begin
       while Results.Result_Lists.Has_Element (Cursor) loop
-         Report_Test_Result (Display_Name (Results.Result_Lists.Element (Cursor)), Outcome);
+         declare
+            Item : constant Results.Test_Result := Results.Result_Lists.Element (Cursor);
+         begin
+            Report_Test_Result (Display_Name (Item), Outcome);
+            if Outcome = Fail then
+               if Item.Failure /= null then
+                  if Item.Failure.Message /= null then
+                     Ada.Text_IO.Put_Line ("  " & Item.Failure.Message.all);
+                  end if;
+               elsif Item.Error /= null then
+                  if Item.Error.Exception_Name /= null then
+                     Ada.Text_IO.Put_Line ("  " & Item.Error.Exception_Name.all);
+                  end if;
+                  if Item.Error.Exception_Message /= null then
+                     Ada.Text_IO.Put_Line ("  " & Item.Error.Exception_Message.all);
+                  end if;
+               end if;
+            end if;
+         end;
          Results.Result_Lists.Next (Cursor);
       end loop;
    end Report_List;

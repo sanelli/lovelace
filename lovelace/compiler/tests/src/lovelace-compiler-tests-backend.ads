@@ -11,9 +11,21 @@ package Lovelace.Compiler.Tests.Backend is
    --  @param The_Test Unused fixture.
    procedure Test_Const_And_Call_Body (The_Test : in out Fixture);
 
+   --  WAT `$id` digit-prefix and non-idchar escaping.
+   --  @param The_Test Unused fixture.
+   procedure Test_Dollar_Name_Edges (The_Test : in out Fixture);
+
    --  Two Entrypoint_Flag subroutines fail LIR Validate (duplicate entrypoint).
    --  @param The_Test Unused fixture.
    procedure Test_Duplicate_Entrypoint (The_Test : in out Fixture);
+
+   --  Two lowered functions that share a name get `$name_N` WAT ids.
+   --  @param The_Test Unused fixture.
+   procedure Test_Duplicate_Func_Names (The_Test : in out Fixture);
+
+   --  Empty module still emits a component shell (no core functions).
+   --  @param The_Test Unused fixture.
+   procedure Test_Empty_Module_Emit (The_Test : in out Fixture);
 
    --  Entrypoint: WIT has run; WAT has $_start, i32.const 0, and export "run".
    --  @param The_Test Unused fixture.

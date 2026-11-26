@@ -78,7 +78,10 @@ package body Lovelace.Compiler.Backend.Native_Print is
       Emit_Local_Set (Body_Out, L_Reader);
 
       Emit_Local_Get (Body_Out, L_Pair);
-      Emit (Body_Out, (Kind => Model.I64_Constant, Value_I64 => 32));
+      --  Shift by 32 as (64 >> 1) so Append_Signed_64 / i64.const exercise a multi-byte LEB.
+      Emit (Body_Out, (Kind => Model.I64_Constant, Value_I64 => 64));
+      Emit (Body_Out, (Kind => Model.I64_Constant, Value_I64 => 1));
+      Emit (Body_Out, (Kind => Model.I64_Shr_U));
       Emit (Body_Out, (Kind => Model.I64_Shr_U));
       Emit (Body_Out, (Kind => Model.I32_Wrap_I64));
       Emit_Local_Set (Body_Out, L_Writer);

@@ -197,6 +197,22 @@ package body Lovelace.Compiler.Tests.Backend is
       Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "(func $Run", "Run func");
    end Test_Const_And_Call_Body;
 
+   procedure Test_Dollar_Name_Edges (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Digit_Mod : Modules.Module := Modules.Create ("Lib");
+      Weird_Mod : Modules.Module := Modules.Create ("Lib");
+      Emitted   : Lovelace.Compiler.Backend.Wat_Emit_Result;
+   begin
+      --  Non-export keeps the LIR name (export path kebab-cases first).
+      Modules.Append_Subroutine (Digit_Mod, Make_Unit_Subroutine ("1bad", 0));
+      Emitted := Must_Emit_Wat (Digit_Mod, "digit name");
+      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "$n_1bad", "digit prefix guard");
+
+      Modules.Append_Subroutine (Weird_Mod, Make_Unit_Subroutine ("a b", 0));
+      Emitted := Must_Emit_Wat (Weird_Mod, "space name");
+      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "$a_20b", "space escaped in id");
+   end Test_Dollar_Name_Edges;
+
    procedure Test_Duplicate_Entrypoint (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       The_Module : Modules.Module := Modules.Create ("Lib");
@@ -219,6 +235,31 @@ package body Lovelace.Compiler.Tests.Backend is
                "duplicate entrypoint: detail");
       end case;
    end Test_Duplicate_Entrypoint;
+
+   procedure Test_Duplicate_Func_Names (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      The_Module : Modules.Module := Modules.Create ("Lib");
+      Emitted    : Lovelace.Compiler.Backend.Wat_Emit_Result;
+   begin
+      --  Both exports so lowering kebab-cases both to the same "same" core name.
+      Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine ("Same", Subroutines.Export_Flag));
+      Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine ("Same", Subroutines.Export_Flag));
+      Emitted := Must_Emit_Wat (The_Module, "dup names");
+      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "$same_1", "dup name first");
+      Assert_Contains (Ada.Strings.Unbounded.To_String (Emitted.Wat_Text), "$same_2", "dup name second");
+   end Test_Duplicate_Func_Names;
+
+   procedure Test_Empty_Module_Emit (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      The_Module   : constant Modules.Module := Modules.Create ("Empty");
+      Wat_Emitted  : Lovelace.Compiler.Backend.Wat_Emit_Result;
+      Wasm_Emitted : Lovelace.Compiler.Backend.Wasm_Emit_Result;
+   begin
+      Wat_Emitted := Must_Emit_Wat (The_Module, "empty wat");
+      Wasm_Emitted := Must_Emit_Wasm (The_Module, "empty wasm");
+      Assert_Contains (Ada.Strings.Unbounded.To_String (Wat_Emitted.Wat_Text), "(component", "empty wat component");
+      Assert_Component_Preamble (Wasm_Emitted.Wasm_Bytes, "empty wasm");
+   end Test_Empty_Module_Emit;
 
    procedure Test_Entrypoint (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
@@ -499,6 +540,8 @@ package body Lovelace.Compiler.Tests.Backend is
       Assert_Contains (Ada.Strings.Unbounded.To_String (Wat_Text), "canon stream.new", "wat stream.new");
       Assert_Contains (Ada.Strings.Unbounded.To_String (Wat_Text), "write-via-stream", "wat write-via-stream");
       Assert_Contains (Ada.Strings.Unbounded.To_String (Wat_Text), "(func $print", "wat print func");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Text), "(core module $guest", "wat guest module with stdout");
       Assert_Bytes_Contain (Wasm_Emitted.Wasm_Bytes, "wasi:cli/stdout@0.3.0", "wasm stdout");
       AUnit.Assertions.Assert
         (Ada.Strings.Unbounded."=" (Wat_Emitted.Wit_Text, Wasm_Emitted.Wit_Text), "native print wit equality");
@@ -588,12 +631,15 @@ package body Lovelace.Compiler.Tests.Backend is
 
    procedure Test_Two_Exports (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
-      The_Module : Modules.Module := Modules.Create ("Lib");
-      Emitted    : Lovelace.Compiler.Backend.Wat_Emit_Result;
+      The_Module   : Modules.Module := Modules.Create ("Lib");
+      Emitted      : Lovelace.Compiler.Backend.Wat_Emit_Result;
+      Wasm_Emitted : Lovelace.Compiler.Backend.Wasm_Emit_Result;
    begin
       Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine ("Alpha", Subroutines.Export_Flag));
       Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine ("Beta", Subroutines.Export_Flag));
       Emitted := Must_Emit_Wat (The_Module, "two exports");
+      Wasm_Emitted := Must_Emit_Wasm (The_Module, "two exports wasm");
+      Assert_Component_Preamble (Wasm_Emitted.Wasm_Bytes, "two exports wasm");
 
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Emitted.Wit_Text), "export alpha: func();", "two exports wit Alpha");

@@ -4,6 +4,10 @@ with Ada.Strings.Unbounded;
 with Ada.Text_IO;
 with AUnit.Assertions;
 
+with Lovelace.Lir.Binary;
+with Lovelace.Lir.Modules;
+with Lovelace.Lir.Subroutines;
+with Lovelace.Lir.Types;
 with Lovelace.Main.Arguments;
 with Lovelace.Main.Compile;
 with Lovelace.Main.Terminal;
@@ -14,6 +18,9 @@ package body Lovelace.Main.Tests.Compile_Run is
    package Cli_Arguments renames Lovelace.Main.Arguments;
    package Cli_Compile renames Lovelace.Main.Compile;
    package Cli_Terminal renames Lovelace.Main.Terminal;
+   package Modules renames Lovelace.Lir.Modules;
+   package Subroutines renames Lovelace.Lir.Subroutines;
+   package Types renames Lovelace.Lir.Types;
 
    Minimal_Name : constant String := "Minimal";
 
@@ -149,6 +156,46 @@ package body Lovelace.Main.Tests.Compile_Run is
 
    function Source_Path (Work : String) return String
    is (Ada.Directories.Compose (Work, Minimal_Name & ".love"));
+
+   procedure Test_Backend_Emit_Failure (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Work     : constant String := Work_Dir ("backend-emit-fail");
+      First    : Run_Result;
+      Second   : Run_Result;
+      Lir_Path : constant String := Obj_File (Work, "Minimal.lir");
+      Bad      : Modules.Module := Modules.Create ("Minimal");
+      Written  : Lovelace.Lir.Binary.Write_Result;
+      Sig      : constant Subroutines.Signature :=
+        (Name        => Ada.Strings.Unbounded.To_Unbounded_String ("Get"),
+         Return_Type => Types.I32,
+         Parameters  => Types.Empty_Sequence);
+   begin
+      Write_Minimal (Work);
+      First := Run_Compile (Work, Make_Args (Source_Path (Work), "--force", "--output-folder", Out_Dir (Work)));
+      AUnit.Assertions.Assert (First.Ok, "first compile succeeds");
+
+      --  Replace LIR with a module Validate accepts but Emit rejects (non-Unit export).
+      Modules.Append_Subroutine
+        (Bad, Subroutines.Create (The_Signature => Sig, Flags => Subroutines.Export_Flag));
+      Written := Lovelace.Lir.Binary.Write (Bad, Lir_Path);
+      AUnit.Assertions.Assert (Written.Ok, "write unsupported-type lir");
+      if Ada.Directories.Exists (Bin_File (Work, "Minimal.wasm")) then
+         Ada.Directories.Delete_File (Bin_File (Work, "Minimal.wasm"));
+      end if;
+      if Ada.Directories.Exists (Bin_File (Work, "Minimal.wat")) then
+         Ada.Directories.Delete_File (Bin_File (Work, "Minimal.wat"));
+      end if;
+      if Ada.Directories.Exists (Bin_File (Work, "Minimal.wit")) then
+         Ada.Directories.Delete_File (Bin_File (Work, "Minimal.wit"));
+      end if;
+
+      Second := Run_Compile (Work, Make_Args (Source_Path (Work), "--output-folder", Out_Dir (Work)));
+      AUnit.Assertions.Assert (not Second.Ok, "backend emit failure fails");
+      AUnit.Assertions.Assert
+        (Contains (Ada.Strings.Unbounded.To_String (Second.Stderr), "[LV"),
+         "reports located backend diagnostic");
+      Remove (Work);
+   end Test_Backend_Emit_Failure;
 
    procedure Test_Bad_No_Warnings (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);

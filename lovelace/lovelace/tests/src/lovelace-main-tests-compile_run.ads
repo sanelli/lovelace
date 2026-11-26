@@ -7,6 +7,10 @@ package Lovelace.Main.Tests.Compile_Run is
    --  Fixture for in-process compile command tests.
    type Fixture is new AUnit.Test_Fixtures.Test_Fixture with null record;
 
+   --  Valid .lir that fails backend emit is reported via Report_Backend_Error.
+   --  @param The_Test Unused fixture.
+   procedure Test_Backend_Emit_Failure (The_Test : in out Fixture);
+
    --  --no-warnings with a non-warning code fails with LV00030.
    --  @param The_Test Unused fixture.
    procedure Test_Bad_No_Warnings (The_Test : in out Fixture);
