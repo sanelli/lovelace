@@ -160,6 +160,10 @@ package body Lovelace.Main.Tests.Suite is
             Lovelace.Main.Tests.Compile_Run.Test_Backend_Emit_Failure'Access));
       Result.Add_Test
         (Compile_Run_Caller.Create
+           ("compile in-process: wat emit failure",
+            Lovelace.Main.Tests.Compile_Run.Test_Wat_Emit_Failure'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
            ("compile in-process: corrupt lir", Lovelace.Main.Tests.Compile_Run.Test_Corrupt_Lir'Access));
       Result.Add_Test
         (Compile_Run_Caller.Create

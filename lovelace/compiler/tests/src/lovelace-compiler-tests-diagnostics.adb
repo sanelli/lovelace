@@ -311,6 +311,10 @@ package body Lovelace.Compiler.Tests.Diagnostics is
       AUnit.Assertions.Assert
         (Reporting.Love_Basename ("samples/module/Foo.Bar.love") = "Foo.Bar",
          "dotted with directory");
+      AUnit.Assertions.Assert
+        (Reporting.Love_Basename ("samples/") = "", "trailing separator");
+      AUnit.Assertions.Assert
+        (Reporting.Love_Basename (".love") = "", "suffix-only path");
    end Test_Love_Basename;
 
    procedure Test_Policy_Accessors (The_Test : in out Fixture) is

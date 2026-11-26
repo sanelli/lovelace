@@ -65,6 +65,8 @@ package body Lovelace.Common.Tests.Regex_Engine is
         ("\u{" & Lovelace.Common.Tests.Support.To_Utf_8 (Wide_Wide_Character'Val (16#E9#)) & "}",
          "non-ASCII digit in unicode escape");
       Lovelace.Common.Tests.Support.Assert_Compile_Fails ("\u{1234567}", "unicode escape too long");
+      --  Seven digits that stay <= U+10FFFF after six so Digit_Count > 6 fires (not scalar-too-large).
+      Lovelace.Common.Tests.Support.Assert_Compile_Fails ("\u{010FFFF}", "unicode escape seven digits");
       Lovelace.Common.Tests.Support.Assert_Compile_Fails ("\u{110000}", "unicode scalar too large");
       Lovelace.Common.Tests.Support.Assert_Compile_Fails ("\u{D800}", "surrogate in unicode escape");
       Lovelace.Common.Tests.Support.Assert_Compile_Fails ("\u{41", "unclosed unicode escape");

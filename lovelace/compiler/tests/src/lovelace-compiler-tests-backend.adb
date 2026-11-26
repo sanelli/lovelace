@@ -525,9 +525,11 @@ package body Lovelace.Compiler.Tests.Backend is
       Wit_Text     : Ada.Strings.Unbounded.Unbounded_String;
    begin
       Types.Append (Params, "value", Types.I32);
-      Print_Sub := Make_Unit_Subroutine_With_Parameters ("print", Subroutines.Export_Flag, Params);
+      Print_Sub := Make_Unit_Subroutine_With_Parameters ("print", 0, Params);
       Subroutines.Set_Intrinsic (Print_Sub);
       Modules.Append_Subroutine (The_Module, Print_Sub);
+      --  Zero-param export is Core_Exported; with stdout that aliases via $guest (not "0").
+      Modules.Append_Subroutine (The_Module, Make_Unit_Subroutine ("Go", Subroutines.Export_Flag));
 
       Wat_Emitted := Must_Emit_Wat (The_Module, "native print wat");
       Wasm_Emitted := Must_Emit_Wasm (The_Module, "native print wasm");
@@ -542,6 +544,10 @@ package body Lovelace.Compiler.Tests.Backend is
       Assert_Contains (Ada.Strings.Unbounded.To_String (Wat_Text), "(func $print", "wat print func");
       Assert_Contains
         (Ada.Strings.Unbounded.To_String (Wat_Text), "(core module $guest", "wat guest module with stdout");
+      Assert_Contains
+        (Ada.Strings.Unbounded.To_String (Wat_Text),
+         "(alias core export $guest ""go"" (core func))",
+         "wat guest alias for zero-param export");
       Assert_Bytes_Contain (Wasm_Emitted.Wasm_Bytes, "wasi:cli/stdout@0.3.0", "wasm stdout");
       AUnit.Assertions.Assert
         (Ada.Strings.Unbounded."=" (Wat_Emitted.Wit_Text, Wasm_Emitted.Wit_Text), "native print wit equality");

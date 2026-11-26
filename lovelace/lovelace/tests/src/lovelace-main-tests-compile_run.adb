@@ -808,6 +808,49 @@ package body Lovelace.Main.Tests.Compile_Run is
       Remove (Work);
    end Test_Wasm_Write_Failure;
 
+   procedure Test_Wat_Emit_Failure (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Work     : constant String := Work_Dir ("wat-emit-fail");
+      First    : Run_Result;
+      Second   : Run_Result;
+      Lir_Path : constant String := Obj_File (Work, "Minimal.lir");
+      Bad      : Modules.Module := Modules.Create ("Minimal");
+      Written  : Lovelace.Lir.Binary.Write_Result;
+      Sig      : constant Subroutines.Signature :=
+        (Name        => Ada.Strings.Unbounded.To_Unbounded_String ("Get"),
+         Return_Type => Types.I32,
+         Parameters  => Types.Empty_Sequence);
+   begin
+      Write_Minimal (Work);
+      First :=
+        Run_Compile
+          (Work,
+           Make_Args
+             (Source_Path (Work), "--force", "--output-format", "wat", "--output-folder", Out_Dir (Work)));
+      AUnit.Assertions.Assert (First.Ok, "first wat compile succeeds");
+
+      --  Replace LIR with a module Validate accepts but Emit_Wat rejects (non-Unit export).
+      Modules.Append_Subroutine
+        (Bad, Subroutines.Create (The_Signature => Sig, Flags => Subroutines.Export_Flag));
+      Written := Lovelace.Lir.Binary.Write (Bad, Lir_Path);
+      AUnit.Assertions.Assert (Written.Ok, "write unsupported-type lir");
+      if Ada.Directories.Exists (Bin_File (Work, "Minimal.wat")) then
+         Ada.Directories.Delete_File (Bin_File (Work, "Minimal.wat"));
+      end if;
+      if Ada.Directories.Exists (Bin_File (Work, "Minimal.wit")) then
+         Ada.Directories.Delete_File (Bin_File (Work, "Minimal.wit"));
+      end if;
+
+      Second :=
+        Run_Compile
+          (Work, Make_Args (Source_Path (Work), "--output-format", "wat", "--output-folder", Out_Dir (Work)));
+      AUnit.Assertions.Assert (not Second.Ok, "wat emit failure fails");
+      AUnit.Assertions.Assert
+        (Contains (Ada.Strings.Unbounded.To_String (Second.Stderr), "[LV"),
+         "reports located wat backend diagnostic");
+      Remove (Work);
+   end Test_Wat_Emit_Failure;
+
    procedure Test_Wat_Write_Failure (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Work   : constant String := Work_Dir ("wat-write-fail");

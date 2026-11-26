@@ -102,6 +102,8 @@ package body Lovelace.Common.Tests.Suite is
         (Utf_8_Caller.Create ("utf-8: malformed sequences", Lovelace.Common.Tests.Utf_8.Test_Decode_Malformed'Access));
       Result.Add_Test
         (Utf_8_Caller.Create ("utf-8: boundaries", Lovelace.Common.Tests.Utf_8.Test_Decode_Boundaries'Access));
+      Result.Add_Test
+        (Utf_8_Caller.Create ("utf-8: encode", Lovelace.Common.Tests.Utf_8.Test_Encode'Access));
 
       return Result;
    end Suite;

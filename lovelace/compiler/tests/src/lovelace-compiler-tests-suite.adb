@@ -1,7 +1,9 @@
 with AUnit.Test_Caller;
 
+with Lovelace.Compiler.Tests.Ast;
 with Lovelace.Compiler.Tests.Backend;
 with Lovelace.Compiler.Tests.Diagnostics;
+with Lovelace.Compiler.Tests.Intrinsics;
 with Lovelace.Compiler.Tests.Ir_Generator;
 with Lovelace.Compiler.Tests.Literals;
 with Lovelace.Compiler.Tests.Module_Path;
@@ -12,10 +14,13 @@ with Lovelace.Compiler.Tests.Unit_Graph;
 
 package body Lovelace.Compiler.Tests.Suite is
 
+   package Ast_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Ast.Fixture);
    package Backend_Caller is new
      AUnit.Test_Caller (Lovelace.Compiler.Tests.Backend.Fixture);
    package Diagnostics_Caller is new
      AUnit.Test_Caller (Lovelace.Compiler.Tests.Diagnostics.Fixture);
+   package Intrinsics_Caller is new
+     AUnit.Test_Caller (Lovelace.Compiler.Tests.Intrinsics.Fixture);
    package Ir_Generator_Caller is new
      AUnit.Test_Caller (Lovelace.Compiler.Tests.Ir_Generator.Fixture);
    package Literals_Caller is new
@@ -983,6 +988,26 @@ package body Lovelace.Compiler.Tests.Suite is
         (Semantics_Caller.Create
            ("semantics: reporting mapping",
             Lovelace.Compiler.Tests.Semantics.Test_Reporting_Mapping'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: resolve bad callee names",
+            Lovelace.Compiler.Tests.Semantics.Test_Resolve_Bad_Callee_Names'Access));
+
+      Result.Add_Test
+        (Ast_Caller.Create
+           ("ast: null block accessors", Lovelace.Compiler.Tests.Ast.Test_Null_Block_Accessors'Access));
+
+      Result.Add_Test
+        (Intrinsics_Caller.Create
+           ("intrinsics: ast non-default integer",
+            Lovelace.Compiler.Tests.Intrinsics.Test_Ast_Non_Default_Integer'Access));
+      Result.Add_Test
+        (Intrinsics_Caller.Create
+           ("intrinsics: lir non-unit return",
+            Lovelace.Compiler.Tests.Intrinsics.Test_Lir_Non_Unit_Return'Access));
+      Result.Add_Test
+        (Intrinsics_Caller.Create
+           ("intrinsics: split lir name", Lovelace.Compiler.Tests.Intrinsics.Test_Split_Lir_Name'Access));
 
       return Result;
    end Suite;

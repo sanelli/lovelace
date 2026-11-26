@@ -147,6 +147,10 @@ package Lovelace.Main.Tests.Compile_Run is
    --  @param The_Test Unused fixture.
    procedure Test_Wasm_Write_Failure (The_Test : in out Fixture);
 
+   --  Valid .lir that fails WAT emit is reported via Report_Backend_Error.
+   --  @param The_Test Unused fixture.
+   procedure Test_Wat_Emit_Failure (The_Test : in out Fixture);
+
    --  WAT path that cannot be written fails.
    --  @param The_Test Unused fixture.
    procedure Test_Wat_Write_Failure (The_Test : in out Fixture);

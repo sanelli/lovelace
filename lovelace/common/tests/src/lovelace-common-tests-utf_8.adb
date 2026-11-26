@@ -1,3 +1,4 @@
+with Ada.Strings.Unbounded;
 with AUnit.Assertions;
 
 with Lovelace.Common.Utf_8;
@@ -97,5 +98,35 @@ package body Lovelace.Common.Tests.Utf_8 is
       AUnit.Assertions.Assert
         (Decodes_As ("x" & Character'Val (16#C3#) & Character'Val (16#A9#), 2, 16#E9#, 2), "non-initial index");
    end Test_Decode_Valid;
+
+   procedure Test_Encode (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Ascii_Result : constant Lovelace.Common.Utf_8.Encode_Results.Result :=
+        Lovelace.Common.Utf_8.Encode (Wide_Wide_Character'Val (16#41#));
+      Two_Byte     : constant Lovelace.Common.Utf_8.Encode_Results.Result :=
+        Lovelace.Common.Utf_8.Encode (Wide_Wide_Character'Val (16#E9#));
+      Surrogate    : constant Lovelace.Common.Utf_8.Encode_Results.Result :=
+        Lovelace.Common.Utf_8.Encode (Wide_Wide_Character'Val (16#D800#));
+   begin
+      case Ascii_Result.Ok is
+         when False =>
+            AUnit.Assertions.Assert (False, "ASCII Encode should succeed");
+
+         when True  =>
+            AUnit.Assertions.Assert
+              (Ada.Strings.Unbounded.To_String (Ascii_Result.Value) = "A", "ASCII Encode bytes");
+      end case;
+
+      case Two_Byte.Ok is
+         when False =>
+            AUnit.Assertions.Assert (False, "U+00E9 Encode should succeed");
+
+         when True  =>
+            AUnit.Assertions.Assert
+              (Ada.Strings.Unbounded.Length (Two_Byte.Value) = 2, "U+00E9 Encode length");
+      end case;
+
+      AUnit.Assertions.Assert (not Surrogate.Ok, "surrogate Encode rejected");
+   end Test_Encode;
 
 end Lovelace.Common.Tests.Utf_8;

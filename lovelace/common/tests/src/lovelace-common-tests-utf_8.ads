@@ -19,4 +19,8 @@ package Lovelace.Common.Tests.Utf_8 is
    --  @param The_Test Unused fixture.
    procedure Test_Decode_Boundaries (The_Test : in out Fixture);
 
+   --  Encode covers ASCII, 2-byte, and invalid surrogate code points.
+   --  @param The_Test Unused fixture.
+   procedure Test_Encode (The_Test : in out Fixture);
+
 end Lovelace.Common.Tests.Utf_8;
