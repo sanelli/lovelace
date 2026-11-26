@@ -28,7 +28,7 @@ todos:
     status: completed
   - id: "9.8"
     content: "9.8 Library decision coverage — both sides of ! branches in lir-binary, parser, tokenizer, literals, regex, versioning, unit_graph."
-    status: pending
+    status: completed
   - id: "9.9"
     content: "9.9 Coverage + CRAP gates — coverage.ps1 then crap.ps1 (no SkipGates); close remaining CRAP with targeted cov or further splits."
     status: pending

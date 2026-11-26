@@ -840,22 +840,31 @@ package body Lovelace.Main.Compile is
       Needs       : Backend_Needs;
       Result      : Boolean;
    begin
-      Result := Parse_Options (Command_Arguments, Options);
-      if Result then
-         Resolve_Paths (Options, Source_Path, Paths);
-         Result := Run_Frontend (Options, Ada.Strings.Unbounded.To_String (Source_Path), Paths, The_Module);
-      end if;
-      if Result then
-         Needs := Decide_Stale (Options, Paths);
-         if Needs_Backend (Needs) then
-            Result := Emit_Outputs (Needs, Ada.Strings.Unbounded.To_String (Source_Path), Paths, The_Module);
-         else
-            Terminal.Put_Info ("Artifacts up to date, skipping backend");
+      --  Fresh filename pool for this compile; drop it when the command ends.
+      Source.Clear_Filename_Pool;
+      begin
+         Result := Parse_Options (Command_Arguments, Options);
+         if Result then
+            Resolve_Paths (Options, Source_Path, Paths);
+            Result := Run_Frontend (Options, Ada.Strings.Unbounded.To_String (Source_Path), Paths, The_Module);
          end if;
-      end if;
-      if Result then
-         Terminal.Put_Info ("Compile succeeded");
-      end if;
+         if Result then
+            Needs := Decide_Stale (Options, Paths);
+            if Needs_Backend (Needs) then
+               Result := Emit_Outputs (Needs, Ada.Strings.Unbounded.To_String (Source_Path), Paths, The_Module);
+            else
+               Terminal.Put_Info ("Artifacts up to date, skipping backend");
+            end if;
+         end if;
+         if Result then
+            Terminal.Put_Info ("Compile succeeded");
+         end if;
+      exception
+         when others =>
+            Source.Clear_Filename_Pool;
+            raise;
+      end;
+      Source.Clear_Filename_Pool;
       return Result;
    end Run;
 

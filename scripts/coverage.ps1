@@ -148,9 +148,15 @@ function Initialize-MacSdkEnvironment {
             $env:CPATH = "$Include$([IO.Path]::PathSeparator)$($env:CPATH)"
         }
     }
-    # Do not set LIBRARY_PATH to the SDK lib dir: gprlib then fails with
-    # "library path should not be specified" when archiving Ada static libs.
-    # SDKROOT + CPATH are enough for any C stubs gnatcov_rts needs.
+    if (Test-Path -LiteralPath $Lib) {
+        # Required on recent macOS so the final link finds libSystem (.tbd).
+        if ([string]::IsNullOrEmpty($env:LIBRARY_PATH)) {
+            $env:LIBRARY_PATH = $Lib
+        }
+        elseif ($env:LIBRARY_PATH -notlike "*${Lib}*") {
+            $env:LIBRARY_PATH = "$Lib$([IO.Path]::PathSeparator)$($env:LIBRARY_PATH)"
+        }
+    }
     if ([string]::IsNullOrEmpty($env:MACOSX_DEPLOYMENT_TARGET)) {
         $Major = (sw_vers -productVersion).Split('.')[0]
         $env:MACOSX_DEPLOYMENT_TARGET = "$Major.0"

@@ -11,6 +11,19 @@ package body Lovelace.Common.Tests.Source is
       AUnit.Assertions.Assert (Condition => not The_Option.Present, Message => "Absent_Filename sets Present False");
    end Test_Absent_Filename;
 
+   procedure Test_Clear_Filename_Pool (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Before : constant Lovelace.Common.Source.Shared_Filename := Lovelace.Common.Source.From_Utf_8 ("clear-me.love");
+      After  : Lovelace.Common.Source.Shared_Filename;
+   begin
+      AUnit.Assertions.Assert
+        (Condition => Lovelace.Common.Source.To_Utf_8 (Before) = "clear-me.love", Message => "before clear");
+      Lovelace.Common.Source.Clear_Filename_Pool;
+      After := Lovelace.Common.Source.From_Utf_8 ("clear-me.love");
+      AUnit.Assertions.Assert
+        (Condition => Lovelace.Common.Source.To_Utf_8 (After) = "clear-me.love", Message => "re-intern after clear");
+   end Test_Clear_Filename_Pool;
+
    procedure Test_Same_Storage_Filename_Option (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Left_Absent   : constant Lovelace.Common.Source.Filename_Option := Lovelace.Common.Source.Absent_Filename;
@@ -36,7 +49,7 @@ package body Lovelace.Common.Tests.Source is
          Message   => "options from one holder match");
       AUnit.Assertions.Assert
         (Condition => Lovelace.Common.Source.Same_Storage (Left_Present, Equal_Present),
-         Message   => "equal-text options match");
+         Message   => "interned equal-text options match");
       AUnit.Assertions.Assert
         (Condition => not Lovelace.Common.Source.Same_Storage (Left_Present, Left_Absent),
          Message   => "present and absent do not match");
@@ -55,7 +68,7 @@ package body Lovelace.Common.Tests.Source is
       AUnit.Assertions.Assert
         (Condition => Lovelace.Common.Source.Same_Storage (First, Second), Message => "copy of holder matches");
       AUnit.Assertions.Assert
-        (Condition => Lovelace.Common.Source.Same_Storage (First, Third), Message => "equal From_Utf_8 text matches");
+        (Condition => Lovelace.Common.Source.Same_Storage (First, Third), Message => "interned equal text matches");
       AUnit.Assertions.Assert
         (Condition => not Lovelace.Common.Source.Same_Storage (First, Other),
          Message   => "different text does not match");
