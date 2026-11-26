@@ -15,6 +15,40 @@ package body Lovelace.Lir.Modules is
 
    Ok_Result : constant Results.Result := Results.From_Success ((null record));
 
+   --  Simple-name renames so gnatcov can instrument call coverage (no dotted callees).
+   function Parameter_Length
+     (Sequence : Types.Parameter_Sequence) return Natural renames Types.Length;
+   function Parameter_At
+     (Sequence : Types.Parameter_Sequence; Index : Positive) return Types.Parameter
+     renames Types.Element;
+   function Instruction_Length
+     (Sequence : Instructions.Instruction_Sequence) return Natural
+     renames Instructions.Length;
+   function Instruction_At
+     (Sequence : Instructions.Instruction_Sequence; Index : Positive)
+      return Instructions.Instruction renames Instructions.Element;
+   function Unbounded_Text
+     (Source : Ada.Strings.Unbounded.Unbounded_String) return String
+     renames Ada.Strings.Unbounded.To_String;
+   function Get_Instructions
+     (The_Subroutine : Subroutines.Subroutine) return Instructions.Instruction_Sequence
+     renames Subroutines.Get_Instructions;
+   function Get_Locals
+     (The_Subroutine : Subroutines.Subroutine) return Types.Parameter_Sequence
+     renames Subroutines.Get_Locals;
+   function Get_Signature
+     (The_Subroutine : Subroutines.Subroutine) return Subroutines.Signature
+     renames Subroutines.Get_Signature;
+   function Get_Flags
+     (The_Subroutine : Subroutines.Subroutine) return Subroutines.Subroutine_Flags
+     renames Subroutines.Get_Flags;
+   function Has_Entrypoint
+     (Flags : Subroutines.Subroutine_Flags) return Boolean
+     renames Subroutines.Has_Entrypoint;
+
+   function Dependency_At (The_Module : Module; Index : Positive) return Dependency;
+   --  Wrapper so call sites are not dotted (gnatcov call coverage).
+
    function Check_All_Subroutines (The_Module : Module) return Results.Result;
    function Check_Dependencies (The_Module : Module) return Results.Result;
    function Check_Dependency (The_Module : Module; Index : Positive) return Results.Result;
@@ -143,13 +177,13 @@ package body Lovelace.Lir.Modules is
    function Check_Header_Names (The_Subroutine : Subroutines.Subroutine) return Results.Result is
       The_Signature : constant Subroutines.Signature := Subroutines.Get_Signature (The_Subroutine);
       From_Dep      : constant Subroutines.From_Dependency_Option := Subroutines.From_Dependency (The_Subroutine);
-      Check         : constant Results.Result := Check_Name (Ada.Strings.Unbounded.To_String (The_Signature.Name));
+      Check         : constant Results.Result := Check_Name (Unbounded_Text (The_Signature.Name));
    begin
       if not Check.Ok then
          return Check;
       end if;
       if From_Dep.Present then
-         return Check_Name (Ada.Strings.Unbounded.To_String (From_Dep.Module_Name));
+         return Check_Name (Unbounded_Text (From_Dep.Module_Name));
       end if;
       return Ok_Result;
    end Check_Header_Names;
@@ -184,15 +218,16 @@ package body Lovelace.Lir.Modules is
    end Check_Instruction;
 
    function Check_Instructions (The_Module : Module; The_Subroutine : Subroutines.Subroutine) return Results.Result is
-      Body_Instrs : constant Instructions.Instruction_Sequence := Subroutines.Get_Instructions (The_Subroutine);
-      Slot_Limit  : constant Natural :=
-        Types.Length (Subroutines.Get_Signature (The_Subroutine).Parameters)
-        + Types.Length (Subroutines.Get_Locals (The_Subroutine));
+      Body_Instrs   : constant Instructions.Instruction_Sequence := Get_Instructions (The_Subroutine);
+      The_Signature : constant Subroutines.Signature := Get_Signature (The_Subroutine);
+      Slot_Limit    : constant Natural :=
+        Parameter_Length (The_Signature.Parameters) + Parameter_Length (Get_Locals (The_Subroutine));
    begin
-      for Instruction_Index in 1 .. Instructions.Length (Body_Instrs) loop
+      for Instruction_Index in 1 .. Instruction_Length (Body_Instrs) loop
          declare
             Check : constant Results.Result :=
-              Check_Instruction (The_Module, Slot_Limit, Instructions.Element (Body_Instrs, Instruction_Index));
+              Check_Instruction
+                (The_Module, Slot_Limit, Instruction_At (Body_Instrs, Instruction_Index));
          begin
             if not Check.Ok then
                return Check;
@@ -205,17 +240,18 @@ package body Lovelace.Lir.Modules is
    function Check_Local_Names
      (Parameters : Types.Parameter_Sequence; Locals : Types.Parameter_Sequence) return Results.Result is
    begin
-      for Local_Index in 1 .. Types.Length (Locals) loop
+      for Local_Index in 1 .. Parameter_Length (Locals) loop
          declare
-            Local_Name_Text : constant String :=
-              Ada.Strings.Unbounded.To_String (Types.Element (Locals, Local_Index).Name);
+            Local_Param     : constant Types.Parameter := Parameter_At (Locals, Local_Index);
+            Local_Name_Text : constant String := Unbounded_Text (Local_Param.Name);
             Check           : constant Results.Result := Check_Name (Local_Name_Text);
          begin
             if not Check.Ok then
                return Check;
             end if;
             if Has_Name_Before (Locals, Local_Index - 1, Local_Name_Text)
-              or else Has_Name_Before (Parameters, Types.Length (Parameters), Local_Name_Text)
+              or else Has_Name_Before
+                        (Parameters, Parameter_Length (Parameters), Local_Name_Text)
             then
                return Results.From_Failure (Errors.Duplicate_Name);
             end if;
@@ -250,14 +286,14 @@ package body Lovelace.Lir.Modules is
    begin
       return
         Check_Names
-          (Ada.Strings.Unbounded.To_String (Binding.Library), Ada.Strings.Unbounded.To_String (Binding.Function_Name));
+          (Unbounded_Text (Binding.Library), Unbounded_Text (Binding.Function_Name));
    end Check_Native_Names;
 
    function Check_No_Body (The_Subroutine : Subroutines.Subroutine) return Results.Result is
    begin
-      if Subroutines.Has_Entrypoint (Subroutines.Get_Flags (The_Subroutine))
-        or else Instructions.Length (Subroutines.Get_Instructions (The_Subroutine)) /= 0
-        or else Types.Length (Subroutines.Get_Locals (The_Subroutine)) /= 0
+      if Has_Entrypoint (Get_Flags (The_Subroutine))
+        or else Instruction_Length (Get_Instructions (The_Subroutine)) /= 0
+        or else Parameter_Length (Get_Locals (The_Subroutine)) /= 0
       then
          return Results.From_Failure (Errors.Invalid_Native_Binding);
       end if;
@@ -283,10 +319,10 @@ package body Lovelace.Lir.Modules is
 
    function Check_Parameter_Names (Parameters : Types.Parameter_Sequence) return Results.Result is
    begin
-      for Parameter_Index in 1 .. Types.Length (Parameters) loop
+      for Parameter_Index in 1 .. Parameter_Length (Parameters) loop
          declare
-            Parameter_Name_Text : constant String :=
-              Ada.Strings.Unbounded.To_String (Types.Element (Parameters, Parameter_Index).Name);
+            The_Parameter       : constant Types.Parameter := Parameter_At (Parameters, Parameter_Index);
+            Parameter_Name_Text : constant String := Unbounded_Text (The_Parameter.Name);
             Check               : constant Results.Result := Check_Name (Parameter_Name_Text);
          begin
             if not Check.Ok then
@@ -301,13 +337,14 @@ package body Lovelace.Lir.Modules is
    end Check_Parameter_Names;
 
    function Check_Slot_Names (The_Subroutine : Subroutines.Subroutine) return Results.Result is
-      Parameters : constant Types.Parameter_Sequence := Subroutines.Get_Signature (The_Subroutine).Parameters;
-      Check      : constant Results.Result := Check_Parameter_Names (Parameters);
+      The_Signature : constant Subroutines.Signature := Get_Signature (The_Subroutine);
+      Parameters    : constant Types.Parameter_Sequence := The_Signature.Parameters;
+      Check         : constant Results.Result := Check_Parameter_Names (Parameters);
    begin
       if not Check.Ok then
          return Check;
       end if;
-      return Check_Local_Names (Parameters, Subroutines.Get_Locals (The_Subroutine));
+      return Check_Local_Names (Parameters, Get_Locals (The_Subroutine));
    end Check_Slot_Names;
 
    function Create (Name : String) return Module is
@@ -321,19 +358,26 @@ package body Lovelace.Lir.Modules is
          Subroutines          => Subroutine_Vectors.Empty_Vector);
    end Create;
 
+   function Dependency_At (The_Module : Module; Index : Positive) return Dependency is
+   begin
+      return The_Module.Dependencies.Element (Index);
+   end Dependency_At;
+
    function Dependency_Count (The_Module : Module) return Natural is
    begin
       return Natural (The_Module.Dependencies.Length);
    end Dependency_Count;
 
    function Dependency_Name (The_Module : Module; Index : Positive) return String is
+      Dep : constant Dependency := Dependency_At (The_Module, Index);
    begin
-      return Ada.Strings.Unbounded.To_String (The_Module.Dependencies.Element (Index).Name);
+      return Unbounded_Text (Dep.Name);
    end Dependency_Name;
 
    function Dependency_Version (The_Module : Module; Index : Positive) return String is
+      Dep : constant Dependency := Dependency_At (The_Module, Index);
    begin
-      return Ada.Strings.Unbounded.To_String (The_Module.Dependencies.Element (Index).Version);
+      return Unbounded_Text (Dep.Version);
    end Dependency_Version;
 
    function Flags (The_Module : Module) return Module_Flags is
@@ -349,9 +393,13 @@ package body Lovelace.Lir.Modules is
    function Has_Name_Before (Sequence : Types.Parameter_Sequence; Limit : Natural; Text : String) return Boolean is
    begin
       for Index in 1 .. Limit loop
-         if Ada.Strings.Unbounded.To_String (Types.Element (Sequence, Index).Name) = Text then
-            return True;
-         end if;
+         declare
+            The_Parameter : constant Types.Parameter := Parameter_At (Sequence, Index);
+         begin
+            if Unbounded_Text (The_Parameter.Name) = Text then
+               return True;
+            end if;
+         end;
       end loop;
       return False;
    end Has_Name_Before;
@@ -381,12 +429,12 @@ package body Lovelace.Lir.Modules is
 
    function Module_Version (The_Module : Module) return String is
    begin
-      return Ada.Strings.Unbounded.To_String (The_Module.Module_Version_Value);
+      return Unbounded_Text (The_Module.Module_Version_Value);
    end Module_Version;
 
    function Name (The_Module : Module) return String is
    begin
-      return Ada.Strings.Unbounded.To_String (The_Module.Module_Name);
+      return Unbounded_Text (The_Module.Module_Name);
    end Name;
 
    function Origin (The_Module : Module) return Origin_Option is

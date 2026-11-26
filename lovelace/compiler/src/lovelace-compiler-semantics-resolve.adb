@@ -2,6 +2,7 @@ with Ada.Strings;
 with Ada.Strings.Fixed;
 
 with Lovelace.Compiler.Semantics.Typecheck;
+with Lovelace.Compiler.Types;
 
 package body Lovelace.Compiler.Semantics.Resolve is
 
@@ -12,6 +13,28 @@ package body Lovelace.Compiler.Semantics.Resolve is
    end record;
 
    package Candidate_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Candidate);
+
+   --  Simple-name renames / wrappers so gnatcov can instrument call coverage.
+   function Ast_Parameter_Element
+     (Sequence : Ast.Parameter_Sequence; Index : Positive) return Ast.Parameter
+     renames Ast.Element;
+   function From_Expression
+     (Expression : Lovelace.Compiler.Types.Type_Expression) return Lovelace_Types.Lovelace_Type
+     renames Lovelace_Types.From_Expression;
+   function Is_Assignable
+     (Target : Lovelace_Types.Lovelace_Type; Source : Lovelace_Types.Lovelace_Type) return Boolean
+     renames Typecheck.Is_Assignable;
+   function Lookup_Module
+     (The_Stack : Environment.Scope_Stack; Name : String) return Environment.Lookup_Result
+     renames Environment.Lookup_Module;
+
+   function Unit_At
+     (Units : Unit_Graph.Compilation_Set; Index : Positive) return Unit_Graph.Loaded_Unit;
+   --  Wrapper so call sites are not dotted (gnatcov call coverage).
+
+   function Actual_At
+     (Sequence : Actual_Type_Sequence; Index : Positive) return Lovelace_Types.Lovelace_Type;
+   --  Wrapper so call sites are not dotted (gnatcov call coverage).
 
    procedure Collect_Exported_Candidates
      (Candidate_Unit  : Ast.Module;
@@ -49,6 +72,12 @@ package body Lovelace.Compiler.Semantics.Resolve is
      (Callee_Name    : String;
       Module_Prefix  : out Ada.Strings.Unbounded.Unbounded_String;
       Procedure_Name : out Ada.Strings.Unbounded.Unbounded_String) return Boolean;
+
+   function Actual_At
+     (Sequence : Actual_Type_Sequence; Index : Positive) return Lovelace_Types.Lovelace_Type is
+   begin
+      return Sequence.Element (Index);
+   end Actual_At;
 
    procedure Collect_Exported_Candidates
      (Candidate_Unit  : Ast.Module;
@@ -118,10 +147,11 @@ package body Lovelace.Compiler.Semantics.Resolve is
 
       for Index in 1 .. Ast.Length (Formals) loop
          declare
-            Formal_Type : constant Lovelace_Types.Lovelace_Type :=
-              Lovelace_Types.From_Expression (Ast.Element (Formals, Index).Parameter_Type);
+            Formal_Param : constant Ast.Parameter := Ast_Parameter_Element (Formals, Index);
+            Formal_Type  : constant Lovelace_Types.Lovelace_Type := From_Expression (Formal_Param.Parameter_Type);
+            Actual_Type  : constant Lovelace_Types.Lovelace_Type := Actual_At (Actual_Types, Index);
          begin
-            if not Typecheck.Is_Assignable (Formal_Type, Actual_Types.Element (Index)) then
+            if not Is_Assignable (Formal_Type, Actual_Type) then
                return False;
             end if;
          end;
@@ -160,7 +190,8 @@ package body Lovelace.Compiler.Semantics.Resolve is
       Callee_Name       : String;
       Actual_Types      : Actual_Type_Sequence) return Resolve_Result
    is
-      Caller_Unit    : constant Ast.Module := Units.Element (Caller_Unit_Index).The_Module;
+      Caller_Loaded  : constant Unit_Graph.Loaded_Unit := Unit_At (Units, Caller_Unit_Index);
+      Caller_Unit    : constant Ast.Module := Caller_Loaded.The_Module;
       Module_Prefix  : Ada.Strings.Unbounded.Unbounded_String;
       Procedure_Name : Ada.Strings.Unbounded.Unbounded_String;
    begin
@@ -172,13 +203,14 @@ package body Lovelace.Compiler.Semantics.Resolve is
          Prefix_Text    : constant String := Ada.Strings.Unbounded.To_String (Module_Prefix);
          Procedure_Text : constant String := Ada.Strings.Unbounded.To_String (Procedure_Name);
          Matching       : Candidate_Vectors.Vector;
+         Module_Lookup  : constant Environment.Lookup_Result := Lookup_Module (Scope, Prefix_Text);
       begin
          if Prefix_Text = Ast.Name (Caller_Unit) then
             Collect_Local_Candidates (Caller_Unit, Caller_Unit_Index, Procedure_Text, Actual_Types, Matching);
             return Pick_Overload (Matching, Callee_Name);
          end if;
 
-         if not Environment.Lookup_Module (Scope, Prefix_Text).Found then
+         if not Module_Lookup.Found then
             return Failure (Call_Without_Using, "call '" & Callee_Name & "' requires using " & Prefix_Text);
          end if;
 
@@ -202,7 +234,8 @@ package body Lovelace.Compiler.Semantics.Resolve is
    begin
       for Unit_Index in 1 .. Natural (Units.Length) loop
          declare
-            Candidate_Unit : constant Ast.Module := Units.Element (Unit_Index).The_Module;
+            Loaded_Unit    : constant Unit_Graph.Loaded_Unit := Unit_At (Units, Unit_Index);
+            Candidate_Unit : constant Ast.Module := Loaded_Unit.The_Module;
          begin
             if Ast.Name (Candidate_Unit) = Prefix_Text then
                Target_Unit_Index := Unit_Index;
@@ -240,5 +273,11 @@ package body Lovelace.Compiler.Semantics.Resolve is
       Procedure_Name := Ada.Strings.Unbounded.To_Unbounded_String (Callee_Name (Dot + 1 .. Callee_Name'Last));
       return True;
    end Split_Callee;
+
+   function Unit_At
+     (Units : Unit_Graph.Compilation_Set; Index : Positive) return Unit_Graph.Loaded_Unit is
+   begin
+      return Units.Element (Index);
+   end Unit_At;
 
 end Lovelace.Compiler.Semantics.Resolve;

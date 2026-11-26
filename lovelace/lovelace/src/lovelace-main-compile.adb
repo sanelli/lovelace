@@ -1065,6 +1065,55 @@ package body Lovelace.Main.Compile is
       return Boolean
    is
       First : Positive := Text'First;
+
+      function Apply_One_Entry
+        (Slice : String; The_Policy : in out Diagnostics.Policy; Detail : out Ada.Strings.Unbounded.Unbounded_String)
+         return Boolean;
+      --  Parse and suppress one trimmed LV label; set Detail on failure.
+
+      function Next_Comma (From : Positive) return Natural;
+      --  Index of the next ',' in Text at or after From, or 0.
+
+      function Apply_One_Entry
+        (Slice : String; The_Policy : in out Diagnostics.Policy; Detail : out Ada.Strings.Unbounded.Unbounded_String)
+         return Boolean
+      is
+         Entry_Text : constant String := Ada.Strings.Fixed.Trim (Slice, Ada.Strings.Both);
+         Code       : Error_Codes.Error_Code;
+         Ok         : Boolean;
+      begin
+         if Entry_Text'Length = 0 then
+            Detail := Ada.Strings.Unbounded.To_Unbounded_String ("--no-warnings entry is empty");
+            return False;
+         end if;
+
+         if not Error_Codes.Try_From_Label (Entry_Text, Code) then
+            Detail :=
+              Ada.Strings.Unbounded.To_Unbounded_String
+                ("unknown warning code '" & Entry_Text & "'");
+            return False;
+         end if;
+
+         Diagnostics.Suppress_Warning (The_Policy, Code, Ok);
+         if not Ok then
+            Detail :=
+              Ada.Strings.Unbounded.To_Unbounded_String
+                ("'" & Entry_Text & "' is not a warning code");
+            return False;
+         end if;
+
+         return True;
+      end Apply_One_Entry;
+
+      function Next_Comma (From : Positive) return Natural is
+      begin
+         for Index in From .. Text'Last loop
+            if Text (Index) = ',' then
+               return Index;
+            end if;
+         end loop;
+         return 0;
+      end Next_Comma;
    begin
       Detail := Ada.Strings.Unbounded.Null_Unbounded_String;
 
@@ -1075,46 +1124,11 @@ package body Lovelace.Main.Compile is
 
       loop
          declare
-            Comma      : Natural := 0;
-            Slice_Last : Natural;
-            Entry_Text : Ada.Strings.Unbounded.Unbounded_String;
-            Code       : Error_Codes.Error_Code;
-            Ok         : Boolean;
+            Comma      : constant Natural := Next_Comma (First);
+            Slice_Last : constant Natural :=
+              (if Comma = 0 then Text'Last else Comma - 1);
          begin
-            for Index in First .. Text'Last loop
-               if Text (Index) = ',' then
-                  Comma := Index;
-                  exit;
-               end if;
-            end loop;
-
-            if Comma = 0 then
-               Slice_Last := Text'Last;
-            else
-               Slice_Last := Comma - 1;
-            end if;
-
-            Entry_Text :=
-              Ada.Strings.Unbounded.To_Unbounded_String
-                (Ada.Strings.Fixed.Trim (Text (First .. Slice_Last), Ada.Strings.Both));
-
-            if Ada.Strings.Unbounded.Length (Entry_Text) = 0 then
-               Detail := Ada.Strings.Unbounded.To_Unbounded_String ("--no-warnings entry is empty");
-               return False;
-            end if;
-
-            if not Error_Codes.Try_From_Label (Ada.Strings.Unbounded.To_String (Entry_Text), Code) then
-               Detail :=
-                 Ada.Strings.Unbounded.To_Unbounded_String
-                   ("unknown warning code '" & Ada.Strings.Unbounded.To_String (Entry_Text) & "'");
-               return False;
-            end if;
-
-            Diagnostics.Suppress_Warning (The_Policy, Code, Ok);
-            if not Ok then
-               Detail :=
-                 Ada.Strings.Unbounded.To_Unbounded_String
-                   ("'" & Ada.Strings.Unbounded.To_String (Entry_Text) & "' is not a warning code");
+            if not Apply_One_Entry (Text (First .. Slice_Last), The_Policy, Detail) then
                return False;
             end if;
 

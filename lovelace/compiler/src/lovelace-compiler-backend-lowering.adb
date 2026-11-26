@@ -19,6 +19,14 @@ package body Lovelace.Compiler.Backend.Lowering is
    package Subroutines renames Lovelace.Lir.Subroutines;
    package Types renames Lovelace.Lir.Types;
 
+   --  Simple-name renames so gnatcov can instrument call coverage (no dotted callees).
+   function Get_Signature
+     (The_Subroutine : Subroutines.Subroutine) return Subroutines.Signature
+     renames Subroutines.Get_Signature;
+   function Unbounded_Text
+     (Source : Ada.Strings.Unbounded.Unbounded_String) return String
+     renames Ada.Strings.Unbounded.To_String;
+
    use type Interfaces.Unsigned_32;
    use type Model.Core_Value_Type;
    use type Types.Value_Type;
@@ -55,6 +63,12 @@ package body Lovelace.Compiler.Backend.Lowering is
       Local_Types     : out Model.Core_Local_Sequence;
       Body_Out        : out Model.Instruction_Sequence) return Lower_Result;
    --  Synthesize the body of a matched intrinsic.
+
+   procedure Lower_One_Instruction
+     (Item     : Instructions.Instruction;
+      Body_Out : in out Model.Instruction_Sequence;
+      Outcome  : in out Lower_Result);
+   --  Append the lowered form of one LIR instruction, or set Outcome on failure.
 
    function Lower_Subroutine
      (The_Module       : Modules.Module;
@@ -234,38 +248,10 @@ package body Lovelace.Compiler.Backend.Lowering is
       Outcome := (Ok => True, The_Model => Model.Create (""));
 
       for Index in 1 .. Instructions.Length (The_Instructions) loop
-         declare
-            Item : constant Instructions.Instruction := Instructions.Element (The_Instructions, Index);
-         begin
-            case Item.Operation is
-               when Opcodes.No_Operation =>
-                  null;
-
-               when Opcodes.Constant_I32 =>
-                  Model.Append (Body_Out, (Kind => Model.I32_Constant, Value => Item.Immediate_I32));
-
-               when Opcodes.Call         =>
-                  if Item.Target_Index = 0 then
-                     Outcome := Failure (Internal_Error, "Call Target_Index is zero");
-                     return;
-                  end if;
-                  Model.Append (Body_Out, (Kind => Model.Call_Function, Target_Index => Positive (Item.Target_Index)));
-
-               when Opcodes.Local_Get    =>
-                  if Item.Local_Index = 0 then
-                     Outcome := Failure (Internal_Error, "Local_Get Local_Index is zero");
-                     return;
-                  end if;
-                  Model.Append (Body_Out, (Kind => Model.Local_Get, Local_Index => Natural (Item.Local_Index) - 1));
-
-               when Opcodes.Local_Set    =>
-                  if Item.Local_Index = 0 then
-                     Outcome := Failure (Internal_Error, "Local_Set Local_Index is zero");
-                     return;
-                  end if;
-                  Model.Append (Body_Out, (Kind => Model.Local_Set, Local_Index => Natural (Item.Local_Index) - 1));
-            end case;
-         end;
+         Lower_One_Instruction (Instructions.Element (The_Instructions, Index), Body_Out, Outcome);
+         if not Outcome.Ok then
+            return;
+         end if;
       end loop;
    end Lower_Instruction_Body;
 
@@ -314,6 +300,41 @@ package body Lovelace.Compiler.Backend.Lowering is
 
       return Success;
    end Lower_Intrinsic_Body;
+
+   procedure Lower_One_Instruction
+     (Item     : Instructions.Instruction;
+      Body_Out : in out Model.Instruction_Sequence;
+      Outcome  : in out Lower_Result) is
+   begin
+      case Item.Operation is
+         when Opcodes.No_Operation =>
+            null;
+
+         when Opcodes.Constant_I32 =>
+            Model.Append (Body_Out, (Kind => Model.I32_Constant, Value => Item.Immediate_I32));
+
+         when Opcodes.Call         =>
+            if Item.Target_Index = 0 then
+               Outcome := Failure (Internal_Error, "Call Target_Index is zero");
+               return;
+            end if;
+            Model.Append (Body_Out, (Kind => Model.Call_Function, Target_Index => Positive (Item.Target_Index)));
+
+         when Opcodes.Local_Get    =>
+            if Item.Local_Index = 0 then
+               Outcome := Failure (Internal_Error, "Local_Get Local_Index is zero");
+               return;
+            end if;
+            Model.Append (Body_Out, (Kind => Model.Local_Get, Local_Index => Natural (Item.Local_Index) - 1));
+
+         when Opcodes.Local_Set    =>
+            if Item.Local_Index = 0 then
+               Outcome := Failure (Internal_Error, "Local_Set Local_Index is zero");
+               return;
+            end if;
+            Model.Append (Body_Out, (Kind => Model.Local_Set, Local_Index => Natural (Item.Local_Index) - 1));
+      end case;
+   end Lower_One_Instruction;
 
    function Lower_Subroutine
      (The_Module       : Modules.Module;
@@ -417,13 +438,16 @@ package body Lovelace.Compiler.Backend.Lowering is
       if not Map_Locals
                (Locals => Subroutines.Get_Locals (The_Subroutine), Mapped => Local_Types, Detail => Local_Detail)
       then
-         return
-           Failure
-             (Unsupported_Type,
-              "unsupported local type in subroutine "
-              & Ada.Strings.Unbounded.To_String (Subroutines.Get_Signature (The_Subroutine).Name)
-              & ": "
-              & Ada.Strings.Unbounded.To_String (Local_Detail));
+         declare
+            The_Signature   : constant Subroutines.Signature := Get_Signature (The_Subroutine);
+            Subroutine_Name : constant String := Unbounded_Text (The_Signature.Name);
+            Detail_Text     : constant String := Unbounded_Text (Local_Detail);
+         begin
+            return
+              Failure
+                (Unsupported_Type,
+                 "unsupported local type in subroutine " & Subroutine_Name & ": " & Detail_Text);
+         end;
       end if;
 
       Lower_Instruction_Body

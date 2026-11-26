@@ -7,6 +7,27 @@ package body Lovelace.Compiler.Intrinsics is
    use type Lovelace.Compiler.Types.Type_Kind;
    use type Lovelace.Lir.Types.Value_Type;
 
+   package Ast renames Lovelace.Compiler.Ast;
+   package Compiler_Types renames Lovelace.Compiler.Types;
+   package Lir_Types renames Lovelace.Lir.Types;
+
+   --  Simple-name renames so gnatcov can instrument call coverage (no dotted callees).
+   function Lir_Element
+     (Sequence : Lir_Types.Parameter_Sequence; Index : Positive) return Lir_Types.Parameter
+     renames Lir_Types.Element;
+   function Lir_Length (Sequence : Lir_Types.Parameter_Sequence) return Natural renames Lir_Types.Length;
+   function Ast_Name (The_Subroutine : Ast.Subroutine) return String renames Ast.Name;
+   function Ast_Return_Type
+     (The_Subroutine : Ast.Subroutine) return Compiler_Types.Type_Expression
+     renames Ast.Return_Type;
+   function Ast_Parameters
+     (The_Subroutine : Ast.Subroutine) return Ast.Parameter_Sequence
+     renames Ast.Parameters;
+   function Ast_Length (Sequence : Ast.Parameter_Sequence) return Natural renames Ast.Length;
+   function Ast_Element
+     (Sequence : Ast.Parameter_Sequence; Index : Positive) return Ast.Parameter
+     renames Ast.Element;
+
    function Is_Default_Integer (The_Type : Lovelace.Compiler.Types.Type_Expression) return Boolean;
    --  True for signed integer / integer (Bits_32).
 
@@ -39,11 +60,15 @@ package body Lovelace.Compiler.Intrinsics is
          return False;
       end if;
 
-      if Lovelace.Lir.Types.Length (Parameters) /= 1 then
+      if Lir_Length (Parameters) /= 1 then
          return False;
       end if;
 
-      return Lovelace.Lir.Types.Element (Parameters, 1).The_Type = Lovelace.Lir.Types.I32;
+      declare
+         First : constant Lir_Types.Parameter := Lir_Element (Parameters, 1);
+      begin
+         return First.The_Type = Lir_Types.I32;
+      end;
    end Is_Print_Integer_Stdout;
 
    function Match_Intrinsic
@@ -60,14 +85,21 @@ package body Lovelace.Compiler.Intrinsics is
    end Match_Intrinsic;
 
    function Match_Intrinsic (Module_Name : String; The_Subroutine : Ast.Subroutine) return Intrinsic_Kind_Option is
+      Return_Type : constant Compiler_Types.Type_Expression := Ast_Return_Type (The_Subroutine);
+      Formals     : constant Ast.Parameter_Sequence := Ast_Parameters (The_Subroutine);
    begin
       if Module_Name = "augusta.std.io"
-        and then Ast.Name (The_Subroutine) = "print"
-        and then Ast.Return_Type (The_Subroutine).Kind = Lovelace.Compiler.Types.Unit
-        and then Ast.Length (Ast.Parameters (The_Subroutine)) = 1
-        and then Is_Default_Integer (Ast.Element (Ast.Parameters (The_Subroutine), 1).Parameter_Type)
+        and then Ast_Name (The_Subroutine) = "print"
+        and then Return_Type.Kind = Compiler_Types.Unit
+        and then Ast_Length (Formals) = 1
       then
-         return (Present => True, Kind => Print_Integer_Stdout);
+         declare
+            First : constant Ast.Parameter := Ast_Element (Formals, 1);
+         begin
+            if Is_Default_Integer (First.Parameter_Type) then
+               return (Present => True, Kind => Print_Integer_Stdout);
+            end if;
+         end;
       end if;
 
       return (Present => False);

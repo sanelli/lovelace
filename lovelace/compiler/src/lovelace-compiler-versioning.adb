@@ -11,6 +11,11 @@ package body Lovelace.Compiler.Versioning is
    use type Tokens.Punctuation_Subtype;
    use type Tokens.Token_Kind;
 
+   --  Simple-name rename so gnatcov can instrument call coverage (no dotted callees).
+   function Token_At
+     (Sequence : Tokens.Token_Sequence; Index : Positive) return Tokens.Token
+     renames Tokens.Element;
+
    function Consume_Dot (Text : String; Index : in out Natural; Last : Natural) return Boolean;
    --  Consume a '.' at Text (Index) when present.
 
@@ -41,6 +46,9 @@ package body Lovelace.Compiler.Versioning is
    function Parse_Preview (Text : String; Index : in out Natural; Last : Natural) return Boolean;
    --  Consume -preview-name[.preview-number] through Last.
 
+   function Parse_Preview_Name (Text : String; Index : in out Natural; Last : Natural) return Boolean;
+   --  Consume a non-empty preview-name of Is_Preview_Name_Char characters.
+
    function Read_Entire_File (Path : String; Contents : out Ada.Strings.Unbounded.Unbounded_String) return Boolean;
 
    procedure Set_Failure (Ok : out Boolean; Detail : out Ada.Strings.Unbounded.Unbounded_String; Message : String);
@@ -63,14 +71,17 @@ package body Lovelace.Compiler.Versioning is
       end if;
 
       declare
-         T0 : constant Tokens.Token := Tokens.Element (Seq, 1);
+         T0 : constant Tokens.Token := Token_At (Seq, 1);
+         T1 : constant Tokens.Token := Token_At (Seq, 2);
+         T2 : constant Tokens.Token := Token_At (Seq, 3);
+         T3 : constant Tokens.Token := Token_At (Seq, 4);
       begin
          return
            T0.Kind = Tokens.Identifier
            and then Tokens.Lexeme (Source_Text, T0) = "@version"
-           and then Is_Punctuation (Tokens.Element (Seq, 2), Tokens.Left_Parenthesis)
-           and then Tokens.Element (Seq, 3).Kind = Tokens.String_Literal
-           and then Is_Punctuation (Tokens.Element (Seq, 4), Tokens.Right_Parenthesis);
+           and then Is_Punctuation (T1, Tokens.Left_Parenthesis)
+           and then T2.Kind = Tokens.String_Literal
+           and then Is_Punctuation (T3, Tokens.Right_Parenthesis);
       end;
    end Has_Version_Shape;
 
@@ -214,12 +225,9 @@ package body Lovelace.Compiler.Versioning is
          return False;
       end if;
       Index := Index + 1;
-      if Index > Last or else not Is_Preview_Name_Char (Text (Index)) then
+      if not Parse_Preview_Name (Text, Index, Last) then
          return False;
       end if;
-      while Index <= Last and then Is_Preview_Name_Char (Text (Index)) loop
-         Index := Index + 1;
-      end loop;
 
       if Index > Last then
          return True;
@@ -227,6 +235,17 @@ package body Lovelace.Compiler.Versioning is
 
       return Consume_Dot (Text, Index, Last) and then Parse_Numeric (Text, Index, Last) and then Index > Last;
    end Parse_Preview;
+
+   function Parse_Preview_Name (Text : String; Index : in out Natural; Last : Natural) return Boolean is
+   begin
+      if Index > Last or else not Is_Preview_Name_Char (Text (Index)) then
+         return False;
+      end if;
+      while Index <= Last and then Is_Preview_Name_Char (Text (Index)) loop
+         Index := Index + 1;
+      end loop;
+      return True;
+   end Parse_Preview_Name;
 
    function Read_Entire_File (Path : String; Contents : out Ada.Strings.Unbounded.Unbounded_String) return Boolean is
       Descriptor : constant GNAT.OS_Lib.File_Descriptor := GNAT.OS_Lib.Open_Read (Path, GNAT.OS_Lib.Binary);

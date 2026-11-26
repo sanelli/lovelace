@@ -14,6 +14,17 @@ package body Lovelace.Compiler.Parser is
    use type Tokens.Punctuation_Subtype;
    use type Tokens.Token_Kind;
 
+   --  Simple-name renames so gnatcov can instrument call coverage (no dotted callees).
+   function Unbounded_Text
+     (Source : Ada.Strings.Unbounded.Unbounded_String) return String
+     renames Ada.Strings.Unbounded.To_String;
+   function Ast_Parameter_Element
+     (Sequence : Ast.Parameter_Sequence; Index : Positive) return Ast.Parameter
+     renames Ast.Element;
+   function Ast_Using_Element
+     (Sequence : Ast.Using_Sequence; Index : Positive) return Ast.Using_Declaration
+     renames Ast.Element;
+
    Origin_Span : constant Source.Source_Span :=
      (First => (Byte_Index => 1, Line => 1, Column => 1), Last => (Byte_Index => 1, Line => 1, Column => 1));
 
@@ -647,9 +658,13 @@ package body Lovelace.Compiler.Parser is
    function Parameter_Name_Exists (Parameters : Ast.Parameter_Sequence; Name : String) return Boolean is
    begin
       for Index in 1 .. Ast.Length (Parameters) loop
-         if Ada.Strings.Unbounded.To_String (Ast.Element (Parameters, Index).Parameter_Name) = Name then
-            return True;
-         end if;
+         declare
+            The_Parameter : constant Ast.Parameter := Ast_Parameter_Element (Parameters, Index);
+         begin
+            if Unbounded_Text (The_Parameter.Parameter_Name) = Name then
+               return True;
+            end if;
+         end;
       end loop;
 
       return False;
@@ -748,7 +763,11 @@ package body Lovelace.Compiler.Parser is
    procedure Bind_Unit_Usings (Stack : in out Scope_Stack; Usings : Ast.Using_Sequence) is
    begin
       for Index in 1 .. Ast.Length (Usings) loop
-         Scope_Bind (Stack, Ada.Strings.Unbounded.To_String (Ast.Element (Usings, Index).Module_Name));
+         declare
+            The_Using : constant Ast.Using_Declaration := Ast_Using_Element (Usings, Index);
+         begin
+            Scope_Bind (Stack, Unbounded_Text (The_Using.Module_Name));
+         end;
       end loop;
    end Bind_Unit_Usings;
 
@@ -760,9 +779,13 @@ package body Lovelace.Compiler.Parser is
    function Using_Name_Exists (Usings : Ast.Using_Sequence; Name : String) return Boolean is
    begin
       for Index in 1 .. Ast.Length (Usings) loop
-         if Ada.Strings.Unbounded.To_String (Ast.Element (Usings, Index).Module_Name) = Name then
-            return True;
-         end if;
+         declare
+            The_Using : constant Ast.Using_Declaration := Ast_Using_Element (Usings, Index);
+         begin
+            if Unbounded_Text (The_Using.Module_Name) = Name then
+               return True;
+            end if;
+         end;
       end loop;
       return False;
    end Using_Name_Exists;
@@ -1394,12 +1417,16 @@ package body Lovelace.Compiler.Parser is
          end if;
 
          if Is_Keyword (Peek (The_Cursor), Tokens.Begin_Keyword) then
-            return
-              Make_Failure
-                (Code     => Unexpected_Token,
-                 Span     => Peek (The_Cursor).Span,
-                 Filename => Peek (The_Cursor).Filename,
-                 Detail   => "declare requires at least one variable declaration");
+            declare
+               Current : constant Tokens.Token := Peek (The_Cursor);
+            begin
+               return
+                 Make_Failure
+                   (Code     => Unexpected_Token,
+                    Span     => Current.Span,
+                    Filename => Current.Filename,
+                    Detail   => "declare requires at least one variable declaration");
+            end;
          end if;
 
          loop
@@ -1909,26 +1936,33 @@ package body Lovelace.Compiler.Parser is
 
       if At_End (The_Cursor) then
          Step := Step_End_Of_Input (The_Cursor, "expected integer size 8, 16, 32, or 64, found end of input");
-      elsif Peek (The_Cursor).Kind /= Tokens.Integer_Literal then
-         Step :=
-           Make_Failure
-             (Code     => Unexpected_Token,
-              Span     => Peek (The_Cursor).Span,
-              Filename => Peek (The_Cursor).Filename,
-              Detail   =>
-                "expected integer size 8, 16, 32, or 64, found " & Describe_Token (Source_Text, Peek (The_Cursor)));
-      elsif Try_Integer_Size (Tokens.Lexeme (Source_Text, Peek (The_Cursor)), The_Size) then
-         Advance (The_Cursor);
       else
-         Step :=
-           Make_Failure
-             (Code     => Unexpected_Token,
-              Span     => Peek (The_Cursor).Span,
-              Filename => Peek (The_Cursor).Filename,
-              Detail   =>
-                "invalid integer size """
-                & Tokens.Lexeme (Source_Text, Peek (The_Cursor))
-                & """; expected 8, 16, 32, or 64");
+         declare
+            Current : constant Tokens.Token := Peek (The_Cursor);
+         begin
+            if Current.Kind /= Tokens.Integer_Literal then
+               Step :=
+                 Make_Failure
+                   (Code     => Unexpected_Token,
+                    Span     => Current.Span,
+                    Filename => Current.Filename,
+                    Detail   =>
+                      "expected integer size 8, 16, 32, or 64, found "
+                      & Describe_Token (Source_Text, Current));
+            elsif Try_Integer_Size (Tokens.Lexeme (Source_Text, Current), The_Size) then
+               Advance (The_Cursor);
+            else
+               Step :=
+                 Make_Failure
+                   (Code     => Unexpected_Token,
+                    Span     => Current.Span,
+                    Filename => Current.Filename,
+                    Detail   =>
+                      "invalid integer size """
+                      & Tokens.Lexeme (Source_Text, Current)
+                      & """; expected 8, 16, 32, or 64");
+            end if;
+         end;
       end if;
 
       return Step;
@@ -2393,8 +2427,11 @@ package body Lovelace.Compiler.Parser is
       Scope_Push (Scope);
       Bind_Unit_Usings (Scope, The_Unit.Usings);
       for Param_Index in 1 .. Ast.Length (Header.Parameters) loop
-         Scope_Bind
-           (Scope, Ada.Strings.Unbounded.To_String (Ast.Element (Header.Parameters, Param_Index).Parameter_Name));
+         declare
+            The_Parameter : constant Ast.Parameter := Ast_Parameter_Element (Header.Parameters, Param_Index);
+         begin
+            Scope_Bind (Scope, Unbounded_Text (The_Parameter.Parameter_Name));
+         end;
       end loop;
 
       Step :=
@@ -2432,7 +2469,11 @@ package body Lovelace.Compiler.Parser is
       --  intrinsic:  [ export ] @intrinsic procedure ... ;
       --  native FFI: [ export ] @native ( string , string ) procedure ... ;
       if not At_End (The_Cursor) then
-         Header.Decl_First := Peek (The_Cursor).Span.First;
+         declare
+            Current : constant Tokens.Token := Peek (The_Cursor);
+         begin
+            Header.Decl_First := Current.Span.First;
+         end;
       end if;
 
       Step := Parse_Export_Prefix (The_Cursor, Source_Text, Header.Flags);
@@ -2783,16 +2824,23 @@ package body Lovelace.Compiler.Parser is
 
       if At_End (The_Cursor) then
          Step := Step_End_Of_Input (The_Cursor, "expected string literal, found end of input");
-      elsif Peek (The_Cursor).Kind /= Tokens.String_Literal then
-         Step :=
-           Make_Failure
-             (Code     => Unexpected_Token,
-              Span     => Peek (The_Cursor).Span,
-              Filename => Peek (The_Cursor).Filename,
-              Detail   => "expected string literal, found " & Describe_Token (Source_Text, Peek (The_Cursor)));
       else
-         Value := Ada.Strings.Unbounded.To_Unbounded_String (String_Literal_Content (Source_Text, Peek (The_Cursor)));
-         Advance (The_Cursor);
+         declare
+            Current : constant Tokens.Token := Peek (The_Cursor);
+         begin
+            if Current.Kind /= Tokens.String_Literal then
+               Step :=
+                 Make_Failure
+                   (Code     => Unexpected_Token,
+                    Span     => Current.Span,
+                    Filename => Current.Filename,
+                    Detail   => "expected string literal, found " & Describe_Token (Source_Text, Current));
+            else
+               Value :=
+                 Ada.Strings.Unbounded.To_Unbounded_String (String_Literal_Content (Source_Text, Current));
+               Advance (The_Cursor);
+            end if;
+         end;
       end if;
 
       return Step;
@@ -2866,25 +2914,30 @@ package body Lovelace.Compiler.Parser is
          return Step_End_Of_Input (The_Cursor, "expected keyword ""program"" or ""module"", found end of input");
       end if;
 
-      if Is_Keyword (Peek (The_Cursor), Tokens.Program_Keyword) then
-         Step :=
-           Parse_Program_Unit
-             (The_Cursor => The_Cursor, Source_Text => Source_Text, Unit_Usings => Usings, The_Unit => The_Unit);
-         The_Unit.Version := Version;
-      elsif Is_Keyword (Peek (The_Cursor), Tokens.Module_Keyword) then
-         Step :=
-           Parse_Module_Unit
-             (The_Cursor => The_Cursor, Source_Text => Source_Text, Unit_Usings => Usings, The_Unit => The_Unit);
-         The_Unit.Version := Version;
-      else
-         Step :=
-           Make_Failure
-             (Code     => Unexpected_Token,
-              Span     => Peek (The_Cursor).Span,
-              Filename => Peek (The_Cursor).Filename,
-              Detail   =>
-                "expected keyword ""program"" or ""module"", found " & Describe_Token (Source_Text, Peek (The_Cursor)));
-      end if;
+      declare
+         Current : constant Tokens.Token := Peek (The_Cursor);
+      begin
+         if Is_Keyword (Current, Tokens.Program_Keyword) then
+            Step :=
+              Parse_Program_Unit
+                (The_Cursor => The_Cursor, Source_Text => Source_Text, Unit_Usings => Usings, The_Unit => The_Unit);
+            The_Unit.Version := Version;
+         elsif Is_Keyword (Current, Tokens.Module_Keyword) then
+            Step :=
+              Parse_Module_Unit
+                (The_Cursor => The_Cursor, Source_Text => Source_Text, Unit_Usings => Usings, The_Unit => The_Unit);
+            The_Unit.Version := Version;
+         else
+            Step :=
+              Make_Failure
+                (Code     => Unexpected_Token,
+                 Span     => Current.Span,
+                 Filename => Current.Filename,
+                 Detail   =>
+                   "expected keyword ""program"" or ""module"", found "
+                   & Describe_Token (Source_Text, Current));
+         end if;
+      end;
 
       return Step;
    end Parse_Unit_Content;
@@ -2973,12 +3026,15 @@ package body Lovelace.Compiler.Parser is
                   Same_Types : Boolean := True;
                begin
                   for Param_Index in 1 .. Ast.Length (Parameters) loop
-                     if Ast.Element (Formals, Param_Index).Parameter_Type
-                       /= Ast.Element (Parameters, Param_Index).Parameter_Type
-                     then
-                        Same_Types := False;
-                        exit;
-                     end if;
+                     declare
+                        Formal_Param : constant Ast.Parameter := Ast_Parameter_Element (Formals, Param_Index);
+                        Actual_Param : constant Ast.Parameter := Ast_Parameter_Element (Parameters, Param_Index);
+                     begin
+                        if Formal_Param.Parameter_Type /= Actual_Param.Parameter_Type then
+                           Same_Types := False;
+                           exit;
+                        end if;
+                     end;
                   end loop;
 
                   if Same_Types then

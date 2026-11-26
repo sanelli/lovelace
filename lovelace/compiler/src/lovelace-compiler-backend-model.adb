@@ -112,9 +112,13 @@ package body Lovelace.Compiler.Backend.Model is
    function Has_Run_Export (The_Model : Component_Model) return Boolean is
    begin
       for Index in 1 .. Export_Count (The_Model) loop
-         if Get_Export (The_Model, Index).Returns_Result then
-            return True;
-         end if;
+         declare
+            The_Export : constant Lifted_Export := Get_Export (The_Model, Index);
+         begin
+            if The_Export.Returns_Result then
+               return True;
+            end if;
+         end;
       end loop;
 
       return False;

@@ -38,11 +38,33 @@ package body Lovelace.Compiler.Ir_Generator is
    package Lovelace_Types renames Lovelace.Compiler.Semantics.Lovelace_Types;
    package Typecheck renames Lovelace.Compiler.Semantics.Typecheck;
 
+   --  Simple-name renames so gnatcov can instrument call coverage (no dotted callees).
+   function Ast_Element
+     (Sequence : Ast.Using_Sequence; Index : Positive) return Ast.Using_Declaration
+     renames Ast.Element;
+   function Ast_Parameter_Element
+     (Sequence : Ast.Parameter_Sequence; Index : Positive) return Ast.Parameter
+     renames Ast.Element;
+   function Native_Of
+     (The_Subroutine : Ast.Subroutine) return Ast.Native_Binding_Option
+     renames Ast.Native;
+   function From_Expression
+     (Expression : Lovelace.Compiler.Types.Type_Expression) return Lovelace_Types.Lovelace_Type
+     renames Lovelace_Types.From_Expression;
+
+   function Unit_At
+     (Units : Unit_Graph.Compilation_Set; Index : Positive) return Unit_Graph.Loaded_Unit;
+   --  Wrapper so call sites are not dotted (gnatcov call coverage).
+
    package Actual_Type_Vectors is new
      Ada.Containers.Vectors
        (Index_Type   => Positive,
         Element_Type => Lovelace_Types.Lovelace_Type,
         "="          => Lovelace_Types."=");
+
+   function Actual_At
+     (Sequence : Actual_Type_Vectors.Vector; Index : Positive) return Lovelace_Types.Lovelace_Type;
+   --  Wrapper so call sites are not dotted (gnatcov call coverage).
 
    --  One name -> 1-based LIR local slot binding in a scope frame.
    type Local_Binding is record
@@ -160,6 +182,12 @@ package body Lovelace.Compiler.Ir_Generator is
 
    function Validate_Module (Lir_Module : Lovelace.Lir.Modules.Module; Root_Unit : Ast.Module) return Generate_Result;
 
+   function Actual_At
+     (Sequence : Actual_Type_Vectors.Vector; Index : Positive) return Lovelace_Types.Lovelace_Type is
+   begin
+      return Sequence.Element (Index);
+   end Actual_At;
+
    procedure Add_Dependencies
      (Lir_Module : in out Lovelace.Lir.Modules.Module; Units : Unit_Graph.Compilation_Set; Root_Unit : Ast.Module)
    is
@@ -257,10 +285,14 @@ package body Lovelace.Compiler.Ir_Generator is
             Seen      : Boolean := False;
          begin
             for Prior in 1 .. Ast.Length (Result) loop
-               if Ast.Element (Result, Prior).Module_Name = Candidate.Module_Name then
-                  Seen := True;
-                  exit;
-               end if;
+               declare
+                  Prior_Using : constant Ast.Using_Declaration := Ast_Element (Result, Prior);
+               begin
+                  if Prior_Using.Module_Name = Candidate.Module_Name then
+                     Seen := True;
+                     exit;
+                  end if;
+               end;
             end loop;
 
             if not Seen then
@@ -386,10 +418,12 @@ package body Lovelace.Compiler.Ir_Generator is
 
       for Index in 1 .. Ast.Length (Formals) loop
          declare
-            Formal_Type : constant Lovelace_Types.Lovelace_Type :=
-              Lovelace_Types.From_Expression (Ast.Element (Formals, Index).Parameter_Type);
+            Formal_Param : constant Ast.Parameter := Ast_Parameter_Element (Formals, Index);
+            Formal_Type  : constant Lovelace_Types.Lovelace_Type :=
+              From_Expression (Formal_Param.Parameter_Type);
+            Actual_Type  : constant Lovelace_Types.Lovelace_Type := Actual_At (Actual_Types, Index);
          begin
-            if not Typecheck.Is_Assignable (Formal_Type, Actual_Types.Element (Index)) then
+            if not Typecheck.Is_Assignable (Formal_Type, Actual_Type) then
                return False;
             end if;
          end;
@@ -427,14 +461,18 @@ package body Lovelace.Compiler.Ir_Generator is
               "empty compilation set");
       end if;
 
-      Root_Unit := Units.Element (1).The_Module;
-      Lir_Module := Lovelace.Lir.Modules.Create (Ast.Name (Root_Unit));
-      Lovelace.Lir.Modules.Set_Module_Version (Lir_Module, Unit_Version (Units, Ast.Name (Root_Unit)));
-      Lovelace.Lir.Modules.Set_Origin
-        (Lir_Module,
-         (Name_Span => Ast.Name_Span (Root_Unit),
-          Span      => Ast.Span (Root_Unit),
-          Filename  => Origin_Filename (Units.Element (1), Ast.Filename (Root_Unit))));
+      declare
+         First_Unit : constant Unit_Graph.Loaded_Unit := Unit_At (Units, 1);
+      begin
+         Root_Unit := First_Unit.The_Module;
+         Lir_Module := Lovelace.Lir.Modules.Create (Ast.Name (Root_Unit));
+         Lovelace.Lir.Modules.Set_Module_Version (Lir_Module, Unit_Version (Units, Ast.Name (Root_Unit)));
+         Lovelace.Lir.Modules.Set_Origin
+           (Lir_Module,
+            (Name_Span => Ast.Name_Span (Root_Unit),
+             Span      => Ast.Span (Root_Unit),
+             Filename  => Origin_Filename (First_Unit, Ast.Filename (Root_Unit))));
+      end;
 
       Add_Dependencies (Lir_Module, Units, Root_Unit);
       Symbols := Build_Symbols (Units);
@@ -558,10 +596,11 @@ package body Lovelace.Compiler.Ir_Generator is
    function Lower_Intrinsic_Subroutine
      (Symbol : Flat_Symbol; Lir_Subroutine : in out Lovelace.Lir.Subroutines.Subroutine) return Generate_Result
    is
-      Matched : constant Intrinsics.Intrinsic_Kind_Option :=
+      Matched    : constant Intrinsics.Intrinsic_Kind_Option :=
         Intrinsics.Match_Intrinsic (Ada.Strings.Unbounded.To_String (Symbol.Module_Name), Symbol.The_Subroutine);
+      The_Native : constant Ast.Native_Binding_Option := Native_Of (Symbol.The_Subroutine);
    begin
-      if Ast.Native (Symbol.The_Subroutine).Present then
+      if The_Native.Present then
          return
            Failure
              (Internal_Error,
@@ -613,8 +652,9 @@ package body Lovelace.Compiler.Ir_Generator is
       Locals      : Local_Map;
       Ast_Params  : constant Ast.Parameter_Sequence := Ast.Parameters (Symbol.The_Subroutine);
       Param_Count : constant Natural := Ast.Length (Ast_Params);
+      The_Native  : constant Ast.Native_Binding_Option := Native_Of (Symbol.The_Subroutine);
    begin
-      if Ast.Native (Symbol.The_Subroutine).Present then
+      if The_Native.Present then
          return
            Failure
              (Internal_Error,
@@ -931,6 +971,12 @@ package body Lovelace.Compiler.Ir_Generator is
    begin
       return (Ok => True, The_Module => Lovelace.Lir.Modules.Create (""));
    end Success;
+
+   function Unit_At
+     (Units : Unit_Graph.Compilation_Set; Index : Positive) return Unit_Graph.Loaded_Unit is
+   begin
+      return Units.Element (Index);
+   end Unit_At;
 
    function Unit_Version (Units : Unit_Graph.Compilation_Set; Module_Name : String) return String is
    begin

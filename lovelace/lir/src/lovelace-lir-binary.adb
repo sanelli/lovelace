@@ -100,6 +100,11 @@ package body Lovelace.Lir.Binary is
       The_Subroutine : in out Subroutines.Subroutine;
       Code           : out Errors.Error_Code) return Boolean;
    procedure Patch_U32 (Buffer : in out Byte_Sequence; At_Index : Positive; Value : Interfaces.Unsigned_32);
+   function Position_Fields_Ok
+     (Byte_Index_Value : Interfaces.Unsigned_32;
+      Line_Value       : Interfaces.Unsigned_32;
+      Column_Value     : Interfaces.Unsigned_32) return Boolean;
+   --  True when all three fields are non-zero and fit in Positive.
    function Read_Byte
      (Bytes : Byte_Sequence; Cursor : in out Natural; Value : out Interfaces.Unsigned_8) return Boolean;
    function Read_String
@@ -753,7 +758,6 @@ package body Lovelace.Lir.Binary is
       Byte_Index_Value : Interfaces.Unsigned_32;
       Line_Value       : Interfaces.Unsigned_32;
       Column_Value     : Interfaces.Unsigned_32;
-      Highest_Value    : constant Interfaces.Unsigned_32 := Interfaces.Unsigned_32 (Positive'Last);
    begin
       if not Read_U32 (Bytes, Cursor, Byte_Index_Value)
         or else not Read_U32 (Bytes, Cursor, Line_Value)
@@ -761,13 +765,7 @@ package body Lovelace.Lir.Binary is
       then
          return False;
       end if;
-      if Byte_Index_Value = 0
-        or else Line_Value = 0
-        or else Column_Value = 0
-        or else Byte_Index_Value > Highest_Value
-        or else Line_Value > Highest_Value
-        or else Column_Value > Highest_Value
-      then
+      if not Position_Fields_Ok (Byte_Index_Value, Line_Value, Column_Value) then
          return False;
       end if;
       The_Position :=
@@ -1006,6 +1004,22 @@ package body Lovelace.Lir.Binary is
         (At_Index + 3, Interfaces.Unsigned_8 (Interfaces.Shift_Right (Value, 24) and 16#FF#));
    end Patch_U32;
 
+   function Position_Fields_Ok
+     (Byte_Index_Value : Interfaces.Unsigned_32;
+      Line_Value       : Interfaces.Unsigned_32;
+      Column_Value     : Interfaces.Unsigned_32) return Boolean
+   is
+      Highest_Value : constant Interfaces.Unsigned_32 := Interfaces.Unsigned_32 (Positive'Last);
+   begin
+      return
+        Byte_Index_Value /= 0
+        and then Line_Value /= 0
+        and then Column_Value /= 0
+        and then Byte_Index_Value <= Highest_Value
+        and then Line_Value <= Highest_Value
+        and then Column_Value <= Highest_Value;
+   end Position_Fields_Ok;
+
    function Read (Path : String) return Decode_Result is
       Descriptor : constant GNAT.OS_Lib.File_Descriptor := GNAT.OS_Lib.Open_Read (Path, GNAT.OS_Lib.Binary);
       Sequence   : Byte_Sequence;
@@ -1072,23 +1086,15 @@ package body Lovelace.Lir.Binary is
       Parameters      : Types.Parameter_Sequence := Types.Empty_Sequence;
       Return_Option   : Types.Value_Type_Options.Option;
    begin
-      if not Read_String (Bytes, Cursor, Name_Text) then
-         Code := Errors.Truncated;
-         return False;
-      end if;
-      if not Read_Byte (Bytes, Cursor, Return_Code) then
+      if not Read_String (Bytes, Cursor, Name_Text) or else not Read_Byte (Bytes, Cursor, Return_Code) then
          Code := Errors.Truncated;
          return False;
       end if;
       Return_Option := Types.From_Code (Return_Code);
-      case Return_Option.Present is
-         when False =>
-            Code := Errors.Unknown_Type;
-            return False;
-
-         when True  =>
-            null;
-      end case;
+      if not Return_Option.Present then
+         Code := Errors.Unknown_Type;
+         return False;
+      end if;
       if not Read_U32 (Bytes, Cursor, Parameter_Count) then
          Code := Errors.Truncated;
          return False;
@@ -1096,26 +1102,12 @@ package body Lovelace.Lir.Binary is
       for Unused in 1 .. Natural (Parameter_Count) loop
          declare
             Parameter_Name : Ada.Strings.Unbounded.Unbounded_String;
-            Type_Code      : Interfaces.Unsigned_8;
-            Type_Option    : Types.Value_Type_Options.Option;
+            Parameter_Kind : Types.Value_Type;
          begin
-            if not Read_String (Bytes, Cursor, Parameter_Name) then
-               Code := Errors.Truncated;
+            if not Read_Typed_Name (Bytes, Cursor, Parameter_Name, Parameter_Kind, Code) then
                return False;
             end if;
-            if not Read_Byte (Bytes, Cursor, Type_Code) then
-               Code := Errors.Truncated;
-               return False;
-            end if;
-            Type_Option := Types.From_Code (Type_Code);
-            case Type_Option.Present is
-               when False =>
-                  Code := Errors.Unknown_Type;
-                  return False;
-
-               when True  =>
-                  Types.Append (Parameters, Ada.Strings.Unbounded.To_String (Parameter_Name), Type_Option.Value);
-            end case;
+            Types.Append (Parameters, Ada.Strings.Unbounded.To_String (Parameter_Name), Parameter_Kind);
          end;
       end loop;
       The_Signature := (Name => Name_Text, Return_Type => Return_Option.Value, Parameters => Parameters);

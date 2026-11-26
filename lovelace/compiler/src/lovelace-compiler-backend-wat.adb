@@ -9,6 +9,19 @@ with Lovelace.Compiler.Backend.Wit;
 
 package body Lovelace.Compiler.Backend.Wat is
 
+   --  Simple-name renames so gnatcov can instrument call coverage (no dotted callees).
+   function Get_Export
+     (The_Model : Model.Component_Model; Index : Positive) return Model.Lifted_Export
+     renames Model.Get_Export;
+   function Get_Function
+     (The_Model : Model.Component_Model; Index : Positive) return Model.Core_Function
+     renames Model.Get_Function;
+   function Export_Count (The_Model : Model.Component_Model) return Natural renames Model.Export_Count;
+   function Function_Count (The_Model : Model.Component_Model) return Natural renames Model.Function_Count;
+   function Unbounded_Text
+     (Source : Ada.Strings.Unbounded.Unbounded_String) return String
+     renames Ada.Strings.Unbounded.To_String;
+
    function Core_Func_Alias_Index (The_Model : Model.Component_Model; Core_Function_Index : Positive) return Natural;
    --  0-based alias index among Core_Exported functions for Core_Function_Index.
 
@@ -29,6 +42,9 @@ package body Lovelace.Compiler.Backend.Wat is
 
    function Instruction_Text (The_Model : Model.Component_Model; Item : Model.Core_Instruction) return String;
    --  One WAT instruction line (indented, LF-terminated) for Item.
+
+   function Is_Wat_Id_Char (Byte : Character) return Boolean;
+   --  True when Byte may appear unescaped in a WAT `$id`.
 
    function Locals_Text (The_Function : Model.Core_Function) return String;
    --  Optional "(local ...)" line (LF-terminated); empty when there are no locals.
@@ -76,6 +92,9 @@ package body Lovelace.Compiler.Backend.Wat is
 
    function Name_Count (The_Model : Model.Component_Model; Name : String) return Natural;
    --  How many core functions share Name (overloads share a LIR name).
+
+   function Needs_Dollar_Prefix_Guard (First : Character) return Boolean;
+   --  True when a leading digit or '-' requires a `$n_` prefix.
 
    function Operand_Text (The_Model : Model.Component_Model; Item : Model.Core_Instruction) return String;
    --  WAT operand text for call, const, local and branch instructions.
@@ -177,7 +196,7 @@ package body Lovelace.Compiler.Backend.Wat is
    begin
       for Func_Index in 1 .. Model.Function_Count (The_Model) loop
          declare
-            The_Function : constant Model.Core_Function := Model.Get_Function (The_Model, Func_Index);
+            The_Function : constant Model.Core_Function := Get_Function (The_Model, Func_Index);
             Func_Name    : constant String := Ada.Strings.Unbounded.To_String (The_Function.Name);
          begin
             if The_Function.Core_Exported then
@@ -197,7 +216,7 @@ package body Lovelace.Compiler.Backend.Wat is
    begin
       for Export_Index in 1 .. Model.Export_Count (The_Model) loop
          declare
-            The_Export  : constant Model.Lifted_Export := Model.Get_Export (The_Model, Export_Index);
+            The_Export  : constant Model.Lifted_Export := Get_Export (The_Model, Export_Index);
             Alias_Index : constant Natural := Core_Func_Alias_Index (The_Model, The_Export.Core_Function_Index);
             Type_Index  : constant Natural :=
               Natural (if The_Export.Returns_Result then Layout.Result_Functype_Index else Layout.Unit_Type_Index);
@@ -243,7 +262,7 @@ package body Lovelace.Compiler.Backend.Wat is
 
       for Func_Index in 1 .. Model.Function_Count (The_Model) loop
          declare
-            The_Function : constant Model.Core_Function := Model.Get_Function (The_Model, Func_Index);
+            The_Function : constant Model.Core_Function := Get_Function (The_Model, Func_Index);
             Func_Name    : constant String := Ada.Strings.Unbounded.To_String (The_Function.Name);
          begin
             if The_Function.Core_Exported then
@@ -283,7 +302,7 @@ package body Lovelace.Compiler.Backend.Wat is
    begin
       for Export_Index in 1 .. Model.Export_Count (The_Model) loop
          declare
-            The_Export  : constant Model.Lifted_Export := Model.Get_Export (The_Model, Export_Index);
+            The_Export  : constant Model.Lifted_Export := Get_Export (The_Model, Export_Index);
             Export_Name : constant String := Ada.Strings.Unbounded.To_String (The_Export.Export_Name);
          begin
             if The_Export.Returns_Result then
@@ -333,14 +352,18 @@ package body Lovelace.Compiler.Backend.Wat is
    is
       Lifted_Func_Cursor : Natural := Lifted_Func_Base;
    begin
-      for Export_Index in 1 .. Model.Export_Count (The_Model) loop
-         if Model.Get_Export (The_Model, Export_Index).Returns_Result then
-            Append_Line
-              (Buffer,
-               "  (instance (export ""run"" (func "
-               & Image_Without_Leading_Space (Integer (Lifted_Func_Cursor))
-               & ")))");
-         end if;
+      for Export_Index in 1 .. Export_Count (The_Model) loop
+         declare
+            The_Export : constant Model.Lifted_Export := Get_Export (The_Model, Export_Index);
+         begin
+            if The_Export.Returns_Result then
+               Append_Line
+                 (Buffer,
+                  "  (instance (export ""run"" (func "
+                  & Image_Without_Leading_Space (Integer (Lifted_Func_Cursor))
+                  & ")))");
+            end if;
+         end;
 
          Lifted_Func_Cursor := Lifted_Func_Cursor + 1;
       end loop;
@@ -440,17 +463,21 @@ package body Lovelace.Compiler.Backend.Wat is
    function Assign_Export_Types (The_Model : Model.Component_Model; Type_Base : Natural) return Export_Type_Layout is
       Layout : Export_Type_Layout := (Next_Type_Index => Type_Base, others => <>);
    begin
-      for Export_Index in 1 .. Model.Export_Count (The_Model) loop
-         if Model.Get_Export (The_Model, Export_Index).Returns_Result then
-            if Layout.Result_Functype_Index < 0 then
-               Layout.Result_Valtype_Index := Layout.Next_Type_Index;
-               Layout.Result_Functype_Index := Layout.Next_Type_Index + 1;
-               Layout.Next_Type_Index := Layout.Next_Type_Index + 2;
+      for Export_Index in 1 .. Export_Count (The_Model) loop
+         declare
+            The_Export : constant Model.Lifted_Export := Get_Export (The_Model, Export_Index);
+         begin
+            if The_Export.Returns_Result then
+               if Layout.Result_Functype_Index < 0 then
+                  Layout.Result_Valtype_Index := Layout.Next_Type_Index;
+                  Layout.Result_Functype_Index := Layout.Next_Type_Index + 1;
+                  Layout.Next_Type_Index := Layout.Next_Type_Index + 2;
+               end if;
+            elsif Layout.Unit_Type_Index < 0 then
+               Layout.Unit_Type_Index := Layout.Next_Type_Index;
+               Layout.Next_Type_Index := Layout.Next_Type_Index + 1;
             end if;
-         elsif Layout.Unit_Type_Index < 0 then
-            Layout.Unit_Type_Index := Layout.Next_Type_Index;
-            Layout.Next_Type_Index := Layout.Next_Type_Index + 1;
-         end if;
+         end;
       end loop;
 
       return Layout;
@@ -472,13 +499,17 @@ package body Lovelace.Compiler.Backend.Wat is
       Alias_Index : Natural := 0;
    begin
       for Index in 1 .. Core_Function_Index loop
-         if Model.Get_Function (The_Model, Index).Core_Exported then
-            if Index = Core_Function_Index then
-               return Alias_Index;
-            end if;
+         declare
+            The_Function : constant Model.Core_Function := Get_Function (The_Model, Index);
+         begin
+            if The_Function.Core_Exported then
+               if Index = Core_Function_Index then
+                  return Alias_Index;
+               end if;
 
-            Alias_Index := Alias_Index + 1;
-         end if;
+               Alias_Index := Alias_Index + 1;
+            end if;
+         end;
       end loop;
 
       return 0;
@@ -512,12 +543,7 @@ package body Lovelace.Compiler.Backend.Wat is
             Byte : constant Character := Name (Index);
             Code : constant Natural := Character'Pos (Byte);
          begin
-            if Byte in 'A' .. 'Z'
-              or else Byte in 'a' .. 'z'
-              or else Byte in '0' .. '9'
-              or else Byte = '_'
-              or else Byte = '-'
-            then
+            if Is_Wat_Id_Char (Byte) then
                Last := Last + 1;
                Buffer (Last) := Byte;
             else
@@ -531,7 +557,7 @@ package body Lovelace.Compiler.Backend.Wat is
          end;
       end loop;
 
-      if Last = 0 or else Buffer (1) in '0' .. '9' or else Buffer (1) = '-' then
+      if Last = 0 or else Needs_Dollar_Prefix_Guard (Buffer (1)) then
          return "$n_" & Buffer (1 .. Last);
       end if;
 
@@ -555,7 +581,7 @@ package body Lovelace.Compiler.Backend.Wat is
 
    function Function_Text (The_Model : Model.Component_Model; Func_Index : Positive) return String is
       Buffer       : Ada.Strings.Unbounded.Unbounded_String;
-      The_Function : constant Model.Core_Function := Model.Get_Function (The_Model, Func_Index);
+      The_Function : constant Model.Core_Function := Get_Function (The_Model, Func_Index);
    begin
       Ada.Strings.Unbounded.Append (Buffer, "    (func " & Wat_Func_Id (The_Model, Func_Index));
 
@@ -640,6 +666,16 @@ package body Lovelace.Compiler.Backend.Wat is
       end case;
    end Instruction_Text;
 
+   function Is_Wat_Id_Char (Byte : Character) return Boolean is
+   begin
+      case Byte is
+         when 'A' .. 'Z' | 'a' .. 'z' | '0' .. '9' | '_' | '-' =>
+            return True;
+         when others =>
+            return False;
+      end case;
+   end Is_Wat_Id_Char;
+
    function Locals_Text (The_Function : Model.Core_Function) return String is
       Buffer : Ada.Strings.Unbounded.Unbounded_String;
    begin
@@ -666,13 +702,23 @@ package body Lovelace.Compiler.Backend.Wat is
    function Name_Count (The_Model : Model.Component_Model; Name : String) return Natural is
       Total : Natural := 0;
    begin
-      for Index in 1 .. Model.Function_Count (The_Model) loop
-         if Ada.Strings.Unbounded.To_String (Model.Get_Function (The_Model, Index).Name) = Name then
-            Total := Total + 1;
-         end if;
+      for Index in 1 .. Function_Count (The_Model) loop
+         declare
+            The_Function : constant Model.Core_Function := Get_Function (The_Model, Index);
+            Func_Name    : constant String := Unbounded_Text (The_Function.Name);
+         begin
+            if Func_Name = Name then
+               Total := Total + 1;
+            end if;
+         end;
       end loop;
       return Total;
    end Name_Count;
+
+   function Needs_Dollar_Prefix_Guard (First : Character) return Boolean is
+   begin
+      return First in '0' .. '9' or else First = '-';
+   end Needs_Dollar_Prefix_Guard;
 
    function Operand_Text (The_Model : Model.Component_Model; Item : Model.Core_Instruction) return String is
    begin
@@ -727,8 +773,9 @@ package body Lovelace.Compiler.Backend.Wat is
    end To_Wat;
 
    function Wat_Func_Id (The_Model : Model.Component_Model; Func_Index : Positive) return String is
-      Func_Name : constant String := Ada.Strings.Unbounded.To_String (Model.Get_Function (The_Model, Func_Index).Name);
-      Base      : constant String := Dollar_Name (Func_Name);
+      The_Function : constant Model.Core_Function := Get_Function (The_Model, Func_Index);
+      Func_Name    : constant String := Unbounded_Text (The_Function.Name);
+      Base         : constant String := Dollar_Name (Func_Name);
    begin
       if Name_Count (The_Model, Func_Name) > 1 then
          return Base & "_" & Image_Without_Leading_Space (Func_Index);

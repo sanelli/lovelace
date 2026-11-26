@@ -5,6 +5,7 @@ with Lovelace.Main.Tests.Compile;
 with Lovelace.Main.Tests.Compile_Run;
 with Lovelace.Main.Tests.Help;
 with Lovelace.Main.Tests.Reporting;
+with Lovelace.Main.Tests.Run;
 with Lovelace.Main.Tests.Terminal;
 with Lovelace.Main.Tests.Version;
 
@@ -15,12 +16,15 @@ package body Lovelace.Main.Tests.Suite is
    package Compile_Run_Caller is new AUnit.Test_Caller (Lovelace.Main.Tests.Compile_Run.Fixture);
    package Help_Caller is new AUnit.Test_Caller (Lovelace.Main.Tests.Help.Fixture);
    package Reporting_Caller is new AUnit.Test_Caller (Lovelace.Main.Tests.Reporting.Fixture);
+   package Run_Caller is new AUnit.Test_Caller (Lovelace.Main.Tests.Run.Fixture);
    package Terminal_Caller is new AUnit.Test_Caller (Lovelace.Main.Tests.Terminal.Fixture);
    package Version_Caller is new AUnit.Test_Caller (Lovelace.Main.Tests.Version.Fixture);
 
    function Suite return AUnit.Test_Suites.Access_Test_Suite is
       Result : constant AUnit.Test_Suites.Access_Test_Suite := new AUnit.Test_Suites.Test_Suite;
    begin
+      Result.Add_Test
+        (Arguments_Caller.Create ("arguments: commands", Lovelace.Main.Tests.Arguments.Test_Commands'Access));
       Result.Add_Test
         (Arguments_Caller.Create
            ("arguments: globals before command", Lovelace.Main.Tests.Arguments.Test_Globals_Before_Command'Access));
@@ -32,7 +36,17 @@ package body Lovelace.Main.Tests.Suite is
         (Arguments_Caller.Create
            ("arguments: unknown global rejected", Lovelace.Main.Tests.Arguments.Test_Unknown_Global'Access));
       Result.Add_Test
+        (Arguments_Caller.Create
+           ("arguments: unknown command rejected", Lovelace.Main.Tests.Arguments.Test_Unknown_Command'Access));
+      Result.Add_Test
+        (Arguments_Caller.Create
+           ("arguments: option as command rejected",
+            Lovelace.Main.Tests.Arguments.Test_Unknown_Option_As_Command'Access));
+      Result.Add_Test
         (Arguments_Caller.Create ("arguments: no command", Lovelace.Main.Tests.Arguments.Test_No_Command'Access));
+      Result.Add_Test
+        (Arguments_Caller.Create
+           ("arguments: process command line", Lovelace.Main.Tests.Arguments.Test_Process_Command_Line'Access));
 
       Result.Add_Test
         (Build_Caller.Create ("compile: no-warnings list", Lovelace.Main.Tests.Compile.Test_No_Warnings_List'Access));
@@ -136,6 +150,9 @@ package body Lovelace.Main.Tests.Suite is
            ("compile in-process: load error", Lovelace.Main.Tests.Compile_Run.Test_Load_Error'Access));
       Result.Add_Test
         (Compile_Run_Caller.Create
+           ("compile in-process: loaded dependency", Lovelace.Main.Tests.Compile_Run.Test_Loaded_Dependency'Access));
+      Result.Add_Test
+        (Compile_Run_Caller.Create
            ("compile in-process: semantic error", Lovelace.Main.Tests.Compile_Run.Test_Semantic_Error'Access));
       Result.Add_Test
         (Compile_Run_Caller.Create
@@ -179,6 +196,21 @@ package body Lovelace.Main.Tests.Suite is
         (Help_Caller.Create ("help: topics and errors", Lovelace.Main.Tests.Help.Test_Help_Topics_And_Errors'Access));
       Result.Add_Test
         (Help_Caller.Create ("help: standard error stream", Lovelace.Main.Tests.Help.Test_Help_Standard_Error'Access));
+
+      Result.Add_Test
+        (Run_Caller.Create ("main run: none dispatch", Lovelace.Main.Tests.Run.Test_None_Dispatch'Access));
+      Result.Add_Test
+        (Run_Caller.Create
+           ("main run: parse failure dispatch", Lovelace.Main.Tests.Run.Test_Parse_Failure_Dispatch'Access));
+      Result.Add_Test
+        (Run_Caller.Create ("main run: help dispatch", Lovelace.Main.Tests.Run.Test_Help_Dispatch'Access));
+      Result.Add_Test
+        (Run_Caller.Create ("main run: Main.Run wrapper", Lovelace.Main.Tests.Run.Test_Main_Run_Wrapper'Access));
+      Result.Add_Test
+        (Run_Caller.Create ("main run: version dispatch", Lovelace.Main.Tests.Run.Test_Version_Dispatch'Access));
+      Result.Add_Test
+        (Run_Caller.Create
+           ("main run: compile failure dispatch", Lovelace.Main.Tests.Run.Test_Compile_Failure_Dispatch'Access));
 
       Result.Add_Test
         (Version_Caller.Create

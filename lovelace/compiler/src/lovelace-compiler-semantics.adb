@@ -38,6 +38,10 @@ package body Lovelace.Compiler.Semantics is
 
    procedure Analyze_Unit (The_Context : in out Context; Unit_Index : Positive);
 
+   function Unit_At
+     (Units : Unit_Graph.Compilation_Set; Index : Positive) return Unit_Graph.Loaded_Unit;
+   --  Wrapper so call sites are not dotted (gnatcov call coverage).
+
    procedure Emit_Unused_Usings (The_Context : in out Context);
 
    procedure Add_Error
@@ -281,7 +285,8 @@ package body Lovelace.Compiler.Semantics is
    end Analyze_Expression;
 
    procedure Analyze_Subroutine (The_Context : in out Context; Subroutine_Index : Positive) is
-      The_Module     : constant Ast.Module := The_Context.Units.Element (The_Context.Unit_Index).The_Module;
+      Loaded_Unit    : constant Unit_Graph.Loaded_Unit := Unit_At (The_Context.Units, The_Context.Unit_Index);
+      The_Module     : constant Ast.Module := Loaded_Unit.The_Module;
       The_Subroutine : constant Ast.Subroutine := Ast.Get_Subroutine (The_Module, Subroutine_Index);
       Formals        : constant Ast.Parameter_Sequence := Ast.Parameters (The_Subroutine);
       Errors_Before  : constant Natural := Natural (The_Context.Result.Errors.Length);
@@ -326,7 +331,8 @@ package body Lovelace.Compiler.Semantics is
    end Analyze_Subroutine;
 
    procedure Analyze_Unit (The_Context : in out Context; Unit_Index : Positive) is
-      The_Module  : constant Ast.Module := The_Context.Units.Element (Unit_Index).The_Module;
+      Loaded_Unit : constant Unit_Graph.Loaded_Unit := Unit_At (The_Context.Units, Unit_Index);
+      The_Module  : constant Ast.Module := Loaded_Unit.The_Module;
       Empty_Scope : Environment.Scope_Stack;
    begin
       The_Context.Unit_Index := Unit_Index;
@@ -406,5 +412,11 @@ package body Lovelace.Compiler.Semantics is
    begin
       return Result.Errors.Is_Empty;
    end Succeeded;
+
+   function Unit_At
+     (Units : Unit_Graph.Compilation_Set; Index : Positive) return Unit_Graph.Loaded_Unit is
+   begin
+      return Units.Element (Index);
+   end Unit_At;
 
 end Lovelace.Compiler.Semantics;

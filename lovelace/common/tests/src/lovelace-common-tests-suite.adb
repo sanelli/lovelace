@@ -1,5 +1,6 @@
 with AUnit.Test_Caller;
 
+with Lovelace.Common.Tests.Internal_Error;
 with Lovelace.Common.Tests.Option;
 with Lovelace.Common.Tests.Regex_Engine;
 with Lovelace.Common.Tests.Source;
@@ -8,6 +9,8 @@ with Lovelace.Common.Tests.Utf_8;
 
 package body Lovelace.Common.Tests.Suite is
 
+   package Internal_Error_Caller is new
+     AUnit.Test_Caller (Lovelace.Common.Tests.Internal_Error.Fixture);
    package Option_Caller is new AUnit.Test_Caller (Lovelace.Common.Tests.Option.Fixture);
    package Regex_Caller is new AUnit.Test_Caller (Lovelace.Common.Tests.Regex_Engine.Fixture);
    package Source_Caller is new AUnit.Test_Caller (Lovelace.Common.Tests.Source.Fixture);
@@ -17,6 +20,11 @@ package body Lovelace.Common.Tests.Suite is
    function Suite return AUnit.Test_Suites.Access_Test_Suite is
       Result : constant AUnit.Test_Suites.Access_Test_Suite := new AUnit.Test_Suites.Test_Suite;
    begin
+      Result.Add_Test
+        (Internal_Error_Caller.Create
+           ("internal error: make detail report",
+            Lovelace.Common.Tests.Internal_Error.Test_Make_Detail_Report'Access));
+
       Result.Add_Test (Option_Caller.Create ("option: none variant", Lovelace.Common.Tests.Option.Test_None'Access));
       Result.Add_Test
         (Option_Caller.Create ("option: from value", Lovelace.Common.Tests.Option.Test_From_Value'Access));

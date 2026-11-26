@@ -390,6 +390,46 @@ package body Lovelace.Main.Tests.Compile_Run is
       Remove (Work);
    end Test_Load_Error;
 
+   procedure Test_Loaded_Dependency (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Work   : constant String := Work_Dir ("loaded-dependency");
+      Lib    : constant String := Ada.Directories.Compose (Work, "Lib.love");
+      Path   : constant String := Ada.Directories.Compose (Work, "Caller.love");
+      Result : Run_Result;
+   begin
+      Write_Source
+        (Lib,
+         "module Lib;"
+         & ASCII.LF
+         & "export procedure Sink(Value : integer);"
+         & ASCII.LF
+         & "begin"
+         & ASCII.LF
+         & "end;"
+         & ASCII.LF
+         & "end."
+         & ASCII.LF);
+      Write_Source
+        (Path,
+         "using Lib;"
+         & ASCII.LF
+         & "program Caller;"
+         & ASCII.LF
+         & "begin"
+         & ASCII.LF
+         & "   Lib.Sink(1);"
+         & ASCII.LF
+         & "end."
+         & ASCII.LF);
+      Result :=
+        Run_Compile (Work, Make_Args (Path, "--force", "--no-wit", "-I", Work, "--output-folder", Out_Dir (Work)));
+      AUnit.Assertions.Assert
+        (Result.Ok, "loaded dependency compile: " & Ada.Strings.Unbounded.To_String (Result.Stderr));
+      AUnit.Assertions.Assert
+        (Contains (Ada.Strings.Unbounded.To_String (Result.Stdout), "Loaded "), "reports Loaded dependency");
+      Remove (Work);
+   end Test_Loaded_Dependency;
+
    procedure Test_Missing_Output_Folder_Value (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Work   : constant String := Work_Dir ("missing-value");

@@ -9,6 +9,16 @@ with Lovelace.Compiler.Backend.Wit;
 
 package body Lovelace.Compiler.Backend.Wasm is
 
+   --  Simple-name renames so gnatcov can instrument call coverage (no dotted callees).
+   function Get_Export
+     (The_Model : Model.Component_Model; Index : Positive) return Model.Lifted_Export
+     renames Model.Get_Export;
+   function Get_Function
+     (The_Model : Model.Component_Model; Index : Positive) return Model.Core_Function
+     renames Model.Get_Function;
+   function Export_Count (The_Model : Model.Component_Model) return Natural renames Model.Export_Count;
+   function Function_Count (The_Model : Model.Component_Model) return Natural renames Model.Function_Count;
+
    procedure Append_Name (Sequence : in out Byte_Sequence; Name : String);
    --  Length-prefixed UTF-8 name (core:name / externname bytes).
 
@@ -203,7 +213,7 @@ package body Lovelace.Compiler.Backend.Wasm is
 
          for Func_Index in 1 .. Model.Function_Count (The_Model) loop
             declare
-               The_Function : constant Model.Core_Function := Model.Get_Function (The_Model, Func_Index);
+               The_Function : constant Model.Core_Function := Get_Function (The_Model, Func_Index);
             begin
                if The_Function.Core_Exported then
                   Append_Raw (Contents, [16#00#, 16#00#, 16#01#]); -- core sort, func, alias core export
@@ -229,7 +239,7 @@ package body Lovelace.Compiler.Backend.Wasm is
 
       for Export_Index in 1 .. Model.Export_Count (The_Model) loop
          declare
-            The_Export  : constant Model.Lifted_Export := Model.Get_Export (The_Model, Export_Index);
+            The_Export  : constant Model.Lifted_Export := Get_Export (The_Model, Export_Index);
             Alias_Index : constant Natural := Core_Func_Alias_Index (The_Model, The_Export.Core_Function_Index);
             Type_Index  : constant Natural :=
               Natural (if The_Export.Returns_Result then Layout.Result_Functype_Index else Layout.Unit_Type_Index);
@@ -334,7 +344,7 @@ package body Lovelace.Compiler.Backend.Wasm is
 
       for Export_Index in 1 .. Model.Export_Count (The_Model) loop
          declare
-            The_Export : constant Model.Lifted_Export := Model.Get_Export (The_Model, Export_Index);
+            The_Export : constant Model.Lifted_Export := Get_Export (The_Model, Export_Index);
          begin
             Append (Contents, 16#00#); -- nameattributes plain
             Append_Name (Contents, Ada.Strings.Unbounded.To_String (The_Export.Export_Name));
@@ -500,13 +510,17 @@ package body Lovelace.Compiler.Backend.Wasm is
       if Instance_Count > 0 then
          Leb128.Append_Unsigned (Contents, Interfaces.Unsigned_32 (Instance_Count));
 
-         for Export_Index in 1 .. Model.Export_Count (The_Model) loop
-            if Model.Get_Export (The_Model, Export_Index).Returns_Result then
-               Append_Raw (Contents, [16#01#, 1, 16#00#]); -- export bundle, one export, plain name
-               Append_Name (Contents, "run");
-               Append (Contents, 16#01#); -- sort: func
-               Leb128.Append_Unsigned (Contents, Interfaces.Unsigned_32 (Lifted_Func_Cursor));
-            end if;
+         for Export_Index in 1 .. Export_Count (The_Model) loop
+            declare
+               The_Export : constant Model.Lifted_Export := Get_Export (The_Model, Export_Index);
+            begin
+               if The_Export.Returns_Result then
+                  Append_Raw (Contents, [16#01#, 1, 16#00#]); -- export bundle, one export, plain name
+                  Append_Name (Contents, "run");
+                  Append (Contents, 16#01#); -- sort: func
+                  Leb128.Append_Unsigned (Contents, Interfaces.Unsigned_32 (Lifted_Func_Cursor));
+               end if;
+            end;
 
             Lifted_Func_Cursor := Lifted_Func_Cursor + 1;
          end loop;
@@ -707,18 +721,22 @@ package body Lovelace.Compiler.Backend.Wasm is
    function Assign_Export_Types (The_Model : Model.Component_Model; Type_Base : Natural) return Export_Type_Layout is
       Layout : Export_Type_Layout := (Next_Type_Index => Type_Base, others => <>);
    begin
-      for Export_Index in 1 .. Model.Export_Count (The_Model) loop
-         if Model.Get_Export (The_Model, Export_Index).Returns_Result then
-            if Layout.Result_Functype_Index < 0 then
-               --  Bare (result) is a defvaltype; functype may only reference it by typeidx.
-               Layout.Result_Valtype_Index := Layout.Next_Type_Index;
-               Layout.Result_Functype_Index := Layout.Next_Type_Index + 1;
-               Layout.Next_Type_Index := Layout.Next_Type_Index + 2;
+      for Export_Index in 1 .. Export_Count (The_Model) loop
+         declare
+            The_Export : constant Model.Lifted_Export := Get_Export (The_Model, Export_Index);
+         begin
+            if The_Export.Returns_Result then
+               if Layout.Result_Functype_Index < 0 then
+                  --  Bare (result) is a defvaltype; functype may only reference it by typeidx.
+                  Layout.Result_Valtype_Index := Layout.Next_Type_Index;
+                  Layout.Result_Functype_Index := Layout.Next_Type_Index + 1;
+                  Layout.Next_Type_Index := Layout.Next_Type_Index + 2;
+               end if;
+            elsif Layout.Unit_Type_Index < 0 then
+               Layout.Unit_Type_Index := Layout.Next_Type_Index;
+               Layout.Next_Type_Index := Layout.Next_Type_Index + 1;
             end if;
-         elsif Layout.Unit_Type_Index < 0 then
-            Layout.Unit_Type_Index := Layout.Next_Type_Index;
-            Layout.Next_Type_Index := Layout.Next_Type_Index + 1;
-         end if;
+         end;
       end loop;
 
       return Layout;
@@ -745,7 +763,7 @@ package body Lovelace.Compiler.Backend.Wasm is
 
       for Func_Index in 1 .. Model.Function_Count (The_Model) loop
          declare
-            The_Function : constant Model.Core_Function := Model.Get_Function (The_Model, Func_Index);
+            The_Function : constant Model.Core_Function := Get_Function (The_Model, Func_Index);
             Code_Body    : Byte_Sequence := Empty_Bytes;
             Body_Size    : Byte_Sequence := Empty_Bytes;
          begin
@@ -772,7 +790,7 @@ package body Lovelace.Compiler.Backend.Wasm is
 
       for Func_Index in 1 .. Model.Function_Count (The_Model) loop
          declare
-            The_Function : constant Model.Core_Function := Model.Get_Function (The_Model, Func_Index);
+            The_Function : constant Model.Core_Function := Get_Function (The_Model, Func_Index);
          begin
             if The_Function.Core_Exported then
                Append_Name (Contents, Ada.Strings.Unbounded.To_String (The_Function.Name));
@@ -788,10 +806,14 @@ package body Lovelace.Compiler.Backend.Wasm is
    function Core_Export_Count (The_Model : Model.Component_Model) return Natural is
       Total : Natural := 0;
    begin
-      for Func_Index in 1 .. Model.Function_Count (The_Model) loop
-         if Model.Get_Function (The_Model, Func_Index).Core_Exported then
-            Total := Total + 1;
-         end if;
+      for Func_Index in 1 .. Function_Count (The_Model) loop
+         declare
+            The_Function : constant Model.Core_Function := Get_Function (The_Model, Func_Index);
+         begin
+            if The_Function.Core_Exported then
+               Total := Total + 1;
+            end if;
+         end;
       end loop;
 
       return Total;
@@ -801,13 +823,17 @@ package body Lovelace.Compiler.Backend.Wasm is
       Alias_Index : Natural := 0;
    begin
       for Index in 1 .. Core_Function_Index loop
-         if Model.Get_Function (The_Model, Index).Core_Exported then
-            if Index = Core_Function_Index then
-               return Alias_Index;
-            end if;
+         declare
+            The_Function : constant Model.Core_Function := Get_Function (The_Model, Index);
+         begin
+            if The_Function.Core_Exported then
+               if Index = Core_Function_Index then
+                  return Alias_Index;
+               end if;
 
-            Alias_Index := Alias_Index + 1;
-         end if;
+               Alias_Index := Alias_Index + 1;
+            end if;
+         end;
       end loop;
 
       return 0;
@@ -855,7 +881,7 @@ package body Lovelace.Compiler.Backend.Wasm is
       end if;
 
       for Func_Index in 1 .. Function_Count loop
-         Append_Core_Function_Type (Contents, Model.Get_Function (The_Model, Func_Index));
+         Append_Core_Function_Type (Contents, Get_Function (The_Model, Func_Index));
       end loop;
 
       return Contents;
@@ -980,10 +1006,14 @@ package body Lovelace.Compiler.Backend.Wasm is
    function Result_Export_Count (The_Model : Model.Component_Model) return Natural is
       Total : Natural := 0;
    begin
-      for Export_Index in 1 .. Model.Export_Count (The_Model) loop
-         if Model.Get_Export (The_Model, Export_Index).Returns_Result then
-            Total := Total + 1;
-         end if;
+      for Export_Index in 1 .. Export_Count (The_Model) loop
+         declare
+            The_Export : constant Model.Lifted_Export := Get_Export (The_Model, Export_Index);
+         begin
+            if The_Export.Returns_Result then
+               Total := Total + 1;
+            end if;
+         end;
       end loop;
 
       return Total;

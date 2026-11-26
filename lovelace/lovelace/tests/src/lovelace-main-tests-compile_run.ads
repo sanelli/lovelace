@@ -63,6 +63,10 @@ package Lovelace.Main.Tests.Compile_Run is
    --  @param The_Test Unused fixture.
    procedure Test_Load_Error (The_Test : in out Fixture);
 
+   --  A resolved using dependency logs Loaded for the secondary unit.
+   --  @param The_Test Unused fixture.
+   procedure Test_Loaded_Dependency (The_Test : in out Fixture);
+
    --  --output-folder without a value fails.
    --  @param The_Test Unused fixture.
    procedure Test_Missing_Output_Folder_Value (The_Test : in out Fixture);

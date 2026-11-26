@@ -214,6 +214,17 @@ package body Lovelace.Compiler.Tokenizer is
       Last     : Source.Source_Position;
       Filename : Source.Filename_Option;
       Detail   : String);
+   procedure Append_Lexeme_Token
+     (Token_List  : in out Tokens.Token_Sequence;
+      Source_Text : String;
+      Position    : Positive;
+      Line        : Positive;
+      Column      : Positive;
+      Consumed    : Natural;
+      Kind        : Tokens.Token_Kind;
+      Filename    : Source.Filename_Option);
+   --  Append a span-only token (integer/float/string literal).
+
    procedure Append_Matched
      (Token_List   : in out Tokens.Token_Sequence;
       Errors       : in out Tokenizer_Error_Sequence;
@@ -224,6 +235,27 @@ package body Lovelace.Compiler.Tokenizer is
       Match_Length : Natural;
       Kind         : Tokens.Token_Kind;
       Filename     : Source.Filename_Option);
+
+   function Better_Scan_Candidate
+     (Candidate_Length : Natural; Match_Length : Natural; Candidate_Kind : Tokens.Token_Kind) return Boolean;
+   --  True when Candidate should replace the current longest match.
+
+   function Reject_At_Identifier
+     (Candidate        : Scan_Class;
+      Candidate_Length : Natural;
+      Source_Text      : String;
+      Position         : Positive;
+      After_Delimiter  : Boolean) return Boolean;
+   --  Drop @-identifiers that are not after a delimiter.
+
+   function Truncation_Byte_Ok
+     (Point           : Code_Point;
+      Length          : Natural;
+      Valid           : Boolean;
+      After_At_Prefix : Boolean;
+      Consumed        : Natural) return Boolean;
+   --  True when a decoded UTF-8 scalar may extend an identifier truncation.
+
    procedure Longest_Scan_Match
      (Source_Text     : String;
       Position        : Positive;
@@ -330,6 +362,42 @@ package body Lovelace.Compiler.Tokenizer is
             Detail   => Ada.Strings.Unbounded.To_Unbounded_String (Detail)));
    end Append_Error;
 
+   procedure Append_Lexeme_Token
+     (Token_List  : in out Tokens.Token_Sequence;
+      Source_Text : String;
+      Position    : Positive;
+      Line        : Positive;
+      Column      : Positive;
+      Consumed    : Natural;
+      Kind        : Tokens.Token_Kind;
+      Filename    : Source.Filename_Option)
+   is
+      Token_Span : constant Source.Source_Span :=
+        Make_Span
+          (Source_Text => Source_Text,
+           Position    => Position,
+           Byte_Count  => Consumed,
+           Line        => Line,
+           Column      => Column);
+   begin
+      case Kind is
+         when Tokens.Integer_Literal =>
+            Tokens.Append
+              (Token_List, Tokens.Token'(Kind => Tokens.Integer_Literal, Span => Token_Span, Filename => Filename));
+
+         when Tokens.Float_Literal   =>
+            Tokens.Append
+              (Token_List, Tokens.Token'(Kind => Tokens.Float_Literal, Span => Token_Span, Filename => Filename));
+
+         when Tokens.String_Literal  =>
+            Tokens.Append
+              (Token_List, Tokens.Token'(Kind => Tokens.String_Literal, Span => Token_Span, Filename => Filename));
+
+         when others                 =>
+            raise Program_Error with "Append_Lexeme_Token expects a literal kind";
+      end case;
+   end Append_Lexeme_Token;
+
    procedure Append_Matched
      (Token_List   : in out Tokens.Token_Sequence;
       Errors       : in out Tokenizer_Error_Sequence;
@@ -347,118 +415,117 @@ package body Lovelace.Compiler.Tokenizer is
       Punctuation_Found : Punctuation_Options.Option;
       Directive_Found   : Directive_Options.Option;
       Last_Position     : Source.Source_Position;
+
+      procedure Append_Directive_Token;
+      procedure Append_Id_Or_Keyword;
+      procedure Append_Punctuation_Token;
+
+      procedure Append_Directive_Token is
+      begin
+         Directive_Found := Lookup_Directive (Source_Text (Position .. Position + Consumed - 1));
+         case Directive_Found.Present is
+            when False =>
+               Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
+               Consumed := 0;
+
+            when True  =>
+               Token_Span :=
+                 Make_Span
+                   (Source_Text => Source_Text,
+                    Position    => Position,
+                    Byte_Count  => Consumed,
+                    Line        => Line,
+                    Column      => Column);
+               Tokens.Append
+                 (Token_List,
+                  Tokens.Token'
+                    (Kind            => Tokens.Directive,
+                     Span            => Token_Span,
+                     Filename        => Filename,
+                     Directive_Value => Directive_Found.Value));
+         end case;
+      end Append_Directive_Token;
+
+      procedure Append_Id_Or_Keyword is
+      begin
+         Consumed := Truncate_Identifier_Length (Source_Text, Position, Match_Length);
+         if Consumed = 0 then
+            Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
+            return;
+         end if;
+
+         Token_Span :=
+           Make_Span
+             (Source_Text => Source_Text,
+              Position    => Position,
+              Byte_Count  => Consumed,
+              Line        => Line,
+              Column      => Column);
+         Keyword_Found := Lookup_Keyword (Source_Text (Position .. Position + Consumed - 1));
+         case Keyword_Found.Present is
+            when True  =>
+               Tokens.Append
+                 (Token_List,
+                  Tokens.Token'
+                    (Kind          => Tokens.Keyword,
+                     Span          => Token_Span,
+                     Filename      => Filename,
+                     Keyword_Value => Keyword_Found.Value));
+
+            when False =>
+               Tokens.Append
+                 (Token_List, Tokens.Token'(Kind => Tokens.Identifier, Span => Token_Span, Filename => Filename));
+         end case;
+      end Append_Id_Or_Keyword;
+
+      procedure Append_Punctuation_Token is
+      begin
+         Punctuation_Found := Lookup_Punctuation (Source_Text (Position .. Position + Consumed - 1));
+         case Punctuation_Found.Present is
+            when False =>
+               Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
+               Consumed := 0;
+
+            when True  =>
+               Token_Span :=
+                 Make_Span
+                   (Source_Text => Source_Text,
+                    Position    => Position,
+                    Byte_Count  => Consumed,
+                    Line        => Line,
+                    Column      => Column);
+               Tokens.Append
+                 (Token_List,
+                  Tokens.Token'
+                    (Kind              => Tokens.Punctuation,
+                     Span              => Token_Span,
+                     Filename          => Filename,
+                     Punctuation_Value => Punctuation_Found.Value));
+         end case;
+      end Append_Punctuation_Token;
    begin
       case Kind is
          when Tokens.Identifier | Tokens.Keyword =>
-            Consumed := Truncate_Identifier_Length (Source_Text, Position, Match_Length);
+            Append_Id_Or_Keyword;
             if Consumed = 0 then
-               Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
                return;
             end if;
 
-            Token_Span :=
-              Make_Span
-                (Source_Text => Source_Text,
-                 Position    => Position,
-                 Byte_Count  => Consumed,
-                 Line        => Line,
-                 Column      => Column);
-            Keyword_Found := Lookup_Keyword (Source_Text (Position .. Position + Consumed - 1));
-            case Keyword_Found.Present is
-               when True  =>
-                  Tokens.Append
-                    (Token_List,
-                     Tokens.Token'
-                       (Kind          => Tokens.Keyword,
-                        Span          => Token_Span,
-                        Filename      => Filename,
-                        Keyword_Value => Keyword_Found.Value));
-
-               when False =>
-                  Tokens.Append
-                    (Token_List, Tokens.Token'(Kind => Tokens.Identifier, Span => Token_Span, Filename => Filename));
-            end case;
-
-         when Tokens.Integer_Literal             =>
-            Token_Span :=
-              Make_Span
-                (Source_Text => Source_Text,
-                 Position    => Position,
-                 Byte_Count  => Consumed,
-                 Line        => Line,
-                 Column      => Column);
-            Tokens.Append
-              (Token_List, Tokens.Token'(Kind => Tokens.Integer_Literal, Span => Token_Span, Filename => Filename));
-
-         when Tokens.Float_Literal               =>
-            Token_Span :=
-              Make_Span
-                (Source_Text => Source_Text,
-                 Position    => Position,
-                 Byte_Count  => Consumed,
-                 Line        => Line,
-                 Column      => Column);
-            Tokens.Append
-              (Token_List, Tokens.Token'(Kind => Tokens.Float_Literal, Span => Token_Span, Filename => Filename));
-
-         when Tokens.String_Literal              =>
-            Token_Span :=
-              Make_Span
-                (Source_Text => Source_Text,
-                 Position    => Position,
-                 Byte_Count  => Consumed,
-                 Line        => Line,
-                 Column      => Column);
-            Tokens.Append
-              (Token_List, Tokens.Token'(Kind => Tokens.String_Literal, Span => Token_Span, Filename => Filename));
+         when Tokens.Integer_Literal | Tokens.Float_Literal | Tokens.String_Literal =>
+            Append_Lexeme_Token
+              (Token_List, Source_Text, Position, Line, Column, Consumed, Kind, Filename);
 
          when Tokens.Directive                   =>
-            Directive_Found := Lookup_Directive (Source_Text (Position .. Position + Consumed - 1));
-            case Directive_Found.Present is
-               when False =>
-                  Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
-                  return;
-
-               when True  =>
-                  Token_Span :=
-                    Make_Span
-                      (Source_Text => Source_Text,
-                       Position    => Position,
-                       Byte_Count  => Consumed,
-                       Line        => Line,
-                       Column      => Column);
-                  Tokens.Append
-                    (Token_List,
-                     Tokens.Token'
-                       (Kind            => Tokens.Directive,
-                        Span            => Token_Span,
-                        Filename        => Filename,
-                        Directive_Value => Directive_Found.Value));
-            end case;
+            Append_Directive_Token;
+            if Consumed = 0 then
+               return;
+            end if;
 
          when Tokens.Punctuation                 =>
-            Punctuation_Found := Lookup_Punctuation (Source_Text (Position .. Position + Consumed - 1));
-            case Punctuation_Found.Present is
-               when False =>
-                  Report_Unrecognized_Symbol (Errors, Source_Text, Position, Line, Column, Filename);
-                  return;
-
-               when True  =>
-                  Token_Span :=
-                    Make_Span
-                      (Source_Text => Source_Text,
-                       Position    => Position,
-                       Byte_Count  => Consumed,
-                       Line        => Line,
-                       Column      => Column);
-                  Tokens.Append
-                    (Token_List,
-                     Tokens.Token'
-                       (Kind              => Tokens.Punctuation,
-                        Span              => Token_Span,
-                        Filename          => Filename,
-                        Punctuation_Value => Punctuation_Found.Value));
-            end case;
+            Append_Punctuation_Token;
+            if Consumed = 0 then
+               return;
+            end if;
       end case;
 
       Advance_Bytes
@@ -479,6 +546,16 @@ package body Lovelace.Compiler.Tokenizer is
       end loop;
       return Ada.Strings.Unbounded.To_String (Result);
    end Ascii_Punctuation_Class;
+
+   function Better_Scan_Candidate
+     (Candidate_Length : Natural; Match_Length : Natural; Candidate_Kind : Tokens.Token_Kind) return Boolean is
+   begin
+      return
+        Candidate_Length > Match_Length
+        or else (Candidate_Length = Match_Length
+                 and then Candidate_Length > 0
+                 and then Candidate_Kind = Tokens.Punctuation);
+   end Better_Scan_Candidate;
 
    function Compile_Cached (Pattern : String) return Lovelace.Common.Regex.Regex_Result is
    begin
@@ -774,18 +851,10 @@ package body Lovelace.Compiler.Tokenizer is
       for Index in 1 .. Natural (Scan_Classes.Length) loop
          Candidate := Scan_Classes.Element (Index);
          Candidate_Length := Lovelace.Common.Regex.Match_Prefix (Candidate.The_Engine, Source_Text, Position);
-         if Candidate.Kind = Tokens.Identifier
-           and then Candidate_Length > 0
-           and then Source_Text (Position) = '@'
-           and then not After_Delimiter
-         then
+         if Reject_At_Identifier (Candidate, Candidate_Length, Source_Text, Position, After_Delimiter) then
             Candidate_Length := 0;
          end if;
-         if Candidate_Length > Match_Length
-           or else (Candidate_Length = Match_Length
-                    and then Candidate_Length > 0
-                    and then Candidate.Kind = Tokens.Punctuation)
-         then
+         if Better_Scan_Candidate (Candidate_Length, Match_Length, Candidate.Kind) then
             Match_Length := Candidate_Length;
             Kind := Candidate.Kind;
          end if;
@@ -873,6 +942,20 @@ package body Lovelace.Compiler.Tokenizer is
             return Empty_Error_Sequence;
       end case;
    end Register_Scan_Class;
+
+   function Reject_At_Identifier
+     (Candidate        : Scan_Class;
+      Candidate_Length : Natural;
+      Source_Text      : String;
+      Position         : Positive;
+      After_Delimiter  : Boolean) return Boolean is
+   begin
+      return
+        Candidate.Kind = Tokens.Identifier
+        and then Candidate_Length > 0
+        and then Source_Text (Position) = '@'
+        and then not After_Delimiter;
+   end Reject_At_Identifier;
 
    procedure Report_Invalid_Utf_8
      (Errors      : in out Tokenizer_Error_Sequence;
@@ -1294,10 +1377,7 @@ package body Lovelace.Compiler.Tokenizer is
          Lovelace.Common.Utf_8.Decode
            (Source => Source_Text, Index => Index, Point => Point, Length => Length, Valid => Valid);
 
-         if not Valid
-           or else Length = 0
-           or else not Is_Valid_Identifier_Char (Point, After_At_Prefix or else Consumed = 0)
-         then
+         if not Truncation_Byte_Ok (Point, Length, Valid, After_At_Prefix, Consumed) then
             Stopped := True;
          else
             After_At_Prefix := False;
@@ -1308,6 +1388,17 @@ package body Lovelace.Compiler.Tokenizer is
 
       return Consumed;
    end Truncate_Identifier_Length;
+
+   function Truncation_Byte_Ok
+     (Point           : Code_Point;
+      Length          : Natural;
+      Valid           : Boolean;
+      After_At_Prefix : Boolean;
+      Consumed        : Natural) return Boolean is
+   begin
+      return
+        Valid and then Length > 0 and then Is_Valid_Identifier_Char (Point, After_At_Prefix or else Consumed = 0);
+   end Truncation_Byte_Ok;
 
    function Unicode_Ranges_To_Class (Ranges : Scalar_Range_List) return String is
       Result : Ada.Strings.Unbounded.Unbounded_String := Ada.Strings.Unbounded.Null_Unbounded_String;
