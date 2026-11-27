@@ -7,7 +7,9 @@
 #
 # Coupling and extra exit points are reported only (no gate).
 #
-# Preconditions: alr install libadalang_tools (gnatmetric on PATH / ~/.alire/bin)
+# Preconditions: gnatmetric on PATH (and alr for per-crate build / exec env).
+#   Local:  alr install libadalang_tools  (binaries under ~/.alire/bin)
+#   CI:     sanelli/libadalang_tools-dist composite action
 #
 # Usage (repo root):
 #   pwsh scripts/metrics.ps1
@@ -69,7 +71,7 @@ function Ensure-PathPrefix([string] $Directory) {
 Ensure-PathPrefix $AlireBin
 
 if (-not (Get-Command gnatmetric -ErrorAction SilentlyContinue)) {
-    Write-Fail 'gnatmetric not found. Install with: alr install libadalang_tools' 2
+    Write-Fail 'gnatmetric not found. Local: alr install libadalang_tools (ensure ~/.alire/bin on PATH). CI: sanelli/libadalang_tools-dist action.' 2
 }
 
 if (Test-Path -LiteralPath $MetricsRoot) {

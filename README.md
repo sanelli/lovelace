@@ -76,7 +76,7 @@ alr install gnatdoc
 alr install gnatcov
 ```
 
-`libadalang_tools` provides **`gnatformat`** and **`gnatmetric`**. **`gnatcov`** drives host Ada coverage (`scripts/coverage.ps1`).
+`libadalang_tools` provides **`gnatformat`** and **`gnatmetric`** for local use. **`gnatcov`** drives host Ada coverage (`scripts/coverage.ps1`). PR CI installs **`gnatmetric`** from prebuilt [`sanelli/libadalang_tools-dist`](https://github.com/sanelli/libadalang_tools-dist) instead of rebuilding Libadalang.
 
 Host Ada coverage, complexity, and CRAP gates (local scripts + PR-only CI sticky comment): [docs/coverage.md](docs/coverage.md).
 

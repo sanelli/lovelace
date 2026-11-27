@@ -6,12 +6,14 @@ Host library and CLI Ada are measured with **gnatcov** (coverage) and **gnatmetr
 
 ## Install tools
 
-Install once (see README **Development tools**); ensure `~/.alire/bin` is on `PATH`:
+**Local** (see README **Development tools**); ensure `~/.alire/bin` is on `PATH`:
 
 ```bash
 alr install gnatcov
 alr install libadalang_tools   # gnatmetric (+ gnatformat)
 ```
+
+**CI** (`quality` job): installs `gnatcov` via Alire and **`gnatmetric` via** [`sanelli/libadalang_tools-dist`](https://github.com/sanelli/libadalang_tools-dist) (prebuilt zip for `ubuntu-26.04` / crate `26.0.0`). Scripts stay the same — they only require `gnatmetric` on `PATH`.
 
 `gnatcov` and `gnatmetric` are **host tools** (not crate `depends-on`). The first coverage run may execute `gnatcov setup` into `~/.alire` if the coverage runtime is missing (`scripts/coverage.ps1` does this idempotently).
 
@@ -81,7 +83,7 @@ On pull requests, CI posts or updates one sticky comment from that Markdown (✅
 
 ## CI
 
-The **`quality`** job in [`.github/workflows/build.yml`](../.github/workflows/build.yml) runs **only on `pull_request`** (not on `push` to `main`): encoding check → coverage → metrics → crap → quality report + sticky comment. Any gate failure fails the check; the sticky comment is still updated when summaries exist.
+The **`quality`** job in [`.github/workflows/build.yml`](../.github/workflows/build.yml) runs **only on `pull_request`** (not on `push` to `main`): encoding check → Alire/`gnatcov` → **`sanelli/libadalang_tools-dist` (`gnatmetric`)** → coverage → metrics → crap → quality report + sticky comment. Any gate failure fails the check; the sticky comment is still updated when summaries exist.
 
 The ordinary **`build`** job (build + unit + integration) keeps running on both PR and `main` push.
 
@@ -90,6 +92,7 @@ The ordinary **`build`** job (build + unit + integration) keeps running on both 
 | Symptom | What to try |
 | --- | --- |
 | `gnatcov` / `gnatcov_rts` not found | `alr install gnatcov`; put `~/.alire/bin` on `PATH`; let `coverage.ps1` run `gnatcov setup` |
+| `gnatmetric` not found | Local: `alr install libadalang_tools`. CI: ensure `sanelli/libadalang_tools-dist` release has a zip for this runner image + crate version |
 | Stale instrumented sources | Delete `**/gnatcov-instr/` and `.coverage/`, re-run `coverage.ps1` |
 | macOS link / SDK errors | Set `LIBRARY_PATH` and `MACOSX_DEPLOYMENT_TARGET` (README **macOS setup**); coverage.ps1 also tunes SDK paths |
 | CRAP spikes after a refactor | Re-run metrics then coverage then crap; unmatched units count as 0% cov |

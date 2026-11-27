@@ -12,7 +12,7 @@ permissions:
 jobs:
   build:
     name: Build and test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     defaults:
       run:
         shell: pwsh
@@ -48,7 +48,7 @@ jobs:
   quality:
     name: Coverage complexity CRAP
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       pull-requests: write
@@ -71,10 +71,9 @@ jobs:
           toolchain: 'gnat_native=15.2.1 gprbuild'
           cache: true
 
-      - name: Install gnatcov and gnatmetric
+      - name: Install gnatcov
         run: |
           alr -n install gnatcov
-          alr -n install libadalang_tools
           $AlireBin = Join-Path $HOME '.alire' 'bin'
           Add-Content -LiteralPath $env:GITHUB_PATH -Value $AlireBin
           # GITHUB_PATH applies to later steps; prepend for this step's checks too.
@@ -83,10 +82,14 @@ jobs:
             Write-Error "gnatcov not on PATH after install (expected under $AlireBin)"
             exit 1
           }
-          if (-not (Get-Command gnatmetric -ErrorAction SilentlyContinue)) {
-            Write-Error "gnatmetric not on PATH after install (expected under $AlireBin)"
-            exit 1
-          }
+
+      # Prebuilt gnatmetric (and friends) — avoids rebuilding Libadalang on every PR.
+      - name: Setup gnatmetric
+        uses: sanelli/libadalang_tools-dist@main
+        with:
+          version: '26.0.0'
+          release: 'latest'
+          runner-image: 'ubuntu-26.04'
 
       - name: Build Lovelace workspace
         run: alr build
