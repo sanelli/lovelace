@@ -1,0 +1,78 @@
+---
+description: Keep call sites simple names so gnatcov can instrument fun_call coverage
+globs: "**/*.{adb,ads}"
+alwaysApply: true
+---
+
+# gnatcov call instrumentation (no dotted call names)
+
+gnatcov **cannot instrument calls written as dotted names** (`Package.Subprogram (...)`, `Parent.Child.Func (...)`, or prefix calls `Object.Operation (...)`). It also cannot instrument a call that appears as the **prefix of a selected component** (`Func (...).Field`). It emits:
+
+`warning: gnatcov limitation: cannot instrument calls within dotted names`
+
+Those call sites then show up as uncovered under `stmt+decision+fun_call` even when executed.
+
+## Required style
+
+At every **call site** that should be coverage-instrumentable (production Ada under gnatcov):
+
+1. **Do not** call via a dotted name.
+2. **Do not** use a call as the prefix of `.Field` / `.Discriminant`.
+3. **Do** bind the callee to a local simple name, then call that name; bind call results to locals before selecting components.
+
+### Preferred: subprogram renaming
+
+```ada
+function Length
+  (Sequence : Types.Parameter_Sequence) return Natural
+  renames Types.Length;
+
+Count : constant Natural := Length (Params);  -- OK: simple name
+```
+
+### Also OK: local wrapper
+
+```ada
+function Parameter_Count
+  (Sequence : Types.Parameter_Sequence) return Natural
+is
+begin
+   return Types.Length (Sequence);  -- wrapper body may use dotted name
+end Parameter_Count;
+
+Count : constant Natural := Parameter_Count (Params);  -- OK at call site
+```
+
+### Call then select (must bind the result)
+
+```ada
+--  BAD: call is prefix of a selected name
+if Get_Export (The_Model, Index).Returns_Result then
+
+--  GOOD: bind result, then select a field (not a call)
+declare
+   The_Export : constant Lifted_Export := Get_Export (The_Model, Index);
+begin
+   if The_Export.Returns_Result then
+```
+
+### Not sufficient
+
+```ada
+package T renames Types;
+Count := T.Length (Params);  -- STILL dotted — still uninstrumentable
+```
+
+```ada
+Count := Types.Length (Params);  -- dotted — avoid
+```
+
+```ada
+Name := Unbounded_Text (Parameter_At (Params, Index).Name);  -- call-then-select — avoid
+```
+
+## Scope
+
+- Applies to Ada sources that participate in host coverage (`lovelace_common`, `lovelace_lir`, `lovelace_compiler`, `lovelace`).
+- Package renames for **types / readability** remain fine; only **call expressions** must use a simple callee name.
+- Nested dotted **selected components** for data (`Record.Field`) are fine once the call result is bound to a local; this rule is about **subprogram calls**.

@@ -48,9 +48,6 @@ package Lovelace.Lir.Errors is
    type Empty_Success is null record;
 
    --  Validation outcome: Empty_Success or Error_Code.
-   package Validation_Results is new
-     Lovelace.Common.Result
-       (Success_Type => Empty_Success,
-        Error_Type   => Error_Code);
+   package Validation_Results is new Lovelace.Common.Result (Success_Type => Empty_Success, Error_Type => Error_Code);
 
 end Lovelace.Lir.Errors;

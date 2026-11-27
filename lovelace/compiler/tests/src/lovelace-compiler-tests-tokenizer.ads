@@ -123,6 +123,10 @@ package Lovelace.Compiler.Tests.Tokenizer is
    --  @param The_Test Unused fixture.
    procedure Test_Comment_Errors (The_Test : in out Fixture);
 
+   --  Invalid UTF-8 inside a brace comment is reported.
+   --  @param The_Test Unused fixture.
+   procedure Test_Comment_Invalid_Utf_8 (The_Test : in out Fixture);
+
    --  `{` … `}` comments are skipped like whitespace; braces inside strings are not comments.
    --  @param The_Test Unused fixture.
    procedure Test_Comments (The_Test : in out Fixture);

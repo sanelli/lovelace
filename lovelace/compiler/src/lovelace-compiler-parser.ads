@@ -20,7 +20,7 @@ package Lovelace.Compiler.Parser is
    --  @enum Unexpected_Trailing Extra tokens after a complete unit.
    --  @enum Name_Clash Duplicate or conflicting procedure/parameter name.
    --  @enum Invalid_Flavor_Condition `#if`/`#elsif` flavor string is not wasi/native/web.
-   --  @enum Invalid_Module_Version `@version("…")` string is not a valid module version.
+   --  @enum Invalid_Module_Version `@version("â¦")` string is not a valid module version.
    type Parser_Error_Code is
      (Internal_Error,
       Unexpected_End_Of_Input,

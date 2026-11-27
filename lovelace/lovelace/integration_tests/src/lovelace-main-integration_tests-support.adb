@@ -12,8 +12,8 @@ package body Lovelace.Main.Integration_Tests.Support is
 
    use type GNAT.OS_Lib.String_Access;
 
-   function Discard_Stdout_Path return String;
-   --  OS null device for discarding child stdout.
+   function Discard_Stdio_Path return String;
+   --  OS null device for discarding child stdout/stderr.
 
    function Read_Exact_File (Path : String) return String;
    --  Read entire file bytes as a String (no newline rewriting).
@@ -25,11 +25,12 @@ package body Lovelace.Main.Integration_Tests.Support is
      (Program_Name : String;
       Args         : GNAT.OS_Lib.Argument_List;
       Output_Path  : String) return Integer;
-   --  Spawn with stdout written to Output_Path; stderr kept separate.
+   --  Spawn with stdout written to Output_Path; stderr kept separate
+   --  (so Expected_Stdout capture is not mixed with diagnostics).
 
-   function Spawn_Discarding_Stdout
+   function Spawn_Discarding_Stdio
      (Program_Name : String; Args : GNAT.OS_Lib.Argument_List) return Integer;
-   --  Spawn with stdout discarded and stderr kept (for [err] lines).
+   --  Spawn with stdout and stderr discarded (quiet compile/validate/run).
 
    procedure Assert_Build_Artifacts
      (Output_Root : String; Unit_Name : String; Message : String)
@@ -120,7 +121,7 @@ package body Lovelace.Main.Integration_Tests.Support is
               10 => new String'(Include_Path));
       end if;
 
-      Return_Code := Spawn_Discarding_Stdout (Lovelace_Path, Build_Args.all);
+      Return_Code := Spawn_Discarding_Stdio (Lovelace_Path, Build_Args.all);
       GNAT.OS_Lib.Free (Build_Args);
       AUnit.Assertions.Assert (Return_Code = 0, Message & ": build exit 0");
    end Compile_Sample;
@@ -130,14 +131,14 @@ package body Lovelace.Main.Integration_Tests.Support is
       return Ada.Directories.Compose (Root, Relative);
    end Compose_Under;
 
-   function Discard_Stdout_Path return String is
+   function Discard_Stdio_Path return String is
    begin
       if Ada.Directories.Exists ("/dev/null") then
          return "/dev/null";
       end if;
 
       return "NUL";
-   end Discard_Stdout_Path;
+   end Discard_Stdio_Path;
 
    function Locate_Lovelace return String is
       Relative : constant String :=
@@ -320,7 +321,7 @@ package body Lovelace.Main.Integration_Tests.Support is
            5 => new String'(Path));
 
       if Expected_Stdout'Length = 0 then
-         Return_Code := Spawn_Discarding_Stdout (Wasmtime_Path, Run_Args.all);
+         Return_Code := Spawn_Discarding_Stdio (Wasmtime_Path, Run_Args.all);
       else
          Return_Code :=
            Spawn_Capturing_Stdout
@@ -416,26 +417,27 @@ package body Lovelace.Main.Integration_Tests.Support is
       return Return_Code;
    end Spawn_Capturing_Stdout;
 
-   function Spawn_Discarding_Stdout
+   function Spawn_Discarding_Stdio
      (Program_Name : String; Args : GNAT.OS_Lib.Argument_List) return Integer
    is
       Success     : Boolean;
       Return_Code : Integer;
    begin
+      --  Err_To_Out merges stderr into the discarded stdout file (quiet [info]/[warning]/[err]).
       GNAT.OS_Lib.Spawn
         (Program_Name => Program_Name,
          Args         => Args,
-         Output_File  => Discard_Stdout_Path,
+         Output_File  => Discard_Stdio_Path,
          Success      => Success,
          Return_Code  => Return_Code,
-         Err_To_Out   => False);
+         Err_To_Out   => True);
 
       if not Success then
          return 1;
       end if;
 
       return Return_Code;
-   end Spawn_Discarding_Stdout;
+   end Spawn_Discarding_Stdio;
 
    procedure Validate_Artifact
      (Path : String; Message : String; Status : out Tool_Status)
@@ -456,7 +458,7 @@ package body Lovelace.Main.Integration_Tests.Support is
         new GNAT.OS_Lib.Argument_List'
           (1 => new String'("validate"), 2 => new String'(Path));
       Return_Code :=
-        Spawn_Discarding_Stdout (Wasm_Tools_Path, Validate_Args.all);
+        Spawn_Discarding_Stdio (Wasm_Tools_Path, Validate_Args.all);
       GNAT.OS_Lib.Free (Validate_Args);
 
       if Return_Code = 0 then

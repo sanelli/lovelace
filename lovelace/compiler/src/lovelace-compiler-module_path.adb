@@ -9,10 +9,8 @@ package body Lovelace.Compiler.Module_Path is
 
    use type Ada.Directories.File_Kind;
 
-   procedure Append_Unique_Root
-     (Roots : in out Path_Sequence; Candidate : String);
-   function Contains_Path
-     (Paths : Path_Sequence; Candidate : String) return Boolean;
+   procedure Append_Unique_Root (Roots : in out Path_Sequence; Candidate : String);
+   function Contains_Path (Paths : Path_Sequence; Candidate : String) return Boolean;
    function Directory_Of (Path : String) return String;
    function Env_Nonempty (Name : String) return Boolean;
    function Expand_User_Home return String;
@@ -21,9 +19,7 @@ package body Lovelace.Compiler.Module_Path is
    function Power_Of_Two (Exponent : Natural) return Natural;
    function Split_Segments (Name : String) return Path_Sequence;
 
-   procedure Append_Unique_Root
-     (Roots : in out Path_Sequence; Candidate : String)
-   is
+   procedure Append_Unique_Root (Roots : in out Path_Sequence; Candidate : String) is
       Normalized : constant String := Normalize_Existing (Candidate);
    begin
       if not Is_Directory (Candidate) then
@@ -41,9 +37,7 @@ package body Lovelace.Compiler.Module_Path is
       elsif Env_Nonempty ("LOVELACE_HOME") then
          return
            Join_Root
-             (Join_Root
-                (Join_Root (Env.Value ("LOVELACE_HOME"), "lib"), "augusta"),
-              Lovelace.Common.Release.Version);
+             (Join_Root (Join_Root (Env.Value ("LOVELACE_HOME"), "lib"), "augusta"), Lovelace.Common.Release.Version);
       else
          declare
             Home : constant String := Expand_User_Home;
@@ -53,15 +47,13 @@ package body Lovelace.Compiler.Module_Path is
             end if;
             return
               Join_Root
-                (Join_Root
-                   (Join_Root (Join_Root (Home, ".lovelace"), "lib"), "augusta"),
+                (Join_Root (Join_Root (Join_Root (Home, ".lovelace"), "lib"), "augusta"),
                  Lovelace.Common.Release.Version);
          end;
       end if;
    end Augusta_Root;
 
-   function Contains_Path
-     (Paths : Path_Sequence; Candidate : String) return Boolean is
+   function Contains_Path (Paths : Path_Sequence; Candidate : String) return Boolean is
    begin
       for Index in 1 .. Natural (Paths.Length) loop
          if Paths.Element (Index) = Candidate then
@@ -71,10 +63,7 @@ package body Lovelace.Compiler.Module_Path is
       return False;
    end Contains_Path;
 
-   function Default_Search_Roots
-     (Root_Source_Path : String; Include_Paths : Path_Sequence)
-      return Path_Sequence
-   is
+   function Default_Search_Roots (Root_Source_Path : String; Include_Paths : Path_Sequence) return Path_Sequence is
       Roots : Path_Sequence;
    begin
       Append_Unique_Root (Roots, Directory_Of (Root_Source_Path));
@@ -105,7 +94,14 @@ package body Lovelace.Compiler.Module_Path is
 
    function Env_Nonempty (Name : String) return Boolean is
    begin
-      return Env.Exists (Name) and then Env.Value (Name)'Length > 0;
+      if not Env.Exists (Name) then
+         return False;
+      end if;
+      declare
+         Value : constant String := Env.Value (Name);
+      begin
+         return Value'Length > 0;
+      end;
    end Env_Nonempty;
 
    function Expand_User_Home return String is
@@ -140,25 +136,20 @@ package body Lovelace.Compiler.Module_Path is
       end if;
 
       if Root (Root'Last) = '/' or else Root (Root'Last) = '\' then
-         if Relative (Relative'First) = '/'
-           or else Relative (Relative'First) = '\'
-         then
+         if Relative (Relative'First) = '/' or else Relative (Relative'First) = '\' then
             return Root & Relative (Relative'First + 1 .. Relative'Last);
          end if;
          return Root & Relative;
       end if;
 
-      if Relative (Relative'First) = '/'
-        or else Relative (Relative'First) = '\'
-      then
+      if Relative (Relative'First) = '/' or else Relative (Relative'First) = '\' then
          return Root & Relative;
       end if;
 
       return Root & "/" & Relative;
    end Join_Root;
 
-   function Module_To_Relative_Candidates (Name : String) return Path_Sequence
-   is
+   function Module_To_Relative_Candidates (Name : String) return Path_Sequence is
       Segments   : constant Path_Sequence := Split_Segments (Name);
       Seg_Count  : constant Natural := Natural (Segments.Length);
       Candidates : Path_Sequence;
@@ -179,23 +170,19 @@ package body Lovelace.Compiler.Module_Path is
          for Mask in 0 .. Mask_Max loop
             declare
                Buffer : Ada.Strings.Unbounded.Unbounded_String :=
-                 Ada.Strings.Unbounded.To_Unbounded_String
-                   (Segments.Element (1));
+                 Ada.Strings.Unbounded.To_Unbounded_String (Segments.Element (1));
             begin
                for Sep_Index in 0 .. Sep_Count - 1 loop
                   declare
-                     Bit_Weight : constant Natural :=
-                       Power_Of_Two (Sep_Count - 1 - Sep_Index);
-                     Use_Dot    : constant Boolean :=
-                       (Mask / Bit_Weight) mod 2 = 1;
+                     Bit_Weight : constant Natural := Power_Of_Two (Sep_Count - 1 - Sep_Index);
+                     Use_Dot    : constant Boolean := (Mask / Bit_Weight) mod 2 = 1;
                   begin
                      if Use_Dot then
                         Ada.Strings.Unbounded.Append (Buffer, ".");
                      else
                         Ada.Strings.Unbounded.Append (Buffer, "/");
                      end if;
-                     Ada.Strings.Unbounded.Append
-                       (Buffer, Segments.Element (Sep_Index + 2));
+                     Ada.Strings.Unbounded.Append (Buffer, Segments.Element (Sep_Index + 2));
                   end;
                end loop;
                Ada.Strings.Unbounded.Append (Buffer, ".love");
@@ -225,11 +212,8 @@ package body Lovelace.Compiler.Module_Path is
       return Result;
    end Power_Of_Two;
 
-   function Resolve_Module_File
-     (Name : String; Roots : Path_Sequence) return Resolve_Result
-   is
-      Candidates : constant Path_Sequence :=
-        Module_To_Relative_Candidates (Name);
+   function Resolve_Module_File (Name : String; Roots : Path_Sequence) return Resolve_Result is
+      Candidates : constant Path_Sequence := Module_To_Relative_Candidates (Name);
       Matches    : Path_Sequence;
    begin
       for Root_Index in 1 .. Natural (Roots.Length) loop
@@ -238,17 +222,13 @@ package body Lovelace.Compiler.Module_Path is
          begin
             for Cand_Index in 1 .. Natural (Candidates.Length) loop
                declare
-                  Relative : constant String :=
-                    Candidates.Element (Cand_Index);
+                  Relative : constant String := Candidates.Element (Cand_Index);
                   Full     : constant String := Join_Root (Root, Relative);
                begin
-                  if Ada.Directories.Exists (Full)
-                    and then Ada.Directories.Kind (Full)
-                             = Ada.Directories.Ordinary_File
+                  if Ada.Directories.Exists (Full) and then Ada.Directories.Kind (Full) = Ada.Directories.Ordinary_File
                   then
                      declare
-                        Normalized : constant String :=
-                          Normalize_Existing (Full);
+                        Normalized : constant String := Normalize_Existing (Full);
                      begin
                         if not Contains_Path (Matches, Normalized) then
                            Matches.Append (Normalized);
@@ -256,8 +236,7 @@ package body Lovelace.Compiler.Module_Path is
                      end;
                   end if;
                exception
-                  when Ada.Directories.Use_Error | Ada.Directories.Name_Error
-                  =>
+                  when Ada.Directories.Use_Error | Ada.Directories.Name_Error =>
                      null;
                end;
             end loop;
@@ -269,11 +248,7 @@ package body Lovelace.Compiler.Module_Path is
             return (Status => Not_Found);
 
          when 1      =>
-            return
-              (Status => Unique,
-               Path   =>
-                 Ada.Strings.Unbounded.To_Unbounded_String
-                   (Matches.Element (1)));
+            return (Status => Unique, Path => Ada.Strings.Unbounded.To_Unbounded_String (Matches.Element (1)));
 
          when others =>
             return (Status => Ambiguous, Matches => Matches);

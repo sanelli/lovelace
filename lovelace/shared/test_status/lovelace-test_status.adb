@@ -6,6 +6,8 @@ package body Lovelace.Test_Status is
    package Results renames AUnit.Test_Results;
 
    use type AUnit.Message_String;
+   use type Results.Test_Failure_Access;
+   use type Results.Test_Error_Access;
 
    ANSI_Reset : constant String := ASCII.ESC & "[0m";
    ANSI_Green : constant String := ASCII.ESC & "[32m";
@@ -21,8 +23,7 @@ package body Lovelace.Test_Status is
    function Padded_Name (Name : String) return String;
    --  Left-align Name in a fixed-width field.
 
-   procedure Report_List
-     (List : Results.Result_Lists.List; Outcome : Test_Outcome);
+   procedure Report_List (List : Results.Result_Lists.List; Outcome : Test_Outcome);
    --  Print one status line per entry in List.
 
    function Display_Name (Test : Results.Test_Result) return String is
@@ -80,15 +81,29 @@ package body Lovelace.Test_Status is
       Report_List (Error_List, Fail);
    end Report;
 
-   procedure Report_List
-     (List : Results.Result_Lists.List; Outcome : Test_Outcome)
-   is
-      Cursor : Results.Result_Lists.Cursor :=
-        Results.Result_Lists.First (List);
+   procedure Report_List (List : Results.Result_Lists.List; Outcome : Test_Outcome) is
+      Cursor : Results.Result_Lists.Cursor := Results.Result_Lists.First (List);
    begin
       while Results.Result_Lists.Has_Element (Cursor) loop
-         Report_Test_Result
-           (Display_Name (Results.Result_Lists.Element (Cursor)), Outcome);
+         declare
+            Item : constant Results.Test_Result := Results.Result_Lists.Element (Cursor);
+         begin
+            Report_Test_Result (Display_Name (Item), Outcome);
+            if Outcome = Fail then
+               if Item.Failure /= null then
+                  if Item.Failure.Message /= null then
+                     Ada.Text_IO.Put_Line ("  " & Item.Failure.Message.all);
+                  end if;
+               elsif Item.Error /= null then
+                  if Item.Error.Exception_Name /= null then
+                     Ada.Text_IO.Put_Line ("  " & Item.Error.Exception_Name.all);
+                  end if;
+                  if Item.Error.Exception_Message /= null then
+                     Ada.Text_IO.Put_Line ("  " & Item.Error.Exception_Message.all);
+                  end if;
+               end if;
+            end if;
+         end;
          Results.Result_Lists.Next (Cursor);
       end loop;
    end Report_List;
@@ -112,16 +127,13 @@ package body Lovelace.Test_Status is
    begin
       case Outcome is
          when Ok           =>
-            Ada.Text_IO.Put_Line
-              (Prefix & " [" & ANSI_Green & "OK" & ANSI_Reset & "]");
+            Ada.Text_IO.Put_Line (Prefix & " [" & ANSI_Green & "OK" & ANSI_Reset & "]");
 
          when Fail         =>
-            Ada.Text_IO.Put_Line
-              (Prefix & " [" & ANSI_Red & "FAIL" & ANSI_Reset & "]");
+            Ada.Text_IO.Put_Line (Prefix & " [" & ANSI_Red & "FAIL" & ANSI_Reset & "]");
 
          when Inconclusive =>
-            Ada.Text_IO.Put_Line
-              (Prefix & " [" & ANSI_Gray & "INCONCLUSIVE" & ANSI_Reset & "]");
+            Ada.Text_IO.Put_Line (Prefix & " [" & ANSI_Gray & "INCONCLUSIVE" & ANSI_Reset & "]");
       end case;
    end Report_Test_Result;
 

@@ -13,17 +13,11 @@ package Lovelace.Lir.Opcodes is
    --  @enum Local_Get Push the value of a 1-based local (params first, then flattened locals).
    --  @enum Local_Set Pop and store into a 1-based local (params first, then flattened locals).
    type Opcode is (No_Operation, Constant_I32, Call, Local_Get, Local_Set);
-   for Opcode use
-     (No_Operation => 0,
-      Constant_I32 => 1,
-      Call         => 2,
-      Local_Get    => 3,
-      Local_Set    => 4);
+   for Opcode use (No_Operation => 0, Constant_I32 => 1, Call => 2, Local_Get => 3, Local_Set => 4);
    for Opcode'Size use 16;
 
    --  Optional Opcode when decoding a raw word.
-   package Opcode_Options is new
-     Lovelace.Common.Option (Element_Type => Opcode);
+   package Opcode_Options is new Lovelace.Common.Option (Element_Type => Opcode);
 
    --  Little-endian stream word for Operation.
    --  @param Operation Opcode to encode.
@@ -33,8 +27,7 @@ package Lovelace.Lir.Opcodes is
    --  Opcode for Word, or absent when Word is not a known opcode.
    --  @param Word Encoded opcode word from the stream.
    --  @return Present option with the opcode, or None.
-   function From_Word
-     (Word : Interfaces.Unsigned_16) return Opcode_Options.Option;
+   function From_Word (Word : Interfaces.Unsigned_16) return Opcode_Options.Option;
 
    --  Number of immediate bytes after the opcode word.
    --  @param Operation Opcode whose immediates are counted.

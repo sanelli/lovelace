@@ -16,23 +16,19 @@ package Lovelace.Compiler.Semantics.Environment is
    --  @enum Parameter_Entity Subroutine parameter (assigned on entry).
    --  @enum Module_Entity Module brought into scope by `using`.
    --  @enum Subroutine_Entity Subroutine of the unit being analysed.
-   type Entity_Kind is
-     (Local_Entity, Parameter_Entity, Module_Entity, Subroutine_Entity);
+   type Entity_Kind is (Local_Entity, Parameter_Entity, Module_Entity, Subroutine_Entity);
 
    --  Set of entity kinds used to filter lookups.
    type Kind_Set is array (Entity_Kind) of Boolean;
 
    --  Kinds that can appear as an expression or assignment target.
-   Variable_Kinds : constant Kind_Set :=
-     [Local_Entity | Parameter_Entity => True, others => False];
+   Variable_Kinds : constant Kind_Set := [Local_Entity | Parameter_Entity => True, others => False];
 
    --  Kinds that name modules.
-   Module_Kinds : constant Kind_Set :=
-     [Module_Entity => True, others => False];
+   Module_Kinds : constant Kind_Set := [Module_Entity => True, others => False];
 
    --  Kinds that name subroutines.
-   Subroutine_Kinds : constant Kind_Set :=
-     [Subroutine_Entity => True, others => False];
+   Subroutine_Kinds : constant Kind_Set := [Subroutine_Entity => True, others => False];
 
    --  One named binding.
    --  @field Kind Entity kind.
@@ -86,38 +82,32 @@ package Lovelace.Compiler.Semantics.Environment is
    --  Bind The_Entity in the innermost scope (opens one when the stack is empty).
    --  @param The_Stack Stack to extend.
    --  @param The_Entity Binding to add.
-   procedure Declare_Entity
-     (The_Stack : in out Scope_Stack; The_Entity : Entity);
+   procedure Declare_Entity (The_Stack : in out Scope_Stack; The_Entity : Entity);
 
    --  Find the innermost binding named Name whose kind is in Kinds.
    --  @param The_Stack Stack to search (innermost scope first).
    --  @param Name UTF-8 name.
    --  @param Kinds Entity kinds that may match.
    --  @return Matching entity, or not found.
-   function Lookup
-     (The_Stack : Scope_Stack; Name : String; Kinds : Kind_Set)
-      return Lookup_Result;
+   function Lookup (The_Stack : Scope_Stack; Name : String; Kinds : Kind_Set) return Lookup_Result;
 
    --  Variable or parameter named Name visible from the current scope.
    --  @param The_Stack Stack to search.
    --  @param Name UTF-8 identifier.
    --  @return Matching entity, or not found.
-   function Lookup_Variable
-     (The_Stack : Scope_Stack; Name : String) return Lookup_Result;
+   function Lookup_Variable (The_Stack : Scope_Stack; Name : String) return Lookup_Result;
 
    --  Module named Name visible via a using at the current scope.
    --  @param The_Stack Stack to search.
    --  @param Name UTF-8 dotted module name.
    --  @return Matching entity, or not found.
-   function Lookup_Module
-     (The_Stack : Scope_Stack; Name : String) return Lookup_Result;
+   function Lookup_Module (The_Stack : Scope_Stack; Name : String) return Lookup_Result;
 
    --  Subroutine of the current unit named Name.
    --  @param The_Stack Stack to search.
    --  @param Name UTF-8 unqualified subroutine name.
    --  @return Matching entity, or not found.
-   function Lookup_Subroutine
-     (The_Stack : Scope_Stack; Name : String) return Lookup_Result;
+   function Lookup_Subroutine (The_Stack : Scope_Stack; Name : String) return Lookup_Result;
 
    --  Mark the visible Module_Entity named Name as used (no-op when not found).
    --  @param The_Stack Stack to update.
@@ -133,19 +123,14 @@ package Lovelace.Compiler.Semantics.Environment is
    --  @param The_Stack Stack to query.
    --  @param Index 1-based index into the innermost scope.
    --  @return The entity at Index.
-   function Innermost_Element
-     (The_Stack : Scope_Stack; Index : Positive) return Entity;
+   function Innermost_Element (The_Stack : Scope_Stack; Index : Positive) return Entity;
 
 private
 
-   package Entity_Vectors is new
-     Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Entity);
+   package Entity_Vectors is new Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Entity);
 
    package Scope_Vectors is new
-     Ada.Containers.Vectors
-       (Index_Type   => Positive,
-        Element_Type => Entity_Vectors.Vector,
-        "="          => Entity_Vectors."=");
+     Ada.Containers.Vectors (Index_Type => Positive, Element_Type => Entity_Vectors.Vector, "=" => Entity_Vectors."=");
 
    type Scope_Stack is record
       Scopes : Scope_Vectors.Vector;

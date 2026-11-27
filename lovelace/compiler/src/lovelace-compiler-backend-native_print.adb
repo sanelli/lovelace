@@ -39,45 +39,36 @@ package body Lovelace.Compiler.Backend.Native_Print is
    --  Store ASCII "-2147483648" at Int_Min_Addr.
 
    procedure Emit_Write_Buffer
-     (Body_Out : in out Model.Instruction_Sequence;
-      Addr_Local : Natural;
-      Len_Local  : Natural);
+     (Body_Out : in out Model.Instruction_Sequence; Addr_Local : Natural; Len_Local : Natural);
    --  write-via-stream the [Addr_Local, Len_Local) buffer; trap on failure.
 
-   procedure Emit
-     (Body_Out : in out Model.Instruction_Sequence; Item : Model.Core_Instruction) is
+   procedure Emit (Body_Out : in out Model.Instruction_Sequence; Item : Model.Core_Instruction) is
    begin
       Model.Append (Body_Out, Item);
    end Emit;
 
-   procedure Emit_Call_Import
-     (Body_Out : in out Model.Instruction_Sequence; Index : Natural) is
+   procedure Emit_Call_Import (Body_Out : in out Model.Instruction_Sequence; Index : Natural) is
    begin
       Emit (Body_Out, (Kind => Model.Call_Import, Import_Index => Index));
    end Emit_Call_Import;
 
-   procedure Emit_I32
-     (Body_Out : in out Model.Instruction_Sequence; Value : Interfaces.Integer_32) is
+   procedure Emit_I32 (Body_Out : in out Model.Instruction_Sequence; Value : Interfaces.Integer_32) is
    begin
       Emit (Body_Out, (Kind => Model.I32_Constant, Value => Value));
    end Emit_I32;
 
-   procedure Emit_Local_Get
-     (Body_Out : in out Model.Instruction_Sequence; Index : Natural) is
+   procedure Emit_Local_Get (Body_Out : in out Model.Instruction_Sequence; Index : Natural) is
    begin
       Emit (Body_Out, (Kind => Model.Local_Get, Local_Index => Index));
    end Emit_Local_Get;
 
-   procedure Emit_Local_Set
-     (Body_Out : in out Model.Instruction_Sequence; Index : Natural) is
+   procedure Emit_Local_Set (Body_Out : in out Model.Instruction_Sequence; Index : Natural) is
    begin
       Emit (Body_Out, (Kind => Model.Local_Set, Local_Index => Index));
    end Emit_Local_Set;
 
-   procedure Emit_Write_Buffer
-     (Body_Out   : in out Model.Instruction_Sequence;
-      Addr_Local : Natural;
-      Len_Local  : Natural) is
+   procedure Emit_Write_Buffer (Body_Out : in out Model.Instruction_Sequence; Addr_Local : Natural; Len_Local : Natural)
+   is
    begin
       Emit_Call_Import (Body_Out, Model.Stream_New_Import_Index);
       Emit_Local_Set (Body_Out, L_Pair);
@@ -87,7 +78,10 @@ package body Lovelace.Compiler.Backend.Native_Print is
       Emit_Local_Set (Body_Out, L_Reader);
 
       Emit_Local_Get (Body_Out, L_Pair);
-      Emit (Body_Out, (Kind => Model.I64_Constant, Value_I64 => 32));
+      --  Shift by 32 as (64 >> 1) so Append_Signed_64 / i64.const exercise a multi-byte LEB.
+      Emit (Body_Out, (Kind => Model.I64_Constant, Value_I64 => 64));
+      Emit (Body_Out, (Kind => Model.I64_Constant, Value_I64 => 1));
+      Emit (Body_Out, (Kind => Model.I64_Shr_U));
       Emit (Body_Out, (Kind => Model.I64_Shr_U));
       Emit (Body_Out, (Kind => Model.I32_Wrap_I64));
       Emit_Local_Set (Body_Out, L_Writer);
@@ -146,9 +140,7 @@ package body Lovelace.Compiler.Backend.Native_Print is
       end loop;
    end Store_Int_Min_Literal;
 
-   procedure Synthesize
-     (Locals       : out Model.Core_Local_Sequence;
-      Instructions : out Model.Instruction_Sequence) is
+   procedure Synthesize (Locals : out Model.Core_Local_Sequence; Instructions : out Model.Instruction_Sequence) is
    begin
       Locals := Model.Empty_Locals;
       Model.Append (Locals, Model.I32); -- n

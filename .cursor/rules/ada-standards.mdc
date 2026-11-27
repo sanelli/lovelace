@@ -73,6 +73,8 @@ alr exec -- gnatformat -w 120 -P path/to/crate.gpr path/to/edited-file.adb
 
 Do not skip gnatformat on Ada edits unless the user explicitly asks not to format.
 
+**Encoding:** some gnatformat builds re-encode non-ASCII comment punctuation through Latin-1 and produce mojibake (ellipsis, arrows, `>=`). Prefer ASCII in Ada comments (`...`, `->`, `>=`). Never run gnatformat over a whole tree without listing files; always pass explicit paths. Before a PR, `pwsh scripts/check-encoding.ps1` must pass (wired into the agent-workflow N−1 quality list).
+
 Example:
 
 ```powershell

@@ -21,6 +21,7 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
    package Modules renames Lovelace.Lir.Modules;
    package Subroutines renames Lovelace.Lir.Subroutines;
 
+   use type Ast.Subroutine_Flags;
    use type Interfaces.Integer_32;
    use type Interfaces.Unsigned_32;
    use type Ir_Gen.Ir_Generator_Error_Code;
@@ -683,6 +684,378 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
          "nested using: name");
    end Test_Import_Dependencies;
 
+   procedure Test_Internal_Edges (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      package U renames Ada.Strings.Unbounded;
+      Origin : constant Source.Source_Span :=
+        (First => (Byte_Index => 1, Line => 1, Column => 1),
+         Last  => (Byte_Index => 1, Line => 1, Column => 1));
+
+      function Make_Module
+        (Name    : String;
+         Subs    : Ast.Subroutine_Sequence;
+         Usings  : Ast.Using_Sequence := Ast.Empty_Using_Sequence;
+         Version : String := "") return Ast.Module;
+      --  Build a module AST node for edge-case IR generation.
+
+      function Make_Sub
+        (Name        : String;
+         Module_Name : String;
+         Flags       : Ast.Subroutine_Flags;
+         Parameters  : Ast.Parameter_Sequence := Ast.Empty_Parameter_Sequence;
+         Sub_Body    : Ast.Block := Ast.Empty_Block;
+         Native      : Ast.Native_Binding_Option := (Present => False))
+         return Ast.Subroutine;
+      --  Build a subroutine AST node for edge-case IR generation.
+
+      function Make_Module
+        (Name    : String;
+         Subs    : Ast.Subroutine_Sequence;
+         Usings  : Ast.Using_Sequence := Ast.Empty_Using_Sequence;
+         Version : String := "") return Ast.Module is
+      begin
+         return
+           Ast.Create_Module
+             (Name        => Name,
+              Name_Span   => Origin,
+              Filename    => Source.Absent_Filename,
+              Span        => Origin,
+              Kind        => Ast.Module_Unit,
+              Usings      => Usings,
+              Subroutines => Subs,
+              Version     => Version);
+      end Make_Module;
+
+      function Make_Sub
+        (Name        : String;
+         Module_Name : String;
+         Flags       : Ast.Subroutine_Flags;
+         Parameters  : Ast.Parameter_Sequence := Ast.Empty_Parameter_Sequence;
+         Sub_Body    : Ast.Block := Ast.Empty_Block;
+         Native      : Ast.Native_Binding_Option := (Present => False))
+         return Ast.Subroutine is
+      begin
+         return
+           Ast.Create_Subroutine
+             (Name        => Name,
+              Module_Name => Module_Name,
+              Name_Span   => Origin,
+              Filename    => Source.Absent_Filename,
+              Span        => Origin,
+              Flags       => Flags,
+              Return_Type => Types.Unit_Type,
+              Parameters  => Parameters,
+              The_Body    => Sub_Body,
+              Native      => Native);
+      end Make_Sub;
+   begin
+      --  Empty compilation set.
+      declare
+         Empty_Units : Unit_Graph.Compilation_Set;
+         Result      : constant Ir_Gen.Generate_Result :=
+           Ir_Gen.Generate (Empty_Units);
+      begin
+         AUnit.Assertions.Assert (not Result.Ok, "empty units: fail");
+         AUnit.Assertions.Assert
+           (Result.Error.Code = Ir_Gen.Internal_Error, "empty units: code");
+      end;
+
+      --  Version attribute on Generate (single-module wrapper).
+      declare
+         Versioned : constant Ast.Module :=
+           Support.Must_Parse
+             ("@version(""1.2.3"") module V; end.", "versioned");
+         Lir       : constant Modules.Module :=
+           Support.Must_Generate (Versioned, "versioned");
+      begin
+         AUnit.Assertions.Assert
+           (Modules.Module_Version (Lir) = "1.2.3", "version attribute");
+      end;
+
+      --  Duplicate usings collapse to one dependency (Seen hit).
+      declare
+         Usings : Ast.Using_Sequence := Ast.Empty_Using_Sequence;
+         Subs   : Ast.Subroutine_Sequence := Ast.Empty_Subroutine_Sequence;
+         Dup    : Ast.Module;
+         Lir    : Modules.Module;
+      begin
+         Ast.Append
+           (Usings,
+            (Module_Name => U.To_Unbounded_String ("Lib"),
+             Name_Span   => Origin,
+             Filename    => Source.Absent_Filename));
+         Ast.Append
+           (Usings,
+            (Module_Name => U.To_Unbounded_String ("Lib"),
+             Name_Span   => Origin,
+             Filename    => Source.Absent_Filename));
+         Ast.Append (Subs, Make_Sub ("Run", "Host", Ast.Export_Flag));
+         Dup := Make_Module ("Host", Subs, Usings);
+         Lir := Support.Must_Generate (Dup, "dup usings");
+         AUnit.Assertions.Assert
+           (Modules.Dependency_Count (Lir) = 1, "dup usings: one dep");
+      end;
+
+      --  Both @intrinsic and @native flags.
+      declare
+         Subs  : Ast.Subroutine_Sequence := Ast.Empty_Subroutine_Sequence;
+         Both  : Ast.Module;
+         Error : Ir_Gen.Ir_Generator_Error;
+      begin
+         Ast.Append
+           (Subs,
+            Make_Sub
+              ("Print",
+               "Lib",
+               Ast.Export_Flag or Ast.Intrinsic_Flag or Ast.Native_Flag,
+               Native =>
+                 (Present => True,
+                  Value   =>
+                    (Library       => U.To_Unbounded_String ("lib"),
+                     Function_Name => U.To_Unbounded_String ("fn")))));
+         Both := Make_Module ("Lib", Subs);
+         Error := Support.Must_Fail_Generate (Both, "both flags");
+         AUnit.Assertions.Assert
+           (Error.Code = Ir_Gen.Internal_Error, "both flags: code");
+      end;
+
+      --  Native flag without a binding payload.
+      declare
+         Subs  : Ast.Subroutine_Sequence := Ast.Empty_Subroutine_Sequence;
+         Bad   : Ast.Module;
+         Error : Ir_Gen.Ir_Generator_Error;
+      begin
+         Ast.Append
+           (Subs,
+            Make_Sub ("Print", "Lib", Ast.Export_Flag or Ast.Native_Flag));
+         Bad := Make_Module ("Lib", Subs);
+         Error := Support.Must_Fail_Generate (Bad, "native flag no binding");
+         AUnit.Assertions.Assert
+           (Error.Code = Ir_Gen.Internal_Error,
+            "native flag no binding: code");
+      end;
+
+      --  Intrinsic flag with a native binding payload.
+      declare
+         Subs  : Ast.Subroutine_Sequence := Ast.Empty_Subroutine_Sequence;
+         Bad   : Ast.Module;
+         Error : Ir_Gen.Ir_Generator_Error;
+      begin
+         Ast.Append
+           (Subs,
+            Make_Sub
+              ("Print",
+               "augusta.std.io",
+               Ast.Export_Flag or Ast.Intrinsic_Flag,
+               Native =>
+                 (Present => True,
+                  Value   =>
+                    (Library       => U.To_Unbounded_String ("lib"),
+                     Function_Name => U.To_Unbounded_String ("fn")))));
+         Bad := Make_Module ("augusta.std.io", Subs);
+         Error := Support.Must_Fail_Generate (Bad, "intrinsic with native");
+         AUnit.Assertions.Assert
+           (Error.Code = Ir_Gen.Internal_Error, "intrinsic with native: code");
+      end;
+
+      --  Native binding Present without Native_Flag (source path rejects it).
+      declare
+         Subs  : Ast.Subroutine_Sequence := Ast.Empty_Subroutine_Sequence;
+         Bad   : Ast.Module;
+         Error : Ir_Gen.Ir_Generator_Error;
+      begin
+         Ast.Append
+           (Subs,
+            Make_Sub
+              ("Print",
+               "Lib",
+               Ast.Export_Flag,
+               Native =>
+                 (Present => True,
+                  Value   =>
+                    (Library       => U.To_Unbounded_String ("lib"),
+                     Function_Name => U.To_Unbounded_String ("fn")))));
+         Bad := Make_Module ("Lib", Subs);
+         Error := Support.Must_Fail_Generate (Bad, "binding without flag");
+         AUnit.Assertions.Assert
+           (Error.Code = Ir_Gen.Internal_Error, "binding without flag: code");
+      end;
+
+      --  Split_Callee edges and arity / Find_Local misses via hand-built call bodies.
+      declare
+         Int_Param : Ast.Parameter_Sequence := Ast.Empty_Parameter_Sequence;
+         Args      : Ast.Expression_Sequence := Ast.Empty_Expression_Sequence;
+         Stmts     : Ast.Statement_Sequence := Ast.Empty_Body;
+         Locals    : Ast.Local_Sequence := Ast.Empty_Local_Sequence;
+         Run_Block : Ast.Block;
+         Run_Subs  : Ast.Subroutine_Sequence := Ast.Empty_Subroutine_Sequence;
+         Host      : Ast.Module;
+
+         procedure Assert_Call_Fails (Callee : String; Message : String);
+         --  Require Generate to fail for a call to Callee.
+
+         procedure Assert_Call_Fails (Callee : String; Message : String) is
+            Call_Args  : Ast.Expression_Sequence :=
+              Ast.Empty_Expression_Sequence;
+            Call_Stmts : Ast.Statement_Sequence := Ast.Empty_Body;
+            Call_Body  : Ast.Block;
+            Call_Subs  : Ast.Subroutine_Sequence :=
+              Ast.Empty_Subroutine_Sequence;
+            Call_Mod   : Ast.Module;
+            Error      : Ir_Gen.Ir_Generator_Error;
+         begin
+            Ast.Append
+              (Call_Args,
+               (Kind     => Ast.Integer_Literal,
+                Lexeme   => U.To_Unbounded_String ("1"),
+                Span     => Origin,
+                Filename => Source.Absent_Filename));
+            Ast.Append
+              (Call_Stmts,
+               Ast.Make_Call_Statement
+                 ((Callee_Name => U.To_Unbounded_String (Callee),
+                   Name_Span   => Origin,
+                   Filename    => Source.Absent_Filename,
+                   Arguments   => Call_Args)));
+            Call_Body :=
+              Ast.Create_Block
+                (Usings     => Ast.Empty_Using_Sequence,
+                 Locals     => Ast.Empty_Local_Sequence,
+                 Statements => Call_Stmts);
+            Ast.Append
+              (Call_Subs,
+               Make_Sub ("Sink", "Host", Ast.Export_Flag, Int_Param));
+            Ast.Append
+              (Call_Subs,
+               Make_Sub
+                 ("Run", "Host", Ast.Export_Flag, Sub_Body => Call_Body));
+            Call_Mod := Make_Module ("Host", Call_Subs);
+            Error := Support.Must_Fail_Generate (Call_Mod, Message);
+            AUnit.Assertions.Assert
+              (Error.Code = Ir_Gen.Internal_Error, Message & ": code");
+         end Assert_Call_Fails;
+      begin
+         Ast.Append
+           (Int_Param,
+            (Parameter_Name => U.To_Unbounded_String ("Value"),
+             Name_Span      => Origin,
+             Filename       => Source.Absent_Filename,
+             Parameter_Type =>
+               Types.Integer_Type (Types.Signed, Types.Bits_32)));
+
+         Assert_Call_Fails ("NoDot", "split no dot");
+         Assert_Call_Fails (".Sink", "split leading dot");
+         Assert_Call_Fails ("Host.", "split trailing dot");
+
+         --  Arity mismatch: Sink expects one formal, call passes none.
+         declare
+            Call_Stmts : Ast.Statement_Sequence := Ast.Empty_Body;
+            Call_Body  : Ast.Block;
+            Call_Subs  : Ast.Subroutine_Sequence :=
+              Ast.Empty_Subroutine_Sequence;
+            Call_Mod   : Ast.Module;
+            Error      : Ir_Gen.Ir_Generator_Error;
+         begin
+            Ast.Append
+              (Call_Stmts,
+               Ast.Make_Call_Statement
+                 ((Callee_Name => U.To_Unbounded_String ("Host.Sink"),
+                   Name_Span   => Origin,
+                   Filename    => Source.Absent_Filename,
+                   Arguments   => Ast.Empty_Expression_Sequence)));
+            Call_Body :=
+              Ast.Create_Block
+                (Usings     => Ast.Empty_Using_Sequence,
+                 Locals     => Ast.Empty_Local_Sequence,
+                 Statements => Call_Stmts);
+            Ast.Append
+              (Call_Subs,
+               Make_Sub ("Sink", "Host", Ast.Export_Flag, Int_Param));
+            Ast.Append
+              (Call_Subs,
+               Make_Sub
+                 ("Run", "Host", Ast.Export_Flag, Sub_Body => Call_Body));
+            Call_Mod := Make_Module ("Host", Call_Subs);
+            Error := Support.Must_Fail_Generate (Call_Mod, "arity mismatch");
+            AUnit.Assertions.Assert
+              (Error.Code = Ir_Gen.Internal_Error, "arity mismatch: code");
+         end;
+
+         --  Find_Local miss on assignment target and on name-reference expression.
+         Ast.Append
+           (Locals,
+            (Parameter_Name => U.To_Unbounded_String ("X"),
+             Name_Span      => Origin,
+             Filename       => Source.Absent_Filename,
+             Parameter_Type =>
+               Types.Integer_Type (Types.Signed, Types.Bits_32)));
+         Ast.Append
+           (Stmts,
+            Ast.Make_Assignment_Statement
+              ((Target_Name => U.To_Unbounded_String ("Missing"),
+                Name_Span   => Origin,
+                Filename    => Source.Absent_Filename,
+                Value       =>
+                  (Kind     => Ast.Integer_Literal,
+                   Lexeme   => U.To_Unbounded_String ("1"),
+                   Span     => Origin,
+                   Filename => Source.Absent_Filename))));
+         Run_Block :=
+           Ast.Create_Block
+             (Usings     => Ast.Empty_Using_Sequence,
+              Locals     => Locals,
+              Statements => Stmts);
+         Ast.Append
+           (Run_Subs,
+            Make_Sub ("Run", "Host", Ast.Export_Flag, Sub_Body => Run_Block));
+         Host := Make_Module ("Host", Run_Subs);
+         declare
+            Error : constant Ir_Gen.Ir_Generator_Error :=
+              Support.Must_Fail_Generate (Host, "assign missing local");
+         begin
+            AUnit.Assertions.Assert
+              (Error.Code = Ir_Gen.Internal_Error,
+               "assign missing local: code");
+         end;
+
+         Stmts := Ast.Empty_Body;
+         Args := Ast.Empty_Expression_Sequence;
+         Run_Subs := Ast.Empty_Subroutine_Sequence;
+         Ast.Append
+           (Args,
+            (Kind     => Ast.Name_Reference,
+             Lexeme   => U.To_Unbounded_String ("Missing"),
+             Span     => Origin,
+             Filename => Source.Absent_Filename));
+         Ast.Append
+           (Stmts,
+            Ast.Make_Call_Statement
+              ((Callee_Name => U.To_Unbounded_String ("Host.Sink"),
+                Name_Span   => Origin,
+                Filename    => Source.Absent_Filename,
+                Arguments   => Args)));
+         Run_Block :=
+           Ast.Create_Block
+             (Usings     => Ast.Empty_Using_Sequence,
+              Locals     => Ast.Empty_Local_Sequence,
+              Statements => Stmts);
+         Ast.Append
+           (Run_Subs, Make_Sub ("Sink", "Host", Ast.Export_Flag, Int_Param));
+         Ast.Append
+           (Run_Subs,
+            Make_Sub ("Run", "Host", Ast.Export_Flag, Sub_Body => Run_Block));
+         Host := Make_Module ("Host", Run_Subs);
+         declare
+            Error : constant Ir_Gen.Ir_Generator_Error :=
+              Support.Must_Fail_Generate (Host, "name ref missing local");
+         begin
+            AUnit.Assertions.Assert
+              (Error.Code = Ir_Gen.Internal_Error,
+               "name ref missing local: code");
+         end;
+      end;
+   end Test_Internal_Edges;
+
    procedure Test_Module_Procedure_Parameters (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Source_Text    : constant String :=
@@ -824,26 +1197,35 @@ package body Lovelace.Compiler.Tests.Ir_Generator is
         & "procedure Run(); begin Calls.Sink(1); Calls.Sink(true); end;"
         & ASCII.LF
         & "end.";
-      The_Ast     : constant Ast.Module := Support.Must_Parse (Source_Text, "overload calls");
-      The_Lir     : constant Modules.Module := Support.Must_Generate (The_Ast, "overload calls");
-      Int_Sink    : constant Subroutines.Subroutine := Modules.Get_Subroutine (The_Lir, 1);
-      Bool_Sink   : constant Subroutines.Subroutine := Modules.Get_Subroutine (The_Lir, 2);
+      The_Ast     : constant Ast.Module :=
+        Support.Must_Parse (Source_Text, "overload calls");
+      The_Lir     : constant Modules.Module :=
+        Support.Must_Generate (The_Ast, "overload calls");
+      Int_Sink    : constant Subroutines.Subroutine :=
+        Modules.Get_Subroutine (The_Lir, 1);
+      Bool_Sink   : constant Subroutines.Subroutine :=
+        Modules.Get_Subroutine (The_Lir, 2);
       Run_Body    : constant Lovelace.Lir.Instructions.Instruction_Sequence :=
         Subroutines.Get_Instructions (Modules.Get_Subroutine (The_Lir, 3));
       Int_Name    : constant String :=
-        Ada.Strings.Unbounded.To_String (Subroutines.Get_Signature (Int_Sink).Name);
+        Ada.Strings.Unbounded.To_String
+          (Subroutines.Get_Signature (Int_Sink).Name);
       Bool_Name   : constant String :=
-        Ada.Strings.Unbounded.To_String (Subroutines.Get_Signature (Bool_Sink).Name);
+        Ada.Strings.Unbounded.To_String
+          (Subroutines.Get_Signature (Bool_Sink).Name);
    begin
-      AUnit.Assertions.Assert (Modules.Subroutine_Count (The_Lir) = 3, "three subroutines");
+      AUnit.Assertions.Assert
+        (Modules.Subroutine_Count (The_Lir) = 3, "three subroutines");
       AUnit.Assertions.Assert
         (Int_Name = "Calls.Sink", "integer overload keeps Module.Name");
       AUnit.Assertions.Assert
         (Bool_Name = "Calls.Sink", "boolean overload keeps Module.Name");
       AUnit.Assertions.Assert
-        (Lovelace.Lir.Instructions.Element (Run_Body, 2).Target_Index = 1, "integer call to first Sink");
+        (Lovelace.Lir.Instructions.Element (Run_Body, 2).Target_Index = 1,
+         "integer call to first Sink");
       AUnit.Assertions.Assert
-        (Lovelace.Lir.Instructions.Element (Run_Body, 4).Target_Index = 2, "boolean call to second Sink");
+        (Lovelace.Lir.Instructions.Element (Run_Body, 4).Target_Index = 2,
+         "boolean call to second Sink");
    end Test_Overload_Calls;
 
    procedure Test_Parameter_Type_Mapping (The_Test : in out Fixture) is

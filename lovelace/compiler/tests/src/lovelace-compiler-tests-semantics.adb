@@ -11,6 +11,7 @@ with Lovelace.Compiler.Reporting;
 with Lovelace.Compiler.Semantics;
 with Lovelace.Compiler.Semantics.Environment;
 with Lovelace.Compiler.Semantics.Lovelace_Types;
+with Lovelace.Compiler.Semantics.Resolve;
 with Lovelace.Compiler.Semantics.Typecheck;
 with Lovelace.Compiler.Tests.Support;
 with Lovelace.Compiler.Types;
@@ -22,6 +23,7 @@ package body Lovelace.Compiler.Tests.Semantics is
    package Compiler_Semantics renames Lovelace.Compiler.Semantics;
    package Environment renames Lovelace.Compiler.Semantics.Environment;
    package Lovelace_Types renames Lovelace.Compiler.Semantics.Lovelace_Types;
+   package Resolve renames Lovelace.Compiler.Semantics.Resolve;
    package Typecheck renames Lovelace.Compiler.Semantics.Typecheck;
 
    use type Compiler_Semantics.Semantics_Error_Code;
@@ -201,6 +203,14 @@ package body Lovelace.Compiler.Tests.Semantics is
    begin
       AUnit.Assertions.Assert (Environment.Depth (The_Stack) = 0, "empty depth");
       AUnit.Assertions.Assert (not Environment.Lookup_Variable (The_Stack, "X").Found, "empty lookup");
+      AUnit.Assertions.Assert (Environment.Innermost_Length (The_Stack) = 0, "empty innermost length");
+      Environment.Pop_Scope (The_Stack);
+      AUnit.Assertions.Assert (Environment.Depth (The_Stack) = 0, "pop on empty is a no-op");
+      Environment.Declare_Entity (The_Stack, Make_Entity (Environment.Local_Entity, "Auto", 1));
+      AUnit.Assertions.Assert (Environment.Depth (The_Stack) = 1, "declare on empty pushes a scope");
+      AUnit.Assertions.Assert (Environment.Innermost_Length (The_Stack) = 1, "auto-pushed length");
+      Environment.Pop_Scope (The_Stack);
+      AUnit.Assertions.Assert (Environment.Depth (The_Stack) = 0, "cleared after auto-push pop");
 
       Environment.Push_Scope (The_Stack);
       Environment.Declare_Entity (The_Stack, Make_Entity (Environment.Local_Entity, "X", 1));
@@ -369,6 +379,35 @@ package body Lovelace.Compiler.Tests.Semantics is
       end loop;
    end Test_Reporting_Mapping;
 
+   procedure Test_Resolve_Bad_Callee_Names (The_Test : in out Fixture) is
+      pragma Unreferenced (The_Test);
+      Units   : Unit_Graph.Compilation_Set;
+      Scope   : Environment.Scope_Stack;
+      Actuals : Resolve.Actual_Type_Sequence;
+      Result  : Resolve.Resolve_Result;
+      Module  : constant Ast.Module :=
+        Support.Must_Parse ("module Host; procedure Run(); begin end; end.", "resolve host");
+   begin
+      Units.Append
+        (Unit_Graph.Loaded_Unit'
+           (The_Module  => Module,
+            Source_Path => Ada.Strings.Unbounded.To_Unbounded_String ("Host.love"),
+            Source_Text => Ada.Strings.Unbounded.To_Unbounded_String ("module Host; procedure Run(); begin end; end."),
+            Version     => Ada.Strings.Unbounded.To_Unbounded_String ("0.0.1")));
+
+      Result := Resolve.Resolve_Call (Units, 1, Scope, "NoDot", Actuals);
+      AUnit.Assertions.Assert (not Result.Ok, "undotted fails");
+      AUnit.Assertions.Assert (Result.Code = Compiler_Semantics.Unresolved_Call, "undotted code");
+
+      Result := Resolve.Resolve_Call (Units, 1, Scope, ".Run", Actuals);
+      AUnit.Assertions.Assert (not Result.Ok, "leading dot fails");
+      AUnit.Assertions.Assert (Result.Code = Compiler_Semantics.Unresolved_Call, "leading dot code");
+
+      Result := Resolve.Resolve_Call (Units, 1, Scope, "Host.", Actuals);
+      AUnit.Assertions.Assert (not Result.Ok, "trailing dot fails");
+      AUnit.Assertions.Assert (Result.Code = Compiler_Semantics.Unresolved_Call, "trailing dot code");
+   end Test_Resolve_Bad_Callee_Names;
+
    procedure Test_Scoped_Using_Visibility (The_Test : in out Fixture) is
       pragma Unreferenced (The_Test);
       Lib_Text    : constant String := "module Lib; export procedure Sink(Value : integer); begin end; end.";
@@ -528,6 +567,11 @@ package body Lovelace.Compiler.Tests.Semantics is
          Lexeme   => Ada.Strings.Unbounded.To_Unbounded_String ("255u8"),
          Span     => Origin,
          Filename => Source.Absent_Filename);
+      Sign_Only       : constant Ast.Expression :=
+        (Kind     => Ast.Integer_Literal,
+         Lexeme   => Ada.Strings.Unbounded.To_Unbounded_String ("8u"),
+         Span     => Origin,
+         Filename => Source.Absent_Filename);
       Invalid_Literal : constant Ast.Expression :=
         (Kind     => Ast.Integer_Literal,
          Lexeme   => Ada.Strings.Unbounded.To_Unbounded_String ("99999999999"),
@@ -541,6 +585,7 @@ package body Lovelace.Compiler.Tests.Semantics is
       Valid_Result    : constant Typecheck.Type_Result := Typecheck.Type_Of_Literal (Valid_Literal);
       Suffixed_I8_Res : constant Typecheck.Type_Result := Typecheck.Type_Of_Literal (Suffixed_I8);
       Suffixed_U8_Res : constant Typecheck.Type_Result := Typecheck.Type_Of_Literal (Suffixed_U8);
+      Sign_Only_Res   : constant Typecheck.Type_Result := Typecheck.Type_Of_Literal (Sign_Only);
       Invalid_Result  : constant Typecheck.Type_Result := Typecheck.Type_Of_Literal (Invalid_Literal);
       Boolean_Result  : constant Typecheck.Type_Result := Typecheck.Type_Of_Literal (Boolean_Literal);
    begin
@@ -591,6 +636,16 @@ package body Lovelace.Compiler.Tests.Semantics is
          and then Suffixed_U8_Res.The_Type.Class = Lovelace_Types.Integer_Class
          and then Typecheck.Is_Assignable (Uint_8, Suffixed_U8_Res.The_Type),
          "255u8 is concrete unsigned integer<8>");
+      declare
+         Uint_32 : constant Lovelace_Types.Lovelace_Type :=
+           Lovelace_Types.From_Expression (Types.Integer_Type (Types.Unsigned, Types.Bits_32));
+      begin
+         AUnit.Assertions.Assert
+           (Sign_Only_Res.Ok
+            and then Sign_Only_Res.The_Type.Class = Lovelace_Types.Integer_Class
+            and then Typecheck.Is_Assignable (Uint_32, Sign_Only_Res.The_Type),
+            "8u defaults size to Bits_32");
+      end;
       AUnit.Assertions.Assert (not Invalid_Result.Ok, "out-of-range literal rejected");
       AUnit.Assertions.Assert
         (Boolean_Result.Ok and then Boolean_Result.The_Type.Class = Lovelace_Types.Boolean_Class, "true is boolean");

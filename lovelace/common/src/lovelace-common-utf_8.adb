@@ -1,13 +1,32 @@
 package body Lovelace.Common.Utf_8 is
 
+   procedure Decode_1 (Lead_Byte : Natural; Scalar_Value : out Natural; Valid : out Boolean);
+   procedure Decode_2
+     (Source : String; Index : Positive; Lead_Byte : Natural; Scalar_Value : out Natural; Valid : out Boolean);
+   procedure Decode_3
+     (Source : String; Index : Positive; Lead_Byte : Natural; Scalar_Value : out Natural; Valid : out Boolean);
+   procedure Decode_4
+     (Source : String; Index : Positive; Lead_Byte : Natural; Scalar_Value : out Natural; Valid : out Boolean);
+
+   function Continuations_Valid (Source : String; First : Positive; Last : Positive) return Boolean;
+
+   --  True iff every byte in Source (First .. Last) is a continuation byte (16#80# .. 16#BF#).
+   function Continuations_Valid (Source : String; First : Positive; Last : Positive) return Boolean is
+   begin
+      for Position in First .. Last loop
+         if Character'Pos (Source (Position)) not in 16#80# .. 16#BF# then
+            return False;
+         end if;
+      end loop;
+      return True;
+   end Continuations_Valid;
+
    procedure Decode
      (Source : String; Index : Positive; Point : out Code_Point; Length : out Natural; Valid : out Boolean)
    is
-      Lead_Byte    : Natural;
-      Second_Byte  : Natural;
-      Third_Byte   : Natural;
-      Fourth_Byte  : Natural;
-      Scalar_Value : Natural;
+      Lead_Byte       : Natural;
+      Scalar_Value    : Natural := 0;
+      Expected_Length : Natural := 0;
    begin
       Point := Wide_Wide_Character'Val (0);
       Length := 0;
@@ -20,81 +39,22 @@ package body Lovelace.Common.Utf_8 is
       Lead_Byte := Character'Pos (Source (Index));
 
       if Lead_Byte <= 16#7F# then
-         Length := 1;
-         Point := Wide_Wide_Character'Val (Lead_Byte);
-         Valid := True;
-         return;
+         Expected_Length := 1;
+         Decode_1 (Lead_Byte, Scalar_Value, Valid);
+      elsif Lead_Byte in 16#C2# .. 16#DF# then
+         Expected_Length := 2;
+         Decode_2 (Source, Index, Lead_Byte, Scalar_Value, Valid);
+      elsif Lead_Byte in 16#E0# .. 16#EF# then
+         Expected_Length := 3;
+         Decode_3 (Source, Index, Lead_Byte, Scalar_Value, Valid);
+      elsif Lead_Byte in 16#F0# .. 16#F4# then
+         Expected_Length := 4;
+         Decode_4 (Source, Index, Lead_Byte, Scalar_Value, Valid);
       end if;
 
-      if Lead_Byte in 16#C2# .. 16#DF# then
-         if Index + 1 > Source'Last then
-            return;
-         end if;
-         Second_Byte := Character'Pos (Source (Index + 1));
-         if Second_Byte not in 16#80# .. 16#BF# then
-            return;
-         end if;
-         Scalar_Value := (Lead_Byte - 16#C0#) * 64 + (Second_Byte - 16#80#);
-         Length := 2;
+      if Valid then
+         Length := Expected_Length;
          Point := Wide_Wide_Character'Val (Scalar_Value);
-         Valid := True;
-         return;
-      end if;
-
-      if Lead_Byte in 16#E0# .. 16#EF# then
-         if Index + 2 > Source'Last then
-            return;
-         end if;
-         Second_Byte := Character'Pos (Source (Index + 1));
-         Third_Byte := Character'Pos (Source (Index + 2));
-         if Second_Byte not in 16#80# .. 16#BF# or else Third_Byte not in 16#80# .. 16#BF# then
-            return;
-         end if;
-         if Lead_Byte = 16#E0# and then Second_Byte < 16#A0# then
-            return;
-         end if;
-         if Lead_Byte = 16#ED# and then Second_Byte > 16#9F# then
-            return;
-         end if;
-         Scalar_Value := (Lead_Byte - 16#E0#) * 4096 + (Second_Byte - 16#80#) * 64 + (Third_Byte - 16#80#);
-         Length := 3;
-         Point := Wide_Wide_Character'Val (Scalar_Value);
-         Valid := True;
-         return;
-      end if;
-
-      if Lead_Byte in 16#F0# .. 16#F4# then
-         if Index + 3 > Source'Last then
-            return;
-         end if;
-         Second_Byte := Character'Pos (Source (Index + 1));
-         Third_Byte := Character'Pos (Source (Index + 2));
-         Fourth_Byte := Character'Pos (Source (Index + 3));
-         if Second_Byte not in 16#80# .. 16#BF#
-           or else Third_Byte not in 16#80# .. 16#BF#
-           or else Fourth_Byte not in 16#80# .. 16#BF#
-         then
-            return;
-         end if;
-         if Lead_Byte = 16#F0# and then Second_Byte < 16#90# then
-            return;
-         end if;
-         if Lead_Byte = 16#F4# and then Second_Byte > 16#8F# then
-            return;
-         end if;
-         Scalar_Value :=
-           (Lead_Byte - 16#F0#)
-           * 262144
-           + (Second_Byte - 16#80#) * 4096
-           + (Third_Byte - 16#80#) * 64
-           + (Fourth_Byte - 16#80#);
-         if Scalar_Value > 16#10FFFF# then
-            return;
-         end if;
-         Length := 4;
-         Point := Wide_Wide_Character'Val (Scalar_Value);
-         Valid := True;
-         return;
       end if;
    end Decode;
 
@@ -114,6 +74,86 @@ package body Lovelace.Common.Utf_8 is
                 (Utf_8_Error (Internal_Errors.Make (Group => Invalid_Sequence, Message => "invalid UTF-8")));
       end case;
    end Decode;
+
+   --  ASCII (one byte).
+   procedure Decode_1 (Lead_Byte : Natural; Scalar_Value : out Natural; Valid : out Boolean) is
+   begin
+      Scalar_Value := Lead_Byte;
+      Valid := True;
+   end Decode_1;
+
+   --  Two-byte sequence (lead 16#C2# .. 16#DF#).
+   procedure Decode_2
+     (Source : String; Index : Positive; Lead_Byte : Natural; Scalar_Value : out Natural; Valid : out Boolean) is
+   begin
+      Scalar_Value := 0;
+      Valid := False;
+
+      if Index + 1 > Source'Last or else not Continuations_Valid (Source, Index + 1, Index + 1) then
+         return;
+      end if;
+
+      Scalar_Value := (Lead_Byte - 16#C0#) * 64 + (Character'Pos (Source (Index + 1)) - 16#80#);
+      Valid := True;
+   end Decode_2;
+
+   --  Three-byte sequence (lead 16#E0# .. 16#EF#); rejects overlongs and surrogates.
+   procedure Decode_3
+     (Source : String; Index : Positive; Lead_Byte : Natural; Scalar_Value : out Natural; Valid : out Boolean)
+   is
+      Second_Byte : Natural;
+   begin
+      Scalar_Value := 0;
+      Valid := False;
+
+      if Index + 2 > Source'Last or else not Continuations_Valid (Source, Index + 1, Index + 2) then
+         return;
+      end if;
+
+      Second_Byte := Character'Pos (Source (Index + 1));
+      if (Lead_Byte = 16#E0# and then Second_Byte < 16#A0#) or else (Lead_Byte = 16#ED# and then Second_Byte > 16#9F#)
+      then
+         return;
+      end if;
+
+      Scalar_Value :=
+        (Lead_Byte - 16#E0#) * 4096 + (Second_Byte - 16#80#) * 64 + (Character'Pos (Source (Index + 2)) - 16#80#);
+      Valid := True;
+   end Decode_3;
+
+   --  Four-byte sequence (lead 16#F0# .. 16#F4#); rejects overlongs and values above U+10FFFF.
+   procedure Decode_4
+     (Source : String; Index : Positive; Lead_Byte : Natural; Scalar_Value : out Natural; Valid : out Boolean)
+   is
+      Second_Byte : Natural;
+      Candidate   : Natural;
+   begin
+      Scalar_Value := 0;
+      Valid := False;
+
+      if Index + 3 > Source'Last or else not Continuations_Valid (Source, Index + 1, Index + 3) then
+         return;
+      end if;
+
+      Second_Byte := Character'Pos (Source (Index + 1));
+      if (Lead_Byte = 16#F0# and then Second_Byte < 16#90#) or else (Lead_Byte = 16#F4# and then Second_Byte > 16#8F#)
+      then
+         return;
+      end if;
+
+      Candidate :=
+        (Lead_Byte - 16#F0#)
+        * 262144
+        + (Second_Byte - 16#80#) * 4096
+        + (Character'Pos (Source (Index + 2)) - 16#80#) * 64
+        + (Character'Pos (Source (Index + 3)) - 16#80#);
+      if Candidate > 16#10FFFF# then
+         return;
+      end if;
+
+      Scalar_Value := Candidate;
+      Valid := True;
+   end Decode_4;
 
    function Encode (Point : Code_Point) return Encode_Results.Result is
       Scalar_Value : constant Natural := Wide_Wide_Character'Pos (Point);

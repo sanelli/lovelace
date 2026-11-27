@@ -64,8 +64,7 @@ package body Lovelace.Compiler.Ast is
          Kind_Value              => Kind,
          Usings                  => Usings,
          Subroutines             => Subroutines,
-         Version_Attribute_Value =>
-           Ada.Strings.Unbounded.To_Unbounded_String (Version));
+         Version_Attribute_Value => Ada.Strings.Unbounded.To_Unbounded_String (Version));
    end Create_Module;
 
    function Create_Subroutine
@@ -210,8 +209,7 @@ package body Lovelace.Compiler.Ast is
 
    function Has_Version_Attribute (The_Module : Module) return Boolean is
    begin
-      return
-        Ada.Strings.Unbounded.Length (The_Module.Version_Attribute_Value) > 0;
+      return Ada.Strings.Unbounded.Length (The_Module.Version_Attribute_Value) > 0;
    end Has_Version_Attribute;
 
    function Kind (The_Module : Module) return Unit_Kind is
@@ -345,8 +343,7 @@ package body Lovelace.Compiler.Ast is
 
    function Version_Attribute (The_Module : Module) return String is
    begin
-      return
-        Ada.Strings.Unbounded.To_String (The_Module.Version_Attribute_Value);
+      return Ada.Strings.Unbounded.To_String (The_Module.Version_Attribute_Value);
    end Version_Attribute;
 
 end Lovelace.Compiler.Ast;

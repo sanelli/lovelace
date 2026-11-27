@@ -1,9 +1,6 @@
-with Ada.Finalization;
-with Ada.Strings.Unbounded;
-
-private with Ada.Unchecked_Deallocation;
-
---  Source locations and optional shared filenames for host diagnostics and IR.
+--  Source locations and optional filenames for host diagnostics and IR.
+--  Filenames are interned in a global thread-safe pool as Positive indices
+--  (gnatcov-safe; no controlled / Unbounded finalize on assign).
 
 package Lovelace.Common.Source is
 
@@ -25,8 +22,8 @@ package Lovelace.Common.Source is
       Last  : Source_Position;
    end record;
 
-   --  Refcounted immutable UTF-8 filename shared across host values.
-   type Shared_Filename is new Ada.Finalization.Controlled with private;
+   --  Index into the global filename pool (interned UTF-8 path or label).
+   type Shared_Filename is private;
 
    --  Optional Shared_Filename (same shape as Lovelace.Common.Option).
    --  @disc Present True when Value is stored; False when absent.
@@ -36,59 +33,50 @@ package Lovelace.Common.Source is
    --  @return Filename_Option with Present False.
    function Absent_Filename return Filename_Option;
 
-   --  Allocate one immutable shared filename from UTF-8 bytes.
+   --  Intern Filename in the global pool (same text yields the same index).
    --  @param Filename UTF-8 path or label.
-   --  @return Holder referencing shared storage.
+   --  @return Pool index for Filename.
    function From_Utf_8 (Filename : String) return Shared_Filename;
 
-   --  Filename_Option wrapping one shared holder.
-   --  @param Holder Shared filename storage.
+   --  Filename_Option wrapping one pool index.
+   --  @param Holder Filename pool index.
    --  @return Present filename option.
    function Some_Filename (Holder : Shared_Filename) return Filename_Option;
 
-   --  UTF-8 bytes stored in Holder.
-   --  @param Holder Shared filename storage.
+   --  UTF-8 bytes for Holder from the global pool.
+   --  @param Holder Filename pool index.
    --  @return Filename text.
    function To_Utf_8 (Holder : Shared_Filename) return String;
 
    --  UTF-8 bytes when Present, otherwise the empty string.
-   --  @param Option Optional shared filename.
+   --  @param Option Optional filename.
    --  @return Filename text, or "".
    function To_Utf_8 (Option : Filename_Option) return String;
 
-   --  True when Left and Right reference the same shared storage.
+   --  True when Left and Right are the same pool index.
    --  @param Left First holder.
    --  @param Right Second holder.
-   --  @return True when both reference one block.
+   --  @return True when both refer to one interned entry.
    function Same_Storage (Left, Right : Shared_Filename) return Boolean;
 
-   --  True when Left and Right are both absent, or both present and share storage.
+   --  True when Left and Right are both absent, or both present with Same_Storage.
    --  @param Left First optional filename.
    --  @param Right Second optional filename.
    --  @return True when both absent, or both present and Same_Storage on the holders.
    function Same_Storage (Left, Right : Filename_Option) return Boolean;
 
+   --  Drop every interned filename. Invalidates existing Shared_Filename values.
+   --  Called at the start and end of Lovelace.Main.Compile.Run (thread-safe).
+   procedure Clear_Filename_Pool;
+
 private
 
-   type Filename_Block is record
-      Reference_Count : Natural;
-      Text            : Ada.Strings.Unbounded.Unbounded_String;
+   --  @field Id 1-based index into the global pool.
+   type Shared_Filename is record
+      Id : Positive;
    end record;
 
-   type Filename_Block_Access is access Filename_Block;
-
-   procedure Free_Filename_Block is new Ada.Unchecked_Deallocation (Filename_Block, Filename_Block_Access);
-
-   type Shared_Filename is new Ada.Finalization.Controlled with record
-      Block : Filename_Block_Access;
-   end record;
-
-   overriding
-   procedure Adjust (Object : in out Shared_Filename);
-   overriding
-   procedure Finalize (Object : in out Shared_Filename);
-
-   --  @field Value Shared filename when Present is True.
+   --  @field Value Filename when Present is True.
    type Filename_Option (Present : Boolean := False) is record
       case Present is
          when True =>

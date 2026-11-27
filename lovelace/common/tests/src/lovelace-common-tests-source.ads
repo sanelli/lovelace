@@ -15,11 +15,15 @@ package Lovelace.Common.Tests.Source is
    --  @param The_Test Unused fixture.
    procedure Test_Absent_Filename (The_Test : in out Fixture);
 
-   --  Copies of one From_Utf_8 holder share storage; distinct allocations do not.
+   --  Clear_Filename_Pool drops interned text; a new From_Utf_8 still works.
+   --  @param The_Test Unused fixture.
+   procedure Test_Clear_Filename_Pool (The_Test : in out Fixture);
+
+   --  From_Utf_8 interns: equal text shares one pool index; different text does not.
    --  @param The_Test Unused fixture.
    procedure Test_Same_Storage_Shared_Filename (The_Test : in out Fixture);
 
-   --  Filename_Option Same_Storage covers both-absent and both-present cases.
+   --  Filename_Option Same_Storage covers absent/present and interned cases.
    --  @param The_Test Unused fixture.
    procedure Test_Same_Storage_Filename_Option (The_Test : in out Fixture);
 

@@ -10,23 +10,23 @@ package Lovelace.Common.Tests.Token_Classes is
    --  Fixture for token-class pattern tests.
    type Fixture is new AUnit.Test_Fixtures.Test_Fixture with null record;
 
-   --  Block comments { ÃÂ¢ÃÂÃÂ¦ }.
+   --  Block comments { ... }.
    --  @param The_Test Unused fixture.
    procedure Test_Block_Comments (The_Test : in out Fixture);
 
-   --  Character literals including emoji and \u{ÃÂ¢ÃÂÃÂ¦}.
+   --  Character literals including emoji and \u{...}.
    --  @param The_Test Unused fixture.
    procedure Test_Character_Literals (The_Test : in out Fixture);
 
-   --  Combined $@"ÃÂ¢ÃÂÃÂ¦" multiline interpolated strings.
+   --  Combined $@"..." multiline interpolated strings.
    --  @param The_Test Unused fixture.
    procedure Test_Combined_Strings (The_Test : in out Fixture);
 
-   --  Identifiers including cafÃÂÃÂ© and emoji.
+   --  Identifiers including cafe and emoji.
    --  @param The_Test Unused fixture.
    procedure Test_Identifiers (The_Test : in out Fixture);
 
-   --  Interpolated $"ÃÂ¢ÃÂÃÂ¦" with {identifier} holes.
+   --  Interpolated $"..." with {identifier} holes.
    --  @param The_Test Unused fixture.
    procedure Test_Interpolated_Strings (The_Test : in out Fixture);
 
@@ -34,7 +34,7 @@ package Lovelace.Common.Tests.Token_Classes is
    --  @param The_Test Unused fixture.
    procedure Test_Keywords (The_Test : in out Fixture);
 
-   --  Multiline strings @"ÃÂ¢ÃÂÃÂ¦".
+   --  Multiline strings @"...".
    --  @param The_Test Unused fixture.
    procedure Test_Multiline_Strings (The_Test : in out Fixture);
 

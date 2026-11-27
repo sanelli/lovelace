@@ -27,6 +27,10 @@ package Lovelace.Compiler.Tests.Semantics is
    --  @param The_Test Unused fixture.
    procedure Test_Reporting_Mapping (The_Test : in out Fixture);
 
+   --  Resolve_Call rejects undotted / leading-dot / trailing-dot callee names.
+   --  @param The_Test Unused fixture.
+   procedure Test_Resolve_Bad_Callee_Names (The_Test : in out Fixture);
+
    --  Using visibility follows the scope at the call site (unit, procedure, nested block, siblings).
    --  @param The_Test Unused fixture.
    procedure Test_Scoped_Using_Visibility (The_Test : in out Fixture);

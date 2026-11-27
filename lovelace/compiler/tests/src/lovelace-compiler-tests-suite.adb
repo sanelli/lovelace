@@ -1,7 +1,9 @@
 with AUnit.Test_Caller;
 
+with Lovelace.Compiler.Tests.Ast;
 with Lovelace.Compiler.Tests.Backend;
 with Lovelace.Compiler.Tests.Diagnostics;
+with Lovelace.Compiler.Tests.Intrinsics;
 with Lovelace.Compiler.Tests.Ir_Generator;
 with Lovelace.Compiler.Tests.Literals;
 with Lovelace.Compiler.Tests.Module_Path;
@@ -12,10 +14,13 @@ with Lovelace.Compiler.Tests.Unit_Graph;
 
 package body Lovelace.Compiler.Tests.Suite is
 
+   package Ast_Caller is new AUnit.Test_Caller (Lovelace.Compiler.Tests.Ast.Fixture);
    package Backend_Caller is new
      AUnit.Test_Caller (Lovelace.Compiler.Tests.Backend.Fixture);
    package Diagnostics_Caller is new
      AUnit.Test_Caller (Lovelace.Compiler.Tests.Diagnostics.Fixture);
+   package Intrinsics_Caller is new
+     AUnit.Test_Caller (Lovelace.Compiler.Tests.Intrinsics.Fixture);
    package Ir_Generator_Caller is new
      AUnit.Test_Caller (Lovelace.Compiler.Tests.Ir_Generator.Fixture);
    package Literals_Caller is new
@@ -191,6 +196,10 @@ package body Lovelace.Compiler.Tests.Suite is
         (Tokenizer_Caller.Create
            ("tokenizer: comment errors",
             Lovelace.Compiler.Tests.Tokenizer.Test_Comment_Errors'Access));
+      Result.Add_Test
+        (Tokenizer_Caller.Create
+           ("tokenizer: comment invalid utf-8",
+            Lovelace.Compiler.Tests.Tokenizer.Test_Comment_Invalid_Utf_8'Access));
       Result.Add_Test
         (Tokenizer_Caller.Create
            ("tokenizer: directives and strings",
@@ -376,6 +385,62 @@ package body Lovelace.Compiler.Tests.Suite is
         (Parser_Caller.Create
            ("parser: boolean type",
             Lovelace.Compiler.Tests.Parser.Test_Boolean_Type'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: call syntax errors",
+            Lovelace.Compiler.Tests.Parser.Test_Call_Syntax_Errors'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: declare syntax errors",
+            Lovelace.Compiler.Tests.Parser.Test_Declare_Syntax_Errors'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: describe literal tokens",
+            Lovelace
+              .Compiler
+              .Tests
+              .Parser
+              .Test_Describe_Literal_Tokens'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: flavor syntax errors",
+            Lovelace.Compiler.Tests.Parser.Test_Flavor_Syntax_Errors'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: incomplete input",
+            Lovelace.Compiler.Tests.Parser.Test_Incomplete_Input'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: name clashes",
+            Lovelace.Compiler.Tests.Parser.Test_Name_Clashes'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: native syntax errors",
+            Lovelace.Compiler.Tests.Parser.Test_Native_Syntax_Errors'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: procedure syntax errors",
+            Lovelace
+              .Compiler
+              .Tests
+              .Parser
+              .Test_Procedure_Syntax_Errors'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: type syntax errors",
+            Lovelace.Compiler.Tests.Parser.Test_Type_Syntax_Errors'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: version attribute",
+            Lovelace.Compiler.Tests.Parser.Test_Version_Attribute'Access));
+      Result.Add_Test
+        (Parser_Caller.Create
+           ("parser: version unquoted string",
+            Lovelace
+              .Compiler
+              .Tests
+              .Parser
+              .Test_Version_Unquoted_String'Access));
 
       Result.Add_Test
         (Literals_Caller.Create
@@ -458,6 +523,10 @@ package body Lovelace.Compiler.Tests.Suite is
               .Tests
               .Ir_Generator
               .Test_Import_Dependencies'Access));
+      Result.Add_Test
+        (Ir_Generator_Caller.Create
+           ("ir generator: internal edges",
+            Lovelace.Compiler.Tests.Ir_Generator.Test_Internal_Edges'Access));
       Result.Add_Test
         (Ir_Generator_Caller.Create
            ("ir generator: assignment and local access",
@@ -575,6 +644,78 @@ package body Lovelace.Compiler.Tests.Suite is
         (Backend_Caller.Create
            ("backend: native print integer",
             Lovelace.Compiler.Tests.Backend.Test_Native_Print_Integer'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: kebab export dash collapse",
+            Lovelace
+              .Compiler
+              .Tests
+              .Backend
+              .Test_Kebab_Export_Dash_Collapse'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: unsupported unit parameter",
+            Lovelace
+              .Compiler
+              .Tests
+              .Backend
+              .Test_Unsupported_Unit_Parameter'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: unsupported unit local",
+            Lovelace
+              .Compiler
+              .Tests
+              .Backend
+              .Test_Unsupported_Unit_Local'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: native empty body",
+            Lovelace.Compiler.Tests.Backend.Test_Native_Empty_Body'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: intrinsic table miss",
+            Lovelace.Compiler.Tests.Backend.Test_Intrinsic_Table_Miss'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: native print signature mismatch",
+            Lovelace
+              .Compiler
+              .Tests
+              .Backend
+              .Test_Native_Print_Signature_Mismatch'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: module dependency",
+            Lovelace.Compiler.Tests.Backend.Test_Module_Dependency'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: names sanitize edges",
+            Lovelace.Compiler.Tests.Backend.Test_Names_Sanitize_Edges'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: zero call target",
+            Lovelace.Compiler.Tests.Backend.Test_Zero_Call_Target'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: zero local index",
+            Lovelace.Compiler.Tests.Backend.Test_Zero_Local_Index'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: dollar name edges",
+            Lovelace.Compiler.Tests.Backend.Test_Dollar_Name_Edges'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: duplicate entrypoint",
+            Lovelace.Compiler.Tests.Backend.Test_Duplicate_Entrypoint'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: duplicate func names",
+            Lovelace.Compiler.Tests.Backend.Test_Duplicate_Func_Names'Access));
+      Result.Add_Test
+        (Backend_Caller.Create
+           ("backend: empty module emit",
+            Lovelace.Compiler.Tests.Backend.Test_Empty_Module_Emit'Access));
 
       Result.Add_Test
         (Diagnostics_Caller.Create
@@ -612,6 +753,26 @@ package body Lovelace.Compiler.Tests.Suite is
               .Tests
               .Diagnostics
               .Test_Unit_Name_Matches_File'Access));
+      Result.Add_Test
+        (Diagnostics_Caller.Create
+           ("diagnostics: format line endings",
+            Lovelace
+              .Compiler
+              .Tests
+              .Diagnostics
+              .Test_Format_Line_Endings'Access));
+      Result.Add_Test
+        (Diagnostics_Caller.Create
+           ("diagnostics: format inverted span",
+            Lovelace
+              .Compiler
+              .Tests
+              .Diagnostics
+              .Test_Format_Inverted_Span'Access));
+      Result.Add_Test
+        (Diagnostics_Caller.Create
+           ("diagnostics: policy accessors",
+            Lovelace.Compiler.Tests.Diagnostics.Test_Policy_Accessors'Access));
 
       Result.Add_Test
         (Module_Path_Caller.Create
@@ -645,6 +806,38 @@ package body Lovelace.Compiler.Tests.Suite is
               .Tests
               .Module_Path
               .Test_Default_Search_Roots'Access));
+      Result.Add_Test
+        (Module_Path_Caller.Create
+           ("module path: home fallbacks",
+            Lovelace.Compiler.Tests.Module_Path.Test_Home_Fallbacks'Access));
+      Result.Add_Test
+        (Module_Path_Caller.Create
+           ("module path: search roots edge cases",
+            Lovelace
+              .Compiler
+              .Tests
+              .Module_Path
+              .Test_Search_Roots_Edge_Cases'Access));
+      Result.Add_Test
+        (Module_Path_Caller.Create
+           ("module path: join root",
+            Lovelace.Compiler.Tests.Module_Path.Test_Join_Root'Access));
+      Result.Add_Test
+        (Module_Path_Caller.Create
+           ("module path: candidates empty segments",
+            Lovelace
+              .Compiler
+              .Tests
+              .Module_Path
+              .Test_Candidates_Empty_Segments'Access));
+      Result.Add_Test
+        (Module_Path_Caller.Create
+           ("module path: resolve duplicate and invalid roots",
+            Lovelace
+              .Compiler
+              .Tests
+              .Module_Path
+              .Test_Resolve_Duplicate_And_Invalid_Roots'Access));
 
       Result.Add_Test
         (Unit_Graph_Caller.Create
@@ -662,6 +855,78 @@ package body Lovelace.Compiler.Tests.Suite is
         (Unit_Graph_Caller.Create
            ("unit graph: load versions",
             Lovelace.Compiler.Tests.Unit_Graph.Test_Load_Versions'Access));
+      Result.Add_Test
+        (Unit_Graph_Caller.Create
+           ("unit graph: load shared and transitive",
+            Lovelace
+              .Compiler
+              .Tests
+              .Unit_Graph
+              .Test_Load_Shared_And_Transitive'Access));
+      Result.Add_Test
+        (Unit_Graph_Caller.Create
+           ("unit graph: load dependency failures",
+            Lovelace
+              .Compiler
+              .Tests
+              .Unit_Graph
+              .Test_Load_Dependency_Failures'Access));
+      Result.Add_Test
+        (Unit_Graph_Caller.Create
+           ("unit graph: load version failures",
+            Lovelace
+              .Compiler
+              .Tests
+              .Unit_Graph
+              .Test_Load_Version_Failures'Access));
+      Result.Add_Test
+        (Unit_Graph_Caller.Create
+           ("unit graph: load large dependency",
+            Lovelace
+              .Compiler
+              .Tests
+              .Unit_Graph
+              .Test_Load_Large_Dependency'Access));
+      Result.Add_Test
+        (Unit_Graph_Caller.Create
+           ("unit graph: load invalid root path",
+            Lovelace
+              .Compiler
+              .Tests
+              .Unit_Graph
+              .Test_Load_Invalid_Root_Path'Access));
+      Result.Add_Test
+        (Unit_Graph_Caller.Create
+           ("unit graph: surface error codes",
+            Lovelace
+              .Compiler
+              .Tests
+              .Unit_Graph
+              .Test_Surface_Error_Codes'Access));
+      Result.Add_Test
+        (Unit_Graph_Caller.Create
+           ("versioning: version syntax",
+            Lovelace.Compiler.Tests.Unit_Graph.Test_Version_Syntax'Access));
+      Result.Add_Test
+        (Unit_Graph_Caller.Create
+           ("versioning: library root for",
+            Lovelace.Compiler.Tests.Unit_Graph.Test_Library_Root_For'Access));
+      Result.Add_Test
+        (Unit_Graph_Caller.Create
+           ("versioning: try read loveversion",
+            Lovelace
+              .Compiler
+              .Tests
+              .Unit_Graph
+              .Test_Try_Read_Loveversion'Access));
+      Result.Add_Test
+        (Unit_Graph_Caller.Create
+           ("versioning: resolve version priority",
+            Lovelace
+              .Compiler
+              .Tests
+              .Unit_Graph
+              .Test_Resolve_Version_Priority'Access));
 
       Result.Add_Test
         (Semantics_Caller.Create
@@ -723,6 +988,26 @@ package body Lovelace.Compiler.Tests.Suite is
         (Semantics_Caller.Create
            ("semantics: reporting mapping",
             Lovelace.Compiler.Tests.Semantics.Test_Reporting_Mapping'Access));
+      Result.Add_Test
+        (Semantics_Caller.Create
+           ("semantics: resolve bad callee names",
+            Lovelace.Compiler.Tests.Semantics.Test_Resolve_Bad_Callee_Names'Access));
+
+      Result.Add_Test
+        (Ast_Caller.Create
+           ("ast: null block accessors", Lovelace.Compiler.Tests.Ast.Test_Null_Block_Accessors'Access));
+
+      Result.Add_Test
+        (Intrinsics_Caller.Create
+           ("intrinsics: ast non-default integer",
+            Lovelace.Compiler.Tests.Intrinsics.Test_Ast_Non_Default_Integer'Access));
+      Result.Add_Test
+        (Intrinsics_Caller.Create
+           ("intrinsics: lir non-unit return",
+            Lovelace.Compiler.Tests.Intrinsics.Test_Lir_Non_Unit_Return'Access));
+      Result.Add_Test
+        (Intrinsics_Caller.Create
+           ("intrinsics: split lir name", Lovelace.Compiler.Tests.Intrinsics.Test_Split_Lir_Name'Access));
 
       return Result;
    end Suite;

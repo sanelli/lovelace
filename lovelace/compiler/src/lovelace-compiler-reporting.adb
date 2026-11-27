@@ -1,5 +1,47 @@
 package body Lovelace.Compiler.Reporting is
 
+   Backend_Map : constant array (Backend.Backend_Error_Code) of Error_Codes.Error_Code :=
+     [Backend.Internal_Error   => Error_Codes.Internal_Error,
+      Backend.Unsupported_Type => Error_Codes.Unsupported_Type,
+      Backend.Invalid_Module   => Error_Codes.Invalid_Module];
+
+   Ir_Generator_Map : constant array (Ir_Generator.Ir_Generator_Error_Code) of Error_Codes.Error_Code :=
+     [Ir_Generator.Internal_Error         => Error_Codes.Internal_Error,
+      Ir_Generator.Unknown_Native_Binding => Error_Codes.Unknown_Native_Binding,
+      Ir_Generator.Unknown_Intrinsic      => Error_Codes.Unknown_Intrinsic];
+
+   Semantics_Map : constant array (Semantics.Semantics_Error_Code) of Error_Codes.Error_Code :=
+     [Semantics.Internal_Error        => Error_Codes.Internal_Error,
+      Semantics.Unresolved_Call       => Error_Codes.Unresolved_Call,
+      Semantics.Invalid_Arguments     => Error_Codes.Invalid_Arguments,
+      Semantics.Call_Without_Using    => Error_Codes.Call_Without_Using,
+      Semantics.Not_Exported          => Error_Codes.Not_Exported,
+      Semantics.Use_Before_Assignment => Error_Codes.Use_Before_Assignment,
+      Semantics.Type_Mismatch         => Error_Codes.Type_Mismatch,
+      Semantics.Unresolved_Name       => Error_Codes.Unresolved_Name,
+      Semantics.Ambiguous_Call        => Error_Codes.Ambiguous_Call,
+      Semantics.Unused_Variable       => Error_Codes.Unused_Variable,
+      Semantics.Unused_Assignment     => Error_Codes.Unused_Assignment,
+      Semantics.Unused_Using          => Error_Codes.Unused_Using];
+
+   Parser_Map : constant array (Parser.Parser_Error_Code) of Error_Codes.Error_Code :=
+     [Parser.Internal_Error           => Error_Codes.Internal_Error,
+      Parser.Unexpected_End_Of_Input  => Error_Codes.Unexpected_End_Of_Input,
+      Parser.Unexpected_Token         => Error_Codes.Unexpected_Token,
+      Parser.Unexpected_Trailing      => Error_Codes.Unexpected_Trailing,
+      Parser.Name_Clash               => Error_Codes.Name_Clash,
+      Parser.Invalid_Flavor_Condition => Error_Codes.Invalid_Flavor_Condition,
+      Parser.Invalid_Module_Version   => Error_Codes.Invalid_Module_Version];
+
+   Tokenizer_Map : constant array (Tokenizer.Tokenizer_Error_Code) of Error_Codes.Error_Code :=
+     [Tokenizer.Internal_Error              => Error_Codes.Internal_Error,
+      Tokenizer.Unrecognized_Symbol         => Error_Codes.Unrecognized_Symbol,
+      Tokenizer.Invalid_Utf_8               => Error_Codes.Invalid_Utf_8,
+      Tokenizer.Unterminated_String_Literal => Error_Codes.Unterminated_String_Literal,
+      Tokenizer.Unterminated_Comment        => Error_Codes.Unterminated_Comment,
+      Tokenizer.Nested_Comment              => Error_Codes.Nested_Comment,
+      Tokenizer.Stray_Comment_Closer        => Error_Codes.Stray_Comment_Closer];
+
    function Love_Basename (Path : String) return String is
       Start  : Positive := Path'First;
       Finish : Natural := Path'Last;
@@ -16,8 +58,7 @@ package body Lovelace.Compiler.Reporting is
       end if;
 
       Finish := Path'Last;
-      if Finish - Start + 1 >= 5 and then Path (Finish - 4 .. Finish) = ".love"
-      then
+      if Finish - Start + 1 >= 5 and then Path (Finish - 4 .. Finish) = ".love" then
          Finish := Finish - 5;
       end if;
 
@@ -27,132 +68,29 @@ package body Lovelace.Compiler.Reporting is
       return Path (Start .. Finish);
    end Love_Basename;
 
-   function To_Error_Code
-     (Code : Backend.Backend_Error_Code) return Error_Codes.Error_Code is
+   function To_Error_Code (Code : Backend.Backend_Error_Code) return Error_Codes.Error_Code is
    begin
-      case Code is
-         when Backend.Internal_Error   =>
-            return Error_Codes.Internal_Error;
-
-         when Backend.Unsupported_Type =>
-            return Error_Codes.Unsupported_Type;
-
-         when Backend.Invalid_Module   =>
-            return Error_Codes.Invalid_Module;
-      end case;
+      return Backend_Map (Code);
    end To_Error_Code;
 
-   function To_Error_Code
-     (Code : Ir_Generator.Ir_Generator_Error_Code)
-      return Error_Codes.Error_Code is
+   function To_Error_Code (Code : Ir_Generator.Ir_Generator_Error_Code) return Error_Codes.Error_Code is
    begin
-      case Code is
-         when Ir_Generator.Internal_Error         =>
-            return Error_Codes.Internal_Error;
-
-         when Ir_Generator.Unknown_Native_Binding =>
-            return Error_Codes.Unknown_Native_Binding;
-
-         when Ir_Generator.Unknown_Intrinsic      =>
-            return Error_Codes.Unknown_Intrinsic;
-      end case;
+      return Ir_Generator_Map (Code);
    end To_Error_Code;
 
-   function To_Error_Code
-     (Code : Semantics.Semantics_Error_Code) return Error_Codes.Error_Code is
+   function To_Error_Code (Code : Semantics.Semantics_Error_Code) return Error_Codes.Error_Code is
    begin
-      case Code is
-         when Semantics.Internal_Error        =>
-            return Error_Codes.Internal_Error;
-
-         when Semantics.Unresolved_Call       =>
-            return Error_Codes.Unresolved_Call;
-
-         when Semantics.Invalid_Arguments     =>
-            return Error_Codes.Invalid_Arguments;
-
-         when Semantics.Call_Without_Using    =>
-            return Error_Codes.Call_Without_Using;
-
-         when Semantics.Not_Exported          =>
-            return Error_Codes.Not_Exported;
-
-         when Semantics.Use_Before_Assignment =>
-            return Error_Codes.Use_Before_Assignment;
-
-         when Semantics.Type_Mismatch         =>
-            return Error_Codes.Type_Mismatch;
-
-         when Semantics.Unresolved_Name       =>
-            return Error_Codes.Unresolved_Name;
-
-         when Semantics.Ambiguous_Call        =>
-            return Error_Codes.Ambiguous_Call;
-
-         when Semantics.Unused_Variable       =>
-            return Error_Codes.Unused_Variable;
-
-         when Semantics.Unused_Assignment     =>
-            return Error_Codes.Unused_Assignment;
-
-         when Semantics.Unused_Using          =>
-            return Error_Codes.Unused_Using;
-      end case;
+      return Semantics_Map (Code);
    end To_Error_Code;
 
-   function To_Error_Code
-     (Code : Parser.Parser_Error_Code) return Error_Codes.Error_Code is
+   function To_Error_Code (Code : Parser.Parser_Error_Code) return Error_Codes.Error_Code is
    begin
-      case Code is
-         when Parser.Internal_Error           =>
-            return Error_Codes.Internal_Error;
-
-         when Parser.Unexpected_End_Of_Input  =>
-            return Error_Codes.Unexpected_End_Of_Input;
-
-         when Parser.Unexpected_Token         =>
-            return Error_Codes.Unexpected_Token;
-
-         when Parser.Unexpected_Trailing      =>
-            return Error_Codes.Unexpected_Trailing;
-
-         when Parser.Name_Clash               =>
-            return Error_Codes.Name_Clash;
-
-         when Parser.Invalid_Flavor_Condition =>
-            return Error_Codes.Invalid_Flavor_Condition;
-
-         when Parser.Invalid_Module_Version   =>
-            return Error_Codes.Invalid_Module_Version;
-
-      end case;
+      return Parser_Map (Code);
    end To_Error_Code;
 
-   function To_Error_Code
-     (Code : Tokenizer.Tokenizer_Error_Code) return Error_Codes.Error_Code is
+   function To_Error_Code (Code : Tokenizer.Tokenizer_Error_Code) return Error_Codes.Error_Code is
    begin
-      case Code is
-         when Tokenizer.Internal_Error              =>
-            return Error_Codes.Internal_Error;
-
-         when Tokenizer.Unrecognized_Symbol         =>
-            return Error_Codes.Unrecognized_Symbol;
-
-         when Tokenizer.Invalid_Utf_8               =>
-            return Error_Codes.Invalid_Utf_8;
-
-         when Tokenizer.Unterminated_String_Literal =>
-            return Error_Codes.Unterminated_String_Literal;
-
-         when Tokenizer.Unterminated_Comment        =>
-            return Error_Codes.Unterminated_Comment;
-
-         when Tokenizer.Nested_Comment              =>
-            return Error_Codes.Nested_Comment;
-
-         when Tokenizer.Stray_Comment_Closer        =>
-            return Error_Codes.Stray_Comment_Closer;
-      end case;
+      return Tokenizer_Map (Code);
    end To_Error_Code;
 
    function Unit_Kind_Label (The_Module : Ast.Module) return String is
@@ -166,8 +104,7 @@ package body Lovelace.Compiler.Reporting is
       end case;
    end Unit_Kind_Label;
 
-   function Unit_Name_Matches_File
-     (The_Module : Ast.Module; Source_Path : String) return Boolean is
+   function Unit_Name_Matches_File (The_Module : Ast.Module; Source_Path : String) return Boolean is
    begin
       return Ast.Name (The_Module) = Love_Basename (Source_Path);
    end Unit_Name_Matches_File;

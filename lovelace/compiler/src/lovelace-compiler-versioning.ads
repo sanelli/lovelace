@@ -36,8 +36,7 @@ package Lovelace.Compiler.Versioning is
    --  @param Source_Path Absolute or relative path of a .love file.
    --  @param Roots Module search roots from Default_Search_Roots.
    --  @return Library root directory for .loveversion lookup.
-   function Library_Root_For
-     (Source_Path : String; Roots : Module_Path.Path_Sequence) return String;
+   function Library_Root_For (Source_Path : String; Roots : Module_Path.Path_Sequence) return String;
 
    --  Read Loveversion_Filename under Library_Root when present.
    --  @param Library_Root Directory that may contain .loveversion.

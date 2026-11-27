@@ -12,13 +12,16 @@ permissions:
 jobs:
   build:
     name: Build and test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     defaults:
       run:
         shell: pwsh
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+
+      - name: Check encoding
+        run: ./scripts/check-encoding.ps1
 
       - name: Set up Alire and GNAT toolchain
         uses: alire-project/setup-alire@v6
@@ -41,3 +44,97 @@ jobs:
 
       - name: Run integration tests
         run: ./scripts/run-tests.ps1 -SkipUnit
+
+  quality:
+    name: Coverage complexity CRAP
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read
+      pull-requests: write
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Check encoding
+        run: ./scripts/check-encoding.ps1
+
+      - name: Set up Alire and GNAT toolchain
+        uses: alire-project/setup-alire@v6
+        with:
+          version: '2.1.0'
+          toolchain: 'gnat_native=15.2.1 gprbuild'
+          cache: true
+
+      - name: Install gnatcov
+        run: |
+          alr -n install gnatcov
+          $AlireBin = Join-Path $HOME '.alire' 'bin'
+          Add-Content -LiteralPath $env:GITHUB_PATH -Value $AlireBin
+          # GITHUB_PATH applies to later steps; prepend for this step's checks too.
+          $env:PATH = "$AlireBin$([IO.Path]::PathSeparator)$env:PATH"
+          if (-not (Get-Command gnatcov -ErrorAction SilentlyContinue)) {
+            Write-Error "gnatcov not on PATH after install (expected under $AlireBin)"
+            exit 1
+          }
+
+      # Prebuilt gnatmetric (and friends) — avoids rebuilding Libadalang on every PR.
+      - name: Setup gnatmetric
+        uses: sanelli/libadalang_tools-dist@main
+        with:
+          version: '26.0.0'
+          release: 'latest'
+          runner-image: 'ubuntu-26.04'
+
+      - name: Build Lovelace workspace
+        run: alr build
+
+      # continue-on-error so the sticky comment can still post when a gate fails;
+      # "Enforce quality gates" fails the job afterward.
+      - name: Coverage gates
+        id: coverage
+        continue-on-error: true
+        run: ./scripts/coverage.ps1
+
+      - name: Complexity gates
+        id: metrics
+        continue-on-error: true
+        run: ./scripts/metrics.ps1
+
+      - name: CRAP gates
+        id: crap
+        continue-on-error: true
+        run: ./scripts/crap.ps1
+
+      - name: Quality report and sticky PR comment
+        if: always()
+        continue-on-error: true
+        run: |
+          $CoverageSummary = Join-Path '.coverage' 'summary.json'
+          $MetricsSummary = Join-Path '.metrics' 'summary.json'
+          $CrapSummary = Join-Path '.coverage' 'crap-summary.json'
+          if (-not (Test-Path -LiteralPath $CoverageSummary) -or
+              -not (Test-Path -LiteralPath $MetricsSummary) -or
+              -not (Test-Path -LiteralPath $CrapSummary)) {
+            Write-Host 'Skipping quality report (missing coverage/metrics/crap summaries).'
+            exit 0
+          }
+          ./scripts/quality-report.ps1 -PostPullRequestComment
+
+      - name: Enforce quality gates
+        if: always()
+        run: |
+          $Failed = @()
+          if ('${{ steps.coverage.outcome }}' -eq 'failure') { $Failed += 'coverage' }
+          if ('${{ steps.metrics.outcome }}' -eq 'failure') { $Failed += 'metrics' }
+          if ('${{ steps.crap.outcome }}' -eq 'failure') { $Failed += 'crap' }
+          if ($Failed.Count -gt 0) {
+            Write-Error ("Quality gate(s) failed: " + ($Failed -join ', '))
+            exit 1
+          }
+          Write-Host 'All quality gates passed.'
