@@ -1,17 +1,31 @@
 # TextMate grammars
 
-Shared **TextMate** syntax grammars for Lovelace (`.love`) and LIR text (`.tlir`).
+Shared **TextMate bundles** for Lovelace (`.love`) and LIR text (`.tlir`), in the same layout JetBrains / TextMate expect (see e.g. `ada.tmbundle`: `info.plist` + `Syntaxes/`).
 
-Editors and IDE plugins under [`../vscode/`](../vscode/) and [`../jetbrains/`](../jetbrains/) should reuse these grammars for syntax coloring rather than maintaining separate highlighter definitions.
+Editors and IDE plugins under [`../vscode/`](../vscode/) and [`../jetbrains/`](../jetbrains/) should reuse these bundles for syntax coloring rather than maintaining separate highlighter definitions.
 
-| File | Language | `scopeName` | Extensions |
+| Bundle | Language | `scopeName` | Extensions |
 | --- | --- | --- | --- |
-| [`lovelace.tmLanguage.json`](lovelace.tmLanguage.json) | Lovelace | `source.lovelace` | `.love` |
-| [`tlir.tmLanguage.json`](tlir.tmLanguage.json) | Lovelace LIR (text) | `source.lovelace.tlir` | `.tlir` |
+| [`Lovelace.tmbundle/`](Lovelace.tmbundle/) | Lovelace | `source.lovelace` | `.love` |
+| [`TLIR.tmbundle/`](TLIR.tmbundle/) | Lovelace LIR (text) | `source.lovelace.tlir` | `.tlir` |
+
+Grammar sources:
+
+- [`Lovelace.tmbundle/Syntaxes/Lovelace.tmLanguage.json`](Lovelace.tmbundle/Syntaxes/Lovelace.tmLanguage.json)
+- [`TLIR.tmbundle/Syntaxes/TLIR.tmLanguage.json`](TLIR.tmbundle/Syntaxes/TLIR.tmLanguage.json)
 
 Binary `.lir` is out of scope for TextMate (see [1.005](../../docs/roadmap/1.005-roadmap-ide-plugins-build-run.md) dump / binary viewer).
 
-Folder name is lowercase `textmate/` for path consistency; the format is TextMate.
+Folder name is lowercase `textmate/` for path consistency; each language lives in its own `*.tmbundle`.
+
+## Import into Rider / IntelliJ
+
+Rider’s **TextMate Bundles** UI expects a real bundle directory (with `info.plist` and `Syntaxes/`), **not** the parent `ide/textmate/` folder. Importing `ide/textmate` fails with “Cannot read the following bundle”.
+
+1. Settings → **Editor → TextMate Bundles**
+2. Click **+** and select **`ide/textmate/Lovelace.tmbundle`**
+3. Click **+** again and select **`ide/textmate/TLIR.tmbundle`**
+4. Open a fixture (or any `.love` / `.tlir` file) and confirm highlighting
 
 ## Keep in sync
 
@@ -21,10 +35,10 @@ When you add or change surface syntax, update the matching grammar in the same P
 
 | Change | Update |
 | --- | --- |
-| New `.love` keyword, directive, punctuation, or literal form | [`lovelace.tmLanguage.json`](lovelace.tmLanguage.json) keyword / directive / punctuation / numeric rules (and [token-grammar.md](../../docs/token-grammar.md)) |
-| New `@attribute` name with dedicated coloring | `attribute` rule in [`lovelace.tmLanguage.json`](lovelace.tmLanguage.json) |
-| New TLIR structural head, instruction opcode, type token, or flag name | closed lists in [`tlir.tmLanguage.json`](tlir.tmLanguage.json) (and [lir-text.md](../../docs/lir-text.md)) |
-| New TLIR string escape | `string` escape pattern in [`tlir.tmLanguage.json`](tlir.tmLanguage.json) |
+| New `.love` keyword, directive, punctuation, or literal form | [`Lovelace.tmLanguage.json`](Lovelace.tmbundle/Syntaxes/Lovelace.tmLanguage.json) (and [token-grammar.md](../../docs/token-grammar.md)) |
+| New `@attribute` name with dedicated coloring | `attribute` rule in [`Lovelace.tmLanguage.json`](Lovelace.tmbundle/Syntaxes/Lovelace.tmLanguage.json) |
+| New TLIR structural head, instruction opcode, type token, or flag name | closed lists in [`TLIR.tmLanguage.json`](TLIR.tmbundle/Syntaxes/TLIR.tmLanguage.json) (and [lir-text.md](../../docs/lir-text.md)) |
+| New TLIR string escape | `string` escape pattern in [`TLIR.tmLanguage.json`](TLIR.tmbundle/Syntaxes/TLIR.tmLanguage.json) |
 
 Do **not** keyword-color future language words (`if` / `mod` / `and` / …) until the compiler tokenizer accepts them.
 
@@ -44,13 +58,13 @@ Smoke snippets (highlighting only; not a compiler test suite):
 
 Until the [1.005](../../docs/roadmap/1.005-roadmap-ide-plugins-build-run.md) extension ships, load a grammar manually:
 
-1. Install a “TextMate Languages” / raw grammar preview extension, **or** point a minimal `package.json` `contributes.grammars` entry at these JSON files.
+1. Point a minimal `package.json` `contributes.grammars` entry at the JSON files under each bundle’s `Syntaxes/`.
 2. Open a fixture (or any `.love` / `.tlir` file) with the grammar applied.
 3. Use **Developer: Inspect Editor Tokens and Scopes** on keywords, comments, `:=`, `@intrinsic`, `(module`, `i32.const`, and escaped strings.
 
 Validate JSON anytime with:
 
 ```bash
-python3 -m json.tool ide/textmate/lovelace.tmLanguage.json > /dev/null
-python3 -m json.tool ide/textmate/tlir.tmLanguage.json > /dev/null
+python3 -m json.tool ide/textmate/Lovelace.tmbundle/Syntaxes/Lovelace.tmLanguage.json > /dev/null
+python3 -m json.tool ide/textmate/TLIR.tmbundle/Syntaxes/TLIR.tmLanguage.json > /dev/null
 ```

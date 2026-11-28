@@ -3,6 +3,7 @@
   "name": "Lovelace LIR (text)",
   "scopeName": "source.lovelace.tlir",
   "fileTypes": ["tlir"],
+  "uuid": "7C6D5018-9130-4994-A9AE-FEF4813D99FA",
   "patterns": [
     { "include": "#string" },
     { "include": "#instruction" },

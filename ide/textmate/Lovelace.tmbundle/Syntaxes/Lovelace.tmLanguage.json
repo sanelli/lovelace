@@ -3,6 +3,7 @@
   "name": "Lovelace",
   "scopeName": "source.lovelace",
   "fileTypes": ["love"],
+  "uuid": "B6A975E4-F2D6-4B2F-A4A3-F84BE386A95F",
   "patterns": [
     { "include": "#comment" },
     { "include": "#string" },

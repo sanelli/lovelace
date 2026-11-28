@@ -52,8 +52,8 @@ Roadmap: [docs/roadmap/1.002-roadmap-replace-synthesized-print.md](../../docs/ro
 
 | Artifact | Path |
 | --- | --- |
-| Lovelace grammar | [`ide/textmate/lovelace.tmLanguage.json`](../../ide/textmate/lovelace.tmLanguage.json) |
-| TLIR grammar | [`ide/textmate/tlir.tmLanguage.json`](../../ide/textmate/tlir.tmLanguage.json) |
+| Lovelace grammar | [`ide/textmate/Lovelace.tmbundle/`](../../ide/textmate/Lovelace.tmbundle/) (`Syntaxes/Lovelace.tmLanguage.json`) |
+| TLIR grammar | [`ide/textmate/TLIR.tmbundle/`](../../ide/textmate/TLIR.tmbundle/) (`Syntaxes/TLIR.tmLanguage.json`) |
 | Fixtures | [`ide/textmate/fixtures/`](../../ide/textmate/fixtures/) (checked-in `.love` + `.tlir` snippets) |
 | Docs | Expand [`ide/textmate/README.md`](../../ide/textmate/README.md); lock roadmap step 8 |
 
