@@ -1,0 +1,121 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Lovelace",
+  "scopeName": "source.lovelace",
+  "fileTypes": ["love"],
+  "uuid": "B6A975E4-F2D6-4B2F-A4A3-F84BE386A95F",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#string" },
+    { "include": "#directive" },
+    { "include": "#attribute" },
+    { "include": "#keyword" },
+    { "include": "#float" },
+    { "include": "#integer" },
+    { "include": "#punctuation" },
+    { "include": "#identifier" }
+  ],
+  "repository": {
+    "comment": {
+      "name": "comment.block.lovelace",
+      "begin": "\\{",
+      "end": "\\}",
+      "patterns": [
+        {
+          "name": "invalid.illegal.nested-comment.lovelace",
+          "match": "\\{"
+        }
+      ]
+    },
+    "string": {
+      "name": "string.quoted.double.lovelace",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": []
+    },
+    "directive": {
+      "name": "keyword.control.directive.lovelace",
+      "match": "#(?:elsif|else|end|if)\\b"
+    },
+    "attribute": {
+      "patterns": [
+        {
+          "name": "storage.modifier.attribute.lovelace",
+          "match": "@(?:intrinsic|native|version)\\b"
+        },
+        {
+          "name": "entity.name.function.attribute.lovelace",
+          "match": "@(?:[\\p{L}\\p{Nl}_]|[^\\x00-\\x7F])(?:[\\p{L}\\p{Nl}\\p{Nd}\\p{Mn}\\p{Mc}\\p{Pc}_]|[^\\x00-\\x7F])*"
+        }
+      ]
+    },
+    "keyword": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.lovelace",
+          "match": "\\b(?:true|false)\\b"
+        },
+        {
+          "name": "storage.type.lovelace",
+          "match": "\\b(?:integer|float|signed|unsigned|boolean)\\b"
+        },
+        {
+          "name": "keyword.control.lovelace",
+          "match": "\\b(?:program|module|begin|end|declare|export|using|procedure)\\b"
+        }
+      ]
+    },
+    "float": {
+      "name": "constant.numeric.float.lovelace",
+      "match": "[+-]?(?:\\d+\\.\\d*(?:[eE][+-]?\\d+)?(?:[fF](?:32|64))?|\\d+[eE][+-]?\\d+(?:[fF](?:32|64))?|\\d+[fF](?:32|64))"
+    },
+    "integer": {
+      "patterns": [
+        {
+          "name": "constant.numeric.binary.lovelace",
+          "match": "[+-]?0[bB][01]+(?:[sSuU](?:8|16|32|64))?"
+        },
+        {
+          "name": "constant.numeric.octal.lovelace",
+          "match": "[+-]?0[oO][0-7]+(?:[sSuU](?:8|16|32|64))?"
+        },
+        {
+          "name": "constant.numeric.hex.lovelace",
+          "match": "[+-]?0[xX][0-9A-Fa-f]+(?:[sSuU](?:8|16|32|64))?"
+        },
+        {
+          "name": "constant.numeric.integer.lovelace",
+          "match": "[+-]?\\d+(?:[sSuU](?:8|16|32|64))?"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "keyword.operator.assignment.lovelace",
+          "match": ":="
+        },
+        {
+          "name": "keyword.operator.comparison.lovelace",
+          "match": "[=<>]"
+        },
+        {
+          "name": "punctuation.separator.lovelace",
+          "match": "[,;:]"
+        },
+        {
+          "name": "punctuation.accessor.lovelace",
+          "match": "\\."
+        },
+        {
+          "name": "punctuation.section.parens.lovelace",
+          "match": "[()]"
+        }
+      ]
+    },
+    "identifier": {
+      "name": "variable.other.lovelace",
+      "match": "(?:[\\p{L}\\p{Nl}_]|[^\\x00-\\x7F])(?:[\\p{L}\\p{Nl}\\p{Nd}\\p{Mn}\\p{Mc}\\p{Pc}_]|[^\\x00-\\x7F])*"
+    }
+  }
+}

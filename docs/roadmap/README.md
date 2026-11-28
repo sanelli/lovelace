@@ -7,10 +7,12 @@ Ordered planning docs. Filenames use `{series}.{nnn}-roadmap-….md`.
 | Id | Doc | Summary |
 | --- | --- | --- |
 | 1.001 | [print integer (WASI)](1.001-roadmap-print-integer-wasi.md) | Flavor `#if`, export, multi-unit, synthesized WASI print, HelloPrint E2E (historical `import` keyword → `using` in 1.002) |
-| 1.002 | [replace synthesized print](1.002-roadmap-replace-synthesized-print.md) | Comments, `@intrinsic`/`@native`, literals, boolean, `:=` + **`using`** (unit + block) + **resolve/scope** + **definite assignment** + **typechecker**/`Lovelace_Type` + warnings CLI, coverage, `--debug` LIR/TLIR spans, TextMate `.love`/`.tlir`, exprs, ops, if, loop, `unsigned integer<8>` + minimal casts, Lovelace `print` |
+| 1.002 | [replace synthesized print](1.002-roadmap-replace-synthesized-print.md) | Comments, `@intrinsic`/`@native`, literals, boolean, `:=` + **`using`** (unit + block) + **resolve/scope** + **definite assignment** + **typechecker**/`Lovelace_Type` + warnings CLI, coverage, TextMate `.love`/`.tlir`, exprs, ops, if, loop, `unsigned integer<8>` + minimal casts, Lovelace `print` |
 | 1.003 | [web print integer](1.003-roadmap-print-integer-web.md) | `--flavor web` console integer print; flavor-keyed `@intrinsic` table |
 | 1.004 | [native print + libaugusta](1.004-roadmap-print-integer-native.md) | wasmtime embed, freestanding `libaugusta` on Linux/Windows/macOS |
-| 1.005 | [IDE plugins build/run](1.005-roadmap-ide-plugins-build-run.md) | IntelliJ / VS Code: configure executable + libraries; build; run default via `lovelace` (optional wasmtime for wasi; web needs browser + wasm-tools) |
+| 1.005 | [IDE plugins build/run](1.005-roadmap-ide-plugins-build-run.md) | IntelliJ / VS Code: configure executable + libraries; build; run default via `lovelace` (optional wasmtime for wasi; web needs browser + wasm-tools); `.lir` dump CLI + binary viewer (blocks ↔ textual form); optional WIT/WAT viewers |
+| 1.006 | [installer](1.006-roadmap-installer.md) | Versioned install of Lovelace binaries (user home or shared path; multiple versions coexist); optional local IDE plugin installers |
+| 1.007 | [marketplace publish](1.007-roadmap-marketplace-publish.md) | Publish VS Code and JetBrains plugins to their marketplaces (follow-on to 1.005 / 1.006 sideload) |
 
 ## Series 2 — language depth
 
@@ -48,7 +50,7 @@ Ordered planning docs. Filenames use `{series}.{nnn}-roadmap-….md`.
 | --- | --- | --- |
 | 4.001 | [project/solution + IDE](4.001-roadmap-project-solution-ide.md) | Build `.pjlove` / `.slnlove`; IntelliJ & VS Code project support |
 | 4.002 | [pack & package manager](4.002-roadmap-pack-and-package-manager.md) | `.pkglove`, `lovelace pack`, Hypatia (local + git) |
-| 4.003 | [debug info for debugger](4.003-roadmap-debug-info-for-debugger.md) | `--debug` exports meaningful debugger information |
+| 4.003 | [debug info for debugger](4.003-roadmap-debug-info-for-debugger.md) | `--debug` LIR/TLIR source spans + debugger export |
 | 4.004 | [IDE debugger](4.004-roadmap-ide-debugger.md) | VS Code & IntelliJ debugger support (extend existing plugins) |
 | 4.005 | [documentation](4.005-roadmap-documentation.md) | Language / Augusta / contributor docs (Alexandria) |
 

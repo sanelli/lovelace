@@ -1,0 +1,5 @@
+(module
+  (lir-version 1 0)
+  (module-version "0.0.1")
+  (name "escapes\n\t\\\"\u{1F680}")
+)

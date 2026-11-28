@@ -1,0 +1,53 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Lovelace LIR (text)",
+  "scopeName": "source.lovelace.tlir",
+  "fileTypes": ["tlir"],
+  "uuid": "7C6D5018-9130-4994-A9AE-FEF4813D99FA",
+  "patterns": [
+    { "include": "#string" },
+    { "include": "#instruction" },
+    { "include": "#structural" },
+    { "include": "#type" },
+    { "include": "#modifier" },
+    { "include": "#number" },
+    { "include": "#parens" }
+  ],
+  "repository": {
+    "string": {
+      "name": "string.quoted.double.tlir",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.tlir",
+          "match": "\\\\(?:[\\\\\"nrt]|u\\{[0-9A-Fa-f]+\\})"
+        }
+      ]
+    },
+    "instruction": {
+      "name": "support.function.instruction.tlir",
+      "match": "\\b(?:i32\\.const|local\\.get|local\\.set|noop|call)\\b"
+    },
+    "structural": {
+      "name": "keyword.control.tlir",
+      "match": "\\b(?:from-dependency|module-version|lir-version|name-span|subroutine|dependency|filename|position|column|origin|locals|module|result|flags|index|param|span|body|byte|name|row|version|native)\\b"
+    },
+    "type": {
+      "name": "storage.type.tlir",
+      "match": "\\b(?:unit|i8|i16|i32|i64|u8|u16|u32|u64|f32|f64)\\b"
+    },
+    "modifier": {
+      "name": "storage.modifier.tlir",
+      "match": "\\b(?:entrypoint|export|intrinsic|native|param)\\b"
+    },
+    "number": {
+      "name": "constant.numeric.integer.tlir",
+      "match": "-?\\d+"
+    },
+    "parens": {
+      "name": "punctuation.section.parens.tlir",
+      "match": "[()]"
+    }
+  }
+}
