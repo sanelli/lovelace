@@ -1,0 +1,7 @@
+{ Emoji / Unicode identifier smoke for TextMate. }
+module 🛸;
+
+export procedure 🚀;
+begin
+end;
+end.

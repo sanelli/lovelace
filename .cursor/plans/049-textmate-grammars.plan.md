@@ -19,13 +19,13 @@ todos:
     status: completed
   - id: "6"
     content: "6. Add ide/textmate/fixtures/ for .love and .tlir smoke snippets."
-    status: pending
+    status: completed
   - id: "7"
     content: "7. Expand textmate README; lock roadmap 1.002 step 8; drop .gitkeep if unused."
-    status: pending
+    status: completed
   - id: "8"
     content: "8. Validate JSON + fixtures; run scripts/run-tests.ps1."
-    status: pending
+    status: completed
   - id: "9"
     content: "9. Push and open PR closing #<n>."
     status: pending

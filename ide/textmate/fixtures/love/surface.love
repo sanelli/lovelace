@@ -1,0 +1,38 @@
+@version("1.0.0")
+using Other.Mod;
+
+{ Block comment: braces inside "strings" are not comments. }
+module TextMate.Surface;
+
+#if flavor = "wasi"
+
+export @intrinsic procedure sink(value : integer);
+
+#elsif flavor = "native"
+
+export @native("libx", "sink_fn") procedure sink(value : integer);
+
+#else
+
+export procedure sink(value : integer);
+begin
+end;
+
+#end
+
+export procedure demo(flag : boolean);
+declare
+   N : integer;
+   F : float;
+   🚀 : boolean;
+begin
+   N := 42;
+   N := 0b1010;
+   N := 0o755;
+   N := 0xFFs32;
+   F := 3.14f32;
+   F := 1e3;
+   🚀 := true;
+   Other.Mod.sink(N);
+end;
+end.

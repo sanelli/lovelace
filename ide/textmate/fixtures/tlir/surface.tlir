@@ -1,0 +1,35 @@
+(module
+  (lir-version 1 0)
+  (module-version "0.0.1")
+  (name "example")
+  (dependency "other" (version "0.0.1"))
+  (index
+    (1 "example.Main" (param "x" i32 "y" f64) (result i32))
+    (2 "example.Init" (result unit))
+    (3 "example.Rocket" (result unit)))
+  (subroutine
+    (name "example.Main")
+    (result i32)
+    (flags export entrypoint)
+    (locals (1 "x" i32 param) (2 "y" f64 param) (3 "tmp" i32))
+    (body
+      (i32.const 42)
+      (local.set 3)
+      (local.get 3)
+      (call 2)
+      (noop))
+  )
+  (subroutine
+    (name "example.Init")
+    (from-dependency "other")
+    (result unit)
+    (flags native intrinsic)
+    (native "libx" "init_fn")
+  )
+  (subroutine
+    (name "example.Rocket")
+    (result unit)
+    (body
+      (noop))
+  )
+)
