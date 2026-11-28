@@ -16,7 +16,7 @@ todos:
     status: completed
   - id: "5"
     content: "5. Add ide/textmate/tlir.tmLanguage.json for writer-shaped .tlir."
-    status: pending
+    status: completed
   - id: "6"
     content: "6. Add ide/textmate/fixtures/ for .love and .tlir smoke snippets."
     status: pending
