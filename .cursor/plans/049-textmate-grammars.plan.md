@@ -28,7 +28,7 @@ todos:
     status: completed
   - id: "9"
     content: "9. Push and open PR closing #<n>."
-    status: pending
+    status: completed
 isProject: false
 ---
 
